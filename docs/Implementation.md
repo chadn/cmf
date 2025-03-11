@@ -147,26 +147,32 @@ The application will follow a hybrid architecture with:
     /api                # API routes
       /calendar         # Calendar API endpoints
         /route.ts       # API route handler
-    /(routes)           # Application routes
-      /page.tsx         # Main application page
-      /layout.tsx       # Layout for main page
-      /loading.tsx      # Loading state component
-      /error.tsx        # Error handling component
+    /home               # Home page route
+      /page.tsx         # Home page with calendar selector
+    /privacy            # Privacy policy page
+      /page.tsx         # Privacy policy content
+    /terms              # Terms of service page
+      /page.tsx         # Terms of service content
+    /page.tsx           # Main application page
     /layout.tsx         # Root layout
     /globals.css        # Global styles
   /components           # React components (organized by domain)
     /map                # Map-related components
       /MapContainer.tsx # Main map component
       /MapMarker.tsx    # Event marker component
-      /MapControls.tsx  # Map control components
+      /MapPopup.tsx     # Popup for map markers
     /events             # Event list and filtering components
       /EventList.tsx    # List of events
-      /EventItem.tsx    # Individual event component
+      /EventDetails.tsx # Detailed view of an event
       /EventFilters.tsx # Filtering controls
-    /ui                 # Reusable UI components
-      /Button.tsx       # Button component
-      /Card.tsx         # Card component
-      /Modal.tsx        # Modal component
+    /layout             # Layout components
+      /Header.tsx       # Application header
+      /Footer.tsx       # Application footer
+    /home               # Home page components
+      /CalendarSelector.tsx # Calendar selection component
+    /common             # Reusable UI components
+      /LoadingSpinner.tsx # Loading indicator
+      /ErrorMessage.tsx # Error display component
   /lib                  # Shared utilities
     /api                # API client functions
       /calendar.ts      # Calendar API client
@@ -185,16 +191,19 @@ The application will follow a hybrid architecture with:
     /events.ts          # Event-related types
     /map.ts             # Map-related types
     /api.ts             # API-related types
-  /styles               # Component styles
-    /components         # Component-specific styles
-    /variables.css      # CSS variables for theming
 /public                 # Static assets
   /images               # Image assets
   /icons                # Icon assets
 /next.config.js         # Next.js configuration
 /tsconfig.json          # TypeScript configuration
 /package.json           # Project dependencies
+/postcss.config.js      # PostCSS configuration
+/tailwind.config.js     # Tailwind CSS configuration
+/.env.example           # Example environment variables
 /README.md              # Project documentation
+/docs                   # Documentation
+  /product.md           # Product specification
+  /Implementation.md    # Implementation details
 ```
 
 ### Next.js App Router Best Practices
