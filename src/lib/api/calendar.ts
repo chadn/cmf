@@ -1,6 +1,7 @@
 import axios from 'axios'
 import { GoogleCalendarResponse } from '@/types/api'
 import { parseISO, addMonths, subMonths, format } from 'date-fns'
+import { debugLog } from '@/lib/utils/debug'
 
 const GOOGLE_CALENDAR_API_BASE =
     'https://www.googleapis.com/calendar/v3/calendars'
@@ -18,8 +19,11 @@ export async function fetchCalendarEvents(
     timeMax?: string
 ): Promise<GoogleCalendarResponse> {
     if (!process.env.GOOGLE_CALENDAR_API_KEY) {
+        debugLog('api', 'Google Calendar API key is not configured')
         throw new Error('Google Calendar API key is not configured')
     }
+
+    debugLog('api', 'Google Calendar API key is configured')
 
     // Default time range: 1 month ago to 3 months from now
     const now = new Date()
@@ -35,15 +39,32 @@ export async function fetchCalendarEvents(
         maxResults: 2500, // Maximum allowed by the API
     }
 
+    const apiUrl = `${GOOGLE_CALENDAR_API_BASE}/${encodeURIComponent(
+        calendarId
+    )}/events`
+
+    debugLog('api', `fetchCalendarEvents request`, {
+        calendarId: calendarId,
+        timeMin: params.timeMin,
+        timeMax: params.timeMax,
+        apiUrl: apiUrl,
+    })
+
     try {
-        const response = await axios.get(
-            `${GOOGLE_CALENDAR_API_BASE}/${encodeURIComponent(
-                calendarId
-            )}/events`,
-            { params }
-        )
+        const response = await axios.get(apiUrl, { params })
+
+        if (response.data) {
+            debugLog('api', `fetchCalendarEvents response data`, response.data)
+        } else {
+            debugLog('api', 'fetchCalendarEvents unexpected', response)
+        }
         return response.data
     } catch (error) {
+        debugLog(
+            'api',
+            `❌ Google Calendar API request failed for calendar ID: "${calendarId}"`,
+            error
+        )
         console.error('Error fetching calendar events:', error)
         throw error
     }

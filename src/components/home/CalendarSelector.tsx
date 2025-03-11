@@ -1,14 +1,23 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import LoadingSpinner from '../common/LoadingSpinner'
+import { debugLog, clientDebug } from '@/lib/utils/debug'
+
+// Basic debug log to verify DEBUG_LOGIC is enabled on the client
+// This will be filtered out by the debug utility if running on the server
 
 const CalendarSelector: React.FC = () => {
     const router = useRouter()
     const [calendarId, setCalendarId] = useState('')
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
+
+    // Log component mount - this will only run in the browser
+    useEffect(() => {
+        clientDebug.log('component', 'CalendarSelector component mounted')
+    }, [])
 
     // Example calendar IDs for demonstration
     const exampleCalendars = [
@@ -26,19 +35,27 @@ const CalendarSelector: React.FC = () => {
         e.preventDefault()
 
         if (!calendarId.trim()) {
+            clientDebug.log('calendar', 'Calendar submission error: empty ID')
             setError('Please enter a Calendar ID')
             return
         }
 
+        clientDebug.log('calendar', 'Calendar ID submitted', { calendarId })
         setIsLoading(true)
         setError(null)
 
         // In a real app, you might validate the calendar ID here
         // For now, we'll just redirect to the main page with the calendar ID
-        router.push(`/?gc=${encodeURIComponent(calendarId)}`)
+        const redirectUrl = `/?gc=${encodeURIComponent(calendarId)}`
+        clientDebug.log('calendar', 'Redirecting to', { redirectUrl })
+        router.push(redirectUrl)
     }
 
     const handleExampleSelect = (id: string) => {
+        clientDebug.log('calendar', 'Example calendar selected', {
+            id,
+            name: exampleCalendars.find((cal) => cal.id === id)?.name,
+        })
         setCalendarId(id)
     }
 

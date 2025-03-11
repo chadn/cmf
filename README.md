@@ -5,6 +5,8 @@
 A visualization tool that displays calendar events on both an interactive map and a filterable list, allowing users to spatially browse and filter events based on geographic location.
 A Next.js application that displays Google Calendar events on an interactive map with powerful filtering capabilities.
 
+STATUS: IN ACTIVE DEVELOPMENT, NOT WORKING YET
+
 ## 🌟 Features
 
 -   **Calendar Integration**: Connect to Google Calendar (with support for Microsoft Outlook and Apple Calendar planned)

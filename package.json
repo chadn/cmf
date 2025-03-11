@@ -14,6 +14,7 @@
         "@vercel/kv": "^0.2.4",
         "axios": "^1.6.2",
         "date-fns": "^2.30.0",
+        "mapbox-gl": "^3.10.0",
         "maplibre-gl": "^3.6.2",
         "next": "14.2.24",
         "react": "^18.2.0",

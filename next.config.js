@@ -7,6 +7,15 @@ const nextConfig = {
     // Configure environment variables that should be available on the client
     env: {
         MAPLIBRE_STYLE_URL: process.env.MAPLIBRE_STYLE_URL,
+        DEBUG_LOGIC: process.env.DEBUG_LOGIC,
+    },
+    // Add webpack configuration to alias mapbox-gl to maplibre-gl
+    webpack: (config) => {
+        config.resolve.alias = {
+            ...config.resolve.alias,
+            'mapbox-gl': 'maplibre-gl',
+        }
+        return config
     },
 }
 

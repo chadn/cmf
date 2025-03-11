@@ -65,3 +65,113 @@ Where did June 2024 date come from? You said training data has a cutoff date of 
 > Let me fix this error in the Implementation.md file:
 
 chad later googled the pricing and updated with March 2025 upstashpricing in the Implementation.md file)
+
+## Round 3 - Code
+
+This phase is long and complicated.
+
+Initially Cursor Claude 3.7 (referred to as Claude from now on) did a great job of writing all the code.
+I spent several hours and several iterations to get it to a working state.
+Common issues include Claude making guesses that it later corrected. Sometimes it would be totally wrong.
+Sometimes it would partially do what I asked and instead add code that is not needed but related to the ask.
+Therefore I had to include basic reminders during chat iterattions, as well provide feedback of whatever the current issue is
+
+```
+Remember to write concise code, only what is needed, follows best practices, easy to understand, easy to maintain.
+Do not refactor code unless it is to fix an issue, nor change documentation unless it is to fix an issue or add or remove functionality.
+```
+
+Examples of requests
+
+1. Add DEBUG_LOGIC to the code to help me debug.
+1. Ensure DEBUG_LOGIC works on both browser and server (did not work in browser for 2 iterations)
+1. Fix Error: Invalid hook call <paste error message>
+
+### Sample Debug Log
+
+```
+
+16:35 chad@mbp-2022 main cmf > npm run dev
+
+> calendar-map-filter@0.1.0 dev
+> next dev
+
+▲ Next.js 14.2.24
+
+-   Local: http://localhost:3000
+-   Environments: .env.local
+
+✓ Starting...
+✓ Ready in 1451ms
+○ Compiling /api/calendar ...
+✓ Compiled /api/calendar in 648ms (237 modules)
+[DEBUG][2025-03-11T23:58:50.959Z][SERVER] DEBUG_LOGIC enabled on server
+[DEBUG][2025-03-11T23:58:50.960Z][API] ✅ API keys validation: Both Google Calendar and Maps API keys are found
+[DEBUG][2025-03-11T23:58:50.966Z][CALENDAR] Fetching calendar with ID: geocachingspain@gmail.com
+[DEBUG][2025-03-11T23:58:50.966Z][CALENDAR] Attempting to fetch calendar with ID: geocachingspain@gmail.com
+[DEBUG][2025-03-11T23:58:50.966Z][API] Google Calendar API key is configured
+[DEBUG][2025-03-11T23:58:50.967Z][API] fetchCalendarEvents request {
+calendarId: 'geocachingspain@gmail.com',
+timeMin: '2025-02-11T00:00:00Z',
+timeMax: '2025-06-11T23:59:59Z',
+apiUrl: 'https://www.googleapis.com/calendar/v3/calendars/geocachingspain%40gmail.com/events'
+}
+[DEBUG][2025-03-11T23:58:51.533Z][API] fetchCalendarEvents response data {
+kind: 'calendar#events',
+etag: '"p32vsftv5hq08o0o"',
+summary: 'Eventos Geocaching en España',
+description: 'Aquí podrás consultar todos los eventos de geocaching que se realizan en España.\n' +
+'Disfrútalos.\n' +
+'GS.',
+updated: '2025-03-10T18:13:10.264Z',
+timeZone: 'Europe/Madrid',
+accessRole: 'reader',
+defaultReminders: [],
+items: [
+{
+kind: 'calendar#event',
+etag: '"3475828421274000"',
+id: '0ecm69thrd50h8r44qvuu91vqh',
+status: 'confirmed',
+htmlLink: 'https://www.google.com/calendar/event?eid=MGVjbTY5dGhyZDUwaDhyNDRxdnV1OTF2cWggZ2VvY2FjaGluZ3NwYWluQG0',
+created: '2025-01-26T17:56:50.000Z',
+updated: '2025-01-26T17:56:50.637Z',
+summary: 'CUENCA - Santa María del Campo Rus: Meet & Great castilla+tere',
+description: 'https://www.geocaching.com/geocache/GCB2MQK',
+location: '39.512533, -2.410233 (http://coord.info/GCB2MQK)',
+creator: [Object],
+organizer: [Object],
+start: [Object],
+end: [Object],
+transparency: 'transparent',
+iCalUID: '0ecm69thrd50h8r44qvuu91vqh@google.com',
+sequence: 0,
+eventType: 'default'
+},
+{
+kind: 'calendar#event',
+etag: '"3475993075120000"',
+id: '02o3q1br6koq85ggnupak9eokt',
+status: 'confirmed',
+htmlLink: 'https://www.google.com/calendar/event?eid=MDJvM3ExYnI2a29xODVnZ251cGFrOWVva3QgZ2VvY2FjaGluZ3NwYWluQG0',
+created: '2025-01-10T20:17:00.000Z',
+updated: '2025-01-27T16:48:57.560Z',
+summary: 'CANARIAS - Tenerife - Porís de Abona: 80. Meet & Greet @ Poris',
+description: 'https://www.geocaching.com/geocache/GCB23HR',
+location: '28.164483, -16.431833 (http://coord.info/GCB23HR)',
+creator: [Object],
+organizer: [Object],
+start: [Object],
+end: [Object],
+transparency: 'transparent',
+iCalUID: '02o3q1br6koq85ggnupak9eokt@google.com',
+sequence: 0,
+eventType: 'default'
+}
+...
+
+```
+
+```
+
+```

@@ -6,6 +6,9 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 import { MapViewport, MapBounds, MapMarker } from '@/types/map'
 import MapMarkerComponent from './MapMarker'
 import MapPopup from './MapPopup'
+import { debugLog } from '@/lib/utils/debug'
+// Import maplibre-gl as a type
+import type maplibregl from 'maplibre-gl'
 
 interface MapContainerProps {
     viewport: MapViewport
@@ -28,16 +31,52 @@ const MapContainer: React.FC<MapContainerProps> = ({
 }) => {
     const mapRef = useRef<any>(null)
     const [popupInfo, setPopupInfo] = useState<MapMarker | null>(null)
+    const [mapLoaded, setMapLoaded] = useState(false)
+
+    // Log when component mounts
+    useEffect(() => {
+        debugLog('map', 'MapContainer component mounted', {
+            initialViewport: viewport,
+            markerCount: markers.length,
+        })
+    }, [])
 
     // Update popup info when selected marker changes
     useEffect(() => {
         if (selectedMarkerId) {
             const marker = markers.find((m) => m.id === selectedMarkerId)
             setPopupInfo(marker || null)
+
+            if (marker) {
+                debugLog('map', `Selected marker: ${selectedMarkerId}`, {
+                    lat: marker.latitude,
+                    lng: marker.longitude,
+                    eventCount: marker.events.length,
+                })
+            }
         } else {
             setPopupInfo(null)
         }
     }, [selectedMarkerId, markers])
+
+    // Handle map load
+    const handleMapLoad = () => {
+        setMapLoaded(true)
+        debugLog('map', 'Map loaded successfully')
+
+        // Get initial bounds
+        if (mapRef.current) {
+            const bounds = mapRef.current.getMap().getBounds()
+            const initialBounds = {
+                north: bounds.getNorth(),
+                south: bounds.getSouth(),
+                east: bounds.getEast(),
+                west: bounds.getWest(),
+            }
+            debugLog('map', 'Initial map bounds', initialBounds)
+            onBoundsChange(initialBounds)
+        }
+    }
 
     // Handle viewport change
     const handleViewportChange = (newViewport: ViewState) => {
@@ -46,36 +85,52 @@ const MapContainer: React.FC<MapContainerProps> = ({
         // Get current bounds and notify parent
         if (mapRef.current) {
             const bounds = mapRef.current.getMap().getBounds()
-            onBoundsChange({
+            const newBounds = {
                 north: bounds.getNorth(),
                 south: bounds.getSouth(),
                 east: bounds.getEast(),
                 west: bounds.getWest(),
-            })
+            }
+            onBoundsChange(newBounds)
         }
     }
 
     // Handle marker click
     const handleMarkerClick = (marker: MapMarker) => {
+        debugLog('map', `Marker clicked: ${marker.id}`, {
+            lat: marker.latitude,
+            lng: marker.longitude,
+            eventCount: marker.events.length,
+        })
         onMarkerSelect(marker.id)
         setPopupInfo(marker)
     }
 
     // Handle popup close
     const handlePopupClose = () => {
+        debugLog('map', 'Popup closed')
         onMarkerSelect(null)
         setPopupInfo(null)
     }
 
     // Handle reset view button click
     const handleResetView = () => {
+        debugLog('map', 'Reset view requested')
         onResetView()
     }
+
+    // Log when markers change
+    useEffect(() => {
+        if (mapLoaded) {
+            debugLog('map', `Markers updated: ${markers.length} markers on map`)
+        }
+    }, [markers, mapLoaded])
 
     return (
         <div className="relative w-full h-full">
             <Map
                 ref={mapRef}
+                // @ts-ignore - This works at runtime but has type issues
                 mapLib={import('maplibre-gl')}
                 mapStyle={
                     process.env.MAPLIBRE_STYLE_URL ||
@@ -83,6 +138,7 @@ const MapContainer: React.FC<MapContainerProps> = ({
                 }
                 {...viewport}
                 onMove={(evt) => handleViewportChange(evt.viewState)}
+                onLoad={handleMapLoad}
                 style={{ width: '100%', height: '100%' }}
             >
                 {/* Navigation controls */}

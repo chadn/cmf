@@ -2,6 +2,7 @@ import axios from 'axios'
 import { GeocodeResponse } from '@/types/api'
 import { ResolvedLocation } from '@/types/events'
 import { getCachedLocation, cacheLocation } from '@/lib/cache'
+import { debugLog } from '@/lib/utils/debug'
 
 const GOOGLE_MAPS_GEOCODING_API =
     'https://maps.googleapis.com/maps/api/geocode/json'
@@ -30,6 +31,7 @@ export async function geocodeLocation(
 
         // If not in cache, call the API
         if (!process.env.GOOGLE_MAPS_API_KEY) {
+            debugLog('api', 'Google Maps API key is not configured')
             throw new Error('Google Maps API key is not configured')
         }
 
@@ -87,7 +89,7 @@ export async function batchGeocodeLocations(
     locations: string[]
 ): Promise<ResolvedLocation[]> {
     // Filter out duplicates to minimize API calls
-    const uniqueLocations = [...new Set(locations)]
+    const uniqueLocations = Array.from(new Set(locations))
 
     // Process in batches of 10 to avoid rate limits
     const batchSize = 10

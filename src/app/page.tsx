@@ -11,10 +11,28 @@ import CalendarSelector from '@/components/home/CalendarSelector'
 import { useEvents } from '@/lib/hooks/useEvents'
 import { useMap } from '@/lib/hooks/useMap'
 import { MapBounds } from '@/types/map'
+import { debugLog, clientDebug } from '@/lib/utils/debug'
 
 export default function Home() {
+    // Add a useEffect to ensure this runs only in the browser
+    useEffect(() => {
+        clientDebug.log('page', 'Home page component mounted')
+    }, [])
+
     const searchParams = useSearchParams()
     const calendarId = searchParams.get('gc') || ''
+
+    // Log the calendar ID from URL parameters
+    useEffect(() => {
+        if (calendarId) {
+            clientDebug.log('page', 'Calendar ID from URL parameter', {
+                param: 'gc',
+                value: calendarId,
+            })
+        } else {
+            clientDebug.log('page', 'No calendar ID found in URL parameters')
+        }
+    }, [calendarId])
 
     // State for filters
     const [searchQuery, setSearchQuery] = useState('')
@@ -24,6 +42,11 @@ export default function Home() {
     const [mapBounds, setMapBounds] = useState<MapBounds | null>(null)
     const [showUnknownLocationsOnly, setShowUnknownLocationsOnly] =
         useState(false)
+
+    // Log component mount and calendar ID
+    useEffect(() => {
+        debugLog('page', 'Home page component mounted', { calendarId })
+    }, [calendarId])
 
     // Get events with filters applied
     const {
@@ -43,6 +66,30 @@ export default function Home() {
         showUnknownLocationsOnly,
     })
 
+    // Log when events are loaded or filtered
+    useEffect(() => {
+        if (!isLoading && events.length > 0) {
+            debugLog('page', `Calendar events loaded: ${calendarName}`, {
+                totalCount,
+                filteredCount,
+                unknownLocationsCount,
+            })
+        }
+
+        if (error) {
+            debugLog('page', 'Error loading calendar events', { error })
+        }
+    }, [
+        events,
+        filteredEvents,
+        isLoading,
+        error,
+        totalCount,
+        filteredCount,
+        unknownLocationsCount,
+        calendarName,
+    ])
+
     // Map state
     const {
         viewport,
@@ -54,18 +101,32 @@ export default function Home() {
         isMapOfAllEvents,
     } = useMap({ events })
 
+    // Log when markers are created
+    useEffect(() => {
+        debugLog('page', `Map markers created: ${markers.length} markers`)
+    }, [markers])
+
     // Handle map bounds change
     const handleBoundsChange = (bounds: MapBounds) => {
+        debugLog('page', 'Map bounds changed', bounds)
         setMapBounds(bounds)
     }
 
     // Handle unknown locations filter toggle
     const handleUnknownLocationsToggle = () => {
-        setShowUnknownLocationsOnly(!showUnknownLocationsOnly)
+        const newValue = !showUnknownLocationsOnly
+        debugLog(
+            'page',
+            `Unknown locations filter toggled: ${
+                newValue ? 'showing only unknown' : 'showing all'
+            }`
+        )
+        setShowUnknownLocationsOnly(newValue)
     }
 
     // Reset all filters
     const handleResetFilters = () => {
+        debugLog('page', 'Resetting all filters')
         setSearchQuery('')
         setDateRange(undefined)
         setMapBounds(null)
@@ -73,8 +134,23 @@ export default function Home() {
         resetToAllEvents()
     }
 
+    // Log when search query changes
+    useEffect(() => {
+        if (searchQuery) {
+            debugLog('page', `Search query changed: "${searchQuery}"`)
+        }
+    }, [searchQuery])
+
+    // Log when date range changes
+    useEffect(() => {
+        if (dateRange) {
+            debugLog('page', 'Date range filter applied', dateRange)
+        }
+    }, [dateRange])
+
     // If no calendar ID is provided, show the calendar selector
     if (!calendarId) {
+        debugLog('page', 'No calendar ID provided, showing selector')
         return (
             <div className="min-h-screen flex flex-col">
                 <Header />
@@ -132,6 +208,12 @@ export default function Home() {
                                 )},${event.resolved_location.lng.toFixed(6)}`
                                 setSelectedMarkerId(markerId)
 
+                                debugLog('page', `Event selected: ${eventId}`, {
+                                    title: event.name,
+                                    location: event.location,
+                                    markerId,
+                                })
+
                                 // Update viewport to center on this event
                                 setViewport({
                                     ...viewport,
@@ -139,6 +221,15 @@ export default function Home() {
                                     longitude: event.resolved_location.lng,
                                     zoom: 14,
                                 })
+                            } else {
+                                debugLog(
+                                    'page',
+                                    `Event selected has no location: ${eventId}`,
+                                    {
+                                        title: event?.name,
+                                        location: event?.location,
+                                    }
+                                )
                             }
                         }}
                     />
