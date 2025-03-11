@@ -8,4 +8,3 @@ For more, see [Product Spec](docs/product.md)
 
 ## Tech Stack
 
-React and Next.js
