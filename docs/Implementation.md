@@ -146,31 +146,95 @@ The application will follow a hybrid architecture with:
   /app                  # Next.js App Router structure
     /api                # API routes
       /calendar         # Calendar API endpoints
-    /page.tsx           # Main application page
+        /route.ts       # API route handler
+    /(routes)           # Application routes
+      /page.tsx         # Main application page
+      /layout.tsx       # Layout for main page
+      /loading.tsx      # Loading state component
+      /error.tsx        # Error handling component
     /layout.tsx         # Root layout
-  /components           # React components
+    /globals.css        # Global styles
+  /components           # React components (organized by domain)
     /map                # Map-related components
+      /MapContainer.tsx # Main map component
+      /MapMarker.tsx    # Event marker component
+      /MapControls.tsx  # Map control components
     /events             # Event list and filtering components
+      /EventList.tsx    # List of events
+      /EventItem.tsx    # Individual event component
+      /EventFilters.tsx # Filtering controls
     /ui                 # Reusable UI components
+      /Button.tsx       # Button component
+      /Card.tsx         # Card component
+      /Modal.tsx        # Modal component
   /lib                  # Shared utilities
     /api                # API client functions
-    /geocoding          # Geocoding utilities
-    /calendar           # Calendar data processing
-    /cache              # Cache abstraction (Vercel KV for prod, filesystem for dev)
+      /calendar.ts      # Calendar API client
+      /geocoding.ts     # Geocoding API client
+    /hooks              # Custom React hooks
+      /useEvents.ts     # Hook for event data
+      /useMap.ts        # Hook for map interactions
+    /utils              # Utility functions
+      /date.ts          # Date formatting utilities
+      /location.ts      # Location processing utilities
+    /cache              # Cache abstraction
+      /index.ts         # Cache interface
+      /upstash.ts       # Upstash implementation
+      /filesystem.ts    # Filesystem implementation for dev
   /types                # TypeScript type definitions
-  /styles               # Global styles and CSS modules
+    /events.ts          # Event-related types
+    /map.ts             # Map-related types
+    /api.ts             # API-related types
+  /styles               # Component styles
+    /components         # Component-specific styles
+    /variables.css      # CSS variables for theming
 /public                 # Static assets
+  /images               # Image assets
+  /icons                # Icon assets
+/next.config.js         # Next.js configuration
+/tsconfig.json          # TypeScript configuration
+/package.json           # Project dependencies
+/README.md              # Project documentation
 ```
 
-### Data Flow
+### Next.js App Router Best Practices
 
-1. User requests the application with a calendar ID
-2. Server fetches calendar data from Google Calendar API
+1. **Route Organization**:
+
+    - Use the App Router's file-based routing system
+    - Implement route groups with parentheses notation `(groupName)` for logical organization without affecting URL structure
+    - Create shared layouts for related routes
+    - Implement loading and error states at appropriate route levels
+
+2. **Server vs. Client Components**:
+
+    - Default to Server Components for improved performance
+    - Use the "use client" directive only when necessary (interactive components like events results list, map, hooks usage)
+    - Keep data fetching in Server Components when possible
+    - Implement proper component boundaries between server and client components
+
+3. **Data Fetching**:
+
+    - Use React Server Components for initial data fetching
+    - Implement SWR for client-side data fetching and caching
+    - Use route handlers (app/api/\*) for backend API endpoints
+    - Implement proper caching strategies using Next.js cache mechanisms
+
+4. **Component Organization**:
+    - Organize components by domain/feature rather than by type
+    - Create clear boundaries between UI components and feature components
+    - Implement proper prop typing with TypeScript
+    - Use composition over inheritance for component reuse
+
+### Data Flow (Refined)
+
+1. User requests the application with a calendar ID as a URL parameter
+2. Next.js Server Component fetches calendar data from Google Calendar API
 3. Server geocodes event locations (using cached results from Upstash for Redis when available)
-4. Server renders initial HTML with preloaded data
+4. Server renders initial HTML with preloaded data, not waiting for geocoding to complete.
 5. Client hydrates the application and initializes the map
 6. User interactions trigger client-side filtering and map updates
-7. Additional data is fetched as needed via API routes
+7. Additional data is fetched as needed via API routes with SWR for caching
 
 ## Tech Stack Choices and reasoning
 
@@ -194,18 +258,26 @@ The application will follow a hybrid architecture with:
 4. **MapLibre GL JS**:
     - **Reasoning**: Open-source map rendering library with good TypeScript support.
     - **Benefits**: No usage restrictions, customizable styling, and good performance.
-    - **Integration**: Will use `react-map-gl` which provides React bindings for MapLibre.
+    - **Integration**: Will use (react-map-gl)[https://github.com/visgl/react-map-gl] which provides React bindings for MapLibre.
 
 ### State Management
 
 1. **React Context + Hooks**:
 
     - **Reasoning**: Sufficient for this application's state management needs without Redux complexity.
-    - **Implementation**: Create context providers for map state, event data, and filter state.
+    - **Implementation**:
+        - Create context providers for global state (events, filters)
+        - Use React Query or SWR for server state management
+        - Leverage local component state for UI-specific state
+        - Implement custom hooks to encapsulate related state logic
 
 2. **SWR for Data Fetching**:
     - **Reasoning**: Provides caching, revalidation, and optimistic updates for API data.
     - **Benefits**: Reduces unnecessary refetching and improves perceived performance.
+    - **Implementation**:
+        - Create custom hooks that wrap SWR for specific data fetching needs
+        - Implement proper cache key strategies
+        - Use the revalidation features for keeping data fresh
 
 ### Styling
 
@@ -337,3 +409,33 @@ The application will follow a hybrid architecture with:
 This recommendation provides the best balance of cost, performance, and developer experience for the CMF application.
 
 > **Note**: The pricing information is based on March 2025 data provided. Verify current pricing and limitations before making deployment decisions.
+
+### Implementation Approach
+
+1. **Incremental Development**:
+
+    - Start with core functionality (map display, event fetching)
+    - Implement geocoding without caching initially
+    - Add filtering and UI components
+    - Enhance with additional features
+    - Implement geocoding with caching after initial development
+
+2. **Testing Strategy**:
+
+    - Unit tests for utility functions and hooks
+    - Component tests for UI components
+    - Integration tests for key user flows
+    - End-to-end tests for critical paths
+
+3. **Performance Optimization**:
+
+    - Implement proper code splitting
+    - Optimize image loading with Next.js Image component
+    - Use React.memo and useMemo/useCallback where appropriate
+    - Implement virtualization for long event lists
+
+4. **Deployment Pipeline**:
+    - Set up CI/CD with GitHub Actions
+    - Implement preview deployments for PRs
+    - Configure proper environment variables for different environments
+    - Set up monitoring for serverless function performance
