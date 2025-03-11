@@ -51,3 +51,17 @@ State Management: Do you have a preference for state management (Redux, Context 
 Local Storage: Should user preferences (like filter settings) be persisted in local storage?
 Event Data Volume: What's the expected volume of events that the application needs to handle efficiently?
 Once I have answers to these questions, I can proceed with creating the project structure and implementing the required functionality according to your preferences.
+
+### Observations
+
+Claude 3.7 is a great tool for creating a technical implementation plan, but is not perfect.
+
+An example of a mistake:
+
+Where did June 2024 date come from? You said training data has a cutoff date of April 2023
+
+> You're absolutely right, and I apologize for the confusion. I made a significant error in my response.
+> My training data does indeed have a cutoff date of April 2023, and I should not have used "June 2024" as a reference date for the pricing information, as this implies I have current data from the future when I don't. This was misleading and incorrect.
+> Let me fix this error in the Implementation.md file:
+
+chad later googled the pricing and updated with March 2025 upstashpricing in the Implementation.md file)

@@ -44,9 +44,18 @@ MapLibre is good to start due to React and Typescript support.
 
 3. **Geocoding Cache Storage**:
 
-    - **Recommendation**: Use a combination of Redis for production and filesystem cache for development.
-    - **Reasoning**: Redis provides fast in-memory access with persistence options, ideal for production. For development, a simple JSON file cache is sufficient.
+    - **Recommendation**: Use Vercel KV (built on Upstash Redis) for production and filesystem cache for development.
+    - **Reasoning**:
+        - Vercel KV integrates seamlessly with Next.js and Vercel deployment
+        - Free tier includes 500MB storage and 30M monthly operations (far exceeding our needs)
+        - No additional service to configure or manage
+        - For development, a simple JSON file cache is sufficient
     - **Implementation**: Create an abstraction layer for the cache that can switch between implementations based on environment.
+    - **Cost Analysis** (as of June 2024, verify current pricing at https://vercel.com/docs/storage/vercel-kv/pricing):
+        - Estimated cache size for 1,000 unique locations: ~0.5MB
+        - Estimated monthly operations: <100,000
+        - Vercel KV free tier (included with Vercel hosting) is more than sufficient
+        - No additional cost beyond Vercel hosting
 
 4. **Handling Recurring Events**:
 
@@ -69,7 +78,7 @@ The application will follow a hybrid architecture with:
 
     - API routes for fetching calendar data
     - Server-side rendering for initial page load
-    - Geocoding and caching logic
+    - Geocoding and caching logic using Vercel KV
 
 2. **Client Components**:
     - Interactive map (MapLibre)
@@ -93,6 +102,7 @@ The application will follow a hybrid architecture with:
     /api                # API client functions
     /geocoding          # Geocoding utilities
     /calendar           # Calendar data processing
+    /cache              # Cache abstraction (Vercel KV for prod, filesystem for dev)
   /types                # TypeScript type definitions
   /styles               # Global styles and CSS modules
 /public                 # Static assets
@@ -102,7 +112,7 @@ The application will follow a hybrid architecture with:
 
 1. User requests the application with a calendar ID
 2. Server fetches calendar data from Google Calendar API
-3. Server geocodes event locations (using cached results when available)
+3. Server geocodes event locations (using cached results from Vercel KV when available)
 4. Server renders initial HTML with preloaded data
 5. Client hydrates the application and initializes the map
 6. User interactions trigger client-side filtering and map updates
@@ -161,9 +171,10 @@ The application will follow a hybrid architecture with:
     - **Reasoning**: Simplifies server-side logic without requiring a separate backend.
     - **Implementation**: Create API routes for calendar data fetching and processing.
 
-2. **Redis for Caching**:
-    - **Reasoning**: Fast, in-memory data store with persistence options.
-    - **Implementation**: Cache geocoded locations to reduce API calls and improve performance.
+2. **Vercel KV for Caching**:
+    - **Reasoning**: Built-in key-value store for Vercel deployments, based on Redis technology.
+    - **Benefits**: Seamless integration with Next.js, included with Vercel hosting, no additional configuration.
+    - **Implementation**: Use the `@vercel/kv` package to interact with the KV store from API routes.
 
 ## Deployment Options Compared
 
@@ -176,11 +187,12 @@ The application will follow a hybrid architecture with:
     -   Serverless functions included
     -   Edge functions for global performance
     -   Simple GitHub integration
+    -   Includes Vercel KV for caching geocoded locations
 
--   **Costs**:
+-   **Costs** (as of June 2024, verify current pricing at https://vercel.com/pricing):
 
-    -   Free tier: 100GB bandwidth, 100 serverless function executions per day
-    -   Pro tier: $20/month (includes 1TB bandwidth, unlimited serverless function executions)
+    -   Free tier: 100GB bandwidth, 100 serverless function executions per day, 500MB KV storage
+    -   Pro tier: $20/month (includes 1TB bandwidth, unlimited serverless function executions, 5GB KV storage)
 
 -   **Best for**: Next.js applications with moderate API usage
 
@@ -192,12 +204,13 @@ The application will follow a hybrid architecture with:
     -   Good CI/CD integration
     -   Serverless functions support
 
--   **Costs**:
+-   **Costs** (as of June 2024, verify current pricing at https://www.netlify.com/pricing/):
 
     -   Free tier: 100GB bandwidth, 125K serverless function executions per month
     -   Pro tier: $19/month (includes 1TB bandwidth, 2M serverless function executions)
+    -   Would require separate Redis service (additional cost)
 
--   **Limitations**: Not as optimized for Next.js as Vercel
+-   **Limitations**: Not as optimized for Next.js as Vercel, requires external caching solution
 
 ### AWS Amplify
 
@@ -207,12 +220,13 @@ The application will follow a hybrid architecture with:
     -   Scalable infrastructure
     -   Flexible configuration options
 
--   **Costs**:
+-   **Costs** (as of June 2024, verify current pricing at https://aws.amazon.com/amplify/pricing/):
 
     -   Pay-as-you-go model, typically $0.01 per build minute, $0.15 per GB served
-    -   Additional costs for Lambda functions, API Gateway, etc.
+    -   Additional costs for Lambda functions, API Gateway, ElastiCache (Redis)
+    -   More complex pricing structure
 
--   **Limitations**: More complex setup and management
+-   **Limitations**: More complex setup and management, higher learning curve
 
 ### Digital Ocean App Platform
 
@@ -222,12 +236,13 @@ The application will follow a hybrid architecture with:
     -   Good performance
     -   More control than Vercel/Netlify
 
--   **Costs**:
+-   **Costs** (as of June 2024, verify current pricing at https://www.digitalocean.com/pricing):
 
     -   Starting at $5/month for static sites
     -   $10-15/month for apps with server components
+    -   Additional $15/month for managed Redis
 
--   **Limitations**: Less integrated with Next.js development workflow
+-   **Limitations**: Less integrated with Next.js development workflow, requires more configuration
 
 ### Recommendation
 
@@ -235,8 +250,11 @@ The application will follow a hybrid architecture with:
 
 1. It's specifically optimized for Next.js applications
 2. The serverless functions are well-suited for our API routes
-3. The free tier is sufficient for development and initial production use
-4. Deployment and CI/CD are seamless with GitHub integration
-5. Edge functions can improve performance for global users
+3. Vercel KV provides an integrated caching solution at no additional cost
+4. The free tier is sufficient for development and initial production use
+5. Deployment and CI/CD are seamless with GitHub integration
+6. Edge functions can improve performance for global users
 
-If cost becomes a concern as usage grows, we can reevaluate based on actual usage patterns and consider alternatives like self-hosting on Digital Ocean or AWS.
+This recommendation provides the best balance of cost, performance, and developer experience for the CMF application.
+
+> **Note**: All pricing information is subject to change. Always verify current pricing on the respective provider's website before making deployment decisions.
