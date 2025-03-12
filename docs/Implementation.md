@@ -448,3 +448,7 @@ This recommendation provides the best balance of cost, performance, and develope
     - Implement preview deployments for PRs
     - Configure proper environment variables for different environments
     - Set up monitoring for serverless function performance
+
+## Bugs
+
+1. Temporarily making geocoding return same address FIXED_LOCATION for all locations while identifying other issues

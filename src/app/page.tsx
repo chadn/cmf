@@ -14,25 +14,8 @@ import { MapBounds } from '@/types/map'
 import { debugLog, clientDebug } from '@/lib/utils/debug'
 
 export default function Home() {
-    // Add a useEffect to ensure this runs only in the browser
-    useEffect(() => {
-        clientDebug.log('page', 'Home page component mounted')
-    }, [])
-
     const searchParams = useSearchParams()
     const calendarId = searchParams.get('gc') || ''
-
-    // Log the calendar ID from URL parameters
-    useEffect(() => {
-        if (calendarId) {
-            clientDebug.log('page', 'Calendar ID from URL parameter', {
-                param: 'gc',
-                value: calendarId,
-            })
-        } else {
-            clientDebug.log('page', 'No calendar ID found in URL parameters')
-        }
-    }, [calendarId])
 
     // State for filters
     const [searchQuery, setSearchQuery] = useState('')
@@ -43,10 +26,19 @@ export default function Home() {
     const [showUnknownLocationsOnly, setShowUnknownLocationsOnly] =
         useState(false)
 
-    // Log component mount and calendar ID
+    // Log component mount and calendar ID - only once when component mounts
     useEffect(() => {
-        debugLog('page', 'Home page component mounted', { calendarId })
-    }, [calendarId])
+        clientDebug.log('page', 'Home page component mounted')
+
+        if (calendarId) {
+            clientDebug.log('page', 'Calendar ID from URL parameter', {
+                param: 'gc',
+                value: calendarId,
+            })
+        } else {
+            clientDebug.log('page', 'No calendar ID found in URL parameters')
+        }
+    }, []) // Empty dependency array ensures this runs only once
 
     // Get events with filters applied
     const {
@@ -66,30 +58,6 @@ export default function Home() {
         showUnknownLocationsOnly,
     })
 
-    // Log when events are loaded or filtered
-    useEffect(() => {
-        if (!isLoading && events.length > 0) {
-            debugLog('page', `Calendar events loaded: ${calendarName}`, {
-                totalCount,
-                filteredCount,
-                unknownLocationsCount,
-            })
-        }
-
-        if (error) {
-            debugLog('page', 'Error loading calendar events', { error })
-        }
-    }, [
-        events,
-        filteredEvents,
-        isLoading,
-        error,
-        totalCount,
-        filteredCount,
-        unknownLocationsCount,
-        calendarName,
-    ])
-
     // Map state
     const {
         viewport,
@@ -100,11 +68,6 @@ export default function Home() {
         resetToAllEvents,
         isMapOfAllEvents,
     } = useMap({ events })
-
-    // Log when markers are created
-    useEffect(() => {
-        debugLog('page', `Map markers created: ${markers.length} markers`)
-    }, [markers])
 
     // Handle map bounds change
     const handleBoundsChange = (bounds: MapBounds) => {
@@ -134,23 +97,8 @@ export default function Home() {
         resetToAllEvents()
     }
 
-    // Log when search query changes
-    useEffect(() => {
-        if (searchQuery) {
-            debugLog('page', `Search query changed: "${searchQuery}"`)
-        }
-    }, [searchQuery])
-
-    // Log when date range changes
-    useEffect(() => {
-        if (dateRange) {
-            debugLog('page', 'Date range filter applied', dateRange)
-        }
-    }, [dateRange])
-
     // If no calendar ID is provided, show the calendar selector
     if (!calendarId) {
-        debugLog('page', 'No calendar ID provided, showing selector')
         return (
             <div className="min-h-screen flex flex-col">
                 <Header />

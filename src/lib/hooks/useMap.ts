@@ -140,14 +140,14 @@ export function useMap({
 
         // Set viewport to show all events
         setViewport({
-            ...viewport,
+            ...DEFAULT_VIEWPORT,
             latitude: center.latitude,
             longitude: center.longitude,
             zoom: 3, // A reasonable zoom level to show multiple markers
         })
 
         setIsMapOfAllEvents(true)
-    }, [events, viewport, markers.length])
+    }, [events, markers.length])
 
     // Update bounds when viewport changes
     const handleViewportChange = useCallback((newViewport: MapViewport) => {
@@ -181,15 +181,25 @@ export function useMap({
         }
     }, [selectedMarkerId, markers])
 
-    // Initialize map to show all events
+    // Initialize map to show all events - only run once when markers are first loaded
     useEffect(() => {
-        if (markers.length > 0 && !initialViewport.latitude) {
+        // Only run this effect if we have markers and no initial viewport was provided
+        if (
+            markers.length > 0 &&
+            !initialViewport.latitude &&
+            !isMapOfAllEvents
+        ) {
             debugLog('map', 'Initializing map to show all events', {
                 markerCount: markers.length,
             })
             resetToAllEvents()
         }
-    }, [markers.length, initialViewport, resetToAllEvents])
+    }, [
+        markers.length,
+        initialViewport.latitude,
+        resetToAllEvents,
+        isMapOfAllEvents,
+    ])
 
     return {
         viewport,

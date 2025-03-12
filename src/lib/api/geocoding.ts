@@ -7,8 +7,17 @@ import { debugLog } from '@/lib/utils/debug'
 const GOOGLE_MAPS_GEOCODING_API =
     'https://maps.googleapis.com/maps/api/geocode/json'
 
+// Fixed location for temporary use
+const FIXED_LOCATION = {
+    formatted_address: 'Berkeley CA 94705',
+    lat: 37.8608, // Approximate coordinates for Berkeley
+    lng: -122.2451,
+    status: 'resolved' as const,
+}
+
 /**
  * Geocodes a location string using Google Maps Geocoding API
+ * TEMPORARILY MODIFIED: Always returns a fixed address
  * @param locationString - The location text to geocode
  * @returns Promise with geocoded location data
  */
@@ -22,6 +31,21 @@ export async function geocodeLocation(
         }
     }
 
+    debugLog(
+        'geocoding',
+        `TEMPORARY: Using fixed address for "${locationString}"`
+    )
+
+    // Return the fixed location for all requests
+    return {
+        original_location: locationString,
+        formatted_address: FIXED_LOCATION.formatted_address,
+        lat: FIXED_LOCATION.lat,
+        lng: FIXED_LOCATION.lng,
+        status: FIXED_LOCATION.status,
+    }
+
+    /* Original implementation commented out
     try {
         // Check cache first
         const cachedLocation = await getCachedLocation(locationString)
@@ -78,6 +102,7 @@ export async function geocodeLocation(
             status: 'unresolved',
         }
     }
+    */
 }
 
 /**
@@ -91,6 +116,21 @@ export async function batchGeocodeLocations(
     // Filter out duplicates to minimize API calls
     const uniqueLocations = Array.from(new Set(locations))
 
+    debugLog(
+        'geocoding',
+        `TEMPORARY: Using fixed address for ${uniqueLocations.length} locations`
+    )
+
+    // Return the fixed location for all locations
+    return uniqueLocations.map((location) => ({
+        original_location: location,
+        formatted_address: FIXED_LOCATION.formatted_address,
+        lat: FIXED_LOCATION.lat,
+        lng: FIXED_LOCATION.lng,
+        status: FIXED_LOCATION.status,
+    }))
+
+    /* Original implementation commented out
     // Process in batches of 10 to avoid rate limits
     const batchSize = 10
     const results: ResolvedLocation[] = []
@@ -110,4 +150,5 @@ export async function batchGeocodeLocations(
     }
 
     return results
+    */
 }

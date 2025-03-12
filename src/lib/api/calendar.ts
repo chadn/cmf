@@ -53,8 +53,11 @@ export async function fetchCalendarEvents(
     try {
         const response = await axios.get(apiUrl, { params })
 
-        if (response.data) {
-            debugLog('api', `fetchCalendarEvents response data`, response.data)
+        if (response.data && response.data.items) {
+            debugLog(
+                'api',
+                `fetchCalendarEvents response ${response.data.items.length} items`
+            )
         } else {
             debugLog('api', 'fetchCalendarEvents unexpected', response)
         }
