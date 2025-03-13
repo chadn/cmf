@@ -143,67 +143,68 @@ The application will follow a hybrid architecture with:
 
 ```
 /src
-  /app                  # Next.js App Router structure
-    /api                # API routes
-      /calendar         # Calendar API endpoints
-        /route.ts       # API route handler
-    /home               # Home page route
-      /page.tsx         # Home page with calendar selector
-    /privacy            # Privacy policy page
-      /page.tsx         # Privacy policy content
-    /terms              # Terms of service page
-      /page.tsx         # Terms of service content
-    /page.tsx           # Main application page
-    /layout.tsx         # Root layout
-    /globals.css        # Global styles
-  /components           # React components (organized by domain)
-    /map                # Map-related components
-      /MapContainer.tsx # Main map component
-      /MapMarker.tsx    # Event marker component
-      /MapPopup.tsx     # Popup for map markers
-    /events             # Event list and filtering components
-      /EventList.tsx    # List of events
-      /EventDetails.tsx # Detailed view of an event
-      /EventFilters.tsx # Filtering controls
-    /layout             # Layout components
-      /Header.tsx       # Application header
-      /Footer.tsx       # Application footer
-    /home               # Home page components
-      /CalendarSelector.tsx # Calendar selection component
-    /common             # Reusable UI components
-      /LoadingSpinner.tsx # Loading indicator
-      /ErrorMessage.tsx # Error display component
-  /lib                  # Shared utilities
-    /api                # API client functions
-      /calendar.ts      # Calendar API client
-      /geocoding.ts     # Geocoding API client
-    /hooks              # Custom React hooks
-      /useEvents.ts     # Hook for event data
-      /useMap.ts        # Hook for map interactions
-    /utils              # Utility functions
-      /date.ts          # Date formatting utilities
-      /location.ts      # Location processing utilities
-    /cache              # Cache abstraction
-      /index.ts         # Cache interface
-      /upstash.ts       # Upstash implementation
-      /filesystem.ts    # Filesystem implementation for dev
-  /types                # TypeScript type definitions
-    /events.ts          # Event-related types
-    /map.ts             # Map-related types
-    /api.ts             # API-related types
-/public                 # Static assets
-  /images               # Image assets
-  /icons                # Icon assets
-/next.config.js         # Next.js configuration
-/tsconfig.json          # TypeScript configuration
-/package.json           # Project dependencies
-/postcss.config.js      # PostCSS configuration
-/tailwind.config.js     # Tailwind CSS configuration
-/.env.example           # Example environment variables
-/README.md              # Project documentation
-/docs                   # Documentation
-  /product.md           # Product specification
-  /Implementation.md    # Implementation details
+  /app                    # Next.js App Router structure
+    /api                  # API routes
+      /calendar           # Calendar API endpoints
+        /route.ts         # API route handler for calendar data fetching and geocoding
+    /home                 # Home page route
+      /page.tsx           # Home page with calendar selector UI
+    /privacy              # Privacy policy page
+      /page.tsx           # Privacy policy content
+    /terms                # Terms of service page
+      /page.tsx           # Terms of service content
+    /page.tsx             # Main application page with map and event filtering
+    /layout.tsx           # Root layout with global providers
+    /globals.css          # Global styles and CSS variables
+  /components             # React components (organized by domain)
+    /map                  # Map-related components
+      /MapContainer.tsx   # Main map component with MapLibre integration
+      /MapMarker.tsx      # Event marker component with clustering support
+      /MapPopup.tsx       # Popup for map markers with event details
+    /events               # Event list and filtering components
+      /EventList.tsx      # List of events with virtualization for performance
+      /EventDetails.tsx   # Detailed view of an event with formatting
+      /EventFilters.tsx   # Filtering controls for date, search, and location
+    /layout               # Layout components
+      /Header.tsx         # Application header with navigation
+      /Footer.tsx         # Application footer with links
+    /home                 # Home page components
+      /CalendarSelector.tsx  # Calendar selection component with examples
+    /common               # Reusable UI components
+      /LoadingSpinner.tsx  # Loading indicator with customizable size
+      /ErrorMessage.tsx   # Error display component with retry option
+  /lib                    # Shared utilities and business logic
+    /api                  # API client functions
+      /calendar.ts        # Calendar API client for Google Calendar integration
+      /geocoding.ts       # Geocoding API client with caching support
+    /hooks                # Custom React hooks
+      /useEvents.ts       # Hook for event data fetching and filtering
+      /useMap.ts          # Hook for map interactions and state management
+    /utils                # Utility functions
+      /date.ts            # Date formatting and calculation utilities
+      /location.ts        # Location processing and filtering utilities
+      /debug.ts           # Debugging utilities with rate limiting
+    /cache                # Cache abstraction layer
+      /index.ts           # Cache interface and provider selection
+      /upstash.ts         # Upstash Redis implementation for production
+      /filesystem.ts      # Filesystem implementation for development
+  /types                  # TypeScript type definitions
+    /events.ts            # Event-related types and interfaces
+    /map.ts               # Map-related types for viewport and markers
+    /api.ts               # API request and response types
+/public                   # Static assets
+  /images                 # Image assets
+  /icons                  # Icon assets
+/next.config.js           # Next.js configuration with environment variables
+/tsconfig.json            # TypeScript configuration
+/package.json             # Project dependencies and scripts
+/postcss.config.js        # PostCSS configuration for processing CSS
+/tailwind.config.js        # Tailwind CSS configuration with custom theme
+/.env.example              # Example environment variables with documentation
+/README.md                # Project documentation and setup instructions
+/docs                     # Documentation
+  /product.md             # Product specification with requirements
+  /Implementation.md      # Implementation details and architecture decisions
 ```
 
 ### Next.js App Router Best Practices
