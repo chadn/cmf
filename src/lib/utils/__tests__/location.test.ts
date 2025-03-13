@@ -2,6 +2,7 @@ import {
     truncateLocation,
     isLocationWithinBounds,
     calculateCenter,
+    findLargestCity,
 } from '../location'
 import { MapBounds } from '@/types/map'
 import { ResolvedLocation } from '@/types/events'
@@ -127,6 +128,69 @@ describe('Location Utilities', () => {
             const center = calculateCenter(locations)
             expect(center.latitude).toBe(10)
             expect(center.longitude).toBe(20)
+        })
+    })
+
+    describe('findLargestCity', () => {
+        it('returns the first resolved location when multiple are available', () => {
+            const locations: ResolvedLocation[] = [
+                {
+                    original_location: 'New York',
+                    formatted_address: 'New York, NY, USA',
+                    lat: 40.7128,
+                    lng: -74.006,
+                    status: 'resolved',
+                },
+                {
+                    original_location: 'Los Angeles',
+                    formatted_address: 'Los Angeles, CA, USA',
+                    lat: 34.0522,
+                    lng: -118.2437,
+                    status: 'resolved',
+                },
+            ]
+            const result = findLargestCity(locations)
+            expect(result).toEqual(locations[0])
+        })
+
+        it('returns null for empty locations array', () => {
+            const result = findLargestCity([])
+            expect(result).toBeNull()
+        })
+
+        it('returns null when no resolved locations are available', () => {
+            const locations: ResolvedLocation[] = [
+                {
+                    original_location: 'Unknown Place',
+                    status: 'unresolved',
+                },
+                {
+                    original_location: 'Another Unknown',
+                    status: 'unresolved',
+                },
+            ]
+            const result = findLargestCity(locations)
+            expect(result).toBeNull()
+        })
+
+        it('filters out locations without coordinates', () => {
+            const locations: ResolvedLocation[] = [
+                {
+                    original_location: 'Incomplete Location',
+                    formatted_address: 'Incomplete Location',
+                    status: 'resolved',
+                    // Missing lat/lng
+                },
+                {
+                    original_location: 'Complete Location',
+                    formatted_address: 'Complete Location',
+                    lat: 40.7128,
+                    lng: -74.006,
+                    status: 'resolved',
+                },
+            ]
+            const result = findLargestCity(locations)
+            expect(result).toEqual(locations[1])
         })
     })
 })

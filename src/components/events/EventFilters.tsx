@@ -114,13 +114,14 @@ const EventFilters: React.FC<EventFiltersProps> = ({
                     placeholder="Search by name, location, or description"
                     value={searchQuery}
                     onChange={handleSearchChange}
+                    data-testid="event-search-input"
                 />
             </div>
 
             {/* Date filter */}
             <div className="form-control">
                 <label className="form-label">Date range</label>
-                <div className="relative">
+                <div className="relative" data-testid="date-range-dropdown">
                     <button
                         type="button"
                         className="w-full px-4 py-2 text-left border rounded-md flex justify-between items-center"
@@ -202,6 +203,7 @@ const EventFilters: React.FC<EventFiltersProps> = ({
                     type="button"
                     className="text-sm text-primary hover:underline"
                     onClick={onResetFilters}
+                    data-testid="reset-filters-button"
                 >
                     Reset all filters
                 </button>

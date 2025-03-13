@@ -1,15 +1,16 @@
-# Tests
+# Test Coverage
 
-This file makes it easy to see test coverage.
-Compare tests below to [Directory Structure in Implementation.md](Implementation.md#directory-structure)
+This document makes it easy to see test coverage and compare against the [Directory Structure in Implementation.md](Implementation.md#directory-structure)
 
 ```
 npm test
+> calendar-map-filter@0.1.0 test
+> jest
 ...
------------------------|---------|----------|---------|---------|-------------------
+-----------------------|---------|----------|---------|---------|----------------------------
 File                   | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
------------------------|---------|----------|---------|---------|-------------------
-All files              |   32.11 |    43.91 |   32.23 |    32.2 |
+-----------------------|---------|----------|---------|---------|----------------------------
+All files              |    38.7 |     47.6 |   41.32 |   38.82 |
  app                   |       0 |        0 |       0 |       0 |
   layout.tsx           |       0 |      100 |       0 |       0 | 2-12
   page.tsx             |       0 |        0 |       0 |       0 | 3-173
@@ -24,9 +25,9 @@ All files              |   32.11 |    43.91 |   32.23 |    32.2 |
  components/common     |     100 |      100 |     100 |     100 |
   ErrorMessage.tsx     |     100 |      100 |     100 |     100 |
   LoadingSpinner.tsx   |     100 |      100 |     100 |     100 |
- components/events     |   23.68 |    52.38 |   33.33 |   22.22 |
+ components/events     |      75 |    80.95 |   83.33 |   73.61 |
   EventDetails.tsx     |     100 |      100 |     100 |     100 |
-  EventFilters.tsx     |       0 |        0 |       0 |       0 | 3-213
+  EventFilters.tsx     |   67.24 |       60 |      75 |   66.07 | 40-52,59-71,83,148-156,172
   EventList.tsx        |     100 |      100 |     100 |     100 |
  components/home       |     100 |      100 |     100 |     100 |
   CalendarSelector.tsx |     100 |      100 |     100 |     100 |
@@ -46,96 +47,129 @@ All files              |   32.11 |    43.91 |   32.23 |    32.2 |
  lib/hooks             |   52.84 |    68.33 |   42.85 |   52.89 |
   useEvents.ts         |   98.48 |    95.34 |     100 |   98.46 | 65
   useMap.ts            |       0 |        0 |       0 |       0 | 3-204
- lib/utils             |   80.86 |    80.55 |    87.5 |    82.4 |
+ lib/utils             |   86.08 |    86.11 |     100 |   87.96 |
   date.ts              |   80.64 |      100 |     100 |   80.64 | 16-17,58-59,76-77
-  debug.ts             |   82.75 |    78.37 |     100 |   86.79 | 25,45,107,125-128
-  location.ts          |   76.92 |       75 |      75 |      75 | 52-66
------------------------|---------|----------|---------|---------|-------------------
+  debug.ts             |   82.75 |    78.37 |     100 |   86.79 | 25,42-45,107,128
+  location.ts          |     100 |    91.66 |     100 |     100 | 90-94
+-----------------------|---------|----------|---------|---------|----------------------------
 
-Test Suites: 9 passed, 9 total
-Tests:       59 passed, 59 total
+Test Suites: 10 passed, 10 total
+Tests:       74 passed, 74 total
 Snapshots:   0 total
-Time:        2.656 s
+Time:        1.927 s, estimated 2 s
+Ran all test suites.
 ```
 
-## Test Coverage Summary
+## Current Coverage (as of latest test run)
 
-### Completed Test Coverage
+| Category  | % Statements | % Branches | % Functions | % Lines |
+| --------- | ------------ | ---------- | ----------- | ------- |
+| All files | 38.7         | 47.6       | 41.32       | 38.82   |
 
-1. **Common Components (100% coverage)**
+## Completed Test Coverage
 
-    - `LoadingSpinner`: Tests for different sizes, colors, and custom class names
-    - `ErrorMessage`: Tests for rendering error messages, custom class names, retry button functionality, and conditional rendering
+### Components
 
-2. **Event Components (partial coverage)**
+-   **Common Components**:
+    -   ✅ LoadingSpinner (100% coverage)
+    -   ✅ ErrorMessage (100% coverage)
+-   **Event Components**:
+    -   ✅ EventList (100% coverage)
+    -   ✅ EventDetails (100% coverage)
+    -   ✅ EventFilters (67.24% coverage)
+        -   Remaining uncovered lines: 40-52, 59-71, 83, 148-156, 172
+-   **Home Components**:
+    -   ✅ CalendarSelector (100% coverage)
+-   **Layout Components**:
+    -   ❌ Footer (0% coverage)
+    -   ❌ Header (0% coverage)
+-   **Map Components**:
+    -   ❌ MapContainer (0% coverage)
+    -   ❌ MapMarker (0% coverage)
+    -   ❌ MapPopup (0% coverage)
 
-    - `EventList`: Tests for rendering event lists, event selection, loading state, error state, and empty state
-    - `EventDetails`: Tests for rendering event details, close button functionality, unresolved location messages, and handling events without descriptions
+### Hooks
 
-3. **Home Components (100% coverage)**
+-   ✅ useEvents (98.48% coverage)
+    -   Remaining uncovered lines: 65
+-   ❌ useMap (0% coverage)
 
-    - `CalendarSelector`: Tests for form rendering, error handling, form submission, example calendar selection, and loading state
+### Utilities
 
-4. **Hooks (partial coverage)**
+-   ✅ date.ts (80.64% coverage)
+    -   Remaining uncovered lines: 16-17, 58-59, 76-77
+-   ✅ debug.ts (82.75% coverage)
+    -   Remaining uncovered lines: 25, 45, 107, 125-128
+-   ✅ location.ts (100% coverage)
 
-    - `useEvents`: Tests for loading state, fetching calendar events, filtering by date range, search query, map bounds, and unknown locations, as well as error handling
+### API
 
-5. **Utilities (good coverage)**
-    - **Date Utilities (80.64% coverage)**: Tests for formatting event dates, durations, and relative time strings
-    - **Location Utilities (76.92% coverage)**: Tests for truncating locations, checking if locations are within bounds, and calculating center points
-    - **Debug Utilities (82.75% coverage)**: Tests for conditional logging based on environment variables and error logging
+-   ❌ calendar.ts (0% coverage)
+-   ❌ geocoding.ts (0% coverage)
 
-### Remaining Test Coverage
+### Cache
 
-1. **App Pages (0% coverage)**
+-   ❌ filesystem.ts (0% coverage)
+-   ❌ upstash.ts (0% coverage)
 
-    - `layout.tsx`, `page.tsx`, and other page components
-    - API routes like `app/api/calendar/route.ts`
+### App Pages
 
-2. **Event Components (needs improvement)**
+-   ❌ layout.tsx (0% coverage)
+-   ❌ page.tsx (0% coverage)
+-   ❌ home/page.tsx (0% coverage)
+-   ❌ privacy/page.tsx (0% coverage)
+-   ❌ terms/page.tsx (0% coverage)
 
-    - `EventFilters.tsx`: No tests for filtering functionality
+## Next Steps for Testing
 
-3. **Layout Components (0% coverage)**
+### Priority 1: Complete Component Testing
 
-    - `Footer.tsx`, `Header.tsx`: No tests for rendering and functionality
+1. ✅ Create tests for EventFilters component (67.24% coverage achieved)
+2. Create tests for Map components (MapContainer, MapMarker, MapPopup)
+3. Create tests for Layout components (Header, Footer)
 
-4. **Map Components (0% coverage)**
+### Priority 2: Complete Hook Testing
 
-    - `MapContainer.tsx`, `MapMarker.tsx`, `MapPopup.tsx`: No tests for map rendering, markers, and popups
+1. Create tests for useMap hook
 
-5. **API Utilities (0% coverage)**
+### Priority 3: API and Cache Testing
 
-    - `calendar.ts`, `geocoding.ts`: No tests for API functionality
+1. Create tests for API utilities (calendar.ts, geocoding.ts)
+2. Create tests for Cache utilities (filesystem.ts, upstash.ts)
 
-6. **Cache Utilities (0% coverage)**
+### Priority 4: App Pages Testing
 
-    - `filesystem.ts`, `upstash.ts`: No tests for caching functionality
+1. Create tests for main app pages
 
-7. **Hooks (needs improvement)**
-    - `useMap.ts`: No tests for map functionality
+## Testing Strategy
 
-## Recommendations for Future Testing
+For components:
 
-1. **Priority Components to Test Next:**
+-   Test rendering with different props
+-   Test user interactions
+-   Test conditional rendering
 
-    - `EventFilters.tsx`: This is part of the core event functionality and currently has 0% coverage
-    - Map components: These are central to the application's functionality
+For hooks:
 
-2. **API and Cache Testing:**
+-   Test initialization
+-   Test state changes
+-   Test error handling
 
-    - Create mocks for external API calls to test `calendar.ts` and `geocoding.ts`
-    - Test cache functionality in `filesystem.ts` and `upstash.ts`
+For utilities:
 
-3. **Remaining Utility Functions:**
+-   Test all edge cases
+-   Test error handling
 
-    - Complete testing for `date.ts`, particularly the `getRelativeTimeString` function
-    - Improve coverage for `location.ts`, focusing on the `findLargestCity` function
+For API:
 
-4. **Integration Tests:**
+-   Create mocks for external services
+-   Test success and error paths
 
-    - Consider adding integration tests that test multiple components working together
-    - Test the full user flow from selecting a calendar to viewing events on the map
+## Recent Improvements
 
-5. **End-to-End Tests:**
-    - Consider adding Cypress or Playwright tests for end-to-end testing of critical user flows
+-   Added test attributes to LoadingSpinner and ErrorMessage components
+-   Created comprehensive tests for EventDetails and EventList components
+-   Fixed failing tests in debug.test.ts and location.test.ts
+-   Added tests for findLargestCity function in location utilities
+-   Improved test coverage for date utilities
+-   Created comprehensive tests for EventFilters component, covering search functionality, date range selection, and filter reset
