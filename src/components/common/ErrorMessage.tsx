@@ -16,6 +16,8 @@ const ErrorMessage: React.FC<ErrorMessageProps> = ({
     return (
         <div
             className={`bg-red-50 border border-red-200 rounded-md p-4 ${className}`}
+            data-testid="error-message-container"
+            role="alert"
         >
             <div className="flex">
                 <div className="flex-shrink-0">
@@ -44,6 +46,7 @@ const ErrorMessage: React.FC<ErrorMessageProps> = ({
                                 type="button"
                                 className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                                 onClick={onRetry}
+                                data-testid="retry-button"
                             >
                                 Try again
                             </button>

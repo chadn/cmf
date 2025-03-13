@@ -207,6 +207,8 @@ The application will follow a hybrid architecture with:
   /Implementation.md      # Implementation details and architecture decisions
 ```
 
+[View Test coverage](tests.md) of above files.
+
 ### Next.js App Router Best Practices
 
 1. **Route Organization**:

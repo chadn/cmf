@@ -27,12 +27,17 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
     }
 
     return (
-        <div className={`flex justify-center items-center ${className}`}>
+        <div
+            className={`flex justify-center items-center ${className}`}
+            data-testid="loading-spinner-container"
+        >
             <svg
                 className={`animate-spin ${sizeClasses[size]} ${colorClasses[color]}`}
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
+                role="status"
+                aria-label="Loading"
             >
                 <circle
                     className="opacity-25"

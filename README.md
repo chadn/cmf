@@ -119,6 +119,7 @@ For more detailed information, see the following documentation:
 
 -   [Product Specification](docs/product.md)
 -   [Implementation Details](docs/Implementation.md) includes directory structure and implementation decisions.
+-   [Test coverage](docs/tests.md) view test coverage.
 
 ## 🤝 Contributing
 
