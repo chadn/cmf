@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { render, screen } from '@testing-library/react'
 import '@testing-library/jest-dom'
 import Footer from '../Footer'
@@ -88,4 +88,17 @@ describe('Footer', () => {
             screen.getByText(/not affiliated with or endorsed by Google/)
         ).toBeInTheDocument()
     })
+
+    // Expose events data to window for debugging
+    useEffect(() => {
+        if (events.length > 0 && typeof window !== 'undefined') {
+            window.cmf_events = {
+                events,
+                total_count: totalCount,
+                unknown_locations_count: unknownLocationsCount,
+                calendar_name: calendarName,
+                calendar_id: calendarId,
+            }
+        }
+    }, [events, totalCount, unknownLocationsCount, calendarName, calendarId])
 })
