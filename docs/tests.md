@@ -10,7 +10,7 @@ npm test
 -----------------------|---------|----------|---------|---------|----------------------------
 File                   | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
 -----------------------|---------|----------|---------|---------|----------------------------
-All files              |    38.7 |     47.6 |   41.32 |   38.82 |
+All files              |   47.06 |    53.13 |   49.58 |   45.91 |
  app                   |       0 |        0 |       0 |       0 |
   layout.tsx           |       0 |      100 |       0 |       0 | 2-12
   page.tsx             |       0 |        0 |       0 |       0 | 3-173
@@ -31,13 +31,13 @@ All files              |    38.7 |     47.6 |   41.32 |   38.82 |
   EventList.tsx        |     100 |      100 |     100 |     100 |
  components/home       |     100 |      100 |     100 |     100 |
   CalendarSelector.tsx |     100 |      100 |     100 |     100 |
- components/layout     |       0 |        0 |       0 |       0 |
-  Footer.tsx           |       0 |      100 |       0 |       0 | 3-54
-  Header.tsx           |       0 |        0 |       0 |       0 | 3-70
- components/map        |       0 |        0 |       0 |       0 |
-  MapContainer.tsx     |       0 |        0 |       0 |       0 | 3-190
-  MapMarker.tsx        |       0 |        0 |       0 |       0 | 3-51
-  MapPopup.tsx         |       0 |        0 |       0 |       0 | 3-89
+ components/layout     |     100 |       75 |     100 |     100 |
+  Footer.tsx           |     100 |      100 |     100 |     100 |
+  Header.tsx           |     100 |       75 |     100 |     100 | 13
+ components/map        |   47.12 |    45.83 |   36.36 |    42.1 |
+  MapContainer.tsx     |   16.66 |        0 |       0 |   15.38 | 32-164
+  MapMarker.tsx        |   94.44 |    88.88 |     100 |     100 | 14
+  MapPopup.tsx         |     100 |       75 |     100 |     100 | 49
  lib/api               |       0 |        0 |       0 |       0 |
   calendar.ts          |       0 |        0 |       0 |       0 | 1-85
   geocoding.ts         |       0 |        0 |       0 |       0 | 5-125
@@ -47,16 +47,16 @@ All files              |    38.7 |     47.6 |   41.32 |   38.82 |
  lib/hooks             |   52.84 |    68.33 |   42.85 |   52.89 |
   useEvents.ts         |   98.48 |    95.34 |     100 |   98.46 | 65
   useMap.ts            |       0 |        0 |       0 |       0 | 3-204
- lib/utils             |   86.08 |    86.11 |     100 |   87.96 |
+ lib/utils             |   88.69 |     87.5 |     100 |   90.74 |
   date.ts              |   80.64 |      100 |     100 |   80.64 | 16-17,58-59,76-77
-  debug.ts             |   82.75 |    78.37 |     100 |   86.79 | 25,42-45,107,128
+  debug.ts             |   87.93 |    81.08 |     100 |   92.45 | 25,45,107,128
   location.ts          |     100 |    91.66 |     100 |     100 | 90-94
 -----------------------|---------|----------|---------|---------|----------------------------
 
-Test Suites: 10 passed, 10 total
-Tests:       74 passed, 74 total
+Test Suites: 15 passed, 15 total
+Tests:       93 passed, 93 total
 Snapshots:   0 total
-Time:        1.927 s, estimated 2 s
+Time:        2.404 s
 Ran all test suites.
 ```
 
@@ -64,7 +64,7 @@ Ran all test suites.
 
 | Category  | % Statements | % Branches | % Functions | % Lines |
 | --------- | ------------ | ---------- | ----------- | ------- |
-| All files | 38.7         | 47.6       | 41.32       | 38.82   |
+| All files | 47.06        | 53.13      | 49.58       | 45.91   |
 
 ## Completed Test Coverage
 
@@ -81,12 +81,16 @@ Ran all test suites.
 -   **Home Components**:
     -   ✅ CalendarSelector (100% coverage)
 -   **Layout Components**:
-    -   ❌ Footer (0% coverage)
-    -   ❌ Header (0% coverage)
+    -   ✅ Footer (100% coverage)
+    -   ✅ Header (100% coverage with 75% branch coverage)
+        -   Remaining uncovered branches: line 13
 -   **Map Components**:
-    -   ❌ MapContainer (0% coverage)
-    -   ❌ MapMarker (0% coverage)
-    -   ❌ MapPopup (0% coverage)
+    -   ✅ MapContainer (16.66% coverage - basic module existence test)
+        -   Remaining uncovered lines: 32-164
+    -   ✅ MapMarker (94.44% coverage with 88.88% branch coverage)
+        -   Remaining uncovered branches: line 14
+    -   ✅ MapPopup (100% coverage with 75% branch coverage)
+        -   Remaining uncovered branches: line 49
 
 ### Hooks
 
@@ -98,8 +102,8 @@ Ran all test suites.
 
 -   ✅ date.ts (80.64% coverage)
     -   Remaining uncovered lines: 16-17, 58-59, 76-77
--   ✅ debug.ts (82.75% coverage)
-    -   Remaining uncovered lines: 25, 45, 107, 125-128
+-   ✅ debug.ts (87.93% coverage)
+    -   Remaining uncovered lines: 25, 45, 107, 128
 -   ✅ location.ts (100% coverage)
 
 ### API
@@ -122,24 +126,32 @@ Ran all test suites.
 
 ## Next Steps for Testing
 
-### Priority 1: Complete Component Testing
+### Priority 1: Improve Map Component Testing
 
-1. ✅ Create tests for EventFilters component (67.24% coverage achieved)
-2. Create tests for Map components (MapContainer, MapMarker, MapPopup)
-3. Create tests for Layout components (Header, Footer)
+1. Improve test coverage for MapContainer component beyond basic module existence test
+    - Create proper mocks for Map, Marker, and Popup components from react-map-gl
+    - Test viewport changes, marker rendering, and popup functionality
 
 ### Priority 2: Complete Hook Testing
 
 1. Create tests for useMap hook
+    - Mock maplibre-gl functionality
+    - Test map initialization, viewport changes, and marker management
 
 ### Priority 3: API and Cache Testing
 
 1. Create tests for API utilities (calendar.ts, geocoding.ts)
+    - Mock fetch requests
+    - Test response parsing and error handling
 2. Create tests for Cache utilities (filesystem.ts, upstash.ts)
+    - Mock file system and Redis interactions
+    - Test caching and retrieval logic
 
 ### Priority 4: App Pages Testing
 
 1. Create tests for main app pages
+    - Test page rendering and component integration
+    - Test routing and navigation
 
 ## Testing Strategy
 
@@ -167,9 +179,12 @@ For API:
 
 ## Recent Improvements
 
--   Added test attributes to LoadingSpinner and ErrorMessage components
--   Created comprehensive tests for EventDetails and EventList components
--   Fixed failing tests in debug.test.ts and location.test.ts
--   Added tests for findLargestCity function in location utilities
--   Improved test coverage for date utilities
--   Created comprehensive tests for EventFilters component, covering search functionality, date range selection, and filter reset
+-   Fixed Footer tests by properly mocking Date.prototype.getFullYear to ensure consistent copyright year
+-   Created tests for MapMarker component focusing on behavior rather than implementation details
+-   Created tests for MapPopup component with comprehensive coverage of all functionality
+-   Added a basic test for MapContainer to verify module existence
+-   Improved test coverage for Header component
+-   All tests are now passing with an overall coverage of 47.06%
+-   Implemented proper mocking for Next.js components and navigation hooks
+-   Added comprehensive tests for event pagination in MapPopup component
+-   Fixed tests that were failing due to implementation details by focusing on behavior
