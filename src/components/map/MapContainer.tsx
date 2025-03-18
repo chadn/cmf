@@ -127,7 +127,7 @@ const MapContainer: React.FC<MapContainerProps> = ({
     }, [markers, mapLoaded])
 
     return (
-        <div className="relative w-full h-full">
+        <div className="relative w-full h-full" style={{ minHeight: '100%' }}>
             <Map
                 ref={mapRef}
                 // @ts-ignore - This works at runtime but has type issues
@@ -139,7 +139,7 @@ const MapContainer: React.FC<MapContainerProps> = ({
                 {...viewport}
                 onMove={(evt) => handleViewportChange(evt.viewState)}
                 onLoad={handleMapLoad}
-                style={{ width: '100%', height: '100%' }}
+                style={{ width: '100%', height: '100%', position: 'absolute' }}
             >
                 {/* Navigation controls */}
                 <NavigationControl position="top-right" />

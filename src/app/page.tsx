@@ -97,6 +97,20 @@ export default function Home() {
         resetToAllEvents()
     }
 
+    // Expose events data to window for debugging
+    useEffect(() => {
+        if (events && events.length > 0 && typeof window !== 'undefined') {
+            // @ts-ignore - Adding cmf_events to window for debugging
+            window.cmf_events = {
+                events,
+                total_count: totalCount,
+                unknown_locations_count: unknownLocationsCount,
+                calendar_name: calendarName || '',
+                calendar_id: calendarId || '',
+            }
+        }
+    }, [events, totalCount, unknownLocationsCount, calendarName, calendarId])
+
     // If no calendar ID is provided, show the calendar selector
     if (!calendarId) {
         return (
@@ -111,10 +125,10 @@ export default function Home() {
     }
 
     return (
-        <div className="min-h-screen flex flex-col">
+        <div className="min-h-screen flex flex-col h-screen">
             <Header calendarName={calendarName} />
 
-            <main className="flex-grow flex flex-col md:flex-row">
+            <main className="flex-grow flex flex-col md:flex-row h-[calc(100vh-120px)]">
                 {/* Sidebar with filters and event list */}
                 <div className="w-full md:w-1/2 h-full overflow-auto p-4 border-r">
                     <div className="mb-4">
@@ -184,7 +198,7 @@ export default function Home() {
                 </div>
 
                 {/* Map */}
-                <div className="w-full md:w-1/2 h-1/2 md:h-full">
+                <div className="w-full md:w-1/2 h-[500px] md:h-full">
                     <MapContainer
                         viewport={viewport}
                         onViewportChange={setViewport}

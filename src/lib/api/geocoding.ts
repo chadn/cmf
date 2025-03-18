@@ -8,12 +8,20 @@ const GOOGLE_MAPS_GEOCODING_API =
     'https://maps.googleapis.com/maps/api/geocode/json'
 
 // Fixed location for temporary use
-const FIXED_LOCATION = {
-    formatted_address: 'Berkeley CA 94705',
-    lat: 37.8608, // Approximate coordinates for Berkeley
-    lng: -122.2451,
-    status: 'resolved' as const,
-}
+const FIXED_LOCATIONS = [
+    {
+        formatted_address: 'Berkeley CA 94705',
+        lat: 37.8608, // Approximate coordinates for Berkeley
+        lng: -122.2451,
+        status: 'resolved' as const,
+    },
+    {
+        formatted_address: '1960 Adeline St, Oakland, CA 94607',
+        lat: 37.81416,
+        lng: -122.28413,
+        status: 'resolved' as const,
+    },
+]
 
 /**
  * Geocodes a location string using Google Maps Geocoding API
@@ -37,12 +45,13 @@ export async function geocodeLocation(
     )
 
     // Return the fixed location for all requests
+    const i = Math.floor(Math.random() * FIXED_LOCATIONS.length)
     return {
         original_location: locationString,
-        formatted_address: FIXED_LOCATION.formatted_address,
-        lat: FIXED_LOCATION.lat,
-        lng: FIXED_LOCATION.lng,
-        status: FIXED_LOCATION.status,
+        formatted_address: FIXED_LOCATIONS[i].formatted_address,
+        lat: FIXED_LOCATIONS[i].lat,
+        lng: FIXED_LOCATIONS[i].lng,
+        status: FIXED_LOCATIONS[i].status,
     }
 
     /* Original implementation commented out
@@ -121,13 +130,16 @@ export async function batchGeocodeLocations(
         `TEMPORARY: Using fixed address for ${uniqueLocations.length} locations`
     )
 
+    // Return the fixed location for all requests
+    const i = Math.floor(Math.random() * FIXED_LOCATIONS.length)
+
     // Return the fixed location for all locations
     return uniqueLocations.map((location) => ({
         original_location: location,
-        formatted_address: FIXED_LOCATION.formatted_address,
-        lat: FIXED_LOCATION.lat,
-        lng: FIXED_LOCATION.lng,
-        status: FIXED_LOCATION.status,
+        formatted_address: FIXED_LOCATIONS[i].formatted_address,
+        lat: FIXED_LOCATIONS[i].lat,
+        lng: FIXED_LOCATIONS[i].lng,
+        status: FIXED_LOCATIONS[i].status,
     }))
 
     /* Original implementation commented out

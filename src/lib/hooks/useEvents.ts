@@ -82,24 +82,30 @@ export function useEvents({
     const { data, error, isLoading } = useSWR<CMFEvents>(apiUrl, fetcher, {
         revalidateOnFocus: false,
         onSuccess: (data) => {
+            if (!data) return
+
             debugLog(
                 'events',
-                `✅ Calendar data fetched successfully: "${data.calendar_name}"`,
+                `✅ Calendar data fetched successfully: "${
+                    data.calendar_name || 'Unknown Calendar'
+                }"`,
                 {
-                    calendarId: data.calendar_id,
-                    totalEvents: data.total_count,
-                    unknownLocations: data.unknown_locations_count,
+                    calendarId: data.calendar_id || 'unknown',
+                    totalEvents: data.total_count || 0,
+                    unknownLocations: data.unknown_locations_count || 0,
                 }
             )
             clientDebug.log('events', 'Calendar data fetched successfully', {
-                calendarName: data.calendar_name,
-                totalEvents: data.total_count,
+                calendarName: data.calendar_name || 'Unknown Calendar',
+                totalEvents: data.total_count || 0,
             })
         },
         onError: (err) => {
             debugLog(
                 'events',
-                `❌ Error fetching calendar data for ID: "${calendarId}"`,
+                `❌ Error fetching calendar data for ID: "${
+                    calendarId || 'unknown'
+                }"`,
                 {
                     error: err.message,
                     apiUrl,
@@ -107,7 +113,9 @@ export function useEvents({
             )
             clientDebug.error(
                 'events',
-                `Error fetching calendar data for ID: "${calendarId}"`,
+                `Error fetching calendar data for ID: "${
+                    calendarId || 'unknown'
+                }"`,
                 err
             )
         },
@@ -150,9 +158,9 @@ export function useEvents({
             if (searchQuery && searchQuery.trim() !== '') {
                 const query = searchQuery.toLowerCase()
                 if (
-                    !event.name.toLowerCase().includes(query) &&
-                    !event.location.toLowerCase().includes(query) &&
-                    !event.description.toLowerCase().includes(query)
+                    !event.name?.toLowerCase().includes(query) &&
+                    !event.location?.toLowerCase().includes(query) &&
+                    !event.description?.toLowerCase().includes(query)
                 ) {
                     searchFiltered++
                     return false
@@ -205,11 +213,11 @@ export function useEvents({
 
     // Log when the return values change
     useEffect(() => {
-        if (data && !isLoading) {
+        if (data && !isLoading && data.events) {
             debugLog('events', 'Events hook return values updated', {
-                totalEvents: data.events.length,
+                totalEvents: data.events?.length || 0,
                 filteredEvents: filteredEvents.length,
-                calendarName: data.calendar_name,
+                calendarName: data.calendar_name || '',
             })
         }
     }, [data, filteredEvents, isLoading])
