@@ -19,6 +19,8 @@ interface MapContainerProps {
     onMarkerSelect: (markerId: string | null) => void
     onBoundsChange: (bounds: MapBounds) => void
     onResetView: () => void
+    selectedEventId: string | null
+    onEventSelect: (eventId: string | null) => void
 }
 
 const MapContainer: React.FC<MapContainerProps> = ({
@@ -29,11 +31,12 @@ const MapContainer: React.FC<MapContainerProps> = ({
     onMarkerSelect,
     onBoundsChange,
     onResetView,
+    selectedEventId,
+    onEventSelect,
 }) => {
     const mapRef = useRef<any>(null)
     const [popupInfo, setPopupInfo] = useState<MapMarker | null>(null)
     const [mapLoaded, setMapLoaded] = useState(false)
-    const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
 
     // Log when component mounts
     useEffect(() => {
@@ -63,14 +66,17 @@ const MapContainer: React.FC<MapContainerProps> = ({
                     !selectedEventId ||
                     !marker.events.find((e) => e.id === selectedEventId)
                 ) {
-                    setSelectedEventId(marker.events[0]?.id || null)
-                    debugLog(
-                        'map',
-                        `Defaulting to first event: ${marker.events[0]?.name}`,
-                        {
-                            eventId: marker.events[0]?.id,
-                        }
-                    )
+                    const firstEventId = marker.events[0]?.id || null
+                    if (firstEventId) {
+                        onEventSelect(firstEventId)
+                        debugLog(
+                            'map',
+                            `Defaulting to first event: ${marker.events[0]?.name}`,
+                            {
+                                eventId: firstEventId,
+                            }
+                        )
+                    }
                 }
             } else {
                 debugLog(
@@ -78,13 +84,13 @@ const MapContainer: React.FC<MapContainerProps> = ({
                     `Selected marker has no events: ${selectedMarkerId}`
                 )
                 setPopupInfo(null)
-                setSelectedEventId(null)
+                onEventSelect(null)
             }
         } else {
             setPopupInfo(null)
-            setSelectedEventId(null)
+            onEventSelect(null)
         }
-    }, [selectedMarkerId, markers])
+    }, [selectedMarkerId, markers, selectedEventId, onEventSelect])
 
     // Handle map load
     const handleMapLoad = () => {
@@ -142,7 +148,7 @@ const MapContainer: React.FC<MapContainerProps> = ({
         // Default to the first event in the marker when clicking
         if (marker.events.length > 0) {
             const firstEventId = marker.events[0].id
-            setSelectedEventId(firstEventId)
+            onEventSelect(firstEventId)
             debugLog(
                 'map',
                 `Setting selected event: ${marker.events[0].name}`,
@@ -156,7 +162,7 @@ const MapContainer: React.FC<MapContainerProps> = ({
     // Handle event selection in popup
     const handleEventSelect = (eventId: string) => {
         debugLog('map', `Event selected in popup: ${eventId}`)
-        setSelectedEventId(eventId)
+        onEventSelect(eventId)
     }
 
     // Handle popup close
@@ -164,7 +170,7 @@ const MapContainer: React.FC<MapContainerProps> = ({
         debugLog('map', 'Popup closed')
         onMarkerSelect(null)
         setPopupInfo(null)
-        setSelectedEventId(null)
+        onEventSelect(null)
     }
 
     // Handle reset view button click

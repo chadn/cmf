@@ -25,6 +25,10 @@ export default function Home() {
     const [mapBounds, setMapBounds] = useState<MapBounds | null>(null)
     const [showUnknownLocationsOnly, setShowUnknownLocationsOnly] =
         useState(false)
+    const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(
+        null
+    )
+    const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
 
     // Log component mount and calendar ID - only once when component mounts
     useEffect(() => {
@@ -63,8 +67,8 @@ export default function Home() {
         viewport,
         setViewport,
         markers,
-        selectedMarkerId,
-        setSelectedMarkerId,
+        selectedMarkerId: mapSelectedMarkerId,
+        setSelectedMarkerId: setMapSelectedMarkerId,
         resetToAllEvents,
         isMapOfAllEvents,
     } = useMap({ events })
@@ -169,6 +173,7 @@ export default function Home() {
                                     6
                                 )},${event.resolved_location.lng.toFixed(6)}`
                                 setSelectedMarkerId(markerId)
+                                setSelectedEventId(eventId)
 
                                 debugLog('page', `Event selected: ${eventId}`, {
                                     title: event.name,
@@ -207,6 +212,8 @@ export default function Home() {
                         onMarkerSelect={setSelectedMarkerId}
                         onBoundsChange={handleBoundsChange}
                         onResetView={resetToAllEvents}
+                        selectedEventId={selectedEventId}
+                        onEventSelect={setSelectedEventId}
                     />
                 </div>
             </main>
