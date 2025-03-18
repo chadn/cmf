@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
 import MapContainer from '@/components/map/MapContainer'
 import EventList from '@/components/events/EventList'
@@ -25,9 +25,6 @@ export default function Home() {
     const [mapBounds, setMapBounds] = useState<MapBounds | null>(null)
     const [showUnknownLocationsOnly, setShowUnknownLocationsOnly] =
         useState(false)
-    const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(
-        null
-    )
     const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
 
     // Log component mount and calendar ID - only once when component mounts
@@ -67,39 +64,85 @@ export default function Home() {
         viewport,
         setViewport,
         markers,
-        selectedMarkerId: mapSelectedMarkerId,
-        setSelectedMarkerId: setMapSelectedMarkerId,
+        selectedMarkerId,
+        setSelectedMarkerId,
         resetToAllEvents,
         isMapOfAllEvents,
     } = useMap({ events })
 
     // Handle map bounds change
-    const handleBoundsChange = (bounds: MapBounds) => {
+    const handleBoundsChange = useCallback((bounds: MapBounds) => {
         debugLog('page', 'Map bounds changed', bounds)
         setMapBounds(bounds)
-    }
+    }, [])
+
+    // Handle map filter removal
+    const handleClearMapFilter = useCallback(() => {
+        debugLog('page', 'Map filter cleared')
+        setMapBounds(null)
+        resetToAllEvents()
+    }, [resetToAllEvents])
 
     // Handle unknown locations filter toggle
-    const handleUnknownLocationsToggle = () => {
-        const newValue = !showUnknownLocationsOnly
+    const handleUnknownLocationsToggle = useCallback(() => {
+        setShowUnknownLocationsOnly((prev) => !prev)
         debugLog(
             'page',
             `Unknown locations filter toggled: ${
-                newValue ? 'showing only unknown' : 'showing all'
+                !showUnknownLocationsOnly
+                    ? 'showing only unknown'
+                    : 'showing all'
             }`
         )
-        setShowUnknownLocationsOnly(newValue)
-    }
+    }, [showUnknownLocationsOnly])
 
     // Reset all filters
-    const handleResetFilters = () => {
+    const handleResetFilters = useCallback(() => {
         debugLog('page', 'Resetting all filters')
         setSearchQuery('')
         setDateRange(undefined)
         setMapBounds(null)
         setShowUnknownLocationsOnly(false)
         resetToAllEvents()
-    }
+    }, [resetToAllEvents])
+
+    // Handler for selecting an event from the list
+    const handleEventSelect = useCallback(
+        (eventId: string | null) => {
+            setSelectedEventId(eventId)
+
+            // If event is null, clear marker selection
+            if (!eventId) {
+                setSelectedMarkerId(null)
+                return
+            }
+
+            // Find the event and its marker
+            const event = events.find((e) => e.id === eventId)
+            if (
+                !event ||
+                !event.resolved_location?.lat ||
+                !event.resolved_location?.lng
+            ) {
+                return
+            }
+
+            // Generate marker ID
+            const markerId = `${event.resolved_location.lat.toFixed(
+                6
+            )},${event.resolved_location.lng.toFixed(6)}`
+
+            // Set marker and update viewport
+            setSelectedMarkerId(markerId)
+            setViewport({
+                ...viewport,
+                latitude: event.resolved_location.lat,
+                longitude: event.resolved_location.lng,
+                zoom: 14,
+            })
+        },
+        [events, setSelectedMarkerId, setViewport, viewport]
+    )
 
     // Expose events data to window for debugging
     useEffect(() => {
@@ -150,6 +193,58 @@ export default function Home() {
                         </p>
                     </div>
 
+                    {/* Active filters display */}
+                    <div className="mb-4 flex flex-wrap gap-2">
+                        {!isMapOfAllEvents && mapBounds && (
+                            <div className="inline-flex items-center bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="h-3 w-3 mr-1"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4"
+                                    />
+                                </svg>
+                                Map Area Filter
+                                <button
+                                    onClick={handleClearMapFilter}
+                                    className="ml-1 text-blue-700 hover:text-blue-900"
+                                    aria-label="Remove map filter"
+                                >
+                                    ×
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Show All Events button */}
+                        <button
+                            onClick={resetToAllEvents}
+                            className="inline-flex items-center bg-blue-500 text-white text-xs px-2 py-1 rounded hover:bg-blue-600"
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-3 w-3 mr-1"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                                />
+                            </svg>
+                            Show All Events
+                        </button>
+                    </div>
+
                     <EventFilters
                         searchQuery={searchQuery}
                         onSearchChange={setSearchQuery}
@@ -162,43 +257,7 @@ export default function Home() {
                         events={filteredEvents}
                         isLoading={isLoading}
                         error={error}
-                        onEventSelect={(eventId) => {
-                            // Find the marker for this event
-                            const event = events.find((e) => e.id === eventId)
-                            if (
-                                event?.resolved_location?.lat &&
-                                event?.resolved_location?.lng
-                            ) {
-                                const markerId = `${event.resolved_location.lat.toFixed(
-                                    6
-                                )},${event.resolved_location.lng.toFixed(6)}`
-                                setSelectedMarkerId(markerId)
-                                setSelectedEventId(eventId)
-
-                                debugLog('page', `Event selected: ${eventId}`, {
-                                    title: event.name,
-                                    location: event.location,
-                                    markerId,
-                                })
-
-                                // Update viewport to center on this event
-                                setViewport({
-                                    ...viewport,
-                                    latitude: event.resolved_location.lat,
-                                    longitude: event.resolved_location.lng,
-                                    zoom: 14,
-                                })
-                            } else {
-                                debugLog(
-                                    'page',
-                                    `Event selected has no location: ${eventId}`,
-                                    {
-                                        title: event?.name,
-                                        location: event?.location,
-                                    }
-                                )
-                            }
-                        }}
+                        onEventSelect={handleEventSelect}
                     />
                 </div>
 
@@ -209,11 +268,19 @@ export default function Home() {
                         onViewportChange={setViewport}
                         markers={markers}
                         selectedMarkerId={selectedMarkerId}
-                        onMarkerSelect={setSelectedMarkerId}
+                        onMarkerSelect={(markerId) => {
+                            setSelectedMarkerId(markerId)
+
+                            // If markerId is null, clear event selection too
+                            if (!markerId) {
+                                setSelectedEventId(null)
+                            }
+                        }}
                         onBoundsChange={handleBoundsChange}
                         onResetView={resetToAllEvents}
                         selectedEventId={selectedEventId}
                         onEventSelect={setSelectedEventId}
+                        isMapOfAllEvents={isMapOfAllEvents}
                     />
                 </div>
             </main>

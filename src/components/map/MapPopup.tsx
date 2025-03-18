@@ -95,7 +95,7 @@ const MapPopup: React.FC<MapPopupProps> = ({
     return (
         <div className="max-w-xs bg-white text-gray-800 p-3 rounded shadow">
             {/* Event title */}
-            <h3 className="font-bold text-md mb-1 text-gray-900">
+            <h3 className="font-bold text-md mb-1 text-gray-900 pr-6">
                 {currentEvent.name}
             </h3>
 

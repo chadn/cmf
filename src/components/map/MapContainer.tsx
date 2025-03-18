@@ -21,6 +21,7 @@ interface MapContainerProps {
     onResetView: () => void
     selectedEventId: string | null
     onEventSelect: (eventId: string | null) => void
+    isMapOfAllEvents?: boolean
 }
 
 const MapContainer: React.FC<MapContainerProps> = ({
@@ -33,10 +34,14 @@ const MapContainer: React.FC<MapContainerProps> = ({
     onResetView,
     selectedEventId,
     onEventSelect,
+    isMapOfAllEvents = false,
 }) => {
     const mapRef = useRef<any>(null)
-    const [popupInfo, setPopupInfo] = useState<MapMarker | null>(null)
     const [mapLoaded, setMapLoaded] = useState(false)
+    const [userInteracted, setUserInteracted] = useState(false)
+
+    // Simplified state: Only track the current popup info
+    const [popupInfo, setPopupInfo] = useState<MapMarker | null>(null)
 
     // Log when component mounts
     useEffect(() => {
@@ -46,19 +51,13 @@ const MapContainer: React.FC<MapContainerProps> = ({
         })
     }, [])
 
-    // Update popup info when selected marker changes
+    // Simplified effect: Update popup when selected marker changes
     useEffect(() => {
         if (selectedMarkerId) {
             const marker = markers.find((m) => m.id === selectedMarkerId)
 
             if (marker && marker.events && marker.events.length > 0) {
                 setPopupInfo(marker)
-
-                debugLog('map', `Selected marker: ${selectedMarkerId}`, {
-                    lat: marker.latitude,
-                    lng: marker.longitude,
-                    eventCount: marker.events.length,
-                })
 
                 // If no specific event is selected or the selected event is not in this marker,
                 // default to the first event in this marker
@@ -69,33 +68,19 @@ const MapContainer: React.FC<MapContainerProps> = ({
                     const firstEventId = marker.events[0]?.id || null
                     if (firstEventId) {
                         onEventSelect(firstEventId)
-                        debugLog(
-                            'map',
-                            `Defaulting to first event: ${marker.events[0]?.name}`,
-                            {
-                                eventId: firstEventId,
-                            }
-                        )
                     }
                 }
             } else {
-                debugLog(
-                    'map',
-                    `Selected marker has no events: ${selectedMarkerId}`
-                )
                 setPopupInfo(null)
-                onEventSelect(null)
             }
         } else {
             setPopupInfo(null)
-            onEventSelect(null)
         }
     }, [selectedMarkerId, markers, selectedEventId, onEventSelect])
 
     // Handle map load
     const handleMapLoad = () => {
         setMapLoaded(true)
-        debugLog('map', 'Map loaded successfully')
 
         // Get initial bounds
         if (mapRef.current) {
@@ -106,13 +91,13 @@ const MapContainer: React.FC<MapContainerProps> = ({
                 east: bounds.getEast(),
                 west: bounds.getWest(),
             }
-            debugLog('map', 'Initial map bounds', initialBounds)
             onBoundsChange(initialBounds)
         }
     }
 
     // Handle viewport change
     const handleViewportChange = (newViewport: ViewState) => {
+        setUserInteracted(true)
         onViewportChange(newViewport as MapViewport)
 
         // Get current bounds and notify parent
@@ -128,55 +113,36 @@ const MapContainer: React.FC<MapContainerProps> = ({
         }
     }
 
-    // Handle marker click
-    const handleMarkerClick = (marker: MapMarker) => {
-        if (!marker.events || marker.events.length === 0) {
-            debugLog('map', `Clicked marker has no events: ${marker.id}`)
-            return
+    // Reset userInteracted when returning to "Map of All Events" view
+    useEffect(() => {
+        if (isMapOfAllEvents) {
+            setUserInteracted(false)
         }
+    }, [isMapOfAllEvents])
 
-        debugLog('map', `Marker clicked: ${marker.id}`, {
-            lat: marker.latitude,
-            lng: marker.longitude,
-            eventCount: marker.events.length,
-            firstEventName: marker.events[0]?.name,
-        })
+    // Simplified marker click handler
+    const handleMarkerClick = (marker: MapMarker) => {
+        if (!marker.events || marker.events.length === 0) return
 
+        // Select marker and show popup
         onMarkerSelect(marker.id)
-        setPopupInfo(marker)
 
-        // Default to the first event in the marker when clicking
+        // Default to first event when marker is clicked
         if (marker.events.length > 0) {
-            const firstEventId = marker.events[0].id
-            onEventSelect(firstEventId)
-            debugLog(
-                'map',
-                `Setting selected event: ${marker.events[0].name}`,
-                {
-                    eventId: firstEventId,
-                }
-            )
+            onEventSelect(marker.events[0].id)
         }
     }
 
     // Handle event selection in popup
     const handleEventSelect = (eventId: string) => {
-        debugLog('map', `Event selected in popup: ${eventId}`)
         onEventSelect(eventId)
     }
 
-    // Handle popup close
+    // Handle popup close - simplified
     const handlePopupClose = () => {
-        debugLog('map', 'Popup closed')
         onMarkerSelect(null)
-        setPopupInfo(null)
         onEventSelect(null)
-    }
-
-    // Handle reset view button click
-    const handleResetView = () => {
-        debugLog('map', 'Reset view requested')
-        onResetView()
+        setPopupInfo(null)
     }
 
     // Log when markers change
@@ -192,27 +158,46 @@ const MapContainer: React.FC<MapContainerProps> = ({
                 ref={mapRef}
                 // @ts-ignore - This works at runtime but has type issues
                 mapLib={import('maplibre-gl')}
-                mapStyle={
-                    process.env.MAPLIBRE_STYLE_URL ||
-                    'https://demotiles.maplibre.org/style.json'
-                }
+                mapStyle={{
+                    version: 8,
+                    sources: {
+                        'osm-tiles': {
+                            type: 'raster',
+                            tiles: [
+                                'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                            ],
+                            tileSize: 256,
+                            attribution: '© OpenStreetMap contributors',
+                        },
+                    },
+                    layers: [
+                        {
+                            id: 'osm-tiles',
+                            type: 'raster',
+                            source: 'osm-tiles',
+                            minzoom: 0,
+                            maxzoom: 19,
+                        },
+                    ],
+                }}
+                mapboxAccessToken="" // Ensure no token is used
+                minZoom={2} // Slightly restrict min zoom to avoid world wrapping issues
+                maxZoom={19} // Allow high zoom for detailed city views
+                attributionControl={true}
+                reuseMaps={false} // Disable map reuse to ensure fresh rendering
+                renderWorldCopies={true}
                 {...viewport}
                 onMove={(evt) => handleViewportChange(evt.viewState)}
                 onLoad={handleMapLoad}
                 style={{ width: '100%', height: '100%', position: 'absolute' }}
             >
                 {/* Navigation controls */}
-                <NavigationControl position="top-right" />
-
-                {/* Reset view button */}
-                <div className="absolute top-2 left-2 z-10">
-                    <button
-                        className="bg-white px-2 py-1 rounded shadow text-sm"
-                        onClick={handleResetView}
-                    >
-                        Show All Events
-                    </button>
-                </div>
+                <NavigationControl
+                    position="top-right"
+                    showCompass={true}
+                    showZoom={true}
+                    visualizePitch={true}
+                />
 
                 {/* Markers */}
                 {markers.map((marker) => (
@@ -230,8 +215,9 @@ const MapContainer: React.FC<MapContainerProps> = ({
                     </Marker>
                 ))}
 
-                {/* Popup */}
-                {popupInfo &&
+                {/* Popup - simplified condition */}
+                {selectedMarkerId &&
+                    popupInfo &&
                     popupInfo.events &&
                     popupInfo.events.length > 0 && (
                         <Popup
@@ -239,7 +225,9 @@ const MapContainer: React.FC<MapContainerProps> = ({
                             latitude={popupInfo.latitude}
                             anchor="bottom"
                             onClose={handlePopupClose}
+                            closeButton={true}
                             closeOnClick={false}
+                            className="map-popup"
                         >
                             <MapPopup
                                 marker={popupInfo}

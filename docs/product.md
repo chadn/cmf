@@ -89,15 +89,18 @@ Results should be formatted in a table or similar with these sortable columns:
 
 ### Event Interaction
 
--   Click/tap on map marker or list item shows event details
+-   Click/tap on map marker or list item triggers popup on map with event details
 -   Details view shows all event info stored in cmf_events
 
 ### Map Behavior
 
--   Initial map focus is on the first address received from the geocoder as the calendar event feed is being loaded
--   Eventually arrives at "Map of All Events" state, which is after all events have been geocoded, map automatically adjusts to show all events.
--   When user moves
+-   Initial map focus is on the first address received from the geocoder as the calendar event feed is being loaded.
+-   The map eventually arrives at "Map of All Events" state, which is after all events have been geocoded and map automatically adjusts zooming in as much as possible to show all locations on the map.
+-   If there is only one location, the map should zoom in so it still shows about 0.5 miles of map around the one location.
+-   When the user adjusts map, by panning or zooming in or out, a map filter button should apper on filters section, and map should update with the latest map info.
 -   When map filter is removed, map returns to "Map of All Events" state
+-   If there is more than one event at a location, the popup for that location should allow user to browse those events with next and prev links.
+-   Popup should be able to be closed easily and closing popup should not move the map.
 
 ## 5. Responsive Behavior
 

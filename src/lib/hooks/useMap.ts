@@ -63,6 +63,10 @@ export function useMap({
     // Track if we're in "Map of All Events" state
     const [isMapOfAllEvents, setIsMapOfAllEvents] = useState<boolean>(false)
 
+    // At the top of the component, add this state to track if we've already focused on the first marker
+    const [hasFocusedOnFirstMarker, setHasFocusedOnFirstMarker] =
+        useState(false)
+
     // Generate markers from events
     const markers = useMemo(() => {
         const markersMap = new Map<string, MapMarker>()
@@ -121,33 +125,77 @@ export function useMap({
         if (markers.length === 0) {
             debugLog('map', 'No markers to display, using default viewport')
             setViewport(DEFAULT_VIEWPORT)
+            setIsMapOfAllEvents(true)
             return
         }
 
-        // Extract all resolved locations from events
-        const locations = events
-            .filter((event) => event.resolved_location?.status === 'resolved')
-            .map((event) => event.resolved_location!)
+        // Extract all locations
+        const locations = markers.map((marker) => ({
+            latitude: marker.latitude,
+            longitude: marker.longitude,
+        }))
 
-        // Calculate the center point
-        const center = calculateCenter(locations)
+        if (markers.length === 1) {
+            // If there's only one location, zoom to show about 0.5 miles around it
+            debugLog(
+                'map',
+                'Only one marker, zooming to show ~0.5 miles around it'
+            )
+            setViewport({
+                latitude: markers[0].latitude,
+                longitude: markers[0].longitude,
+                zoom: 14, // Approximately shows 0.5 miles radius
+                bearing: 0,
+                pitch: 0,
+            })
+        } else {
+            // Calculate bounds to fit all markers
+            const latitudes = locations.map((loc) => loc.latitude)
+            const longitudes = locations.map((loc) => loc.longitude)
 
-        debugLog('map', 'Calculated center point for all events', {
-            latitude: center.latitude,
-            longitude: center.longitude,
-            locationCount: locations.length,
-        })
+            const minLat = Math.min(...latitudes)
+            const maxLat = Math.max(...latitudes)
+            const minLng = Math.min(...longitudes)
+            const maxLng = Math.max(...longitudes)
 
-        // Set viewport to show all events
-        setViewport({
-            ...DEFAULT_VIEWPORT,
-            latitude: center.latitude,
-            longitude: center.longitude,
-            zoom: 3, // A reasonable zoom level to show multiple markers
-        })
+            // Add padding to bounds
+            const latPadding = (maxLat - minLat) * 0.1 // 10% padding
+            const lngPadding = (maxLng - minLng) * 0.1 // 10% padding
 
+            // Calculate center
+            const centerLat = (minLat + maxLat) / 2
+            const centerLng = (minLng + maxLng) / 2
+
+            // Calculate zoom level to fit the bounds
+            // This is an approximation
+            const latZoom =
+                Math.log2(360 / (maxLat - minLat + 2 * latPadding)) - 1
+            const lngZoom =
+                Math.log2(360 / (maxLng - minLng + 2 * lngPadding)) - 1
+
+            // Use the smaller zoom level to ensure all markers are visible
+            const zoom = Math.min(latZoom, lngZoom, 15) // Cap at zoom level 15
+
+            debugLog('map', 'Calculated zoom and center for all markers', {
+                centerLat,
+                centerLng,
+                zoom,
+                markerCount: markers.length,
+            })
+
+            setViewport({
+                latitude: centerLat,
+                longitude: centerLng,
+                zoom: Math.max(zoom, 1), // Ensure zoom is at least 1
+                bearing: 0,
+                pitch: 0,
+            })
+        }
+
+        // Make sure we also set the focused flag to prevent the first-marker effect from running again
+        setHasFocusedOnFirstMarker(true)
         setIsMapOfAllEvents(true)
-    }, [events, markers.length])
+    }, [markers])
 
     // Update bounds when viewport changes
     const handleViewportChange = useCallback((newViewport: MapViewport) => {
@@ -181,24 +229,49 @@ export function useMap({
         }
     }, [selectedMarkerId, markers])
 
-    // Initialize map to show all events - only run once when markers are first loaded
+    // Initialize map to show first event while loading, then all events
     useEffect(() => {
-        // Only run this effect if we have markers and no initial viewport was provided
+        // Only run this effect if:
+        // 1. We have at least one marker
+        // 2. We're not already in "Map of All Events" state
+        // 3. We haven't focused on the first marker yet
+        // 4. No initial viewport was provided
         if (
             markers.length > 0 &&
-            !initialViewport.latitude &&
-            !isMapOfAllEvents
+            !isMapOfAllEvents &&
+            !hasFocusedOnFirstMarker &&
+            !initialViewport.latitude
         ) {
-            debugLog('map', 'Initializing map to show all events', {
-                markerCount: markers.length,
+            debugLog('map', 'First marker loaded, focusing on it', {
+                latitude: markers[0].latitude,
+                longitude: markers[0].longitude,
             })
-            resetToAllEvents()
+
+            // Mark that we've focused on the first marker to prevent this effect from running again
+            setHasFocusedOnFirstMarker(true)
+
+            // Focus on the first marker temporarily
+            setViewport({
+                ...DEFAULT_VIEWPORT,
+                latitude: markers[0].latitude,
+                longitude: markers[0].longitude,
+                zoom: 12, // A reasonable zoom level for a single marker
+            })
+
+            // Then, after a short delay, show all events
+            const timer = setTimeout(() => {
+                debugLog('map', 'Transitioning to show all events')
+                resetToAllEvents()
+            }, 1000) // 1 second delay
+
+            return () => clearTimeout(timer)
         }
     }, [
         markers.length,
         initialViewport.latitude,
-        resetToAllEvents,
         isMapOfAllEvents,
+        resetToAllEvents,
+        hasFocusedOnFirstMarker,
     ])
 
     return {
