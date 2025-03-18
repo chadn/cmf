@@ -31,6 +31,60 @@ const DEFAULT_VIEWPORT: MapViewport = {
     pitch: 0,
 }
 
+// Calculate initial viewport based on markers
+const calculateInitialViewport = (markers: MapMarker[]): MapViewport => {
+    if (markers.length === 0) {
+        return {
+            latitude: 0,
+            longitude: 0,
+            zoom: 1,
+            bearing: 0,
+            pitch: 0,
+        }
+    }
+
+    if (markers.length === 1) {
+        return {
+            latitude: markers[0].latitude,
+            longitude: markers[0].longitude,
+            zoom: 14,
+            bearing: 0,
+            pitch: 0,
+        }
+    }
+
+    const latitudes = markers.map((m) => m.latitude)
+    const longitudes = markers.map((m) => m.longitude)
+
+    const minLat = Math.min(...latitudes)
+    const maxLat = Math.max(...latitudes)
+    const minLng = Math.min(...longitudes)
+    const maxLng = Math.max(...longitudes)
+
+    // Add padding to bounds
+    const latPadding = (maxLat - minLat) * 0.1
+    const lngPadding = (maxLng - minLng) * 0.1
+
+    // Calculate center
+    const centerLat = (minLat + maxLat) / 2
+    const centerLng = (minLng + maxLng) / 2
+
+    // Calculate zoom level to fit the bounds
+    const latZoom = Math.log2(360 / (maxLat - minLat + 2 * latPadding)) - 1
+    const lngZoom = Math.log2(360 / (maxLng - minLng + 2 * lngPadding)) - 1
+
+    // Use the smaller zoom level to ensure all markers are visible
+    const zoom = Math.min(latZoom, lngZoom, 15)
+
+    return {
+        latitude: centerLat,
+        longitude: centerLng,
+        zoom: Math.max(zoom, 1),
+        bearing: 0,
+        pitch: 0,
+    }
+}
+
 /**
  * Custom hook for managing map state and interactions
  */
@@ -38,36 +92,7 @@ export function useMap({
     events,
     initialViewport = {},
 }: UseMapProps): UseMapReturn {
-    // Map viewport state
-    const [viewport, setViewport] = useState<MapViewport>({
-        ...DEFAULT_VIEWPORT,
-        ...initialViewport,
-    })
-
-    // Log initial setup
-    useEffect(() => {
-        debugLog('map', 'useMap hook initialized', {
-            initialViewport: { ...viewport },
-            eventsCount: events.length,
-        })
-    }, [])
-
-    // Map bounds state
-    const [bounds, setBounds] = useState<MapBounds | null>(null)
-
-    // Selected marker state
-    const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(
-        null
-    )
-
-    // Track if we're in "Map of All Events" state
-    const [isMapOfAllEvents, setIsMapOfAllEvents] = useState<boolean>(false)
-
-    // At the top of the component, add this state to track if we've already focused on the first marker
-    const [hasFocusedOnFirstMarker, setHasFocusedOnFirstMarker] =
-        useState(false)
-
-    // Generate markers from events
+    // Generate markers from events (moved up to calculate initial viewport)
     const markers = useMemo(() => {
         const markersMap = new Map<string, MapMarker>()
         let eventsWithLocation = 0
@@ -116,6 +141,35 @@ export function useMap({
         return markerArray
     }, [events])
 
+    // Map viewport state with calculated initial viewport
+    const [viewport, setViewport] = useState<MapViewport>(() => ({
+        ...calculateInitialViewport(markers),
+        ...initialViewport,
+    }))
+
+    // Log initial setup
+    useEffect(() => {
+        debugLog('map', 'useMap hook initialized', {
+            initialViewport: { ...viewport },
+            eventsCount: events.length,
+        })
+    }, [])
+
+    // Map bounds state
+    const [bounds, setBounds] = useState<MapBounds | null>(null)
+
+    // Selected marker state
+    const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(
+        null
+    )
+
+    // Track if we're in "Map of All Events" state
+    const [isMapOfAllEvents, setIsMapOfAllEvents] = useState<boolean>(false)
+
+    // At the top of the component, add this state to track if we've already focused on the first marker
+    const [hasFocusedOnFirstMarker, setHasFocusedOnFirstMarker] =
+        useState(false)
+
     // Reset to show all events
     const resetToAllEvents = useCallback(() => {
         debugLog('map', 'Resetting map to show all events', {
@@ -123,8 +177,7 @@ export function useMap({
         })
 
         if (markers.length === 0) {
-            debugLog('map', 'No markers to display, using default viewport')
-            setViewport(DEFAULT_VIEWPORT)
+            debugLog('map', 'No markers to display, keeping current viewport')
             setIsMapOfAllEvents(true)
             return
         }
@@ -192,7 +245,6 @@ export function useMap({
             })
         }
 
-        // Make sure we also set the focused flag to prevent the first-marker effect from running again
         setHasFocusedOnFirstMarker(true)
         setIsMapOfAllEvents(true)
     }, [markers])

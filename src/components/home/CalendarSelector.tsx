@@ -22,12 +22,12 @@ const CalendarSelector: React.FC = () => {
     // Example calendar IDs for demonstration
     const exampleCalendars = [
         {
-            name: 'US Holidays',
-            id: 'en.usa#holiday@group.v.calendar.google.com',
+            name: 'Geocaching in Spain',
+            id: 'geocachingspain@gmail.com',
         },
         {
-            name: 'Example Tech Conference',
-            id: 'example.tech.conference@group.calendar.google.com',
+            name: 'Facebook Events',
+            id: 'aabe6c219ee2af5b791ea6719e04a92990f9ccd1e68a3ff0d89bacd153a0b36d@group.calendar.google.com',
         },
     ]
 
@@ -113,7 +113,7 @@ const CalendarSelector: React.FC = () => {
                             onClick={() => handleExampleSelect(calendar.id)}
                             disabled={isLoading}
                         >
-                            <div className="font-medium">{calendar.name}</div>
+                            <div className="font-medium text-gray-500">{calendar.name}</div>
                             <div className="text-xs text-gray-500 truncate">
                                 {calendar.id}
                             </div>

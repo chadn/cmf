@@ -1,215 +1,161 @@
 'use client'
 
-import React, { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { format, addMonths, subMonths } from 'date-fns'
 
 interface EventFiltersProps {
     searchQuery: string
     onSearchChange: (query: string) => void
     dateRange?: { start: string; end: string }
-    onDateRangeChange: (range?: { start: string; end: string }) => void
-    onResetFilters: () => void
+    onDateRangeChange: (
+        range: { start: string; end: string } | undefined
+    ) => void
+    onReset: () => void
 }
 
-const EventFilters: React.FC<EventFiltersProps> = ({
+export default function EventFilters({
     searchQuery,
     onSearchChange,
     dateRange,
     onDateRangeChange,
-    onResetFilters,
-}) => {
-    const [isDateFilterOpen, setIsDateFilterOpen] = useState(false)
+    onReset,
+}: EventFiltersProps) {
+    const [showDateSliders, setShowDateSliders] = useState(false)
 
-    // Handle search input change
-    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        onSearchChange(e.target.value)
+    // Set up date boundaries to match the calendar API's default range
+    const now = new Date()
+    const minDate = subMonths(now, 1)
+    const maxDate = addMonths(now, 3)
+    const totalDays = Math.floor(
+        (maxDate.getTime() - minDate.getTime()) / (1000 * 60 * 60 * 24)
+    )
+
+    const [startValue, setStartValue] = useState(0)
+    const [endValue, setEndValue] = useState(totalDays)
+
+    // Convert slider value to date
+    const getDateFromValue = (value: number) => {
+        const date = new Date(minDate.getTime() + value * (1000 * 60 * 60 * 24))
+        return format(date, "yyyy-MM-dd'T'HH:mm:ss'Z'")
     }
 
-    // Handle date range selection
-    const handleDateRangeSelect = (range: string) => {
-        const now = new Date()
-        let start: Date
-        let end: Date
-
-        switch (range) {
-            case 'today':
-                start = new Date(now.setHours(0, 0, 0, 0))
-                end = new Date(now.setHours(23, 59, 59, 999))
-                break
-            case 'tomorrow':
-                start = new Date(now.setDate(now.getDate() + 1))
-                start.setHours(0, 0, 0, 0)
-                end = new Date(start)
-                end.setHours(23, 59, 59, 999)
-                break
-            case 'this-week':
-                start = new Date(now)
-                start.setDate(now.getDate() - now.getDay()) // Start of week (Sunday)
-                start.setHours(0, 0, 0, 0)
-                end = new Date(start)
-                end.setDate(start.getDate() + 6) // End of week (Saturday)
-                end.setHours(23, 59, 59, 999)
-                break
-            case 'this-month':
-                start = new Date(now.getFullYear(), now.getMonth(), 1)
-                end = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-                end.setHours(23, 59, 59, 999)
-                break
-            case 'next-month':
-                const nextMonth = addMonths(now, 1)
-                start = new Date(
-                    nextMonth.getFullYear(),
-                    nextMonth.getMonth(),
-                    1
-                )
-                end = new Date(
-                    nextMonth.getFullYear(),
-                    nextMonth.getMonth() + 1,
-                    0
-                )
-                end.setHours(23, 59, 59, 999)
-                break
-            case 'next-3-months':
-                start = new Date(now)
-                start.setHours(0, 0, 0, 0)
-                end = addMonths(now, 3)
-                end.setHours(23, 59, 59, 999)
-                break
-            case 'clear':
-                onDateRangeChange(undefined)
-                setIsDateFilterOpen(false)
-                return
-            default:
-                return
+    // Handle slider changes
+    const handleStartChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newValue = parseInt(e.target.value)
+        if (newValue <= endValue) {
+            setStartValue(newValue)
+            onDateRangeChange({
+                start: getDateFromValue(newValue),
+                end: getDateFromValue(endValue),
+            })
         }
-
-        onDateRangeChange({
-            start: format(start, "yyyy-MM-dd'T'HH:mm:ss"),
-            end: format(end, "yyyy-MM-dd'T'HH:mm:ss"),
-        })
-        setIsDateFilterOpen(false)
     }
 
-    // Format date range for display
-    const formatDateRangeDisplay = () => {
-        if (!dateRange) return 'Any time'
+    const handleEndChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newValue = parseInt(e.target.value)
+        if (newValue >= startValue) {
+            setEndValue(newValue)
+            onDateRangeChange({
+                start: getDateFromValue(startValue),
+                end: getDateFromValue(newValue),
+            })
+        }
+    }
 
-        const start = new Date(dateRange.start)
-        const end = new Date(dateRange.end)
+    const toggleDateSliders = () => {
+        setShowDateSliders(!showDateSliders)
+    }
 
-        return `${format(start, 'MMM d')} - ${format(end, 'MMM d, yyyy')}`
+    const handleReset = () => {
+        setShowDateSliders(false)
+        setStartValue(0)
+        setEndValue(totalDays)
+        onReset()
+    }
+
+    const formatDateForButton = (date: Date) => {
+        return format(date, 'MMM d EEE')
+    }
+
+    const getDateButtonText = () => {
+        const startDate = new Date(getDateFromValue(startValue))
+        const endDate = new Date(getDateFromValue(endValue))
+        const msg = `Date Sliders that Filter by Date - (${formatDateForButton(
+            startDate
+        )} - ${formatDateForButton(endDate)})`
+
+        if (!showDateSliders) {
+            return `Show ${msg}`
+        }
+        return `Hide ${msg}`
     }
 
     return (
-        <div className="mb-6 space-y-4">
-            {/* Search input */}
-            <div className="form-control">
-                <label htmlFor="search" className="form-label">
-                    Search events
-                </label>
+        <div className="space-y-4">
+            <div className="flex flex-col space-y-2">
                 <input
-                    id="search"
                     type="text"
-                    className="form-input"
                     placeholder="Search by name, location, or description"
                     value={searchQuery}
-                    onChange={handleSearchChange}
-                    data-testid="event-search-input"
+                    onChange={(e) => onSearchChange(e.target.value)}
+                    className="p-2 border rounded w-full text-black"
                 />
             </div>
 
-            {/* Date filter */}
-            <div className="form-control">
-                <label className="form-label">Date range</label>
-                <div className="relative" data-testid="date-range-dropdown">
-                    <button
-                        type="button"
-                        className="w-full px-4 py-2 text-left border rounded-md flex justify-between items-center"
-                        onClick={() => setIsDateFilterOpen(!isDateFilterOpen)}
-                    >
-                        <span>{formatDateRangeDisplay()}</span>
-                        <span className="text-gray-500">▼</span>
-                    </button>
-
-                    {isDateFilterOpen && (
-                        <div className="absolute z-10 mt-1 w-full bg-white border rounded-md shadow-lg">
-                            <div className="p-2 space-y-1">
-                                <button
-                                    className="w-full text-left px-3 py-2 hover:bg-gray-100 rounded"
-                                    onClick={() =>
-                                        handleDateRangeSelect('today')
-                                    }
-                                >
-                                    Today
-                                </button>
-                                <button
-                                    className="w-full text-left px-3 py-2 hover:bg-gray-100 rounded"
-                                    onClick={() =>
-                                        handleDateRangeSelect('tomorrow')
-                                    }
-                                >
-                                    Tomorrow
-                                </button>
-                                <button
-                                    className="w-full text-left px-3 py-2 hover:bg-gray-100 rounded"
-                                    onClick={() =>
-                                        handleDateRangeSelect('this-week')
-                                    }
-                                >
-                                    This week
-                                </button>
-                                <button
-                                    className="w-full text-left px-3 py-2 hover:bg-gray-100 rounded"
-                                    onClick={() =>
-                                        handleDateRangeSelect('this-month')
-                                    }
-                                >
-                                    This month
-                                </button>
-                                <button
-                                    className="w-full text-left px-3 py-2 hover:bg-gray-100 rounded"
-                                    onClick={() =>
-                                        handleDateRangeSelect('next-month')
-                                    }
-                                >
-                                    Next month
-                                </button>
-                                <button
-                                    className="w-full text-left px-3 py-2 hover:bg-gray-100 rounded"
-                                    onClick={() =>
-                                        handleDateRangeSelect('next-3-months')
-                                    }
-                                >
-                                    Next 3 months
-                                </button>
-                                <div className="border-t my-2"></div>
-                                <button
-                                    className="w-full text-left px-3 py-2 hover:bg-gray-100 rounded text-primary"
-                                    onClick={() =>
-                                        handleDateRangeSelect('clear')
-                                    }
-                                >
-                                    Clear filter
-                                </button>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* Reset filters button */}
-            <div className="flex justify-end">
+            <div className="flex flex-col space-y-2">
                 <button
-                    type="button"
-                    className="text-sm text-primary hover:underline"
-                    onClick={onResetFilters}
-                    data-testid="reset-filters-button"
+                    onClick={toggleDateSliders}
+                    className="text-blue-500 hover:text-blue-700 text-left"
                 >
-                    Reset all filters
+                    {getDateButtonText()}
                 </button>
+
+                {showDateSliders && (
+                    <div className="space-y-4 p-4 bg-gray-50 rounded">
+                        <div>
+                            <label className="block text-sm text-gray-600">
+                                Start Date:{' '}
+                                {format(
+                                    new Date(getDateFromValue(startValue)),
+                                    'MMM d, yyyy'
+                                )}
+                            </label>
+                            <input
+                                type="range"
+                                min="0"
+                                max={totalDays}
+                                value={startValue}
+                                onChange={handleStartChange}
+                                className="w-full"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm text-gray-600">
+                                End Date:{' '}
+                                {format(
+                                    new Date(getDateFromValue(endValue)),
+                                    'MMM d, yyyy'
+                                )}
+                            </label>
+                            <input
+                                type="range"
+                                min="0"
+                                max={totalDays}
+                                value={endValue}
+                                onChange={handleEndChange}
+                                className="w-full"
+                            />
+                        </div>
+                    </div>
+                )}
             </div>
+
+            <button
+                onClick={handleReset}
+                className="text-red-500 hover:text-red-700"
+            >
+                Reset Filters
+            </button>
         </div>
     )
 }
-
-export default EventFilters

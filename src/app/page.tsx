@@ -68,7 +68,7 @@ export default function Home() {
         setSelectedMarkerId,
         resetToAllEvents,
         isMapOfAllEvents,
-    } = useMap({ events })
+    } = useMap({ events: filteredEvents })
 
     // Handle map bounds change
     const handleBoundsChange = useCallback((bounds: MapBounds) => {
@@ -77,11 +77,62 @@ export default function Home() {
     }, [])
 
     // Handle map filter removal
-    const handleClearMapFilter = useCallback(() => {
+    const handleClearMapFilter = () => {
         debugLog('page', 'Map filter cleared')
         setMapBounds(null)
-        resetToAllEvents()
-    }, [resetToAllEvents])
+        setSelectedMarkerId(null)
+        setSelectedEventId(null)
+        // Reset viewport to show all filtered events
+        if (filteredEvents.length > 0) {
+            const eventsWithLocations = filteredEvents.filter(
+                (event) =>
+                    event.resolved_location?.lat && event.resolved_location?.lng
+            )
+            if (eventsWithLocations.length > 0) {
+                const bounds = eventsWithLocations.reduce(
+                    (acc, event) => {
+                        const lat = event.resolved_location!.lat!
+                        const lng = event.resolved_location!.lng!
+                        return {
+                            minLat: Math.min(acc.minLat, lat),
+                            maxLat: Math.max(acc.maxLat, lat),
+                            minLng: Math.min(acc.minLng, lng),
+                            maxLng: Math.max(acc.maxLng, lng),
+                        }
+                    },
+                    {
+                        minLat: 90,
+                        maxLat: -90,
+                        minLng: 180,
+                        maxLng: -180,
+                    }
+                )
+
+                // Add 10% padding to the bounds
+                const latPadding = (bounds.maxLat - bounds.minLat) * 0.1
+                const lngPadding = (bounds.maxLng - bounds.minLng) * 0.1
+
+                setViewport({
+                    latitude: (bounds.minLat + bounds.maxLat) / 2,
+                    longitude: (bounds.minLng + bounds.maxLng) / 2,
+                    zoom: Math.min(
+                        15,
+                        Math.max(
+                            1,
+                            Math.log2(
+                                360 /
+                                    (bounds.maxLng -
+                                        bounds.minLng +
+                                        2 * lngPadding)
+                            )
+                        )
+                    ),
+                    bearing: 0,
+                    pitch: 0,
+                })
+            }
+        }
+    }
 
     // Handle unknown locations filter toggle
     const handleUnknownLocationsToggle = useCallback(() => {
@@ -105,6 +156,12 @@ export default function Home() {
         setShowUnknownLocationsOnly(false)
         resetToAllEvents()
     }, [resetToAllEvents])
+
+    // Handle clearing the search query
+    const handleClearSearchQuery = useCallback(() => {
+        debugLog('page', 'Clearing search query')
+        setSearchQuery('')
+    }, [])
 
     // Handler for selecting an event from the list
     const handleEventSelect = useCallback(
@@ -158,6 +215,61 @@ export default function Home() {
         }
     }, [events, totalCount, unknownLocationsCount, calendarName, calendarId])
 
+    // Calculate filtered counts
+    const getFilteredCounts = () => {
+        let mapFilteredCount = 0
+        let searchFilteredCount = 0
+        let dateFilteredCount = 0
+
+        events.forEach((event) => {
+            // Check map filter
+            if (mapBounds && event.resolved_location) {
+                const lat = event.resolved_location.lat
+                const lng = event.resolved_location.lng
+                if (lat && lng) {
+                    if (
+                        !(
+                            lat >= mapBounds.south &&
+                            lat <= mapBounds.north &&
+                            lng >= mapBounds.west &&
+                            lng <= mapBounds.east
+                        )
+                    ) {
+                        mapFilteredCount++
+                    }
+                }
+            }
+
+            // Check search filter
+            if (searchQuery.trim() !== '') {
+                const query = searchQuery.toLowerCase()
+                if (
+                    !event.name?.toLowerCase().includes(query) &&
+                    !event.location?.toLowerCase().includes(query) &&
+                    !event.description?.toLowerCase().includes(query)
+                ) {
+                    searchFilteredCount++
+                }
+            }
+
+            // Check date filter
+            if (dateRange) {
+                const eventStart = new Date(event.startDate)
+                const eventEnd = new Date(event.endDate)
+                const rangeStart = new Date(dateRange.start)
+                const rangeEnd = new Date(dateRange.end)
+                if (eventEnd < rangeStart || eventStart > rangeEnd) {
+                    dateFilteredCount++
+                }
+            }
+        })
+
+        return { mapFilteredCount, searchFilteredCount, dateFilteredCount }
+    }
+
+    const { mapFilteredCount, searchFilteredCount, dateFilteredCount } =
+        getFilteredCounts()
+
     // If no calendar ID is provided, show the calendar selector
     if (!calendarId) {
         return (
@@ -195,7 +307,62 @@ export default function Home() {
 
                     {/* Active filters display */}
                     <div className="mb-4 flex flex-wrap gap-2">
-                        {!isMapOfAllEvents && mapBounds && (
+                        {!isMapOfAllEvents &&
+                            mapBounds &&
+                            mapFilteredCount > 0 && (
+                                <div className="inline-flex items-center bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        className="h-3 w-3 mr-1"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4"
+                                        />
+                                    </svg>
+                                    {mapFilteredCount} Filtered by Map
+                                    <button
+                                        onClick={handleClearMapFilter}
+                                        className="ml-1 text-blue-700 hover:text-blue-900"
+                                        aria-label="Remove map filter"
+                                    >
+                                        ×
+                                    </button>
+                                </div>
+                            )}
+                        {searchQuery.trim() !== '' &&
+                            searchFilteredCount > 0 && (
+                                <div className="inline-flex items-center bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        className="h-3 w-3 mr-1"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                                        />
+                                    </svg>
+                                    {searchFilteredCount} Filtered by Search
+                                    <button
+                                        onClick={handleClearSearchQuery}
+                                        className="ml-1 text-blue-700 hover:text-blue-900"
+                                        aria-label="Remove search filter"
+                                    >
+                                        ×
+                                    </button>
+                                </div>
+                            )}
+                        {dateRange && dateFilteredCount > 0 && (
                             <div className="inline-flex items-center bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
@@ -208,41 +375,19 @@ export default function Home() {
                                         strokeLinecap="round"
                                         strokeLinejoin="round"
                                         strokeWidth={2}
-                                        d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4"
+                                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                                     />
                                 </svg>
-                                Map Area Filter
+                                {dateFilteredCount} Filtered by Date
                                 <button
-                                    onClick={handleClearMapFilter}
+                                    onClick={() => setDateRange(undefined)}
                                     className="ml-1 text-blue-700 hover:text-blue-900"
-                                    aria-label="Remove map filter"
+                                    aria-label="Remove date filter"
                                 >
                                     ×
                                 </button>
                             </div>
                         )}
-
-                        {/* Show All Events button */}
-                        <button
-                            onClick={resetToAllEvents}
-                            className="inline-flex items-center bg-blue-500 text-white text-xs px-2 py-1 rounded hover:bg-blue-600"
-                        >
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="h-3 w-3 mr-1"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-                                />
-                            </svg>
-                            Show All Events
-                        </button>
                     </div>
 
                     <EventFilters
@@ -250,7 +395,7 @@ export default function Home() {
                         onSearchChange={setSearchQuery}
                         dateRange={dateRange}
                         onDateRangeChange={setDateRange}
-                        onResetFilters={handleResetFilters}
+                        onReset={handleResetFilters}
                     />
 
                     <EventList
