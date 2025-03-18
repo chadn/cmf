@@ -9,6 +9,7 @@ import MapPopup from './MapPopup'
 import { debugLog } from '@/lib/utils/debug'
 // Import maplibre-gl as a type
 import type maplibregl from 'maplibre-gl'
+import { CalendarEvent } from '@/types/events'
 
 interface MapContainerProps {
     viewport: MapViewport
@@ -32,6 +33,7 @@ const MapContainer: React.FC<MapContainerProps> = ({
     const mapRef = useRef<any>(null)
     const [popupInfo, setPopupInfo] = useState<MapMarker | null>(null)
     const [mapLoaded, setMapLoaded] = useState(false)
+    const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
 
     // Log when component mounts
     useEffect(() => {
@@ -45,17 +47,42 @@ const MapContainer: React.FC<MapContainerProps> = ({
     useEffect(() => {
         if (selectedMarkerId) {
             const marker = markers.find((m) => m.id === selectedMarkerId)
-            setPopupInfo(marker || null)
 
-            if (marker) {
+            if (marker && marker.events && marker.events.length > 0) {
+                setPopupInfo(marker)
+
                 debugLog('map', `Selected marker: ${selectedMarkerId}`, {
                     lat: marker.latitude,
                     lng: marker.longitude,
                     eventCount: marker.events.length,
                 })
+
+                // If no specific event is selected or the selected event is not in this marker,
+                // default to the first event in this marker
+                if (
+                    !selectedEventId ||
+                    !marker.events.find((e) => e.id === selectedEventId)
+                ) {
+                    setSelectedEventId(marker.events[0]?.id || null)
+                    debugLog(
+                        'map',
+                        `Defaulting to first event: ${marker.events[0]?.name}`,
+                        {
+                            eventId: marker.events[0]?.id,
+                        }
+                    )
+                }
+            } else {
+                debugLog(
+                    'map',
+                    `Selected marker has no events: ${selectedMarkerId}`
+                )
+                setPopupInfo(null)
+                setSelectedEventId(null)
             }
         } else {
             setPopupInfo(null)
+            setSelectedEventId(null)
         }
     }, [selectedMarkerId, markers])
 
@@ -97,13 +124,39 @@ const MapContainer: React.FC<MapContainerProps> = ({
 
     // Handle marker click
     const handleMarkerClick = (marker: MapMarker) => {
+        if (!marker.events || marker.events.length === 0) {
+            debugLog('map', `Clicked marker has no events: ${marker.id}`)
+            return
+        }
+
         debugLog('map', `Marker clicked: ${marker.id}`, {
             lat: marker.latitude,
             lng: marker.longitude,
             eventCount: marker.events.length,
+            firstEventName: marker.events[0]?.name,
         })
+
         onMarkerSelect(marker.id)
         setPopupInfo(marker)
+
+        // Default to the first event in the marker when clicking
+        if (marker.events.length > 0) {
+            const firstEventId = marker.events[0].id
+            setSelectedEventId(firstEventId)
+            debugLog(
+                'map',
+                `Setting selected event: ${marker.events[0].name}`,
+                {
+                    eventId: firstEventId,
+                }
+            )
+        }
+    }
+
+    // Handle event selection in popup
+    const handleEventSelect = (eventId: string) => {
+        debugLog('map', `Event selected in popup: ${eventId}`)
+        setSelectedEventId(eventId)
     }
 
     // Handle popup close
@@ -111,6 +164,7 @@ const MapContainer: React.FC<MapContainerProps> = ({
         debugLog('map', 'Popup closed')
         onMarkerSelect(null)
         setPopupInfo(null)
+        setSelectedEventId(null)
     }
 
     // Handle reset view button click
@@ -171,17 +225,23 @@ const MapContainer: React.FC<MapContainerProps> = ({
                 ))}
 
                 {/* Popup */}
-                {popupInfo && (
-                    <Popup
-                        longitude={popupInfo.longitude}
-                        latitude={popupInfo.latitude}
-                        anchor="bottom"
-                        onClose={handlePopupClose}
-                        closeOnClick={false}
-                    >
-                        <MapPopup marker={popupInfo} />
-                    </Popup>
-                )}
+                {popupInfo &&
+                    popupInfo.events &&
+                    popupInfo.events.length > 0 && (
+                        <Popup
+                            longitude={popupInfo.longitude}
+                            latitude={popupInfo.latitude}
+                            anchor="bottom"
+                            onClose={handlePopupClose}
+                            closeOnClick={false}
+                        >
+                            <MapPopup
+                                marker={popupInfo}
+                                selectedEventId={selectedEventId}
+                                onEventSelect={handleEventSelect}
+                            />
+                        </Popup>
+                    )}
             </Map>
         </div>
     )

@@ -74,13 +74,38 @@ html {
     height: 100% !important;
 }
 
+/* Map popup styles */
 .maplibregl-popup {
     max-width: 300px;
+    z-index: 100;
 }
 
 .maplibregl-popup-content {
-    padding: var(--spacing-md);
+    padding: 0 !important;
     border-radius: var(--radius-md);
+    color: rgb(55, 65, 81);
+    background-color: white;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+}
+
+.maplibregl-popup-close-button {
+    color: #4b5563;
+    font-size: 16px;
+    padding: 4px 8px;
+    right: 0;
+    top: 0;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+}
+
+.maplibregl-popup-close-button:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
+    border-top-color: white;
 }
 
 /* Event list styles */
