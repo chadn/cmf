@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { GeocodeResponse } from '@/types/api'
+import { GeocodeResponse, GoogleGeocodeResult } from '@/types/api'
 import { ResolvedLocation } from '@/types/events'
 import { getCachedLocation, cacheLocation } from '@/lib/cache'
 import { debugLog } from '@/lib/utils/debug'
@@ -7,8 +7,11 @@ import { debugLog } from '@/lib/utils/debug'
 const GOOGLE_MAPS_GEOCODING_API =
     'https://maps.googleapis.com/maps/api/geocode/json'
 
-const USE_FIXED_LOCATIONS = true
-// Fixed location for temporary use
+// Cache unresolved locations, so we don't call the API repeatedly and can manually fix them
+const CACHE_UNRESOLVED_LOCATIONS = true
+
+// Fixed location for temporary development debugging use
+const USE_FIXED_LOCATIONS = false
 const FIXED_LOCATIONS = [
     {
         name_address: 'Downtown Berkeley, CA',
@@ -33,6 +36,29 @@ const FIXED_LOCATIONS = [
     },
 ]
 
+export function updateResolvedLocation(
+    result: ResolvedLocation,
+    apiData: GoogleGeocodeResult
+): ResolvedLocation {
+    try {
+        return {
+            original_location: result.original_location,
+            formatted_address: apiData.formatted_address,
+            lat: apiData.geometry.location.lat,
+            lng: apiData.geometry.location.lng,
+            types: apiData.types,
+            status: 'resolved',
+        }
+    } catch (error) {
+        debugLog(
+            'geocoding',
+            `updateResolvedLocation unresolved: ${result.original_location}`,
+            apiData
+        )
+        return result
+    }
+}
+
 /**
  * Geocodes a location string using Google Maps Geocoding API
  * @param locationString - The location text to geocode
@@ -50,12 +76,10 @@ export async function geocodeLocation(
 
     if (USE_FIXED_LOCATIONS) {
         const i = Math.floor(Math.random() * FIXED_LOCATIONS.length)
-
         debugLog(
             'geocoding',
             `TEMPORARY: Using fixed address ${i} for "${locationString}"`
         )
-
         return {
             original_location: locationString,
             formatted_address: FIXED_LOCATIONS[i].formatted_address,
@@ -65,11 +89,19 @@ export async function geocodeLocation(
         }
     }
 
-    /* Original implementation commented out
+    let result: ResolvedLocation = {
+        original_location: locationString,
+        status: 'unresolved',
+    }
+    locationString = locationString.trim()
     try {
         // Check cache first
         const cachedLocation = await getCachedLocation(locationString)
         if (cachedLocation) {
+            debugLog(
+                'geocoding',
+                `Found in Cache ${cachedLocation.status}: "${locationString}"`
+            )
             return cachedLocation
         }
 
@@ -78,51 +110,34 @@ export async function geocodeLocation(
             debugLog('api', 'Google Maps API key is not configured')
             throw new Error('Google Maps API key is not configured')
         }
+        debugLog('geocoding', 'Fetching from API:', locationString)
 
         const params = {
             address: locationString,
             key: process.env.GOOGLE_MAPS_API_KEY,
         }
-
         const response = await axios.get<GeocodeResponse>(
             GOOGLE_MAPS_GEOCODING_API,
-            { params }
-        )
-
-        if (response.data.status === 'OK' && response.data.results.length > 0) {
-            const result = response.data.results[0]
-            const resolvedLocation: ResolvedLocation = {
-                original_location: locationString,
-                formatted_address: result.formatted_address,
-                lat: result.geometry.location.lat,
-                lng: result.geometry.location.lng,
-                status: 'resolved',
+            {
+                params,
             }
+        )
+        //debugLog('geocoding', 'response result:', response.data.results[0])
+        result = updateResolvedLocation(result, response.data.results[0])
 
+        if (result.status === 'resolved') {
             // Cache the result
-            await cacheLocation(locationString, resolvedLocation)
-
-            return resolvedLocation
+            await cacheLocation(locationString, result)
+        } else if (CACHE_UNRESOLVED_LOCATIONS) {
+            debugLog('geocoding', `Caching Unresolved: "${locationString}"`)
+            await cacheLocation(locationString, result)
+        } else {
+            debugLog('geocoding', `Not Caching Unresolved: "${locationString}"`)
         }
-
-        // If geocoding failed, return unresolved status
-        const unresolvedLocation: ResolvedLocation = {
-            original_location: locationString,
-            status: 'unresolved',
-        }
-
-        // Cache the unresolved result too to avoid repeated API calls
-        await cacheLocation(locationString, unresolvedLocation)
-
-        return unresolvedLocation
     } catch (error) {
-        console.error('Error geocoding location:', error)
-        return {
-            original_location: locationString,
-            status: 'unresolved',
-        }
+        debugLog('geocoding', 'API Error: ', error)
     }
-    */
+    return result
 }
 
 /**
@@ -136,13 +151,15 @@ export async function batchGeocodeLocations(
     // Filter out duplicates to minimize API calls
     const uniqueLocations = Array.from(new Set(locations))
 
-    debugLog(
-        'geocoding',
-        `TEMPORARY: Using fixed address for ${uniqueLocations.length} locations`
-    )
-
-    // Process in batches of 10 to avoid rate limits
+    if (USE_FIXED_LOCATIONS) {
+        debugLog(
+            'geocoding',
+            `TEMPORARY: Using fixed address for ${uniqueLocations.length} locations`
+        )
+    }
+    // Process in batches of 10 with delayMs in between to avoid rate limits
     const batchSize = 10
+    const delayMs = 20
     const results: ResolvedLocation[] = []
 
     for (let i = 0; i < uniqueLocations.length; i += batchSize) {
@@ -154,11 +171,14 @@ export async function batchGeocodeLocations(
         results.push(...batchResults)
 
         // Add a small delay between batches to avoid rate limits
-        const delayMs = 2
         if (i + batchSize < uniqueLocations.length) {
             await new Promise((resolve) => setTimeout(resolve, delayMs))
         }
     }
+    debugLog(
+        'geocoding',
+        `batchGeocodeLocations returning ${results.length} for ${uniqueLocations.length} locations`
+    )
 
     return results
 }

@@ -16,6 +16,7 @@ export interface ResolvedLocation {
     formatted_address?: string
     lat?: number
     lng?: number
+    types?: string[]
     status: 'resolved' | 'unresolved' | 'pending'
 }
 
