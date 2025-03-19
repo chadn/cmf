@@ -7,15 +7,25 @@ import { debugLog } from '@/lib/utils/debug'
 const GOOGLE_MAPS_GEOCODING_API =
     'https://maps.googleapis.com/maps/api/geocode/json'
 
+const USE_FIXED_LOCATIONS = true
 // Fixed location for temporary use
 const FIXED_LOCATIONS = [
     {
+        name_address: 'Downtown Berkeley, CA',
         formatted_address: 'Berkeley CA 94705',
         lat: 37.8608, // Approximate coordinates for Berkeley
         lng: -122.2451,
         status: 'resolved' as const,
     },
     {
+        name_address: 'Pinewood Picnic Area, Joaquin Miller Park',
+        formatted_address: '3594 Sanborn Dr, Oakland, CA 94602',
+        lat: 37.809926,
+        lng: -122.183184,
+        status: 'resolved' as const,
+    },
+    {
+        name_address: 'Ghost Town Brewing - West Oakland Brewery & Taproom',
         formatted_address: '1960 Adeline St, Oakland, CA 94607',
         lat: 37.81416,
         lng: -122.28413,
@@ -25,7 +35,6 @@ const FIXED_LOCATIONS = [
 
 /**
  * Geocodes a location string using Google Maps Geocoding API
- * TEMPORARILY MODIFIED: Always returns a fixed address
  * @param locationString - The location text to geocode
  * @returns Promise with geocoded location data
  */
@@ -39,19 +48,21 @@ export async function geocodeLocation(
         }
     }
 
-    debugLog(
-        'geocoding',
-        `TEMPORARY: Using fixed address for "${locationString}"`
-    )
+    if (USE_FIXED_LOCATIONS) {
+        const i = Math.floor(Math.random() * FIXED_LOCATIONS.length)
 
-    // Return the fixed location for all requests
-    const i = Math.floor(Math.random() * FIXED_LOCATIONS.length)
-    return {
-        original_location: locationString,
-        formatted_address: FIXED_LOCATIONS[i].formatted_address,
-        lat: FIXED_LOCATIONS[i].lat,
-        lng: FIXED_LOCATIONS[i].lng,
-        status: FIXED_LOCATIONS[i].status,
+        debugLog(
+            'geocoding',
+            `TEMPORARY: Using fixed address ${i} for "${locationString}"`
+        )
+
+        return {
+            original_location: locationString,
+            formatted_address: FIXED_LOCATIONS[i].formatted_address,
+            lat: FIXED_LOCATIONS[i].lat,
+            lng: FIXED_LOCATIONS[i].lng,
+            status: FIXED_LOCATIONS[i].status,
+        }
     }
 
     /* Original implementation commented out
@@ -130,19 +141,6 @@ export async function batchGeocodeLocations(
         `TEMPORARY: Using fixed address for ${uniqueLocations.length} locations`
     )
 
-    // Return the fixed location for all requests
-    const i = Math.floor(Math.random() * FIXED_LOCATIONS.length)
-
-    // Return the fixed location for all locations
-    return uniqueLocations.map((location) => ({
-        original_location: location,
-        formatted_address: FIXED_LOCATIONS[i].formatted_address,
-        lat: FIXED_LOCATIONS[i].lat,
-        lng: FIXED_LOCATIONS[i].lng,
-        status: FIXED_LOCATIONS[i].status,
-    }))
-
-    /* Original implementation commented out
     // Process in batches of 10 to avoid rate limits
     const batchSize = 10
     const results: ResolvedLocation[] = []
@@ -156,11 +154,11 @@ export async function batchGeocodeLocations(
         results.push(...batchResults)
 
         // Add a small delay between batches to avoid rate limits
+        const delayMs = 2
         if (i + batchSize < uniqueLocations.length) {
-            await new Promise((resolve) => setTimeout(resolve, 1000))
+            await new Promise((resolve) => setTimeout(resolve, delayMs))
         }
     }
 
     return results
-    */
 }

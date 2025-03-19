@@ -135,7 +135,7 @@ export async function GET(request: NextRequest) {
             })
 
             // Add resolved locations to events
-            const eventsWithLocations = events.map((event) => {
+            const eventsWithLocationResolved = events.map((event) => {
                 if (event.location && locationMap.has(event.location)) {
                     return {
                         ...event,
@@ -146,7 +146,7 @@ export async function GET(request: NextRequest) {
             })
 
             // Count events with unknown locations
-            const unknownLocationsCount = eventsWithLocations.filter(
+            const unknownLocationsCount = eventsWithLocationResolved.filter(
                 (event) =>
                     !event.resolved_location ||
                     event.resolved_location.status !== 'resolved'
@@ -159,8 +159,8 @@ export async function GET(request: NextRequest) {
 
             // Construct the response
             const response: CMFEvents = {
-                events: eventsWithLocations,
-                total_count: eventsWithLocations.length,
+                events: eventsWithLocationResolved,
+                total_count: eventsWithLocationResolved.length,
                 unknown_locations_count: unknownLocationsCount,
                 calendar_name: calendarData.summary,
                 calendar_id: calendarId,

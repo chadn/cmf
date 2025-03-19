@@ -12,6 +12,7 @@ export interface CalendarEvent {
 
 export interface ResolvedLocation {
     original_location: string
+    name_address?: string
     formatted_address?: string
     lat?: number
     lng?: number
