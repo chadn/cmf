@@ -8,24 +8,23 @@ import EventFilters from '@/components/events/EventFilters'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import CalendarSelector from '@/components/home/CalendarSelector'
-import { useEvents } from '@/lib/hooks/useEvents'
+import { useEventsManager } from '@/lib/hooks/useEventsManager'
 import { useMap } from '@/lib/hooks/useMap'
 import { MapBounds } from '@/types/map'
 import { debugLog, clientDebug } from '@/lib/utils/debug'
+
+// quiet window.cmf_events build error - https://stackoverflow.com/questions/56457935/typescript-error-property-x-does-not-exist-on-type-window
+declare const window: any;
 
 function HomeContent() {
     const searchParams = useSearchParams()
     const calendarId = searchParams.get('gc') || ''
 
-    // State for filters
-    const [searchQuery, setSearchQuery] = useState('')
-    const [dateRange, setDateRange] = useState<
+    // Local state for filters
+    const [searchQuery, setLocalSearchQuery] = useState('')
+    const [dateRange, setLocalDateRange] = useState<
         { start: string; end: string } | undefined
     >(undefined)
-    const [mapBounds, setMapBounds] = useState<MapBounds | null>(null)
-    const [showUnknownLocationsOnly, setShowUnknownLocationsOnly] =
-        useState(false)
-    const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
 
     // Log component mount and calendar ID - only once when component mounts
     useEffect(() => {
@@ -39,27 +38,37 @@ function HomeContent() {
         } else {
             clientDebug.log('page', 'No calendar ID found in URL parameters')
         }
-    }, []) // Empty dependency array ensures this runs only once
+    }, [calendarId]) // Added calendarId to dependencies to ensure logs on calendar change
 
-    // Get events with filters applied
+
+    // Use our new EventsManager hook to get events and filter methods
     const {
         events,
-        filteredEvents,
+        filters,
+        calendar,
         isLoading,
         error,
-        totalCount,
-        filteredCount,
-        unknownLocationsCount,
-        calendarName,
-    } = useEvents({
-        calendarId,
-        dateRange,
-        searchQuery,
-        mapBounds: mapBounds || undefined,
-        showUnknownLocationsOnly,
-    })
+        eventsManager
+    } = useEventsManager({ calendarId })
 
-    // Map state
+    // Log component mount and calendar ID - only once when component mounts
+    useEffect(() => {
+        if (!isLoading) {
+            clientDebug.log('page', 'isLoading=fase, Loading finished, setTimeout resetToAllEvents')
+            setTimeout(() => {
+                clientDebug.log('page', 'isLoading=fase, calling resetToAllEvents')
+                resetToAllEvents()
+            }, 100)
+        } else{
+            // TODO: Chad - consider pausing stuff
+            clientDebug.log('page', 'isLoading=true, Loading in progress ....')
+        }
+    }, [isLoading]) // Added calendarId to dependencies to ensure logs on calendar change
+    
+    // State for selected event
+    const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
+
+    // Map state - now uses events with locations instead of filtered events
     const {
         viewport,
         setViewport,
@@ -68,100 +77,64 @@ function HomeContent() {
         setSelectedMarkerId,
         resetToAllEvents,
         isMapOfAllEvents,
-    } = useMap({ events: filteredEvents })
+    } = useMap({ events: events.withLocations })
+
+    // Handle search query changes
+    const handleSearchChange = useCallback(
+        (query: string) => {
+            debugLog('page', 'Search filter changed', { query })
+            setLocalSearchQuery(query)
+            filters.setSearchQuery(query)
+        },
+        [filters]
+    )
+
+    // Handle date range changes
+    const handleDateRangeChange = useCallback(
+        (newDateRange: { start: string; end: string } | undefined) => {
+            debugLog('page', 'Date filter changed', {
+                start: newDateRange?.start,
+                end: newDateRange?.end,
+            })
+            setLocalDateRange(newDateRange)
+            filters.setDateRange(newDateRange)
+        },
+        [filters]
+    )
 
     // Handle map bounds change
-    const handleBoundsChange = useCallback((bounds: MapBounds) => {
-        debugLog('page', 'Map bounds changed', bounds)
-        setMapBounds(bounds)
-    }, [])
+    const handleBoundsChange = useCallback(
+        (bounds: MapBounds) => {
+            debugLog('page', 'Map bounds changed', bounds)
+            filters.setMapBounds(bounds)
+        },
+        [filters]
+    )
 
     // Handle map filter removal
     const handleClearMapFilter = () => {
         debugLog('page', 'Map filter cleared')
-        setMapBounds(null)
+        filters.setMapBounds(undefined)
         setSelectedMarkerId(null)
         setSelectedEventId(null)
-        // Reset viewport to show all filtered events
-        if (filteredEvents.length > 0) {
-            const eventsWithLocations = filteredEvents.filter(
-                (event) =>
-                    event.resolved_location?.lat && event.resolved_location?.lng
-            )
-            if (eventsWithLocations.length > 0) {
-                const bounds = eventsWithLocations.reduce(
-                    (acc, event) => {
-                        const lat = event.resolved_location!.lat!
-                        const lng = event.resolved_location!.lng!
-                        return {
-                            minLat: Math.min(acc.minLat, lat),
-                            maxLat: Math.max(acc.maxLat, lat),
-                            minLng: Math.min(acc.minLng, lng),
-                            maxLng: Math.max(acc.maxLng, lng),
-                        }
-                    },
-                    {
-                        minLat: 90,
-                        maxLat: -90,
-                        minLng: 180,
-                        maxLng: -180,
-                    }
-                )
-
-                // Add 10% padding to the bounds
-                const latPadding = (bounds.maxLat - bounds.minLat) * 0.1
-                const lngPadding = (bounds.maxLng - bounds.minLng) * 0.1
-
-                setViewport({
-                    latitude: (bounds.minLat + bounds.maxLat) / 2,
-                    longitude: (bounds.minLng + bounds.maxLng) / 2,
-                    zoom: Math.min(
-                        15,
-                        Math.max(
-                            1,
-                            Math.log2(
-                                360 /
-                                    (bounds.maxLng -
-                                        bounds.minLng +
-                                        2 * lngPadding)
-                            )
-                        )
-                    ),
-                    bearing: 0,
-                    pitch: 0,
-                })
-            }
-        }
+        // Call resetToAllEvents to properly reset the map to show all events
+        resetToAllEvents()
     }
 
     // Handle unknown locations filter toggle
     const handleUnknownLocationsToggle = useCallback(() => {
-        setShowUnknownLocationsOnly((prev) => !prev)
-        debugLog(
-            'page',
-            `Unknown locations filter toggled: ${
-                !showUnknownLocationsOnly
-                    ? 'showing only unknown'
-                    : 'showing all'
-            }`
-        )
-    }, [showUnknownLocationsOnly])
+        filters.setShowUnknownLocationsOnly(true)
+        debugLog('page', 'Unknown locations filter toggled')
+    }, [filters])
 
     // Reset all filters
     const handleResetFilters = useCallback(() => {
         debugLog('page', 'Resetting all filters')
-        setSearchQuery('')
-        setDateRange(undefined)
-        setMapBounds(null)
-        setShowUnknownLocationsOnly(false)
+        setLocalSearchQuery('')
+        setLocalDateRange(undefined)
+        filters.resetAll()
         resetToAllEvents()
-    }, [resetToAllEvents])
-
-    // Handle clearing the search query
-    const handleClearSearchQuery = useCallback(() => {
-        debugLog('page', 'Clearing search query')
-        setSearchQuery('')
-    }, [])
+    }, [filters, resetToAllEvents])
 
     // Handler for selecting an event from the list
     const handleEventSelect = useCallback(
@@ -175,7 +148,7 @@ function HomeContent() {
             }
 
             // Find the event and its marker
-            const event = events.find((e) => e.id === eventId)
+            const event = events.all.find((e) => e.id === eventId)
             if (
                 !event ||
                 !event.resolved_location?.lat ||
@@ -198,77 +171,38 @@ function HomeContent() {
                 zoom: 14,
             })
         },
-        [events, setSelectedMarkerId, setViewport, viewport]
+        [events.all, setSelectedMarkerId, setViewport, viewport]
     )
 
     // Expose events data to window for debugging
     useEffect(() => {
-        if (events && events.length > 0 && typeof window !== 'undefined') {
-            // @ts-ignore - Adding cmf_events to window for debugging
-            window.cmf_events = {
-                events,
-                total_count: totalCount,
-                unknown_locations_count: unknownLocationsCount,
-                calendar_name: calendarName || '',
+        if (events?.all?.length > 0 && typeof window !== 'undefined') {
+            // Add events to window for debugging
+            window.cmf_events = events
+            const temp_cmf_events = {
+                events_all: events.all,
+                events_filtered: events.filtered,
+                with_locations: events.withLocations,
+                without_locations: events.withoutLocations,
+                total_count: calendar.totalCount,
+                unknown_locations_count: calendar.unknownLocationsCount,
+                calendar_name: calendar.name || '',
                 calendar_id: calendarId || '',
             }
+
+            debugLog('page', 'Events data exposed to window.cmf_events', window.cmf_events)
         }
-    }, [events, totalCount, unknownLocationsCount, calendarName, calendarId])
+    }, [
+        events,
+        calendar.totalCount,
+        calendar.unknownLocationsCount,
+        calendar.name,
+        calendarId,
+    ])
 
-    // Calculate filtered counts
-    const getFilteredCounts = () => {
-        let mapFilteredCount = 0
-        let searchFilteredCount = 0
-        let dateFilteredCount = 0
-
-        events.forEach((event) => {
-            // Check map filter
-            if (mapBounds && event.resolved_location) {
-                const lat = event.resolved_location.lat
-                const lng = event.resolved_location.lng
-                if (lat && lng) {
-                    if (
-                        !(
-                            lat >= mapBounds.south &&
-                            lat <= mapBounds.north &&
-                            lng >= mapBounds.west &&
-                            lng <= mapBounds.east
-                        )
-                    ) {
-                        mapFilteredCount++
-                    }
-                }
-            }
-
-            // Check search filter
-            if (searchQuery.trim() !== '') {
-                const query = searchQuery.toLowerCase()
-                if (
-                    !event.name?.toLowerCase().includes(query) &&
-                    !event.location?.toLowerCase().includes(query) &&
-                    !event.description?.toLowerCase().includes(query)
-                ) {
-                    searchFilteredCount++
-                }
-            }
-
-            // Check date filter
-            if (dateRange) {
-                const eventStart = new Date(event.startDate)
-                const eventEnd = new Date(event.endDate)
-                const rangeStart = new Date(dateRange.start)
-                const rangeEnd = new Date(dateRange.end)
-                if (eventEnd < rangeStart || eventStart > rangeEnd) {
-                    dateFilteredCount++
-                }
-            }
-        })
-
-        return { mapFilteredCount, searchFilteredCount, dateFilteredCount }
-    }
-
+    // Get filter stats
     const { mapFilteredCount, searchFilteredCount, dateFilteredCount } =
-        getFilteredCounts()
+        filters.getStats()
 
     // If no calendar ID is provided, show the calendar selector
     if (!calendarId) {
@@ -285,20 +219,21 @@ function HomeContent() {
 
     return (
         <div className="min-h-screen flex flex-col h-screen">
-            <Header calendarName={calendarName} />
+            <Header calendarName={calendar.name} />
 
             <main className="flex-grow flex flex-col md:flex-row h-[calc(100vh-120px)]">
                 {/* Sidebar with filters and event list */}
                 <div className="w-full md:w-1/2 h-full overflow-auto p-4 border-r">
                     <div className="mb-4">
                         <p>
-                            Map showing {filteredCount} of {totalCount} events
-                            {unknownLocationsCount > 0 && (
+                            Map showing {events.filtered.length} of{' '}
+                            {calendar.totalCount} events
+                            {calendar.unknownLocationsCount > 0 && (
                                 <button
                                     onClick={handleUnknownLocationsToggle}
                                     className="ml-2 text-blue-500 hover:underline"
                                 >
-                                    ({unknownLocationsCount} have unknown
+                                    ({calendar.unknownLocationsCount} have unknown
                                     locations)
                                 </button>
                             )}
@@ -307,62 +242,59 @@ function HomeContent() {
 
                     {/* Active filters display */}
                     <div className="mb-4 flex flex-wrap gap-2">
-                        {!isMapOfAllEvents &&
-                            mapBounds &&
-                            mapFilteredCount > 0 && (
-                                <div className="inline-flex items-center bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        className="h-3 w-3 mr-1"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4"
-                                        />
-                                    </svg>
-                                    {mapFilteredCount} Filtered by Map
-                                    <button
-                                        onClick={handleClearMapFilter}
-                                        className="ml-1 text-blue-700 hover:text-blue-900"
-                                        aria-label="Remove map filter"
-                                    >
-                                        ×
-                                    </button>
-                                </div>
-                            )}
-                        {searchQuery.trim() !== '' &&
-                            searchFilteredCount > 0 && (
-                                <div className="inline-flex items-center bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        className="h-3 w-3 mr-1"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                                        />
-                                    </svg>
-                                    {searchFilteredCount} Filtered by Search
-                                    <button
-                                        onClick={handleClearSearchQuery}
-                                        className="ml-1 text-blue-700 hover:text-blue-900"
-                                        aria-label="Remove search filter"
-                                    >
-                                        ×
-                                    </button>
-                                </div>
-                            )}
-                        {dateRange && dateFilteredCount > 0 && (
+                        {!isMapOfAllEvents && mapFilteredCount > 0 && (
+                            <div className="inline-flex items-center bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="h-3 w-3 mr-1"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4"
+                                    />
+                                </svg>
+                                {mapFilteredCount} Filtered by Map
+                                <button
+                                    onClick={handleClearMapFilter}
+                                    className="ml-1 text-blue-700 hover:text-blue-900"
+                                    aria-label="Remove map filter"
+                                >
+                                    ×
+                                </button>
+                            </div>
+                        )}
+                        {searchFilteredCount > 0 && (
+                            <div className="inline-flex items-center bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="h-3 w-3 mr-1"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                                    />
+                                </svg>
+                                {searchFilteredCount} Filtered by Search
+                                <button
+                                    onClick={() => handleSearchChange('')}
+                                    className="ml-1 text-blue-700 hover:text-blue-900"
+                                    aria-label="Remove search filter"
+                                >
+                                    ×
+                                </button>
+                            </div>
+                        )}
+                        {dateFilteredCount > 0 && (
                             <div className="inline-flex items-center bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
@@ -380,7 +312,9 @@ function HomeContent() {
                                 </svg>
                                 {dateFilteredCount} Filtered by Date
                                 <button
-                                    onClick={() => setDateRange(undefined)}
+                                    onClick={() =>
+                                        handleDateRangeChange(undefined)
+                                    }
                                     className="ml-1 text-blue-700 hover:text-blue-900"
                                     aria-label="Remove date filter"
                                 >
@@ -392,14 +326,14 @@ function HomeContent() {
 
                     <EventFilters
                         searchQuery={searchQuery}
-                        onSearchChange={setSearchQuery}
+                        onSearchChange={handleSearchChange}
                         dateRange={dateRange}
-                        onDateRangeChange={setDateRange}
+                        onDateRangeChange={handleDateRangeChange}
                         onReset={handleResetFilters}
                     />
 
                     <EventList
-                        events={filteredEvents}
+                        events={events.filtered}
                         isLoading={isLoading}
                         error={error}
                         onEventSelect={handleEventSelect}

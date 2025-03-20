@@ -33,6 +33,15 @@ export default function EventFilters({
     const [startValue, setStartValue] = useState(0)
     const [endValue, setEndValue] = useState(totalDays)
 
+    // Reset UI state when dateRange becomes undefined (e.g. when clicking X button)
+    useEffect(() => {
+        if (!dateRange) {
+            setShowDateSliders(false)
+            setStartValue(0)
+            setEndValue(totalDays)
+        }
+    }, [dateRange, totalDays])
+
     // Convert slider value to date
     const getDateFromValue = (value: number) => {
         const date = new Date(minDate.getTime() + value * (1000 * 60 * 60 * 24))

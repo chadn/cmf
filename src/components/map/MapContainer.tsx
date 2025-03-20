@@ -39,6 +39,7 @@ const MapContainer: React.FC<MapContainerProps> = ({
     const mapRef = useRef<any>(null)
     const [mapLoaded, setMapLoaded] = useState(false)
     const [userInteracted, setUserInteracted] = useState(false)
+    const boundsUpdateTimerRef = useRef<NodeJS.Timeout | null>(null)
 
     // Simplified state: Only track the current popup info
     const [popupInfo, setPopupInfo] = useState<MapMarker | null>(null)
@@ -51,6 +52,14 @@ const MapContainer: React.FC<MapContainerProps> = ({
         })
     }, [])
 
+    // Close popup when selected marker changes to null
+    useEffect(() => {
+        if (!selectedMarkerId) {
+            // TODO: bug here, infinite loop is happening
+            setPopupInfo(null)
+        }
+    }, [selectedMarkerId])
+    
     // Simplified effect: Update popup when selected marker changes
     useEffect(() => {
         if (selectedMarkerId) {
@@ -73,8 +82,6 @@ const MapContainer: React.FC<MapContainerProps> = ({
             } else {
                 setPopupInfo(null)
             }
-        } else {
-            setPopupInfo(null)
         }
     }, [selectedMarkerId, markers, selectedEventId, onEventSelect])
 
@@ -98,19 +105,53 @@ const MapContainer: React.FC<MapContainerProps> = ({
     // Handle viewport change
     const handleViewportChange = (newViewport: ViewState) => {
         setUserInteracted(true)
-        onViewportChange(newViewport as MapViewport)
+        debugLog('map', 'handleViewportChange called, setUserInteracted=true but did user trigger? CHAD consider delete setUserInteracted')
 
-        // Get current bounds and notify parent
-        if (mapRef.current) {
-            const bounds = mapRef.current.getMap().getBounds()
-            const newBounds = {
-                north: bounds.getNorth(),
-                south: bounds.getSouth(),
-                east: bounds.getEast(),
-                west: bounds.getWest(),
-            }
-            onBoundsChange(newBounds)
+        // Pass the complete viewport state to the parent component
+        onViewportChange({
+            latitude: newViewport.latitude,
+            longitude: newViewport.longitude,
+            zoom: newViewport.zoom,
+            bearing: newViewport.bearing || 0,
+            pitch: newViewport.pitch || 0,
+        })
+
+        // Only update bounds when user stops interacting (through the debounce)
+        // This prevents constant updates during drag/zoom operations
+        updateBoundsWithDebounce()
+    }
+
+    // Separated debounce logic for better organization
+    const updateBoundsWithDebounce = () => {
+        if (!mapRef.current || !mapLoaded) return
+
+        // Clear any existing timeout
+        if (boundsUpdateTimerRef.current) {
+            clearTimeout(boundsUpdateTimerRef.current)
         }
+        const timeoutMs = 500 // Adjusted timeout for better performance
+        // Set new timeout - only update bounds after user stops interacting for a moment
+        boundsUpdateTimerRef.current = setTimeout(() => {
+            if (mapRef.current) {
+                try {
+                    const bounds = mapRef.current.getMap().getBounds()
+                    const newBounds = {
+                        north: bounds.getNorth(),
+                        south: bounds.getSouth(),
+                        east: bounds.getEast(),
+                        west: bounds.getWest(),
+                    }
+                    onBoundsChange(newBounds)
+                    debugLog(
+                        'map',
+                        `Bounds updated after debounce timeout=${timeoutMs}ms`,
+                        newBounds
+                    )
+                } catch (error) {
+                    debugLog('map', 'Error updating bounds', error)
+                }
+            }
+        }, timeoutMs) // Increased to 500ms for more reliable updates
     }
 
     // Reset userInteracted when returning to "Map of All Events" view
@@ -145,12 +186,6 @@ const MapContainer: React.FC<MapContainerProps> = ({
         setPopupInfo(null)
     }
 
-    // Log when markers change
-    useEffect(() => {
-        if (mapLoaded) {
-            debugLog('map', `Markers updated: ${markers.length} markers on map`)
-        }
-    }, [markers, mapLoaded])
 
     return (
         <div className="relative w-full h-full" style={{ minHeight: '100%' }}>
@@ -184,12 +219,23 @@ const MapContainer: React.FC<MapContainerProps> = ({
                 minZoom={2} // Slightly restrict min zoom to avoid world wrapping issues
                 maxZoom={19} // Allow high zoom for detailed city views
                 attributionControl={true}
-                reuseMaps={false} // Disable map reuse to ensure fresh rendering
+                reuseMaps={true} // Set to true to fix performance issues
                 renderWorldCopies={true}
-                {...viewport}
+                latitude={viewport.latitude}
+                longitude={viewport.longitude}
+                zoom={viewport.zoom}
+                bearing={viewport.bearing}
+                pitch={viewport.pitch}
                 onMove={(evt) => handleViewportChange(evt.viewState)}
                 onLoad={handleMapLoad}
                 style={{ width: '100%', height: '100%', position: 'absolute' }}
+                interactive={true}
+                dragRotate={false} // Disable rotation for simplicity
+                doubleClickZoom={true} // Enable double-click zoom
+                scrollZoom={true} // Ensure scroll zoom is enabled
+                dragPan={true} // Ensure drag pan is enabled
+                touchZoom={true} // Enable touch zoom for mobile
+                touchRotate={false} // Disable touch rotation for simpler interaction
             >
                 {/* Navigation controls */}
                 <NavigationControl
