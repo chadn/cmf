@@ -4,7 +4,7 @@ import { ResolvedLocation } from '@/types/events'
 
 // Cache file path
 const CACHE_DIR = path.join(process.cwd(), '.cache')
-const LOCATIONS_CACHE_FILE = path.join(CACHE_DIR, 'locations.json')
+export const LOCATIONS_CACHE_FILE = path.join(CACHE_DIR, 'locations.json')
 
 // Ensure cache directory exists
 if (!fs.existsSync(CACHE_DIR)) {
