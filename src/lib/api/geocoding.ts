@@ -50,12 +50,80 @@ export function updateResolvedLocation(
             status: 'resolved',
         }
     } catch (error) {
+        // format of data from API is not what we expect
         debugLog(
             'geocoding',
-            `updateResolvedLocation unresolved: ${result.original_location}`,
+            `updateResolvedLocation unexpected API data format, unresolved: ${result.original_location}`,
             apiData
         )
-        return result
+        return {
+            original_location: result.original_location,
+            status: 'unresolved',
+        }
+    }
+}
+
+// See if location already has Lat and Lon in it. If so, extract and return ResolvedLocation, else return false-ish value
+function customLocationParser(
+    locationString: string
+): ResolvedLocation | false {
+    // Check for latitude and longitude in the format "lat,lng", allowing for spaces  and negative values
+    // Example: "37.774929,-122.419418"
+    // 6 decimal places is less than 1m precision, which is good enough for our purposes
+    const latLonRegex = /^\s*(-?\d{1,3}\.\d{2,6}),\s*(-?\d{1,3}\.\d{2,6})/
+
+    const match = locationString.match(latLonRegex)
+    if (match) {
+        return {
+            original_location: locationString,
+            formatted_address: locationString,
+            lat: parseFloat(match[1]),
+            lng: parseFloat(match[2]),
+            status: 'resolved',
+        }
+    }
+    return false
+}
+
+async function resolveLocation(
+    result: ResolvedLocation
+): Promise<ResolvedLocation> {
+    // check custom parser
+    const customParser = customLocationParser(result.original_location)
+    if (customParser) {
+        debugLog(
+            'geocoding',
+            'Using customLocationParser:',
+            result.original_location
+        )
+        return Promise.resolve(customParser)
+    }
+    try {
+        // call the API
+        if (!process.env.GOOGLE_MAPS_API_KEY) {
+            debugLog('api', 'Google Maps API key is not configured')
+            throw new Error('Google Maps API key is not configured')
+        }
+        debugLog('geocoding', 'Fetching from API:', result.original_location)
+
+        const params = {
+            address: result.original_location,
+            key: process.env.GOOGLE_MAPS_API_KEY,
+        }
+        const response = await axios.get<GeocodeResponse>(
+            GOOGLE_MAPS_GEOCODING_API,
+            {
+                params,
+            }
+        )
+        //debugLog('geocoding', 'response result:', response.data.results[0])
+        return updateResolvedLocation(result, response.data.results[0])
+    } catch (error) {
+        debugLog('geocoding', 'API Error: ', error)
+        return {
+            original_location: result.original_location,
+            status: 'unresolved',
+        }
     }
 }
 
@@ -91,51 +159,28 @@ export async function geocodeLocation(
 
     let result: ResolvedLocation = {
         original_location: locationString,
-        status: 'unresolved',
+        status: 'pending',
     }
     locationString = locationString.trim()
-    try {
-        // Check cache first
-        const cachedLocation = await getCachedLocation(locationString)
-        if (cachedLocation) {
-            debugLog(
-                'geocoding',
-                `Found in Cache ${cachedLocation.status}: "${locationString}"`
-            )
-            return cachedLocation
-        }
-
-        // If not in cache, call the API
-        if (!process.env.GOOGLE_MAPS_API_KEY) {
-            debugLog('api', 'Google Maps API key is not configured')
-            throw new Error('Google Maps API key is not configured')
-        }
-        debugLog('geocoding', 'Fetching from API:', locationString)
-
-        const params = {
-            address: locationString,
-            key: process.env.GOOGLE_MAPS_API_KEY,
-        }
-        const response = await axios.get<GeocodeResponse>(
-            GOOGLE_MAPS_GEOCODING_API,
-            {
-                params,
-            }
+    // Check cache first
+    const cachedLocation = await getCachedLocation(locationString)
+    if (cachedLocation) {
+        debugLog(
+            'geocoding',
+            `Found in Cache ${cachedLocation.status}: "${locationString}"`
         )
-        //debugLog('geocoding', 'response result:', response.data.results[0])
-        result = updateResolvedLocation(result, response.data.results[0])
+        return cachedLocation
+    }
 
-        if (result.status === 'resolved') {
-            // Cache the result
-            await cacheLocation(locationString, result)
-        } else if (CACHE_UNRESOLVED_LOCATIONS) {
-            debugLog('geocoding', `Caching Unresolved: "${locationString}"`)
-            await cacheLocation(locationString, result)
-        } else {
-            debugLog('geocoding', `Not Caching Unresolved: "${locationString}"`)
-        }
-    } catch (error) {
-        debugLog('geocoding', 'API Error: ', error)
+    result = await resolveLocation(result)
+    if (result.status === 'resolved') {
+        // Cache the result
+        await cacheLocation(locationString, result)
+    } else if (CACHE_UNRESOLVED_LOCATIONS) {
+        debugLog('geocoding', `Caching Unresolved: "${locationString}"`)
+        await cacheLocation(locationString, result)
+    } else {
+        debugLog('geocoding', `Not Caching Unresolved: "${locationString}"`)
     }
     return result
 }
