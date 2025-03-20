@@ -1,10 +1,18 @@
 import { ResolvedLocation } from '@/types/events'
 import * as upstashCache from './upstash'
 import * as filesystemCache from './filesystem'
+import { debugLog } from '../utils/debug'
 
 // Determine which cache implementation to use based on environment
 const isDevelopment = process.env.NODE_ENV === 'development'
 
+debugLog(
+    'cache',
+    `NODE_ENV='${process.env.NODE_ENV}' Using cache:`,
+    isDevelopment
+        ? `filesystem (${filesystemCache.LOCATIONS_CACHE_FILE})`
+        : 'upstash redis'
+)
 /**
  * Gets a location from cache
  * @param locationKey - The location string to use as a key
