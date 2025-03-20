@@ -66,13 +66,13 @@ describe('CalendarSelector', () => {
     it('selects an example calendar when clicked', () => {
         render(<CalendarSelector />)
 
-        // Find and click the US Holidays example
-        const usHolidaysButton = screen.getByText('US Holidays')
-        fireEvent.click(usHolidaysButton)
+        // Find and click the example calendar
+        const exampleCalendarButton = screen.getByText('Geocaching in Spain')
+        fireEvent.click(exampleCalendarButton)
 
         // Check that the input value was updated
         const input = screen.getByLabelText('Calendar ID') as HTMLInputElement
-        expect(input.value).toBe('en.usa#holiday@group.v.calendar.google.com')
+        expect(input.value).toBe('geocachingspain@gmail.com')
     })
 
     it('shows loading spinner when submitting', async () => {

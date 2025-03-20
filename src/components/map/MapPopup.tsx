@@ -8,8 +8,8 @@ import { debugLog } from '@/lib/utils/debug'
 
 interface MapPopupProps {
     marker: MapMarker
-    selectedEventId: string | null
-    onEventSelect: (eventId: string) => void
+    selectedEventId?: string | null
+    onEventSelect?: (eventId: string) => void
 }
 
 const MapPopup: React.FC<MapPopupProps> = ({
@@ -83,13 +83,17 @@ const MapPopup: React.FC<MapPopupProps> = ({
     const goToNext = () => {
         const nextIndex = (currentIndex + 1) % events.length
         setCurrentIndex(nextIndex)
-        onEventSelect(events[nextIndex].id)
+        if (onEventSelect) {
+            onEventSelect(events[nextIndex].id)
+        }
     }
 
     const goToPrev = () => {
         const prevIndex = (currentIndex - 1 + events.length) % events.length
         setCurrentIndex(prevIndex)
-        onEventSelect(events[prevIndex].id)
+        if (onEventSelect) {
+            onEventSelect(events[prevIndex].id)
+        }
     }
 
     return (

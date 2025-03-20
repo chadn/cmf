@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React from 'react'
 import { render, screen } from '@testing-library/react'
 import '@testing-library/jest-dom'
 import Footer from '../Footer'
@@ -23,41 +23,35 @@ jest.mock('next/link', () => {
 })
 
 describe('Footer', () => {
-    const originalDateNow = Date.prototype.getFullYear
-
-    beforeAll(() => {
-        // Mock Date.getFullYear to always return 2023
-        Date.prototype.getFullYear = jest.fn(() => 2023)
-    })
-
-    afterAll(() => {
-        Date.prototype.getFullYear = originalDateNow
-    })
-
-    it('renders the footer with copyright text', () => {
+    it('renders the footer with correct copyright text', () => {
         render(<Footer />)
 
-        // Use a more flexible text matcher
-        const copyrightElement = screen.getByText((content) => {
-            return content.includes('2023 Calendar Map Filter')
-        })
-        expect(copyrightElement).toBeInTheDocument()
+        // Check for copyright notice
+        expect(
+            screen.getByText(/© \d{4} Calendar Map Filter/)
+        ).toBeInTheDocument()
+
+        // Check for links
+        expect(screen.getByText('Terms of Service')).toBeInTheDocument()
+        expect(screen.getByText('Privacy Policy')).toBeInTheDocument()
     })
 
-    it('renders privacy policy link', () => {
+    it('renders the current year in the copyright notice', () => {
         render(<Footer />)
-
-        const privacyLink = screen.getByText('Privacy Policy')
-        expect(privacyLink).toBeInTheDocument()
-        expect(privacyLink.closest('a')).toHaveAttribute('href', '/privacy')
+        const currentYear = new Date().getFullYear().toString()
+        expect(
+            screen.getByText(new RegExp(`© ${currentYear}`))
+        ).toBeInTheDocument()
     })
 
-    it('renders terms of service link', () => {
+    it('has links to terms and privacy pages', () => {
         render(<Footer />)
 
-        const termsLink = screen.getByText('Terms of Service')
-        expect(termsLink).toBeInTheDocument()
-        expect(termsLink.closest('a')).toHaveAttribute('href', '/terms')
+        const termsLink = screen.getByText('Terms of Service').closest('a')
+        const privacyLink = screen.getByText('Privacy Policy').closest('a')
+
+        expect(termsLink).toHaveAttribute('href', '/terms')
+        expect(privacyLink).toHaveAttribute('href', '/privacy')
     })
 
     it('renders GitHub link', () => {
@@ -88,17 +82,4 @@ describe('Footer', () => {
             screen.getByText(/not affiliated with or endorsed by Google/)
         ).toBeInTheDocument()
     })
-
-    // Expose events data to window for debugging
-    useEffect(() => {
-        if (events.length > 0 && typeof window !== 'undefined') {
-            window.cmf_events = {
-                events,
-                total_count: totalCount,
-                unknown_locations_count: unknownLocationsCount,
-                calendar_name: calendarName,
-                calendar_id: calendarId,
-            }
-        }
-    }, [events, totalCount, unknownLocationsCount, calendarName, calendarId])
 })

@@ -99,6 +99,7 @@ export default function EventFilters({
                     value={searchQuery}
                     onChange={(e) => onSearchChange(e.target.value)}
                     className="p-2 border rounded w-full text-black"
+                    data-testid="search-input"
                 />
             </div>
 
@@ -106,6 +107,7 @@ export default function EventFilters({
                 <button
                     onClick={toggleDateSliders}
                     className="text-blue-500 hover:text-blue-700 text-left"
+                    data-testid="date-range-dropdown"
                 >
                     {getDateButtonText()}
                 </button>
@@ -153,6 +155,7 @@ export default function EventFilters({
             <button
                 onClick={handleReset}
                 className="text-red-500 hover:text-red-700"
+                data-testid="reset-filters-button"
             >
                 Reset Filters
             </button>
