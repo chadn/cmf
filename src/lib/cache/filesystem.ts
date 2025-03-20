@@ -5,14 +5,22 @@ import { ResolvedLocation } from '@/types/events'
 // Cache file path
 const CACHE_DIR = path.join(process.cwd(), '.cache')
 export const LOCATIONS_CACHE_FILE = path.join(CACHE_DIR, 'locations.json')
+let isInitialized = false
 
 // Ensure cache directory exists
-if (!fs.existsSync(CACHE_DIR)) {
-    fs.mkdirSync(CACHE_DIR, { recursive: true })
+function initializeCache(): void {
+    if (isInitialized) {
+        return
+    }
+    if (!fs.existsSync(CACHE_DIR)) {
+        fs.mkdirSync(CACHE_DIR, { recursive: true })
+    }
+    isInitialized = true
 }
 
 // Helper to load the cache file
 function loadCache(): Record<string, ResolvedLocation> {
+    initializeCache()
     if (!fs.existsSync(LOCATIONS_CACHE_FILE)) {
         return {}
     }
@@ -28,6 +36,7 @@ function loadCache(): Record<string, ResolvedLocation> {
 
 // Helper to save the cache file
 function saveCache(cache: Record<string, ResolvedLocation>): void {
+    initializeCache()
     try {
         fs.writeFileSync(
             LOCATIONS_CACHE_FILE,
