@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { Suspense } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 
@@ -8,7 +8,8 @@ interface HeaderProps {
     calendarName?: string
 }
 
-const Header: React.FC<HeaderProps> = ({ calendarName }) => {
+// Create a sub-component that uses useSearchParams
+function HeaderContent({ calendarName }: HeaderProps) {
     const searchParams = useSearchParams()
     const calendarId = searchParams.get('gc') || ''
 
@@ -64,6 +65,15 @@ const Header: React.FC<HeaderProps> = ({ calendarName }) => {
                 </div>
             </div>
         </header>
+    )
+}
+
+// Main component that wraps the content in a Suspense boundary
+const Header: React.FC<HeaderProps> = (props) => {
+    return (
+        <Suspense fallback={<div className="h-16 bg-white shadow-sm" />}>
+            <HeaderContent {...props} />
+        </Suspense>
     )
 }
 

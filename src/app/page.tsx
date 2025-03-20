@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import MapContainer from '@/components/map/MapContainer'
 import EventList from '@/components/events/EventList'
@@ -13,7 +13,7 @@ import { useMap } from '@/lib/hooks/useMap'
 import { MapBounds } from '@/types/map'
 import { debugLog, clientDebug } from '@/lib/utils/debug'
 
-export default function Home() {
+function HomeContent() {
     const searchParams = useSearchParams()
     const calendarId = searchParams.get('gc') || ''
 
@@ -432,5 +432,13 @@ export default function Home() {
 
             <Footer />
         </div>
+    )
+}
+
+export default function Home() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <HomeContent />
+        </Suspense>
     )
 }

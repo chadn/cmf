@@ -1,11 +1,11 @@
 'use client'
 
-import React from 'react'
+import React, { Suspense } from 'react'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import CalendarSelector from '@/components/home/CalendarSelector'
 
-export default function HomePage() {
+function HomeContent() {
     return (
         <div className="min-h-screen flex flex-col">
             <Header />
@@ -71,5 +71,13 @@ export default function HomePage() {
             </main>
             <Footer />
         </div>
+    )
+}
+
+export default function HomePage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <HomeContent />
+        </Suspense>
     )
 }

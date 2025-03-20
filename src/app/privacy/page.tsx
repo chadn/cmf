@@ -1,10 +1,10 @@
 'use client'
 
-import React from 'react'
+import React, { Suspense } from 'react'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 
-export default function PrivacyPage() {
+function PrivacyContent() {
     return (
         <div className="min-h-screen flex flex-col">
             <Header />
@@ -141,5 +141,13 @@ export default function PrivacyPage() {
             </main>
             <Footer />
         </div>
+    )
+}
+
+export default function PrivacyPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <PrivacyContent />
+        </Suspense>
     )
 }

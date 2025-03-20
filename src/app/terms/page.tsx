@@ -1,10 +1,10 @@
 'use client'
 
-import React from 'react'
+import React, { Suspense } from 'react'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 
-export default function TermsPage() {
+function TermsContent() {
     return (
         <div className="min-h-screen flex flex-col">
             <Header />
@@ -158,5 +158,13 @@ export default function TermsPage() {
             </main>
             <Footer />
         </div>
+    )
+}
+
+export default function TermsPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <TermsContent />
+        </Suspense>
     )
 }

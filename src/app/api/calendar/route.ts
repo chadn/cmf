@@ -29,14 +29,16 @@ if (process.env.GOOGLE_CALENDAR_API_KEY && process.env.GOOGLE_MAPS_API_KEY) {
     }
 }
 
+// Export config to make this a dynamic API route
+export const dynamic = 'force-dynamic'
+
 /**
  * API route handler for calendar events
  */
 export async function GET(request: NextRequest) {
     try {
         // Get calendar ID from query parameters
-        const { searchParams } = new URL(request.url)
-        const calendarId = searchParams.get('id')
+        const calendarId = request.nextUrl.searchParams.get('id')
 
         if (!calendarId) {
             debugLog('calendar', 'Missing calendar ID in request')
@@ -49,8 +51,8 @@ export async function GET(request: NextRequest) {
         debugLog('calendar', `Fetching calendar with ID: ${calendarId}`)
 
         // Get optional date range parameters
-        const timeMin = searchParams.get('timeMin') || undefined
-        const timeMax = searchParams.get('timeMax') || undefined
+        const timeMin = request.nextUrl.searchParams.get('timeMin') || undefined
+        const timeMax = request.nextUrl.searchParams.get('timeMax') || undefined
 
         if (timeMin && timeMax) {
             debugLog(
