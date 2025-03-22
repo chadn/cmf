@@ -18,6 +18,7 @@ const recentLogs: Record<string, number> = {}
  */
 function wasRecentlyLogged(area: string, message: string, data?: any): boolean {
     const now = Date.now()
+    const recentInMs = 500 // was 1000ms 
     let datastr = ''
     try {
         datastr = JSON.stringify(data || '')
@@ -28,7 +29,7 @@ function wasRecentlyLogged(area: string, message: string, data?: any): boolean {
     const logKey = `${area}:${message}:${datastr}`
 
     // Check if this exact message was logged in the last second
-    if (recentLogs[logKey] && now - recentLogs[logKey] < 1000) {
+    if (recentLogs[logKey] && now - recentLogs[logKey] < recentInMs) {
         return true // Was recently logged
     }
 
@@ -39,9 +40,9 @@ function wasRecentlyLogged(area: string, message: string, data?: any): boolean {
     // Only do this occasionally to avoid performance impact
     if (Math.random() < 0.1) {
         // ~10% chance to clean up on each log
-        const oneSecondAgo = now - 1000
+        const recentCutoffTime = now - recentInMs
         for (const key in recentLogs) {
-            if (recentLogs[key] < oneSecondAgo) {
+            if (recentLogs[key] < recentCutoffTime) {
                 delete recentLogs[key]
             }
         }
@@ -63,10 +64,8 @@ export function debugLog(area: string, message: string, data?: any): void {
 
     // Get current environment
     const isBrowser = typeof window !== 'undefined'
-
     // For browser-specific logs, only show them in the browser
     if (area === 'browser' && !isBrowser) return
-
     // For server-specific logs, only show them on the server
     if (area === 'server' && isBrowser) return
 

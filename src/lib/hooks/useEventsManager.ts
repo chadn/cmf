@@ -21,6 +21,7 @@ interface UseEventsManagerResult {
         withLocations: CalendarEvent[]
         withoutLocations: CalendarEvent[]
         filtered: CalendarEvent[]
+        filteredWithLocations: CalendarEvent[]
     }
     // Filter methods
     filters: {
@@ -95,6 +96,7 @@ export function useEventsManager({
     }, [apiUrl])
     
     // Fetch events from API
+    // TODO: Chad - do we need useSWR here? isLoading does not change in   swr.vercel.app
     const { data, error, isLoading } = useSWR<CMFEvents>(apiUrl, fetcher, {
         revalidateOnFocus: false,
         onSuccess: (data) => {
@@ -109,6 +111,7 @@ export function useEventsManager({
                 calendarName: data.calendar_name || 'Unknown Calendar',
                 totalEvents: data.total_count || 0,
             })
+            // TODO: Chad set isLoading to false?
         },
         onError: (err) => {
             debugLog('events', `❌ Error fetching calendar data for ID: "${calendarId || 'unknown'}"`, {
@@ -124,6 +127,9 @@ export function useEventsManager({
             )
         },
     })
+    useEffect(() => {
+        debugLog('events', `isLoading changed to ${isLoading}`)
+    }, [isLoading])
 
     // Update events in EventsManager when data changes
     useEffect(() => {
@@ -153,7 +159,7 @@ export function useEventsManager({
         if (data && !isLoading && data.events) {
             debugLog('events', 'Events hook return values updated', {
                 totalEvents: data.events?.length || 0,
-                filteredEvents: eventsManager.cmf_events_active.length,
+                filteredEvents: eventsManager.cmf_events_filtered.length,
                 calendarName: data.calendar_name || '',
             })
         }
@@ -165,7 +171,8 @@ export function useEventsManager({
             all: eventsManager.cmf_events_all,
             withLocations: eventsManager.cmf_events_locations,
             withoutLocations: eventsManager.cmf_events_unknown_locations,
-            filtered: eventsManager.cmf_events_active,
+            filtered: eventsManager.cmf_events_filtered,
+            filteredWithLocations: eventsManager.cmf_events_filtered,
         },
         filters: {
             setDateRange: (range) => eventsManager.setDateRange(range),
@@ -185,9 +192,9 @@ export function useEventsManager({
         eventsManager, // Expose the manager for advanced use cases
         
         // For backward compatibility with useEvents
-        filteredEvents: eventsManager.cmf_events_active,
+        filteredEvents: eventsManager.cmf_events_filtered,
         totalCount: data?.total_count || 0,
-        filteredCount: eventsManager.cmf_events_active.length,
+        filteredCount: eventsManager.cmf_events_filtered.length,
         unknownLocationsCount: data?.unknown_locations_count || 0,
         calendarName: data?.calendar_name || '',
     }

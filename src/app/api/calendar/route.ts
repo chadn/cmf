@@ -166,6 +166,8 @@ export async function GET(request: NextRequest) {
                 unknown_locations_count: unknownLocationsCount,
                 calendar_name: calendarData.summary,
                 calendar_id: calendarId,
+                calendar_start_date: '', 
+                calendar_end_date: ''
             }
 
             debugLog('calendar', 'API response prepared', {

@@ -136,9 +136,12 @@ export class EventsManager {
     }
 
     /**
-     * Apply all filters and return filtered events
+     * Apply all filters and return filtered events (not filtered out)
+     * TODO: Consider splitting this into 2 function differentiate between events with and without resolved locations (filteredWithLocations)
+     * and show them in different lists.  This would be useful for showing events with unknown locations
+     * in the filtered results.  Events list could show with and without resolved locations, map show just with.
      */
-    get cmf_events_active(): CalendarEvent[] {
+    get cmf_events_filtered(): CalendarEvent[] {
         // If no filters are applied, return all events
         if (Object.keys(this.filters).length === 0) {
             return this.allEvents
@@ -175,8 +178,9 @@ export class EventsManager {
             
             return true
         })
+        //console.log(`get cmf_events_filtered ${this.allEvents.length} events, ${filtered.length} filtered events`)
 
-        debugLog('events_manager', 'Filters applied', {
+        debugLog('events_manager', 'get cmf_events_filtered', {
             originalCount: this.allEvents.length,
             filteredCount: filtered.length,
             ...filterCounts

@@ -10,12 +10,12 @@ npm test
 -----------------------|---------|----------|---------|---------|--------------------------------
 File                   | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
 -----------------------|---------|----------|---------|---------|--------------------------------
-All files              |   29.92 |    27.54 |   28.57 |   29.58 |
+All files              |   27.86 |    26.39 |   27.83 |    27.5 |
  app                   |       0 |        0 |       0 |       0 |
   layout.tsx           |       0 |      100 |       0 |       0 | 2-12
-  page.tsx             |       0 |        0 |       0 |       0 | 3-369
+  page.tsx             |       0 |        0 |       0 |       0 | 3-379
  app/api/calendar      |       0 |        0 |       0 |       0 |
-  route.ts             |       0 |        0 |       0 |       0 | 1-192
+  route.ts             |       0 |        0 |       0 |       0 | 1-194
  app/api/info          |       0 |        0 |       0 |       0 |
   route.ts             |       0 |        0 |       0 |       0 | 1-58
  app/home              |       0 |      100 |       0 |       0 |
@@ -36,31 +36,31 @@ All files              |   29.92 |    27.54 |   28.57 |   29.58 |
  components/layout     |     100 |       75 |     100 |     100 |
   Footer.tsx           |     100 |      100 |     100 |     100 |
   Header.tsx           |     100 |       75 |     100 |     100 | 14
- components/map        |   43.65 |    27.86 |   29.62 |   42.47 |
-  MapContainer.tsx     |    12.5 |        0 |       0 |   11.76 | 39-254
+ components/map        |   42.96 |    27.86 |   29.62 |   41.73 |
+  MapContainer.tsx     |   12.16 |        0 |       0 |   11.42 | 39-255
   MapMarker.tsx        |   94.44 |    88.88 |     100 |     100 | 14
   MapPopup.tsx         |   80.55 |    47.36 |   83.33 |   84.84 | 27-28,63,87,95
  lib/api               |       0 |        0 |       0 |       0 |
   calendar.ts          |       0 |        0 |       0 |       0 | 1-85
-  geocoding.ts         |       0 |        0 |       0 |       0 | 1-228
+  geocoding.ts         |       0 |        0 |       0 |       0 | 1-314
  lib/cache             |       0 |        0 |       0 |       0 |
   filesystem.ts        |       0 |        0 |       0 |       0 | 1-84
   upstash.ts           |       0 |        0 |       0 |       0 | 1-97
  lib/events            |       0 |        0 |       0 |       0 |
-  EventsManager.ts     |       0 |        0 |       0 |       0 | 5-253
+  EventsManager.ts     |       0 |        0 |       0 |       0 | 5-257
  lib/hooks             |       0 |        0 |       0 |       0 |
-  useEventsManager.ts  |       0 |        0 |       0 |       0 | 2-176
-  useMap.ts            |       0 |        0 |       0 |       0 | 2-253
- lib/utils             |   88.69 |     87.5 |     100 |   90.74 |
+  useEventsManager.ts  |       0 |        0 |       0 |       0 | 2-183
+  useMap.ts            |       0 |        0 |       0 |       0 | 2-264
+ lib/utils             |    86.2 |    86.11 |     100 |   88.07 |
   date.ts              |   80.64 |      100 |     100 |   80.64 | 16-17,58-59,76-77
-  debug.ts             |   87.93 |    81.08 |     100 |   92.45 | 25,45,107,128
+  debug.ts             |   83.05 |    78.37 |     100 |   87.03 | 26,43-46,106,127
   location.ts          |     100 |    91.66 |     100 |     100 | 90-94
 -----------------------|---------|----------|---------|---------|--------------------------------
 
 Test Suites: 14 passed, 14 total
 Tests:       82 passed, 82 total
 Snapshots:   0 total
-Time:        2.748 s
+Time:        2.791 s
 Ran all test suites.
 ```
 

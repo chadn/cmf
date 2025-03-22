@@ -222,7 +222,7 @@ The event filtering system has been implemented using a class-based approach wit
      - `cmf_events_all`: All events from the calendar (unfiltered)
      - `cmf_events_locations`: Events with successfully resolved locations
      - `cmf_events_unknown_locations`: Events with unresolved or unknown locations
-     - `cmf_events_active`: Events that match all current filters (date, search, map bounds)
+     - `cmf_events_filtered`: Events that match all current filters (date, search, map bounds)
 
    - **Filter Methods**:
      - `setDateRange`: Apply date filtering
@@ -287,7 +287,7 @@ The filters are integrated with UI components:
    - Maintains local state for active filters to ensure UI and filter state are synchronized
    - Connects EventsManager methods to UI components
    - Displays filter chips showing active filters with options to remove them
-   - Ensures the event list always shows `cmf_events_active` (filtered events)
+   - Ensures the event list always shows `cmf_events_filtered` (filtered events)
 
 ### Benefits of this Approach
 
@@ -573,7 +573,7 @@ The event filtering system has been implemented using a class-based approach wit
      - `cmf_events_all`: All events from the calendar (unfiltered)
      - `cmf_events_locations`: Events with successfully resolved locations
      - `cmf_events_unknown_locations`: Events with unresolved or unknown locations
-     - `cmf_events_active`: Events that match all current filters (date, search, map bounds)
+     - `cmf_events_filtered`: Events that match all current filters (date, search, map bounds)
 
    - **Filter Methods**:
      - `setDateRange`: Apply date filtering
@@ -617,7 +617,7 @@ The event filtering system has been implemented using a class-based approach wit
      - `events.all` (formerly `cmf_events_all`)
      - `events.withLocations` (formerly `cmf_events_locations`)
      - `events.withoutLocations` (formerly `cmf_events_unknown_locations`)
-     - `events.filtered` (formerly `cmf_events_active`)
+     - `events.filtered` (formerly `cmf_events_filtered`)
    - Filter methods are grouped under a `filters` object:
      - `filters.setDateRange`
      - `filters.setSearchQuery`
@@ -714,9 +714,7 @@ The filters are integrated with UI components:
 
 ## Bugs and Known Issues
 
-1. ✅ Fixed: `TypeError: getFilterStats is not a function` - This error occurred when calling `getFilterStats` directly instead of accessing it through the `filters` object returned by `useEventsManager`.
-
-2. Markers should update on map when events list changes. Example: Use search ("escape" in geocache) to reduce events list to 1, notice markers not reducing, should only be 1 marker
-
-3. Browser client initialization - In some cases, the client code may not initialize properly and won't call the API endpoints. Additional debugging has been added to help diagnose these issues.
-
+1. Browser client initialization - Sometimes when first rendering, calendar loads events successfully, but the events do not appear on the list or the map.
+WORKAROUND: move the map a little, triggers filters, click "filtered by map"
+1. Bug or Feature Change - show events with unresolved locations on events list. Currently if a user is trying to find an event by name or date, and doesn't realize the location is missing or unresolvable, they will not be able to find it.  They should.  This is partally implemented via filteredWithLocations 
+1. Bug or Feature Change - fully support calendarEndDate as a variable, right now its 3 months from today. Similarly, support calendarStartDate, which is 1 month prior.

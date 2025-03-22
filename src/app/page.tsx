@@ -19,6 +19,9 @@ declare const window: any;
 function HomeContent() {
     const searchParams = useSearchParams()
     const calendarId = searchParams.get('gc') || ''
+    // TODO: implement these
+    const calendarStartDate = searchParams.get('sd') || ''
+    const calendarEndDate = searchParams.get('ed') || ''
 
     // Local state for filters
     const [searchQuery, setLocalSearchQuery] = useState('')
@@ -54,9 +57,9 @@ function HomeContent() {
     // Log component mount and calendar ID - only once when component mounts
     useEffect(() => {
         if (!isLoading) {
-            clientDebug.log('page', 'isLoading=fase, Loading finished, setTimeout resetToAllEvents')
+            clientDebug.log('page', 'isLoading=false, Loading finished, setTimeout resetToAllEvents')
             setTimeout(() => {
-                clientDebug.log('page', 'isLoading=fase, calling resetToAllEvents')
+                clientDebug.log('page', 'isLoading=false, calling resetToAllEvents')
                 resetToAllEvents()
             }, 100)
         } else{
@@ -75,6 +78,7 @@ function HomeContent() {
         markers,
         selectedMarkerId,
         setSelectedMarkerId,
+        updateMarkersShown,
         resetToAllEvents,
         isMapOfAllEvents,
     } = useMap({ events: events.filtered })
@@ -119,6 +123,7 @@ function HomeContent() {
         setSelectedEventId(null)
         // Call resetToAllEvents to properly reset the map to show all events
         resetToAllEvents()
+        updateMarkersShown(events.filtered)
     }
 
     // Handle unknown locations filter toggle
@@ -176,19 +181,21 @@ function HomeContent() {
 
     // Expose events data to window for debugging
     useEffect(() => {
+        updateMarkersShown(events.filtered)
+
         if (events?.all?.length > 0 && typeof window !== 'undefined') {
             // Add events to window for debugging
-            window.cmf_events = events
             const temp_cmf_events = {
-                events_all: events.all,
-                events_filtered: events.filtered,
-                with_locations: events.withLocations,
-                without_locations: events.withoutLocations,
-                total_count: calendar.totalCount,
-                unknown_locations_count: calendar.unknownLocationsCount,
+                all: events.all,
+                filtered: events.filtered,
+                filteredWithLocations: events.filteredWithLocations,
+                withoutLocations: events.withoutLocations,
+                totalCount: calendar.totalCount,
+                //unknown_locations_count: calendar.unknownLocationsCount, // TODO: CHAD - probably delete this
                 calendar_name: calendar.name || '',
-                calendar_id: calendarId || '',
+                calendarId: calendarId,
             }
+            window.cmf_events = temp_cmf_events
 
             debugLog('page', 'Events data exposed to window.cmf_events', window.cmf_events)
         }

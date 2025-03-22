@@ -16,6 +16,7 @@ interface UseMapReturn {
     markers: MapMarker[]
     selectedMarkerId: string | null
     setSelectedMarkerId: (id: string | null) => void
+    updateMarkersShown: (events: CalendarEvent[]) => void
     resetToAllEvents: () => void
     isMapOfAllEvents: boolean
 }
@@ -124,7 +125,7 @@ const generateMapMarkers = (events: CalendarEvent[]): MapMarker[] => {
     debugLog(
         'map',
         `Generated ${markers.length} markers from ${eventsWithLocation} events with locations, ` +
-            `skipped ${eventsWithoutLocation} events without location`
+            `skipped ${eventsWithoutLocation} events without resolvable location`
     )
 
     return markers
@@ -132,6 +133,10 @@ const generateMapMarkers = (events: CalendarEvent[]): MapMarker[] => {
 
 /**
  * Custom hook for managing map state and interactions
+ * @param {UseMapProps} props - Props for the hook
+ * @param {CalendarEvent[]} props.events - List of calendar events, usually filtered. Only events with locations are shown on the map.
+ * @param {Partial<MapViewport>} [props.initialViewport] - Initial viewport settings
+ * @returns {UseMapReturn} - Map state and functions
  */
 export function useMap({
     events,
@@ -173,6 +178,12 @@ export function useMap({
             eventsCount: events.length,
         })
     }, [])
+
+    // Update Markers shown on map to match events not filtered out
+    const updateMarkersShown = useCallback((events: CalendarEvent[]) => {
+        debugLog('map', `updateMarkersShown: now ${markers.length} markers, ${events.length} events`)
+
+    }, [markers, events])
 
     // Reset to show all events
     const resetToAllEvents = useCallback(() => {
@@ -257,6 +268,7 @@ export function useMap({
         markers,
         selectedMarkerId,
         setSelectedMarkerId,
+        updateMarkersShown,
         resetToAllEvents,
         isMapOfAllEvents: mapState.isMapOfAllEvents,
     }
