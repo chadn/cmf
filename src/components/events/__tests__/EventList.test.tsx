@@ -150,7 +150,7 @@ describe('EventList', () => {
         )
 
         expect(
-            screen.getByText('No events found. Try adjusting your filters.')
+            screen.getByText('No events found. Try adjusting your filters, moving the map, or clicking x on any filter above to remove.')
         ).toBeInTheDocument()
     })
 })

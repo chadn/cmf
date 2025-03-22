@@ -10,10 +10,10 @@ npm test
 -----------------------|---------|----------|---------|---------|--------------------------------
 File                   | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
 -----------------------|---------|----------|---------|---------|--------------------------------
-All files              |   27.86 |    26.39 |   27.83 |    27.5 |
+All files              |   27.17 |    26.17 |   27.31 |   26.77 |
  app                   |       0 |        0 |       0 |       0 |
   layout.tsx           |       0 |      100 |       0 |       0 | 2-12
-  page.tsx             |       0 |        0 |       0 |       0 | 3-379
+  page.tsx             |       0 |        0 |       0 |       0 | 3-378
  app/api/calendar      |       0 |        0 |       0 |       0 |
   route.ts             |       0 |        0 |       0 |       0 | 1-194
  app/api/info          |       0 |        0 |       0 |       0 |
@@ -27,9 +27,9 @@ All files              |   27.86 |    26.39 |   27.83 |    27.5 |
  components/common     |     100 |      100 |     100 |     100 |
   ErrorMessage.tsx     |     100 |      100 |     100 |     100 |
   LoadingSpinner.tsx   |     100 |      100 |     100 |     100 |
- components/events     |   73.95 |    41.53 |      68 |    73.4 |
+ components/events     |   69.79 |    41.53 |      64 |   69.14 |
   EventDetails.tsx     |     100 |      100 |     100 |     100 |
-  EventFilters.tsx     |   91.11 |       80 |      90 |   91.11 | 64-67
+  EventFilters.tsx     |   82.22 |       80 |      80 |   82.22 | 64-67,79-82
   EventList.tsx        |   52.27 |    31.48 |   41.66 |   51.16 | 57,66-79,84-88,100-156,207-208
  components/home       |     100 |      100 |     100 |     100 |
   CalendarSelector.tsx |     100 |      100 |     100 |     100 |
@@ -51,16 +51,16 @@ All files              |   27.86 |    26.39 |   27.83 |    27.5 |
  lib/hooks             |       0 |        0 |       0 |       0 |
   useEventsManager.ts  |       0 |        0 |       0 |       0 | 2-183
   useMap.ts            |       0 |        0 |       0 |       0 | 2-264
- lib/utils             |    86.2 |    86.11 |     100 |   88.07 |
+ lib/utils             |   83.62 |    84.72 |     100 |   85.32 |
   date.ts              |   80.64 |      100 |     100 |   80.64 | 16-17,58-59,76-77
-  debug.ts             |   83.05 |    78.37 |     100 |   87.03 | 26,43-46,106,127
+  debug.ts             |   77.96 |    75.67 |     100 |   81.48 | 26,43-46,106,124-127
   location.ts          |     100 |    91.66 |     100 |     100 | 90-94
 -----------------------|---------|----------|---------|---------|--------------------------------
 
 Test Suites: 14 passed, 14 total
-Tests:       82 passed, 82 total
+Tests:       81 passed, 81 total
 Snapshots:   0 total
-Time:        2.791 s
+Time:        2.794 s
 Ran all test suites.
 ```
 

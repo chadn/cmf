@@ -3,9 +3,13 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 A visualization tool that displays calendar events on both an interactive map and a filterable list, allowing users to spatially browse and filter events based on geographic location.
-A Next.js application that displays Google Calendar events on an interactive map with powerful filtering capabilities.
+A React + Next.js application that displays Google Calendar events on an interactive map with powerful filtering capabilities.
 
-STATUS: IN ACTIVE DEVELOPMENT, NOT WORKING YET
+## STATUS
+
+WORK IN PROGRESS: https://cmf-chad.vercel.app/
+
+See [Bugs and Known Issues ](docs/bugs.md)
 
 ## 🌟 Features
 
@@ -25,8 +29,8 @@ STATUS: IN ACTIVE DEVELOPMENT, NOT WORKING YET
 -   [MapLibre GL JS](https://maplibre.org/) - Open-source maps
 -   [SWR](https://swr.vercel.app/) - Data fetching and caching
 -   [Google Calendar API](https://developers.google.com/calendar)
--   [Google Maps Platform](https://developers.google.com/maps)
--   [Upstash Redis](https://upstash.com/) - Serverless Redis for caching
+-   [Google Maps Geocoding API](https://developers.google.com/maps/documentation/geocoding/requests-geocoding)
+-   [Upstash Redis](https://upstash.com/) - Serverless Redis for caching geocoding
 
 ## 📋 Requirements
 
@@ -64,7 +68,7 @@ Clone the repository, install dependencies, and create a `.env.local` file:
     cp .env.example .env.local
     ```
 
-Add your API keys to the `.env.local` file, see [.env.example](.env.example)
+Add your API keys to the `.env.local` file. For details, see [.env.example](.env.example)
 
 ### 🔧 Development
 
@@ -120,6 +124,18 @@ For more detailed information, see the following documentation:
 -   [Product Specification](docs/product.md)
 -   [Implementation Details](docs/Implementation.md) includes directory structure and implementation decisions.
 -   [Test coverage](docs/tests.md) output of `npm test`.
+-   [Bugs and Features](docs/bugs.md) 
+
+## History
+
+In 2010 I had the idea to use a map to filter Calendar events, and built a similar web app.
+This original version used Google Maps and Google Calendar, so it was called GCM for Google Calendar Map.
+https://chadnorwood.com/projects/gcm/
+
+Around 2015 it stopped working. 
+Before 2015 Google Maps was totally free and abuse was rare. Once Google Maps started costing money I disabled GCM. 
+
+Ever since then I considered rewriting to use free maps, and finally made it happen.
 
 ## 🤝 Contributing
 

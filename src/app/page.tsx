@@ -238,10 +238,9 @@ function HomeContent() {
                             {calendar.unknownLocationsCount > 0 && (
                                 <button
                                     onClick={handleUnknownLocationsToggle}
-                                    className="ml-2 text-blue-500 hover:underline"
+                                    className="ml-2 text-blue-500 text-xs hover:underline"
                                 >
-                                    ({calendar.unknownLocationsCount} have unknown
-                                    locations)
+                                    ({calendar.unknownLocationsCount} bad addr)
                                 </button>
                             )}
                         </p>

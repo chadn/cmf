@@ -61,7 +61,7 @@ describe('Footer', () => {
         expect(githubLink).toBeInTheDocument()
         expect(githubLink.closest('a')).toHaveAttribute(
             'href',
-            'https://github.com/yourusername/calendar-map-filter'
+            'https://github.com/chadn/cmf'
         )
         expect(githubLink.closest('a')).toHaveAttribute('target', '_blank')
         expect(githubLink.closest('a')).toHaveAttribute(

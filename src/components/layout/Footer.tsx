@@ -29,7 +29,7 @@ const Footer: React.FC = () => {
                             Terms of Service
                         </Link>
                         <a
-                            href="https://github.com/yourusername/calendar-map-filter"
+                            href="https://github.com/chadn/cmf"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-sm text-gray-500 hover:text-gray-700"

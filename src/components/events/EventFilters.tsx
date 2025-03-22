@@ -89,9 +89,9 @@ export default function EventFilters({
     const getDateButtonText = () => {
         const startDate = new Date(getDateFromValue(startValue))
         const endDate = new Date(getDateFromValue(endValue))
-        const msg = `Date Sliders that Filter by Date - (${formatDateForButton(
+        const msg = `Date Sliders: ${formatDateForButton(
             startDate
-        )} - ${formatDateForButton(endDate)})`
+        )} - ${formatDateForButton(endDate)}`
 
         if (!showDateSliders) {
             return `Show ${msg}`
@@ -160,14 +160,6 @@ export default function EventFilters({
                     </div>
                 )}
             </div>
-
-            <button
-                onClick={handleReset}
-                className="text-red-500 hover:text-red-700"
-                data-testid="reset-filters-button"
-            >
-                Reset Filters
-            </button>
         </div>
     )
 }

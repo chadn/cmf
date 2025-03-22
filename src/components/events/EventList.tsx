@@ -46,7 +46,7 @@ const EventList: React.FC<EventListProps> = ({
     if (events.length === 0) {
         return (
             <div className="p-2 text-center text-xs">
-                <p>No events found. Try adjusting your filters.</p>
+                <p>No events found. Try adjusting your filters, moving the map, or clicking x on any filter above to remove.</p>
             </div>
         )
     }

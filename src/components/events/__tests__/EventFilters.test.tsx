@@ -45,7 +45,7 @@ describe('EventFilters Component', () => {
 
         // Check if the button contains text that includes "Date Sliders"
         const dateButton = screen.getByText(
-            /Show Date Sliders that Filter by Date/i
+            /Show Date Sliders:/i
         )
         expect(dateButton).toBeInTheDocument()
     })
@@ -55,7 +55,7 @@ describe('EventFilters Component', () => {
 
         // Check if the button contains text that includes "Date Sliders"
         const dateButton = screen.getByText(
-            /Show Date Sliders that Filter by Date/i
+            /Show Date Sliders:/i
         )
         fireEvent.click(dateButton)
 
@@ -68,7 +68,7 @@ describe('EventFilters Component', () => {
 
         // First show the sliders
         const dateButton = screen.getByText(
-            /Show Date Sliders that Filter by Date/i
+            /Show Date Sliders:/i
         )
         fireEvent.click(dateButton)
 
@@ -83,15 +83,6 @@ describe('EventFilters Component', () => {
         expect(mockOnDateRangeChange).toHaveBeenCalled()
     })
 
-    test('calls onReset when reset button is clicked', () => {
-        render(<EventFilters {...defaultProps} />)
-
-        const resetButton = screen.getByText('Reset Filters')
-        fireEvent.click(resetButton)
-
-        expect(mockOnResetFilters).toHaveBeenCalled()
-    })
-
     test('adds data-testid attributes to key elements', () => {
         render(<EventFilters {...defaultProps} />)
 
@@ -103,8 +94,5 @@ describe('EventFilters Component', () => {
         const dateDropdown = screen.getByTestId('date-range-dropdown')
         expect(dateDropdown).toBeInTheDocument()
 
-        // Check if the reset button has a data-testid attribute
-        const resetButton = screen.getByTestId('reset-filters-button')
-        expect(resetButton).toBeInTheDocument()
     })
 })

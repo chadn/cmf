@@ -4,6 +4,8 @@ Implementation choices and reasoning are included here based on the [Product Spe
 
 ## Direction
 
+The following was given to AI (Claude 3.7) to help write code and docs, including most of this document.
+
 As much as possible, the code, the files, and directory structure should be concise, modular, simple, and maintainable. Files and directories organized for easy understanding and easy to add or remove features.
 In general, choose technologies that are stable, modular, and provide flexibility with common use cases made easy.
 
@@ -208,6 +210,8 @@ The application will follow a hybrid architecture with:
   /Implementation.md      # Implementation details and architecture decisions
 ```
 
+[View Test coverage](tests.md) of above files.
+
 ## Event Filtering Implementation
 
 ### Event Management Architecture
@@ -310,11 +314,6 @@ The filters are integrated with UI components:
    - Only re-filters when dependencies change
    - Avoids unnecessary rerenders by separating UI and data state
 
-## Bugs
-
-1. Temporarily making geocoding return same address FIXED_LOCATION for all locations while identifying other issues
-
-[View Test coverage](tests.md) of above files.
 
 ### Next.js App Router Best Practices
 
@@ -712,9 +711,3 @@ The filters are integrated with UI components:
    - Fallbacks ensure the application degrades gracefully when data is missing
    - Detailed logging helps diagnose issues in development and production
 
-## Bugs and Known Issues
-
-1. Browser client initialization - Sometimes when first rendering, calendar loads events successfully, but the events do not appear on the list or the map.
-WORKAROUND: move the map a little, triggers filters, click "filtered by map"
-1. Bug or Feature Change - show events with unresolved locations on events list. Currently if a user is trying to find an event by name or date, and doesn't realize the location is missing or unresolvable, they will not be able to find it.  They should.  This is partally implemented via filteredWithLocations 
-1. Bug or Feature Change - fully support calendarEndDate as a variable, right now its 3 months from today. Similarly, support calendarStartDate, which is 1 month prior.
