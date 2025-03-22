@@ -77,7 +77,7 @@ function HomeContent() {
         setSelectedMarkerId,
         resetToAllEvents,
         isMapOfAllEvents,
-    } = useMap({ events: events.withLocations })
+    } = useMap({ events: events.filtered })
 
     // Handle search query changes
     const handleSearchChange = useCallback(
