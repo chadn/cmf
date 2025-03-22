@@ -36,6 +36,111 @@ const FIXED_LOCATIONS = [
     },
 ]
 
+
+// See if location already has Lat and Lon in it. If so, extract and return ResolvedLocation, else return false
+export function customLocationParserLatLon(
+    locationString: string
+): ResolvedLocation | false {
+
+    // Check for latitude and longitude in the format "lat,lng", allowing for spaces  and negative values
+    // Example: "37.774929,-122.419418"
+    // 6 decimal places is less than 1m precision, which is good enough for our purposes
+    const latLonRegex = /^\s*(-?\d{1,3}\.\d{2,6}),\s*(-?\d{1,3}\.\d{2,6})/
+    let match = locationString.match(latLonRegex)
+    if (match) {
+        return {
+            original_location: locationString,
+            formatted_address: locationString,
+            lat: parseFloat(match[1]),
+            lng: parseFloat(match[2]),
+            status: 'resolved' as const,
+        }
+    }
+    return false
+}
+
+export function customLocationParserDegMinSec(
+    locationString: string
+): ResolvedLocation | false {
+
+    // Check to see if match 41°07'16.0"N 1°00'16.9"E  Google Maps accepts this format
+    const latLonRegex2 = /^([\s0-9°'".-]+)(Nn|Ss)\s*([\s0-9°'".-]+)(Ee|Ww)/
+    const DegMinSecRegex = /(-?\d{1,3})\s*°\s*(\d{1,2})\s*'\s*(\d{1,2}\.\d{1,3})/
+    const match = locationString.match(latLonRegex2)
+    if (match) {
+        const latMatch = match[1].match(DegMinSecRegex)
+        const lngMatch = match[3].match(DegMinSecRegex)
+        if (latMatch && lngMatch) {
+            const latDegrees = parseFloat(latMatch[1])
+            const latMinutes = parseFloat(latMatch[2])
+            const latSeconds = parseFloat(latMatch[3]) * 60
+            const lngDegrees = parseFloat(lngMatch[1])
+            const lngMinutes = parseFloat(lngMatch[2])
+            const lngSeconds = parseFloat(lngMatch[3]) * 60
+            const lat = latDegrees + latMinutes / 60 + latSeconds / 3600
+            const lng = lngDegrees + lngMinutes / 60 + lngSeconds / 3600
+            // Adjust for N/S and E/W
+            const latSign = match[2].toUpperCase() === 'N' ? 1 : -1
+            const lngSign = match[4].toUpperCase() === 'E' ? 1 : -1
+            const latFinal = lat * latSign
+            const lngFinal = lng * lngSign
+            const formatted_address = `${latFinal.toFixed(6)},${lngFinal.toFixed(6)}`
+            const ret: ResolvedLocation = {
+                original_location: locationString,
+                formatted_address: formatted_address,
+                lat: latFinal,
+                lng: lngFinal,
+                status: 'resolved' as const,
+            }
+            return ret
+        }
+    }
+    return false
+}
+
+export function customLocationParserDegMinDecimal(
+    locationString: string
+): ResolvedLocation | false {
+    // Finally check to match locations with degrees, minutes, seconds. 
+    // N 41° 07.266 E 001° 00.281
+    const latLonDMSRegex =
+        /^\s*(Nn|Ss)\s*(-?\d{1,3})\s*°\s*(\d{1,2})\.(\d{1,6})\s*(Ee|wW)\s*(-?\d{1,3})\s*°\s*(\d{1,2})\.(\d{1,6})/
+        //   1         2                 3          4           5         6                 7          8
+    const matchDMS = locationString.match(latLonDMSRegex)
+    if (matchDMS) {
+        // Convert DMS to decimal degrees
+        const latDegrees = parseFloat(matchDMS[2])
+        const latMinutes = parseFloat(matchDMS[3])
+        const latSeconds = parseFloat(matchDMS[4]) * 60
+        const lngDegrees = parseFloat(matchDMS[6])
+        const lngMinutes = parseFloat(matchDMS[7])
+        const lngSeconds = parseFloat(matchDMS[8]) * 60
+        const lat = latDegrees + latMinutes / 60 + latSeconds / 3600
+        const lng = lngDegrees + lngMinutes / 60 + lngSeconds / 3600
+        // Adjust for N/S and E/W
+        const latSign = matchDMS[1].toUpperCase() === 'N' ? 1 : -1
+        const lngSign = matchDMS[5].toUpperCase() === 'E' ? 1 : -1
+        const latFinal = lat * latSign
+        const lngFinal = lng * lngSign
+        const formatted_address = `${latFinal.toFixed(6)},${lngFinal.toFixed(6)}`
+        const ret: ResolvedLocation = {
+            original_location: locationString,
+            formatted_address: formatted_address,
+            lat: latFinal,
+            lng: lngFinal,
+            status: 'resolved' as const,
+        }
+        return ret
+    }
+    return false
+}
+
+export const customLocationParsers =[
+    customLocationParserLatLon,
+    customLocationParserDegMinSec,
+    customLocationParserDegMinDecimal
+]
+
 export function updateResolvedLocation(
     result: ResolvedLocation,
     apiData: GoogleGeocodeResult
@@ -47,7 +152,7 @@ export function updateResolvedLocation(
             lat: apiData.geometry.location.lat,
             lng: apiData.geometry.location.lng,
             types: apiData.types,
-            status: 'resolved',
+            status: 'resolved' as const,
         }
     } catch (error) {
         // format of data from API is not what we expect
@@ -63,40 +168,21 @@ export function updateResolvedLocation(
     }
 }
 
-// See if location already has Lat and Lon in it. If so, extract and return ResolvedLocation, else return false-ish value
-function customLocationParser(
-    locationString: string
-): ResolvedLocation | false {
-    // Check for latitude and longitude in the format "lat,lng", allowing for spaces  and negative values
-    // Example: "37.774929,-122.419418"
-    // 6 decimal places is less than 1m precision, which is good enough for our purposes
-    const latLonRegex = /^\s*(-?\d{1,3}\.\d{2,6}),\s*(-?\d{1,3}\.\d{2,6})/
-
-    const match = locationString.match(latLonRegex)
-    if (match) {
-        return {
-            original_location: locationString,
-            formatted_address: locationString,
-            lat: parseFloat(match[1]),
-            lng: parseFloat(match[2]),
-            status: 'resolved',
-        }
-    }
-    return false
-}
-
 async function resolveLocation(
     result: ResolvedLocation
 ): Promise<ResolvedLocation> {
     // check custom parser
-    const customParser = customLocationParser(result.original_location)
-    if (customParser) {
-        debugLog(
-            'geocoding',
-            'Using customLocationParser:',
-            result.original_location
-        )
-        return Promise.resolve(customParser)
+    for (let i = 0; i < customLocationParsers.length; i++) {
+        const parser = customLocationParsers[i]
+        const parsedResult = parser(result.original_location)
+        if (parsedResult) {
+            debugLog(
+                'geocoding',
+                `customLocationParsers ${i} found:`,
+                parsedResult
+            )
+            return parsedResult
+        }
     }
     try {
         // call the API
