@@ -25,10 +25,10 @@ jest.mock('next/navigation', () => ({
 // Mock environment variables
 process.env = {
     ...process.env,
-    DEBUG_LOGIC: 'true',
     GOOGLE_CALENDAR_API_KEY: 'test-api-key',
     GOOGLE_MAPS_API_KEY: 'test-api-key',
     MAPLIBRE_STYLE_URL: 'https://demotiles.maplibre.org/style.json',
+    LOG_LEVEL: 'DEBUG',
 }
 
 // Mock window.matchMedia

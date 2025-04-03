@@ -4,30 +4,24 @@ import React, { useState } from 'react'
 import { CalendarEvent } from '@/types/events'
 import { formatEventDate, formatEventDuration } from '@/lib/utils/date'
 import { truncateLocation } from '@/lib/utils/location'
+import LoadingSpinner from '@/components/common/LoadingSpinner'
 
 interface EventListProps {
     events: CalendarEvent[]
-    isLoading: boolean
-    error: Error | null
-    onEventSelect: (eventId: string) => void
+    selectedEventId: string | null
+    onEventSelect: (eventId: string | null) => void
+    apiIsLoading: boolean
 }
 
 type SortField = 'name' | 'startDate' | 'duration' | 'location'
 type SortDirection = 'asc' | 'desc'
 
-const EventList: React.FC<EventListProps> = ({
-    events,
-    isLoading,
-    error,
-    onEventSelect,
-}) => {
+const EventList: React.FC<EventListProps> = ({ events, selectedEventId, onEventSelect, apiIsLoading }) => {
     const [sortField, setSortField] = useState<SortField>('startDate')
     const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
-    const [expandedLocation, setExpandedLocation] = useState<string | null>(
-        null
-    )
+    const [expandedLocation, setExpandedLocation] = useState<string | null>(null)
 
-    if (isLoading) {
+    if (apiIsLoading) {
         return (
             <div className="p-2 text-center text-xs">
                 <p>Loading events...</p>
@@ -35,18 +29,16 @@ const EventList: React.FC<EventListProps> = ({
         )
     }
 
-    if (error) {
-        return (
-            <div className="p-2 text-center text-error text-xs">
-                <p>Error loading events: {error.message}</p>
-            </div>
-        )
-    }
-
     if (events.length === 0) {
         return (
-            <div className="p-2 text-center text-xs">
-                <p>No events found. Try adjusting your filters, moving the map, or clicking x on any filter above to remove.</p>
+            <div className="p-4 text-center">
+                {apiIsLoading ? (
+                    <div className="flex justify-center">
+                        <LoadingSpinner size="medium" />
+                    </div>
+                ) : (
+                    <p className="text-gray-500">No events found</p>
+                )}
             </div>
         )
     }
@@ -54,23 +46,15 @@ const EventList: React.FC<EventListProps> = ({
     // Sort events based on the selected field and direction
     const sortedEvents = [...events].sort((a, b) => {
         if (sortField === 'name') {
-            return sortDirection === 'asc'
-                ? a.name.localeCompare(b.name)
-                : b.name.localeCompare(a.name)
+            return sortDirection === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name)
         } else if (sortField === 'startDate') {
             return sortDirection === 'asc'
-                ? new Date(a.startDate).getTime() -
-                      new Date(b.startDate).getTime()
-                : new Date(b.startDate).getTime() -
-                      new Date(a.startDate).getTime()
+                ? new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
+                : new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
         } else if (sortField === 'duration') {
-            const aDuration =
-                new Date(a.endDate).getTime() - new Date(a.startDate).getTime()
-            const bDuration =
-                new Date(b.endDate).getTime() - new Date(b.startDate).getTime()
-            return sortDirection === 'asc'
-                ? aDuration - bDuration
-                : bDuration - aDuration
+            const aDuration = new Date(a.endDate).getTime() - new Date(a.startDate).getTime()
+            const bDuration = new Date(b.endDate).getTime() - new Date(b.startDate).getTime()
+            return sortDirection === 'asc' ? aDuration - bDuration : bDuration - aDuration
         } else if (sortField === 'location') {
             return sortDirection === 'asc'
                 ? (a.location || '').localeCompare(b.location || '')
@@ -121,9 +105,7 @@ const EventList: React.FC<EventListProps> = ({
                             >
                                 Event Name
                                 {sortField === 'name' && (
-                                    <span className="ml-1">
-                                        {sortDirection === 'asc' ? '↑' : '↓'}
-                                    </span>
+                                    <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
                                 )}
                             </th>
                             <th
@@ -133,9 +115,7 @@ const EventList: React.FC<EventListProps> = ({
                             >
                                 Start Date
                                 {sortField === 'startDate' && (
-                                    <span className="ml-1">
-                                        {sortDirection === 'asc' ? '↑' : '↓'}
-                                    </span>
+                                    <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
                                 )}
                             </th>
                             <th
@@ -145,9 +125,7 @@ const EventList: React.FC<EventListProps> = ({
                             >
                                 Duration
                                 {sortField === 'duration' && (
-                                    <span className="ml-1">
-                                        {sortDirection === 'asc' ? '↑' : '↓'}
-                                    </span>
+                                    <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
                                 )}
                             </th>
                             <th
@@ -157,9 +135,7 @@ const EventList: React.FC<EventListProps> = ({
                             >
                                 Location
                                 {sortField === 'location' && (
-                                    <span className="ml-1">
-                                        {sortDirection === 'asc' ? '↑' : '↓'}
-                                    </span>
+                                    <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
                                 )}
                             </th>
                         </tr>
@@ -173,31 +149,18 @@ const EventList: React.FC<EventListProps> = ({
                             >
                                 <td className="px-1 py-1">
                                     <div className="text-xs font-medium text-primary">
-                                        {event.name.length > 60
-                                            ? `${event.name.substring(
-                                                  0,
-                                                  60
-                                              )}...`
-                                            : event.name}
+                                        {event.name.length > 60 ? `${event.name.substring(0, 60)}...` : event.name}
                                     </div>
-                                    {event.resolved_location?.status ===
-                                        'unresolved' && (
-                                        <div className="text-xxs text-error">
-                                            ⚠ Unmapped
-                                        </div>
+                                    {event.resolved_location?.status === 'unresolved' && (
+                                        <div className="text-xxs text-error">⚠ Unmapped</div>
                                     )}
                                 </td>
                                 <td className="px-1 py-1 whitespace-nowrap">
-                                    <div className="text-xs text-gray-600">
-                                        {formatStartDate(event.startDate)}
-                                    </div>
+                                    <div className="text-xs text-gray-600">{formatStartDate(event.startDate)}</div>
                                 </td>
                                 <td className="px-1 py-1 whitespace-nowrap">
                                     <div className="text-xs text-gray-600">
-                                        {formatEventDuration(
-                                            event.startDate,
-                                            event.endDate
-                                        )}
+                                        {formatEventDuration(event.startDate, event.endDate)}
                                     </div>
                                 </td>
                                 <td className="px-1 py-1">
@@ -212,25 +175,16 @@ const EventList: React.FC<EventListProps> = ({
                                             expandedLocation === event.id ? (
                                                 event.location
                                             ) : (
-                                                truncateLocation(
-                                                    event.location,
-                                                    40
-                                                )
+                                                truncateLocation(event.location, 40)
                                             )
                                         ) : (
-                                            <span className="text-gray-400 italic text-xxs">
-                                                No location
+                                            <span className="text-gray-400 italic text-xxs">No location</span>
+                                        )}
+                                        {event.location && event.location.length > 40 && (
+                                            <span className="ml-1 text-blue-500 text-xxs">
+                                                {expandedLocation === event.id ? '(less)' : '(more)'}
                                             </span>
                                         )}
-                                        {event.location &&
-                                            event.location.length > 40 && (
-                                                <span className="ml-1 text-blue-500 text-xxs">
-                                                    {expandedLocation ===
-                                                    event.id
-                                                        ? '(less)'
-                                                        : '(more)'}
-                                                </span>
-                                            )}
                                     </div>
                                 </td>
                             </tr>

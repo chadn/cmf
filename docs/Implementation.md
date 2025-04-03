@@ -178,8 +178,8 @@ The application will follow a hybrid architecture with:
     /api                  # API client functions
       /calendar.ts        # Calendar API client for Google Calendar integration
       /geocoding.ts       # Geocoding API client with caching support
-    /events               # Events 
-      /EventsManager.ts   # EventsManager Class managing logic, state, and functions
+    /events               # Events
+      /FilterEventsManager.ts   # FilterEventsManager Class managing logic, state, and functions
     /hooks                # Custom React hooks
       /useEventsManager.ts # Hook for event data fetching and filtering
       /useMap.ts          # Hook for map interactions and state management
@@ -218,141 +218,170 @@ The application will follow a hybrid architecture with:
 
 The event filtering system has been implemented using a class-based approach with clear naming conventions:
 
-1. **EventsManager Class**:
+1. **FilterEventsManager Class**:
 
-   A central class that encapsulates all event filtering logic and state, providing:
+    A central class that encapsulates all event filtering logic and state, providing:
 
-   - **Clear Event Collections**:
-     - `cmf_events_all`: All events from the calendar (unfiltered)
-     - `cmf_events_locations`: Events with successfully resolved locations
-     - `cmf_events_unknown_locations`: Events with unresolved or unknown locations
-     - `cmf_events_filtered`: Events that match all current filters (date, search, map bounds)
+    - **Clear Event Collections**:
 
-   - **Filter Methods**:
-     - `setDateRange`: Apply date filtering
-     - `setSearchQuery`: Apply text-based search filtering
-     - `setMapBounds`: Apply geographic bounds filtering
-     - `setShowUnknownLocationsOnly`: Toggle filtering for events with unknown locations
-     - `resetAllFilters`: Clear all filter criteria
+        - `cmf_events_all`: All events from the calendar (unfiltered)
+        - `cmf_events_locations`: Events with successfully resolved locations
+        - `cmf_events_unknown_locations`: Events with unresolved or unknown locations
+        - `cmf_events_filtered`: Events that match all current filters (date, search, map bounds)
 
-   - **Statistics and Analysis**:
-     - `getFilterStats`: Provides metrics on how many events are filtered by each criterion
+    - **Filter Methods**:
+
+        - `setDateRange`: Apply date filtering
+        - `setSearchQuery`: Apply text-based search filtering
+        - `setMapBounds`: Apply geographic bounds filtering
+        - `setShowUnknownLocationsOnly`: Toggle filtering for events with unknown locations
+        - `resetAllFilters`: Clear all filter criteria
+
+    - **Statistics and Analysis**:
+        - `getFilterStats`: Provides metrics on how many events are filtered by each criterion
 
 2. **useEventsManager Hook**:
 
-   A custom React hook that:
+    A custom React hook that:
 
-   - Initializes an EventsManager instance
-   - Fetches calendar data from the API
-   - Updates the EventsManager when data is received
-   - Returns both the event collections and filter methods for use in components
-   - Provides metadata about the events (total count, loading state, etc.)
+    - Initializes an FilterEventsManager instance
+    - Fetches calendar data from the API
+    - Updates the FilterEventsManager when data is received
+    - Returns a structured object with:
+        - `events`: Object containing different event collections (`all`, `withLocations`, `withoutLocations`, `filtered`)
+        - `filters`: Object containing methods for manipulating filters and getting filter statistics
+        - `calendar`: Object containing metadata about the calendar (name, totalCount, unknownLocationsCount)
+        - `apiIsLoading`: Loading state
+        - `apiError`: Error state
+        - `filterEventsManager`: Direct access to the FilterEventsManager instance (for advanced use cases)
+        - `filteredEvents`: Backward compatibility property for older components
+        - `totalCount`: Total count of events
+        - `filteredCount`: Count of filtered events
+        - `unknownLocationsCount`: Count of events with unknown locations
+        - `calendarName`: Name of the calendar
+    - Also provides backward compatibility properties for older components
 
 3. **Map Integration**:
 
-   The `useMap` hook has been updated to:
+    The `useMap` hook has been updated to:
 
-   - Use `cmf_events_locations` consistently, fixing a previous bug in `resetToAllEvents`
-   - Clear bounds when resetting to show all events
-   - Reset the view properly when map filters are cleared
+    - Use the `events.withLocations` property instead of direct access to the FilterEventsManager
+    - Clear bounds when resetting to show all events
+    - Reset the view properly when map filters are cleared
+
+### Recent Improvements (March 2025)
+
+1. **Restructured Hook Return Values**:
+
+    - The `useEventsManager` hook now returns a more structured and intuitive object
+    - Events are grouped under an `events` object with clear property names:
+        - `events.all` (formerly `cmf_events_all`)
+        - `events.withLocations` (formerly `cmf_events_locations`)
+        - `events.withoutLocations` (formerly `cmf_events_unknown_locations`)
+        - `events.filtered` (formerly `cmf_events_filtered`)
+    - Filter methods are grouped under a `filters` object:
+        - `filters.setDateRange`
+        - `filters.setSearchQuery`
+        - `filters.setMapBounds`
+        - `filters.setShowUnknownLocationsOnly`
+        - `filters.resetAll` (formerly `resetAllFilters`)
+        - `filters.getStats` (formerly `getFilterStats`)
+    - Calendar metadata is grouped under a `calendar` object:
+        - `calendar.name`
+        - `calendar.totalCount`
+        - `calendar.unknownLocationsCount`
+
+2. **Improved Error Handling**:
+
+    - Added comprehensive error handling to prevent runtime errors
+    - Implemented try-catch blocks in critical methods
+    - Added fallbacks for `null` or `undefined` values
+    - Fixed binding issues in the `hasResolvedLocation` method using arrow function syntax
+
+3. **Enhanced Debugging**:
+
+    - Added extensive console logging throughout the codebase
+    - Improved error reporting with contextual information
+    - Implemented rate limiting for log messages to prevent console flooding
+
+4. **Bug Fixes**:
+    - Fixed an issue where `getFilterStats` was incorrectly called directly instead of through the `filters` object
+    - Addressed potential `this` binding issues in the FilterEventsManager class
+    - Ensured that all event collections have proper null checks and fallbacks
+    - Fixed the initialization sequence to improve stability
 
 ### Filter Implementation
 
-Filters are implemented in the EventsManager class via getter methods:
+Filters are implemented in the FilterEventsManager class via getter methods:
 
 1. **Date Filtering**:
-   - Checks if an event's date range overlaps with the selected filter date range
-   - Handles partial date ranges (only start or only end date)
+
+    - Checks if an event's date range overlaps with the selected filter date range
+    - Handles partial date ranges (only start or only end date)
 
 2. **Search Filtering**:
-   - Performs case-insensitive text search across name, description, and location fields
-   - Trims and processes search terms to avoid empty searches
+
+    - Performs case-insensitive text search across name, description, and location fields
+    - Trims and processes search terms to avoid empty searches
 
 3. **Map Bounds Filtering**:
-   - Filters events based on whether their locations fall within the visible map bounds
-   - Only applies to events with resolved geographic coordinates
-   - Can be temporarily paused during popup interactions
+
+    - Filters events based on whether their locations fall within the visible map bounds
+    - Only applies to events with resolved geographic coordinates
+    - Can be temporarily paused during popup interactions
 
 4. **Unknown Locations Filtering**:
-   - Filters to show only events with unresolved locations
-   - Useful for identifying events that need manual location resolution
+    - Filters to show only events with unresolved locations
+    - Useful for identifying events that need manual location resolution
 
 ### UI Integration
 
 The filters are integrated with UI components:
 
 1. **EventFilters Component**:
-   - Maintains local UI state for date slider positions and visibility
-   - Synchronizes with the EventsManager's filter state
-   - Provides UI controls for searching and date range selection
-   - Automatically resets UI state when filters are cleared
+
+    - Maintains local UI state for date slider positions and visibility
+    - Synchronizes with the filters methods from useEventsManager
+    - Provides UI controls for searching and date range selection
+    - Automatically resets UI state when filters are cleared
 
 2. **Page Component**:
-   - Maintains local state for active filters to ensure UI and filter state are synchronized
-   - Connects EventsManager methods to UI components
-   - Displays filter chips showing active filters with options to remove them
-   - Ensures the event list always shows `cmf_events_filtered` (filtered events)
+    - Maintains local state for active filters to ensure UI and filter state are synchronized
+    - Connects FilterEventsManager methods to UI components
+    - Connects filter methods to UI components
+    - Displays filter chips showing active filters with options to remove them
+    - Uses `events.filtered` to display the current filtered event list
 
 ### Benefits of this Approach
 
 1. **Separation of Concerns**:
-   - Business logic is encapsulated in the EventsManager class
-   - UI state is managed in the relevant components
-   - Data fetching is handled by the useEventsManager hook
 
-2. **Clear Naming Convention**:
-   - Consistent prefix `cmf_events_` makes event collections easily identifiable
-   - Descriptive suffixes (`_all`, `_locations`, `_active`) clearly indicate purpose
+    - Business logic is encapsulated in the FilterEventsManager class
+    - UI state is managed in the relevant components
+    - Data fetching is handled by the useEventsManager hook
+
+2. **Intuitive API Design**:
+
+    - Nested objects provide clear organization of related functionality
+    - Consistent and descriptive naming makes the API intuitive to use
+    - Backward compatibility properties ensure existing code continues to work
 
 3. **Extensibility**:
-   - Additional filters can be easily added to the EventsManager
-   - New event collections can be derived as needed
-   - UI components can be updated independently of filtering logic
+
+    - Additional filters can be easily added to the FilterEventsManager
+    - New event collections can be derived as needed
+    - UI components can be updated independently of filtering logic
 
 4. **Performance**:
-   - Filtering is performed using memoized calculations
-   - Only re-filters when dependencies change
-   - Avoids unnecessary rerenders by separating UI and data state
 
+    - Filtering is performed using memoized calculations
+    - Only re-filters when dependencies change
+    - Avoids unnecessary rerenders by separating UI and data state
 
-### Next.js App Router Best Practices
-
-1. **Route Organization**:
-
-    - Use the App Router's file-based routing system
-    - Implement route groups with parentheses notation `(groupName)` for logical organization without affecting URL structure
-    - Create shared layouts for related routes
-    - Implement loading and error states at appropriate route levels
-
-2. **Server vs. Client Components**:
-
-    - Default to Server Components for improved performance
-    - Use the "use client" directive only when necessary (interactive components like events results list, map, hooks usage)
-    - Keep data fetching in Server Components when possible
-    - Implement proper component boundaries between server and client components
-
-3. **Data Fetching**:
-
-    - Use React Server Components for initial data fetching
-    - Implement SWR for client-side data fetching and caching
-    - Use route handlers (app/api/\*) for backend API endpoints
-    - Implement proper caching strategies using Next.js cache mechanisms
-
-4. **Component Organization**:
-    - Organize components by domain/feature rather than by type
-    - Create clear boundaries between UI components and feature components
-    - Implement proper prop typing with TypeScript
-    - Use composition over inheritance for component reuse
-
-### Data Flow (Refined)
-
-1. User requests the application with a calendar ID as a URL parameter
-2. Next.js Server Component fetches calendar data from Google Calendar API
-3. Server geocodes event locations (using cached results from Upstash for Redis when available)
-4. Server renders initial HTML with preloaded data, not waiting for geocoding to complete.
-5. Client hydrates the application and initializes the map
-6. User interactions trigger client-side filtering and map updates
-7. Additional data is fetched as needed via API routes with SWR for caching
+5. **Robustness**:
+    - Comprehensive error handling prevents runtime crashes
+    - Fallbacks ensure the application degrades gracefully when data is missing
+    - Detailed logging helps diagnose issues in development and production
 
 ## Tech Stack Choices and reasoning
 
@@ -564,150 +593,167 @@ This recommendation provides the best balance of cost, performance, and develope
 
 The event filtering system has been implemented using a class-based approach with clear naming conventions:
 
-1. **EventsManager Class**:
+1. **FilterEventsManager Class**:
 
-   A central class that encapsulates all event filtering logic and state, providing:
+    A central class that encapsulates all event filtering logic and state, providing:
 
-   - **Clear Event Collections**:
-     - `cmf_events_all`: All events from the calendar (unfiltered)
-     - `cmf_events_locations`: Events with successfully resolved locations
-     - `cmf_events_unknown_locations`: Events with unresolved or unknown locations
-     - `cmf_events_filtered`: Events that match all current filters (date, search, map bounds)
+    - **Clear Event Collections**:
 
-   - **Filter Methods**:
-     - `setDateRange`: Apply date filtering
-     - `setSearchQuery`: Apply text-based search filtering
-     - `setMapBounds`: Apply geographic bounds filtering
-     - `setShowUnknownLocationsOnly`: Toggle filtering for events with unknown locations
-     - `resetAllFilters`: Clear all filter criteria
+        - `cmf_events_all`: All events from the calendar (unfiltered)
+        - `cmf_events_locations`: Events with successfully resolved locations
+        - `cmf_events_unknown_locations`: Events with unresolved or unknown locations
+        - `cmf_events_filtered`: Events that match all current filters (date, search, map bounds)
 
-   - **Statistics and Analysis**:
-     - `getFilterStats`: Provides metrics on how many events are filtered by each criterion
+    - **Filter Methods**:
+
+        - `setDateRange`: Apply date filtering
+        - `setSearchQuery`: Apply text-based search filtering
+        - `setMapBounds`: Apply geographic bounds filtering
+        - `setShowUnknownLocationsOnly`: Toggle filtering for events with unknown locations
+        - `resetAllFilters`: Clear all filter criteria
+
+    - **Statistics and Analysis**:
+        - `getFilterStats`: Provides metrics on how many events are filtered by each criterion
 
 2. **useEventsManager Hook**:
 
-   A custom React hook that:
+    A custom React hook that:
 
-   - Initializes an EventsManager instance
-   - Fetches calendar data from the API
-   - Updates the EventsManager when data is received
-   - Returns a structured object with:
-     - `events`: Object containing different event collections (`all`, `withLocations`, `withoutLocations`, `filtered`)
-     - `filters`: Object containing methods for manipulating filters and getting filter statistics
-     - `calendar`: Object containing metadata about the calendar (name, totalCount, unknownLocationsCount)
-     - `isLoading`: Loading state
-     - `error`: Error state
-     - `eventsManager`: Direct access to the EventsManager instance (for advanced use cases)
-   - Also provides backward compatibility properties for older components
+    - Initializes an FilterEventsManager instance
+    - Fetches calendar data from the API
+    - Updates the FilterEventsManager when data is received
+    - Returns a structured object with:
+        - `events`: Object containing different event collections (`all`, `withLocations`, `withoutLocations`, `filtered`)
+        - `filters`: Object containing methods for manipulating filters and getting filter statistics
+        - `calendar`: Object containing metadata about the calendar (name, totalCount, unknownLocationsCount)
+        - `apiIsLoading`: Loading state
+        - `apiError`: Error state
+        - `filterEventsManager`: Direct access to the FilterEventsManager instance (for advanced use cases)
+        - `filteredEvents`: Backward compatibility property for older components
+        - `totalCount`: Total count of events
+        - `filteredCount`: Count of filtered events
+        - `unknownLocationsCount`: Count of events with unknown locations
+        - `calendarName`: Name of the calendar
+    - Also provides backward compatibility properties for older components
 
 3. **Map Integration**:
 
-   The `useMap` hook has been updated to:
+    The `useMap` hook has been updated to:
 
-   - Use the `events.withLocations` property instead of direct access to the EventsManager
-   - Clear bounds when resetting to show all events
-   - Reset the view properly when map filters are cleared
+    - Use the `events.withLocations` property instead of direct access to the FilterEventsManager
+    - Clear bounds when resetting to show all events
+    - Reset the view properly when map filters are cleared
 
 ### Recent Improvements (March 2025)
 
 1. **Restructured Hook Return Values**:
-   - The `useEventsManager` hook now returns a more structured and intuitive object
-   - Events are grouped under an `events` object with clear property names:
-     - `events.all` (formerly `cmf_events_all`)
-     - `events.withLocations` (formerly `cmf_events_locations`)
-     - `events.withoutLocations` (formerly `cmf_events_unknown_locations`)
-     - `events.filtered` (formerly `cmf_events_filtered`)
-   - Filter methods are grouped under a `filters` object:
-     - `filters.setDateRange`
-     - `filters.setSearchQuery`
-     - `filters.setMapBounds`
-     - `filters.setShowUnknownLocationsOnly`
-     - `filters.resetAll` (formerly `resetAllFilters`)
-     - `filters.getStats` (formerly `getFilterStats`)
-   - Calendar metadata is grouped under a `calendar` object:
-     - `calendar.name`
-     - `calendar.totalCount`
-     - `calendar.unknownLocationsCount`
+
+    - The `useEventsManager` hook now returns a more structured and intuitive object
+    - Events are grouped under an `events` object with clear property names:
+        - `events.all` (formerly `cmf_events_all`)
+        - `events.withLocations` (formerly `cmf_events_locations`)
+        - `events.withoutLocations` (formerly `cmf_events_unknown_locations`)
+        - `events.filtered` (formerly `cmf_events_filtered`)
+    - Filter methods are grouped under a `filters` object:
+        - `filters.setDateRange`
+        - `filters.setSearchQuery`
+        - `filters.setMapBounds`
+        - `filters.setShowUnknownLocationsOnly`
+        - `filters.resetAll` (formerly `resetAllFilters`)
+        - `filters.getStats` (formerly `getFilterStats`)
+    - Calendar metadata is grouped under a `calendar` object:
+        - `calendar.name`
+        - `calendar.totalCount`
+        - `calendar.unknownLocationsCount`
 
 2. **Improved Error Handling**:
-   - Added comprehensive error handling to prevent runtime errors
-   - Implemented try-catch blocks in critical methods
-   - Added fallbacks for `null` or `undefined` values
-   - Fixed binding issues in the `hasResolvedLocation` method using arrow function syntax
+
+    - Added comprehensive error handling to prevent runtime errors
+    - Implemented try-catch blocks in critical methods
+    - Added fallbacks for `null` or `undefined` values
+    - Fixed binding issues in the `hasResolvedLocation` method using arrow function syntax
 
 3. **Enhanced Debugging**:
-   - Added extensive console logging throughout the codebase
-   - Improved error reporting with contextual information
-   - Implemented rate limiting for log messages to prevent console flooding
+
+    - Added extensive console logging throughout the codebase
+    - Improved error reporting with contextual information
+    - Implemented rate limiting for log messages to prevent console flooding
 
 4. **Bug Fixes**:
-   - Fixed an issue where `getFilterStats` was incorrectly called directly instead of through the `filters` object
-   - Addressed potential `this` binding issues in the EventsManager class
-   - Ensured that all event collections have proper null checks and fallbacks
-   - Fixed the initialization sequence to improve stability
+    - Fixed an issue where `getFilterStats` was incorrectly called directly instead of through the `filters` object
+    - Addressed potential `this` binding issues in the FilterEventsManager class
+    - Ensured that all event collections have proper null checks and fallbacks
+    - Fixed the initialization sequence to improve stability
 
 ### Filter Implementation
 
-Filters are implemented in the EventsManager class via getter methods:
+Filters are implemented in the FilterEventsManager class via getter methods:
 
 1. **Date Filtering**:
-   - Checks if an event's date range overlaps with the selected filter date range
-   - Handles partial date ranges (only start or only end date)
+
+    - Checks if an event's date range overlaps with the selected filter date range
+    - Handles partial date ranges (only start or only end date)
 
 2. **Search Filtering**:
-   - Performs case-insensitive text search across name, description, and location fields
-   - Trims and processes search terms to avoid empty searches
+
+    - Performs case-insensitive text search across name, description, and location fields
+    - Trims and processes search terms to avoid empty searches
 
 3. **Map Bounds Filtering**:
-   - Filters events based on whether their locations fall within the visible map bounds
-   - Only applies to events with resolved geographic coordinates
-   - Can be temporarily paused during popup interactions
+
+    - Filters events based on whether their locations fall within the visible map bounds
+    - Only applies to events with resolved geographic coordinates
+    - Can be temporarily paused during popup interactions
 
 4. **Unknown Locations Filtering**:
-   - Filters to show only events with unresolved locations
-   - Useful for identifying events that need manual location resolution
+    - Filters to show only events with unresolved locations
+    - Useful for identifying events that need manual location resolution
 
 ### UI Integration
 
 The filters are integrated with UI components:
 
 1. **EventFilters Component**:
-   - Maintains local UI state for date slider positions and visibility
-   - Synchronizes with the filters methods from useEventsManager
-   - Provides UI controls for searching and date range selection
-   - Automatically resets UI state when filters are cleared
+
+    - Maintains local UI state for date slider positions and visibility
+    - Synchronizes with the filters methods from useEventsManager
+    - Provides UI controls for searching and date range selection
+    - Automatically resets UI state when filters are cleared
 
 2. **Page Component**:
-   - Maintains local state for active filters to ensure UI and filter state are synchronized
-   - Connects EventsManager methods to UI components
-   - Connects filter methods to UI components
-   - Displays filter chips showing active filters with options to remove them
-   - Uses `events.filtered` to display the current filtered event list
+    - Maintains local state for active filters to ensure UI and filter state are synchronized
+    - Connects FilterEventsManager methods to UI components
+    - Connects filter methods to UI components
+    - Displays filter chips showing active filters with options to remove them
+    - Uses `events.filtered` to display the current filtered event list
 
 ### Benefits of this Approach
 
 1. **Separation of Concerns**:
-   - Business logic is encapsulated in the EventsManager class
-   - UI state is managed in the relevant components
-   - Data fetching is handled by the useEventsManager hook
+
+    - Business logic is encapsulated in the FilterEventsManager class
+    - UI state is managed in the relevant components
+    - Data fetching is handled by the useEventsManager hook
 
 2. **Intuitive API Design**:
-   - Nested objects provide clear organization of related functionality
-   - Consistent and descriptive naming makes the API intuitive to use
-   - Backward compatibility properties ensure existing code continues to work
+
+    - Nested objects provide clear organization of related functionality
+    - Consistent and descriptive naming makes the API intuitive to use
+    - Backward compatibility properties ensure existing code continues to work
 
 3. **Extensibility**:
-   - Additional filters can be easily added to the EventsManager
-   - New event collections can be derived as needed
-   - UI components can be updated independently of filtering logic
+
+    - Additional filters can be easily added to the FilterEventsManager
+    - New event collections can be derived as needed
+    - UI components can be updated independently of filtering logic
 
 4. **Performance**:
-   - Filtering is performed using memoized calculations
-   - Only re-filters when dependencies change
-   - Avoids unnecessary rerenders by separating UI and data state
+
+    - Filtering is performed using memoized calculations
+    - Only re-filters when dependencies change
+    - Avoids unnecessary rerenders by separating UI and data state
 
 5. **Robustness**:
-   - Comprehensive error handling prevents runtime crashes
-   - Fallbacks ensure the application degrades gracefully when data is missing
-   - Detailed logging helps diagnose issues in development and production
-
+    - Comprehensive error handling prevents runtime crashes
+    - Fallbacks ensure the application degrades gracefully when data is missing
+    - Detailed logging helps diagnose issues in development and production

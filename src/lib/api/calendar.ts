@@ -1,10 +1,9 @@
 import axios from 'axios'
 import { GoogleCalendarResponse } from '@/types/api'
 import { parseISO, addMonths, subMonths, format } from 'date-fns'
-import { debugLog } from '@/lib/utils/debug'
+import { logr } from '@/lib/utils/logr'
 
-const GOOGLE_CALENDAR_API_BASE =
-    'https://www.googleapis.com/calendar/v3/calendars'
+const GOOGLE_CALENDAR_API_BASE = 'https://www.googleapis.com/calendar/v3/calendars'
 
 /**
  * Fetches events from Google Calendar API
@@ -19,11 +18,11 @@ export async function fetchCalendarEvents(
     timeMax?: string
 ): Promise<GoogleCalendarResponse> {
     if (!process.env.GOOGLE_CALENDAR_API_KEY) {
-        debugLog('api', 'Google Calendar API key is not configured')
+        logr.info('api-cal', 'Google Calendar API key is not configured')
         throw new Error('Google Calendar API key is not configured')
     }
 
-    debugLog('api', 'Google Calendar API key is configured')
+    logr.info('api-cal', 'Google Calendar API key is configured')
 
     // Default time range: 1 month ago to 3 months from now
     const now = new Date()
@@ -39,11 +38,9 @@ export async function fetchCalendarEvents(
         maxResults: 2500, // Maximum allowed by the API
     }
 
-    const apiUrl = `${GOOGLE_CALENDAR_API_BASE}/${encodeURIComponent(
-        calendarId
-    )}/events`
+    const apiUrl = `${GOOGLE_CALENDAR_API_BASE}/${encodeURIComponent(calendarId)}/events`
 
-    debugLog('api', `fetchCalendarEvents request`, {
+    logr.info('api-cal', `fetchCalendarEvents request`, {
         calendarId: calendarId,
         timeMin: params.timeMin,
         timeMax: params.timeMax,
@@ -54,20 +51,13 @@ export async function fetchCalendarEvents(
         const response = await axios.get(apiUrl, { params })
 
         if (response.data && response.data.items) {
-            debugLog(
-                'api',
-                `fetchCalendarEvents response ${response.data.items.length} items`
-            )
+            logr.info('api-cal', `fetchCalendarEvents response: ${response.data.items.length} events`)
         } else {
-            debugLog('api', 'fetchCalendarEvents unexpected', response)
+            logr.info('api', 'fetchCalendarEvents unexpected', response)
         }
         return response.data
     } catch (error) {
-        debugLog(
-            'api',
-            `❌ Google Calendar API request failed for calendar ID: "${calendarId}"`,
-            error
-        )
+        logr.info('api-cal', `fetchCalendarEvents error: ${error.message}`)
         console.error('Error fetching calendar events:', error)
         throw error
     }

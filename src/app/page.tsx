@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, Suspense } from 'react'
+import { useState, useEffect, useCallback, Suspense, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import MapContainer from '@/components/map/MapContainer'
 import EventList from '@/components/events/EventList'
@@ -11,10 +11,10 @@ import CalendarSelector from '@/components/home/CalendarSelector'
 import { useEventsManager } from '@/lib/hooks/useEventsManager'
 import { useMap } from '@/lib/hooks/useMap'
 import { MapBounds } from '@/types/map'
-import { debugLog, clientDebug } from '@/lib/utils/debug'
+import { logr } from '@/lib/utils/logr'
 
 // quiet window.cmf_events build error - https://stackoverflow.com/questions/56457935/typescript-error-property-x-does-not-exist-on-type-window
-declare const window: any;
+declare const window: any
 
 function HomeContent() {
     const searchParams = useSearchParams()
@@ -25,49 +25,16 @@ function HomeContent() {
 
     // Local state for filters
     const [searchQuery, setLocalSearchQuery] = useState('')
-    const [dateRange, setLocalDateRange] = useState<
-        { start: string; end: string } | undefined
-    >(undefined)
+    const [dateRange, setLocalDateRange] = useState<{ start: string; end: string } | undefined>(undefined)
 
     // Log component mount and calendar ID - only once when component mounts
     useEffect(() => {
-        clientDebug.log('page', 'Home page component mounted')
-
-        if (calendarId) {
-            clientDebug.log('page', 'Calendar ID from URL parameter', {
-                param: 'gc',
-                value: calendarId,
-            })
-        } else {
-            clientDebug.log('page', 'No calendar ID found in URL parameters')
-        }
+        logr.info('app', `uE: Calendar ID gc=${calendarId}`)
     }, [calendarId]) // Added calendarId to dependencies to ensure logs on calendar change
 
-
     // Use our new EventsManager hook to get events and filter methods
-    const {
-        events,
-        filters,
-        calendar,
-        isLoading,
-        error,
-        eventsManager
-    } = useEventsManager({ calendarId })
+    const { events, filters, calendar, apiIsLoading, apiError, fltrEvtMgr } = useEventsManager({ calendarId })
 
-    // Log component mount and calendar ID - only once when component mounts
-    useEffect(() => {
-        if (!isLoading) {
-            clientDebug.log('page', 'isLoading=false, Loading finished, setTimeout resetToAllEvents')
-            setTimeout(() => {
-                clientDebug.log('page', 'isLoading=false, calling resetToAllEvents')
-                resetToAllEvents()
-            }, 100)
-        } else{
-            // TODO: Chad - consider pausing stuff
-            clientDebug.log('page', 'isLoading=true, Loading in progress ....')
-        }
-    }, [isLoading]) // Added calendarId to dependencies to ensure logs on calendar change
-    
     // State for selected event
     const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
 
@@ -83,10 +50,28 @@ function HomeContent() {
         isMapOfAllEvents,
     } = useMap({ events: events.filtered })
 
+    // Log component mount and calendar ID - only once when component mounts
+    useEffect(() => {
+        if (!apiIsLoading && events.filteredWithLocations.length > 0) {
+            logr.info(
+                'app',
+                `isLoading=false, Loading finished ${events.filteredWithLocations.length} events, setTimeout resetToAllEvents`
+            )
+            setTimeout(() => {
+                logr.info('app', 'uE: apiIsLoading=false, calling resetToAllEvents')
+                resetToAllEvents()
+            }, 100)
+        } else {
+            // TODO: Chad - consider pausing stuff
+            const l = events.filteredWithLocations ? events.filteredWithLocations.length : 0
+            logr.info('app', `uE: CHAD apiIsLoading=${apiIsLoading}, evnts.withLocations=${l}`)
+        }
+    }, [apiIsLoading, resetToAllEvents, events.filteredWithLocations]) // Added calendarId to dependencies to ensure logs on calendar change
+
     // Handle search query changes
     const handleSearchChange = useCallback(
         (query: string) => {
-            debugLog('page', 'Search filter changed', { query })
+            logr.info('app', 'Search filter changed', { query })
             setLocalSearchQuery(query)
             filters.setSearchQuery(query)
         },
@@ -96,7 +81,7 @@ function HomeContent() {
     // Handle date range changes
     const handleDateRangeChange = useCallback(
         (newDateRange: { start: string; end: string } | undefined) => {
-            debugLog('page', 'Date filter changed', {
+            logr.info('app', 'Date filter changed', {
                 start: newDateRange?.start,
                 end: newDateRange?.end,
             })
@@ -109,7 +94,7 @@ function HomeContent() {
     // Handle map bounds change
     const handleBoundsChange = useCallback(
         (bounds: MapBounds) => {
-            debugLog('page', 'Map bounds changed', bounds)
+            logr.info('app', 'Map bounds changed', bounds)
             filters.setMapBounds(bounds)
         },
         [filters]
@@ -117,7 +102,7 @@ function HomeContent() {
 
     // Handle map filter removal
     const handleClearMapFilter = () => {
-        debugLog('page', 'Map filter cleared')
+        logr.info('app', 'Map filter cleared')
         filters.setMapBounds(undefined)
         setSelectedMarkerId(null)
         setSelectedEventId(null)
@@ -129,12 +114,12 @@ function HomeContent() {
     // Handle unknown locations filter toggle
     const handleUnknownLocationsToggle = useCallback(() => {
         filters.setShowUnknownLocationsOnly(true)
-        debugLog('page', 'Unknown locations filter toggled')
+        logr.info('app', 'Unknown locations filter toggled')
     }, [filters])
 
     // Reset all filters
     const handleResetFilters = useCallback(() => {
-        debugLog('page', 'Resetting all filters')
+        logr.info('app', 'Resetting all filters')
         setLocalSearchQuery('')
         setLocalDateRange(undefined)
         filters.resetAll()
@@ -154,18 +139,12 @@ function HomeContent() {
 
             // Find the event and its marker
             const event = events.all.find((e) => e.id === eventId)
-            if (
-                !event ||
-                !event.resolved_location?.lat ||
-                !event.resolved_location?.lng
-            ) {
+            if (!event || !event.resolved_location?.lat || !event.resolved_location?.lng) {
                 return
             }
 
             // Generate marker ID
-            const markerId = `${event.resolved_location.lat.toFixed(
-                6
-            )},${event.resolved_location.lng.toFixed(6)}`
+            const markerId = `${event.resolved_location.lat.toFixed(6)},${event.resolved_location.lng.toFixed(6)}`
 
             // Set marker and update viewport
             setSelectedMarkerId(markerId)
@@ -181,8 +160,11 @@ function HomeContent() {
 
     // Expose events data to window for debugging
     useEffect(() => {
+        logr.info('app', `uE: updateMarkersShown(${events.filtered.length})`)
         updateMarkersShown(events.filtered)
+    }, [events.filtered, updateMarkersShown])
 
+    useEffect(() => {
         if (events?.all?.length > 0 && typeof window !== 'undefined') {
             // Add events to window for debugging
             const temp_cmf_events = {
@@ -197,10 +179,10 @@ function HomeContent() {
             }
             window.cmf_events = temp_cmf_events
 
-            debugLog('page', 'Events data exposed to window.cmf_events', window.cmf_events)
+            logr.debug('app', 'Events data exposed to window.cmf_events', window.cmf_events)
         }
     }, [
-        events,
+        events, // NOTE: events is an object with multiple properties, when any change this effect runs
         calendar.totalCount,
         calendar.unknownLocationsCount,
         calendar.name,
@@ -208,8 +190,7 @@ function HomeContent() {
     ])
 
     // Get filter stats
-    const { mapFilteredCount, searchFilteredCount, dateFilteredCount } =
-        filters.getStats()
+    const { mapFilteredCount, searchFilteredCount, dateFilteredCount } = filters.getStats()
 
     // If no calendar ID is provided, show the calendar selector
     if (!calendarId) {
@@ -233,8 +214,7 @@ function HomeContent() {
                 <div className="w-full md:w-1/2 h-full overflow-auto p-4 border-r">
                     <div className="mb-4">
                         <p>
-                            Map showing {events.filtered.length} of{' '}
-                            {calendar.totalCount} events
+                            Map showing {events.filtered.length} of {calendar.totalCount} events
                             {calendar.unknownLocationsCount > 0 && (
                                 <button
                                     onClick={handleUnknownLocationsToggle}
@@ -318,9 +298,7 @@ function HomeContent() {
                                 </svg>
                                 {dateFilteredCount} Filtered by Date
                                 <button
-                                    onClick={() =>
-                                        handleDateRangeChange(undefined)
-                                    }
+                                    onClick={() => handleDateRangeChange(undefined)}
                                     className="ml-1 text-blue-700 hover:text-blue-900"
                                     aria-label="Remove date filter"
                                 >
@@ -340,9 +318,9 @@ function HomeContent() {
 
                     <EventList
                         events={events.filtered}
-                        isLoading={isLoading}
-                        error={error}
+                        selectedEventId={selectedEventId}
                         onEventSelect={handleEventSelect}
+                        apiIsLoading={apiIsLoading}
                     />
                 </div>
 

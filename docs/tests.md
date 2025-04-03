@@ -47,7 +47,7 @@ All files              |   27.17 |    26.17 |   27.31 |   26.77 |
   filesystem.ts        |       0 |        0 |       0 |       0 | 1-84
   upstash.ts           |       0 |        0 |       0 |       0 | 1-97
  lib/events            |       0 |        0 |       0 |       0 |
-  EventsManager.ts     |       0 |        0 |       0 |       0 | 5-257
+  FilterEventsManager.ts     |       0 |        0 |       0 |       0 | 5-257
  lib/hooks             |       0 |        0 |       0 |       0 |
   useEventsManager.ts  |       0 |        0 |       0 |       0 | 2-183
   useMap.ts            |       0 |        0 |       0 |       0 | 2-264

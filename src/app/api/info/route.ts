@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { debugLog } from '@/lib/utils/debug'
+import { logr } from '@/lib/utils/logr'
 
 const HIDE_SENSITIVE = true
 const SENSITIVE_KEY_INCLUDES = ['KV_URL', 'KEY', 'SECRET', 'PASSWORD', 'TOKEN']
@@ -19,20 +19,17 @@ export async function GET(request: NextRequest) {
         if (HIDE_SENSITIVE) {
             // Redact sensitive values
             Object.keys(envVars).forEach((key) => {
-                if (
-                    SENSITIVE_KEY_INCLUDES.some((include) =>
-                        key.includes(include)
-                    )
-                ) {
+                if (SENSITIVE_KEY_INCLUDES.some((include) => key.includes(include))) {
                     envVars[key] = '[REDACTED]'
                 }
             })
         }
 
         // Log the request
-        debugLog('info', 'Environment variables requested', {
+        logr.info('api-info', 'Environment variables requested', {
             ip: request.headers.get('x-forwarded-for') || 'unknown',
             hideSensitive: HIDE_SENSITIVE,
+            requestedVars: envVars,
         })
 
         // Create a sorted array of keys and convert back to object
@@ -49,15 +46,8 @@ export async function GET(request: NextRequest) {
             variables: sortedVars,
         })
     } catch (error) {
-        debugLog(
-            'info',
-            'Error processing environment variables request',
-            error
-        )
+        logr.info('api-info', 'Error processing environment variables request', error)
         console.error('Error processing environment variables request:', error)
-        return NextResponse.json(
-            { error: 'Failed to retrieve environment variables' },
-            { status: 500 }
-        )
+        return NextResponse.json({ error: 'Failed to retrieve environment variables' }, { status: 500 })
     }
 }

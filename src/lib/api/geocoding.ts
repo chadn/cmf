@@ -2,10 +2,9 @@ import axios from 'axios'
 import { GeocodeResponse, GoogleGeocodeResult } from '@/types/api'
 import { ResolvedLocation } from '@/types/events'
 import { getCachedLocation, cacheLocation } from '@/lib/cache'
-import { debugLog } from '@/lib/utils/debug'
+import { logr } from '@/lib/utils/logr'
 
-const GOOGLE_MAPS_GEOCODING_API =
-    'https://maps.googleapis.com/maps/api/geocode/json'
+const GOOGLE_MAPS_GEOCODING_API = 'https://maps.googleapis.com/maps/api/geocode/json'
 
 // Cache unresolved locations, so we don't call the API repeatedly and can manually fix them
 const CACHE_UNRESOLVED_LOCATIONS = true
@@ -36,12 +35,8 @@ const FIXED_LOCATIONS = [
     },
 ]
 
-
 // See if location already has Lat and Lon in it. If so, extract and return ResolvedLocation, else return false
-export function customLocationParserLatLon(
-    locationString: string
-): ResolvedLocation | false {
-
+export function customLocationParserLatLon(locationString: string): ResolvedLocation | false {
     // Check for latitude and longitude in the format "lat,lng", allowing for spaces  and negative values
     // Example: "37.774929,-122.419418"
     // 6 decimal places is less than 1m precision, which is good enough for our purposes
@@ -59,10 +54,7 @@ export function customLocationParserLatLon(
     return false
 }
 
-export function customLocationParserDegMinSec(
-    locationString: string
-): ResolvedLocation | false {
-
+export function customLocationParserDegMinSec(locationString: string): ResolvedLocation | false {
     // Check to see if match 41°07'16.0"N 1°00'16.9"E  Google Maps accepts this format
     const latLonRegex2 = /^([\s0-9°'".-]+)(Nn|Ss)\s*([\s0-9°'".-]+)(Ee|Ww)/
     const DegMinSecRegex = /(-?\d{1,3})\s*°\s*(\d{1,2})\s*'\s*(\d{1,2}\.\d{1,3})/
@@ -98,14 +90,12 @@ export function customLocationParserDegMinSec(
     return false
 }
 
-export function customLocationParserDegMinDecimal(
-    locationString: string
-): ResolvedLocation | false {
-    // Finally check to match locations with degrees, minutes, seconds. 
+export function customLocationParserDegMinDecimal(locationString: string): ResolvedLocation | false {
+    // Finally check to match locations with degrees, minutes, seconds.
     // N 41° 07.266 E 001° 00.281
     const latLonDMSRegex =
         /^\s*(Nn|Ss)\s*(-?\d{1,3})\s*°\s*(\d{1,2})\.(\d{1,6})\s*(Ee|wW)\s*(-?\d{1,3})\s*°\s*(\d{1,2})\.(\d{1,6})/
-        //   1         2                 3          4           5         6                 7          8
+    //   1         2                 3          4           5         6                 7          8
     const matchDMS = locationString.match(latLonDMSRegex)
     if (matchDMS) {
         // Convert DMS to decimal degrees
@@ -123,6 +113,7 @@ export function customLocationParserDegMinDecimal(
         const latFinal = lat * latSign
         const lngFinal = lng * lngSign
         const formatted_address = `${latFinal.toFixed(6)},${lngFinal.toFixed(6)}`
+
         const ret: ResolvedLocation = {
             original_location: locationString,
             formatted_address: formatted_address,
@@ -135,16 +126,13 @@ export function customLocationParserDegMinDecimal(
     return false
 }
 
-export const customLocationParsers =[
+export const customLocationParsers = [
     customLocationParserLatLon,
     customLocationParserDegMinSec,
-    customLocationParserDegMinDecimal
+    customLocationParserDegMinDecimal,
 ]
 
-export function updateResolvedLocation(
-    result: ResolvedLocation,
-    apiData: GoogleGeocodeResult
-): ResolvedLocation {
+export function updateResolvedLocation(result: ResolvedLocation, apiData: GoogleGeocodeResult): ResolvedLocation {
     try {
         return {
             original_location: result.original_location,
@@ -156,8 +144,8 @@ export function updateResolvedLocation(
         }
     } catch (error) {
         // format of data from API is not what we expect
-        debugLog(
-            'geocoding',
+        logr.info(
+            'api-geo',
             `updateResolvedLocation unexpected API data format, unresolved: ${result.original_location}`,
             apiData
         )
@@ -168,44 +156,35 @@ export function updateResolvedLocation(
     }
 }
 
-async function resolveLocation(
-    result: ResolvedLocation
-): Promise<ResolvedLocation> {
+async function resolveLocation(result: ResolvedLocation): Promise<ResolvedLocation> {
     // check custom parser
     for (let i = 0; i < customLocationParsers.length; i++) {
         const parser = customLocationParsers[i]
         const parsedResult = parser(result.original_location)
         if (parsedResult) {
-            debugLog(
-                'geocoding',
-                `customLocationParsers ${i} found:`,
-                parsedResult
-            )
+            logr.info('api-geo', `customLocationParsers ${i} found:`, parsedResult)
             return parsedResult
         }
     }
     try {
         // call the API
         if (!process.env.GOOGLE_MAPS_API_KEY) {
-            debugLog('api', 'Google Maps API key is not configured')
+            logr.warn('api-geo', 'Google Maps API key is not configured')
             throw new Error('Google Maps API key is not configured')
         }
-        debugLog('geocoding', 'Fetching from API:', result.original_location)
+        logr.info('api-geo', 'Fetching from API:', result.original_location)
 
         const params = {
             address: result.original_location,
             key: process.env.GOOGLE_MAPS_API_KEY,
         }
-        const response = await axios.get<GeocodeResponse>(
-            GOOGLE_MAPS_GEOCODING_API,
-            {
-                params,
-            }
-        )
-        //debugLog('geocoding', 'response result:', response.data.results[0])
+        const response = await axios.get<GeocodeResponse>(GOOGLE_MAPS_GEOCODING_API, {
+            params,
+        })
+        logr.debug('api-geo', 'response result:', response.data.results[0])
         return updateResolvedLocation(result, response.data.results[0])
     } catch (error) {
-        debugLog('geocoding', 'API Error: ', error)
+        logr.warn('api-geo', 'API Error: ', error)
         return {
             original_location: result.original_location,
             status: 'unresolved',
@@ -218,9 +197,7 @@ async function resolveLocation(
  * @param locationString - The location text to geocode
  * @returns Promise with geocoded location data
  */
-export async function geocodeLocation(
-    locationString: string
-): Promise<ResolvedLocation> {
+export async function geocodeLocation(locationString: string): Promise<ResolvedLocation> {
     if (!locationString) {
         return {
             original_location: '',
@@ -230,10 +207,7 @@ export async function geocodeLocation(
 
     if (USE_FIXED_LOCATIONS) {
         const i = Math.floor(Math.random() * FIXED_LOCATIONS.length)
-        debugLog(
-            'geocoding',
-            `TEMPORARY: Using fixed address ${i} for "${locationString}"`
-        )
+        logr.info('api-geo', `TEMPORARY: Using fixed address ${i} for "${locationString}"`)
         return {
             original_location: locationString,
             formatted_address: FIXED_LOCATIONS[i].formatted_address,
@@ -251,10 +225,7 @@ export async function geocodeLocation(
     // Check cache first
     const cachedLocation = await getCachedLocation(locationString)
     if (cachedLocation) {
-        debugLog(
-            'geocoding',
-            `Found in Cache ${cachedLocation.status}: "${locationString}"`
-        )
+        logr.info('api-geo', `Found in Cache ${cachedLocation.status}: "${locationString}"`)
         return cachedLocation
     }
 
@@ -263,10 +234,10 @@ export async function geocodeLocation(
         // Cache the result
         await cacheLocation(locationString, result)
     } else if (CACHE_UNRESOLVED_LOCATIONS) {
-        debugLog('geocoding', `Caching Unresolved: "${locationString}"`)
+        logr.info('api-geo', `Caching Unresolved: "${locationString}"`)
         await cacheLocation(locationString, result)
     } else {
-        debugLog('geocoding', `Not Caching Unresolved: "${locationString}"`)
+        logr.info('api-geo', `Not Caching Unresolved: "${locationString}"`)
     }
     return result
 }
@@ -276,17 +247,12 @@ export async function geocodeLocation(
  * @param locations - Array of location strings to geocode
  * @returns Promise with array of geocoded locations
  */
-export async function batchGeocodeLocations(
-    locations: string[]
-): Promise<ResolvedLocation[]> {
+export async function batchGeocodeLocations(locations: string[]): Promise<ResolvedLocation[]> {
     // Filter out duplicates to minimize API calls
     const uniqueLocations = Array.from(new Set(locations))
 
     if (USE_FIXED_LOCATIONS) {
-        debugLog(
-            'geocoding',
-            `TEMPORARY: Using fixed address for ${uniqueLocations.length} locations`
-        )
+        logr.info('api-geo', `TEMPORARY: Using fixed address for ${uniqueLocations.length} locations`)
     }
     // Process in batches of 10 with delayMs in between to avoid rate limits
     const batchSize = 10
@@ -306,10 +272,7 @@ export async function batchGeocodeLocations(
             await new Promise((resolve) => setTimeout(resolve, delayMs))
         }
     }
-    debugLog(
-        'geocoding',
-        `batchGeocodeLocations returning ${results.length} for ${uniqueLocations.length} locations`
-    )
+    logr.info('api-geo', `batchGeocodeLocations returning ${results.length} for ${uniqueLocations.length} locations`)
 
     return results
 }

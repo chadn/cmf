@@ -3,8 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import LoadingSpinner from '../common/LoadingSpinner'
-import { debugLog, clientDebug } from '@/lib/utils/debug'
-
+import { logr } from '@/lib/utils/logr'
 // Basic debug log to verify DEBUG_LOGIC is enabled on the client
 // This will be filtered out by the debug utility if running on the server
 
@@ -16,18 +15,18 @@ const CalendarSelector: React.FC = () => {
 
     // Log component mount - this will only run in the browser
     useEffect(() => {
-        clientDebug.log('component', 'CalendarSelector component mounted')
+        logr.info('component', 'CalendarSelector component mounted')
     }, [])
 
     // Example calendar IDs for demonstration
     const exampleCalendars = [
         {
-            name: 'Geocaching in Spain',
-            id: 'geocachingspain@gmail.com',
-        },
-        {
             name: 'SF Bay Area Facebook Events',
             id: 'aabe6c219ee2af5b791ea6719e04a92990f9ccd1e68a3ff0d89bacd153a0b36d@group.calendar.google.com',
+        },
+        {
+            name: 'Geocaching in Spain',
+            id: 'geocachingspain@gmail.com',
         },
     ]
 
@@ -35,24 +34,24 @@ const CalendarSelector: React.FC = () => {
         e.preventDefault()
 
         if (!calendarId.trim()) {
-            clientDebug.log('calendar', 'Calendar submission error: empty ID')
+            logr.info('calendar', 'Calendar submission error: empty ID')
             setError('Please enter a Calendar ID')
             return
         }
 
-        clientDebug.log('calendar', 'Calendar ID submitted', { calendarId })
+        logr.info('calendar', 'Calendar ID submitted', { calendarId })
         setIsLoading(true)
         setError(null)
 
         // In a real app, you might validate the calendar ID here
         // For now, we'll just redirect to the main page with the calendar ID
         const redirectUrl = `/?gc=${encodeURIComponent(calendarId)}`
-        clientDebug.log('calendar', 'Redirecting to', { redirectUrl })
+        logr.info('calendar', 'Redirecting to', { redirectUrl })
         router.push(redirectUrl)
     }
 
     const handleExampleSelect = (id: string) => {
-        clientDebug.log('calendar', 'Example calendar selected', {
+        logr.info('calendar', 'Example calendar selected', {
             id,
             name: exampleCalendars.find((cal) => cal.id === id)?.name,
         })
@@ -61,9 +60,7 @@ const CalendarSelector: React.FC = () => {
 
     return (
         <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-md">
-            <h2 className="text-xl font-bold text-center mb-6">
-                Enter a Google Calendar ID
-            </h2>
+            <h2 className="text-xl font-bold text-center mb-6">Enter a Google Calendar ID</h2>
 
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="form-control">
@@ -79,32 +76,18 @@ const CalendarSelector: React.FC = () => {
                         onChange={(e) => setCalendarId(e.target.value)}
                         disabled={isLoading}
                     />
-                    {error && (
-                        <p className="text-sm text-error mt-1">{error}</p>
-                    )}
-                    <p className="text-xs text-gray-500 mt-1">
-                        Find your Calendar ID in Google Calendar settings
-                    </p>
+                    {error && <p className="text-sm text-error mt-1">{error}</p>}
+                    <p className="text-xs text-gray-500 mt-1">Find your Calendar ID in Google Calendar settings</p>
                 </div>
 
-                <button
-                    type="submit"
-                    className="w-full btn btn-primary py-2"
-                    disabled={isLoading}
-                >
-                    {isLoading ? (
-                        <LoadingSpinner size="small" color="white" />
-                    ) : (
-                        'View Calendar'
-                    )}
+                <button type="submit" className="w-full btn btn-primary py-2" disabled={isLoading}>
+                    {isLoading ? <LoadingSpinner size="small" color="white" /> : 'View Calendar'}
                 </button>
             </form>
 
             {/* Example calendars */}
             <div className="mt-8">
-                <h3 className="text-sm font-medium text-gray-500 mb-2">
-                    Or try an example:
-                </h3>
+                <h3 className="text-sm font-medium text-gray-500 mb-2">Or try an example:</h3>
                 <div className="space-y-2">
                     {exampleCalendars.map((calendar) => (
                         <button
@@ -113,12 +96,8 @@ const CalendarSelector: React.FC = () => {
                             onClick={() => handleExampleSelect(calendar.id)}
                             disabled={isLoading}
                         >
-                            <div className="font-medium text-gray-500">
-                                {calendar.name}
-                            </div>
-                            <div className="text-xs text-gray-500 truncate">
-                                {calendar.id}
-                            </div>
+                            <div className="font-medium text-gray-500">{calendar.name}</div>
+                            <div className="text-xs text-gray-500 truncate">{calendar.id}</div>
                         </button>
                     ))}
                 </div>

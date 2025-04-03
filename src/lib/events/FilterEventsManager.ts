@@ -2,7 +2,7 @@
 
 import { CalendarEvent } from '@/types/events'
 import { MapBounds } from '@/types/map'
-import { debugLog } from '@/lib/utils/debug'
+import { logr } from '@/lib/utils/logr'
 
 export interface EventsFilter {
     dateRange?: { start: string; end: string }
@@ -21,14 +21,14 @@ export interface FilterStats {
 /**
  * Class for managing calendar events and applying filters
  */
-export class EventsManager {
+export class FilterEventsManager {
     private allEvents: CalendarEvent[]
     private filters: EventsFilter
 
     constructor(events: CalendarEvent[] = []) {
         this.allEvents = events
         this.filters = {}
-        debugLog('events_manager', 'EventsManager initialized', {
+        logr.info('fltr_evts_mgr', 'FilterEventsManager initialized', {
             eventsCount: events.length,
         })
     }
@@ -39,7 +39,7 @@ export class EventsManager {
      */
     setEvents(events: CalendarEvent[]) {
         this.allEvents = events
-        debugLog('events_manager', 'Events updated', {
+        logr.info('fltr_evts_mgr', `setEvents(${events.length}) set eventsManager.allEvents`, {
             eventsCount: events.length,
         })
     }
@@ -73,7 +73,7 @@ export class EventsManager {
      * Get events with unknown or unresolved locations
      */
     get cmf_events_unknown_locations(): CalendarEvent[] {
-        return this.allEvents.filter(event => !this.hasResolvedLocation(event))
+        return this.allEvents.filter((event) => !this.hasResolvedLocation(event))
     }
 
     /**
@@ -81,7 +81,7 @@ export class EventsManager {
      */
     private applyDateFilter(event: CalendarEvent): boolean {
         if (!this.filters.dateRange) return true
-        
+
         const eventStart = new Date(event.startDate)
         const eventEnd = new Date(event.endDate)
         const rangeStart = new Date(this.filters.dateRange.start)
@@ -95,7 +95,7 @@ export class EventsManager {
      */
     private applySearchFilter(event: CalendarEvent): boolean {
         if (!this.filters.searchQuery || this.filters.searchQuery.trim() === '') return true
-        
+
         const query = this.filters.searchQuery.toLowerCase()
         return !!(
             event.name?.toLowerCase().includes(query) ||
@@ -131,7 +131,7 @@ export class EventsManager {
      */
     private applyUnknownLocationsFilter(event: CalendarEvent): boolean {
         if (!this.filters.showUnknownLocationsOnly) return true
-        
+
         return !this.hasResolvedLocation(event)
     }
 
@@ -151,39 +151,39 @@ export class EventsManager {
             dateFiltered: 0,
             searchFiltered: 0,
             boundsFiltered: 0,
-            unknownLocationsFiltered: 0
+            unknownLocationsFiltered: 0,
         }
 
-        const filtered = this.allEvents.filter(event => {
+        const filtered = this.allEvents.filter((event) => {
             // Apply all filters sequentially
             if (!this.applyDateFilter(event)) {
                 filterCounts.dateFiltered++
                 return false
             }
-            
+
             if (!this.applySearchFilter(event)) {
                 filterCounts.searchFiltered++
                 return false
             }
-            
+
             if (!this.applyBoundsFilter(event)) {
                 filterCounts.boundsFiltered++
                 return false
             }
-            
+
             if (!this.applyUnknownLocationsFilter(event)) {
                 filterCounts.unknownLocationsFiltered++
                 return false
             }
-            
+
             return true
         })
         //console.log(`get cmf_events_filtered ${this.allEvents.length} events, ${filtered.length} filtered events`)
 
-        debugLog('events_manager', 'get cmf_events_filtered', {
+        logr.info('fltr_evts_mgr', 'get cmf_events_filtered', {
             originalCount: this.allEvents.length,
             filteredCount: filtered.length,
-            ...filterCounts
+            ...filterCounts,
         })
 
         return filtered
@@ -196,7 +196,7 @@ export class EventsManager {
      */
     private setFilter(filterName: keyof EventsFilter, value: any) {
         this.filters[filterName] = value
-        debugLog('events_manager', `Filter updated: ${filterName}`, { [filterName]: value })
+        logr.info('fltr_evts_mgr', `Filter updated: ${filterName}`, { [filterName]: value })
     }
 
     // Set date range filter
@@ -222,14 +222,14 @@ export class EventsManager {
     // Reset all filters
     resetAllFilters() {
         this.filters = {}
-        debugLog('events_manager', 'All filters reset')
+        logr.info('fltr_evts_mgr', 'All filters reset')
     }
 
     // Reset everything - both events and filters
     reset() {
         this.allEvents = []
         this.filters = {}
-        debugLog('events_manager', 'EventsManager fully reset (events and filters)')
+        logr.info('fltr_evts_mgr', 'FilterEventsManager fully reset (events and filters)')
     }
 
     // Get filter stats - for displaying filter chips, etc.
@@ -242,11 +242,11 @@ export class EventsManager {
             if (!this.applyBoundsFilter(event) && this.filters.mapBounds) {
                 mapFilteredCount++
             }
-            
+
             if (!this.applySearchFilter(event) && this.filters.searchQuery) {
                 searchFilteredCount++
             }
-            
+
             if (!this.applyDateFilter(event) && this.filters.dateRange) {
                 dateFilteredCount++
             }
@@ -254,11 +254,11 @@ export class EventsManager {
 
         const totalFilteredCount = mapFilteredCount + searchFilteredCount + dateFilteredCount
 
-        return { 
-            mapFilteredCount, 
-            searchFilteredCount, 
+        return {
+            mapFilteredCount,
+            searchFilteredCount,
             dateFilteredCount,
-            totalFilteredCount
+            totalFilteredCount,
         }
     }
 }

@@ -3,8 +3,8 @@ import { useState, useEffect } from 'react'
 import useSWR from 'swr'
 import { CalendarEvent, CMFEvents } from '@/types/events'
 import { MapBounds } from '@/types/map'
-import { EventsManager } from '@/lib/events/EventsManager'
-import { debugLog, clientDebug } from '@/lib/utils/debug'
+import { FilterEventsManager } from '@/lib/events/FilterEventsManager'
+import { logr } from '@/lib/utils/logr'
 
 interface UseEventsManagerProps {
     calendarId?: string
@@ -22,6 +22,7 @@ interface UseEventsManagerResult {
         withoutLocations: CalendarEvent[]
         filtered: CalendarEvent[]
         filteredWithLocations: CalendarEvent[]
+        rawData: any[]
     }
     // Filter methods
     filters: {
@@ -30,7 +31,7 @@ interface UseEventsManagerResult {
         setMapBounds: (mapBounds?: MapBounds) => void
         setShowUnknownLocationsOnly: (show: boolean) => void
         resetAll: () => void
-        getStats: () => ReturnType<EventsManager['getFilterStats']>
+        getStats: () => ReturnType<FilterEventsManager['getFilterStats']>
     }
     // Calendar metadata
     calendar: {
@@ -39,10 +40,10 @@ interface UseEventsManagerResult {
         unknownLocationsCount: number
     }
     // Loading state
-    isLoading: boolean
-    error: Error | null
+    apiIsLoading: boolean
+    apiError: Error | null
     // Manager access
-    eventsManager: EventsManager
+    fltrEvtMgr: FilterEventsManager
     // For backward compatibility with useEvents
     filteredEvents: CalendarEvent[]
     totalCount: number
@@ -51,17 +52,17 @@ interface UseEventsManagerResult {
     calendarName: string
 }
 
-// Custom fetcher function that logs API requests and responses
+// Custom fetcher function, basically a wrapper to log API requests and responses
 // TODO: move this to a separate file
 const fetcher = async (url: string) => {
-    clientDebug.log('api', `Request to: ${url}`)
+    logr.info('browser', `Request to url: ${url}`)
     try {
         const response = await fetch(url)
         const data = await response.json()
-        clientDebug.log('api', `Response from: ${url} (${response.status})`, data)
+        logr.info('browser', `Response from url: ${url} (${response.status})`, data)
         return data
     } catch (error) {
-        clientDebug.error('api', `Error from: ${url}`, error)
+        logr.info('browser', `Error from url: ${url}`, error)
         throw error
     }
 }
@@ -69,132 +70,139 @@ const fetcher = async (url: string) => {
 /**
  * Custom hook for managing calendar events with filtering capabilities
  */
-export function useEventsManager({ 
+export function useEventsManager({
     calendarId,
     dateRange,
     searchQuery,
     mapBounds,
-    showUnknownLocationsOnly
+    showUnknownLocationsOnly,
 }: UseEventsManagerProps = {}): UseEventsManagerResult {
-    // Create EventsManager instance
-    const [eventsManager] = useState(() => new EventsManager())
-    
-    // Reset EventsManager when calendar ID changes
+    // Create FilterEventsManager instance
+    const [fltrEvtMgr] = useState(() => new FilterEventsManager())
+
+    // Reset FilterEventsManager when calendar ID changes
     useEffect(() => {
-        debugLog('events', `EventsManager reset due to calendar ID change to: "${calendarId || 'none'}"`)
-        eventsManager.reset()
-    }, [calendarId, eventsManager])
+        logr.info(
+            'use_evts_mgr',
+            `uE: FilterEventsManager reset due to calendar ID change to: "${calendarId || 'none'}"`
+        )
+        fltrEvtMgr.reset()
+    }, [calendarId, fltrEvtMgr])
 
     // Construct the API URL
     const apiUrl = calendarId ? `/api/calendar?id=${encodeURIComponent(calendarId)}` : null
-    
+
     // Log the API URL being used
     useEffect(() => {
         if (apiUrl) {
-            debugLog('events', `API URL for calendar data: "${apiUrl}"`)
+            logr.info('use_evts_mgr', `uE: API URL for calendar data: "${apiUrl}"`)
         }
     }, [apiUrl])
-    
+
     // Fetch events from API
-    // TODO: Chad - do we need useSWR here? isLoading does not change in   swr.vercel.app
+    // understand this better: https://swr.vercel.app/docs/getting-started
+    // TODO: Chad - do we need useSWR here? apiIsLoading does not change in swr.vercel.app
     const { data, error, isLoading } = useSWR<CMFEvents>(apiUrl, fetcher, {
         revalidateOnFocus: false,
-        onSuccess: (data) => {
-            if (!data) return
-            // TODO: Chad refactor debugLog vs clientDebug - both of these log to browser console, only one is needed
-            debugLog('events', `✅ Calendar data fetched: "${data.calendar_name || 'Unknown Calendar'}"`, {
-                calendarId: data.calendar_id || 'unknown',
-                totalEvents: data.total_count || 0,
-                unknownLocations: data.unknown_locations_count || 0,
+        onSuccess: (apiData) => {
+            if (!apiData) return
+            logr.info('use_evts_mgr', 'Calendar data fetched successfully', {
+                calendarName: apiData.calendar_name || 'Unknown Calendar',
+                totalEvents: apiData.total_count || 0,
             })
-            clientDebug.log('events', 'Calendar data fetched successfully', {
-                calendarName: data.calendar_name || 'Unknown Calendar',
-                totalEvents: data.total_count || 0,
-            })
-            // TODO: Chad set isLoading to false?
-        },
-        onError: (err) => {
-            debugLog('events', `❌ Error fetching calendar data for ID: "${calendarId || 'unknown'}"`, {
-                error: err.message,
-                apiUrl,
-            })
-            clientDebug.error(
-                'events',
-                `Error fetching calendar data for ID: "${
-                    calendarId || 'unknown'
-                }"`,
-                err
+            // Note this gets called when the data is fetched, but useEffect monitoriing apiData does not trigger
+            logr.debug(
+                // fltrEvtMgr.cmf_events_filtered
+                'use_evts_mgr',
+                `Before fltrEvtMgr.cmf_events_all=${fltrEvtMgr.cmf_events_all.length}`
+            )
+            logr.info('use_evts_mgr', `Calling fltrEvtMgr.setEvents(${apiData.events.length})`)
+            fltrEvtMgr.setEvents(apiData.events)
+            logr.debug(
+                // fltrEvtMgr.cmf_events_filtered
+                'use_evts_mgr',
+                `After fltrEvtMgr.cmf_events_all=${fltrEvtMgr.cmf_events_all.length}`
             )
         },
+        onError: (apiError) => {
+            logr.info('use_evts_mgr', `❌ Error fetching calendar data for ID: "${calendarId || 'unknown'}"`, {
+                apiError: apiError.message,
+                apiUrl,
+            })
+            logr.info('use_evts_mgr', `Error fetching calendar data for ID: "${calendarId || 'unknown'}"`, apiError)
+        },
     })
+
     useEffect(() => {
-        debugLog('events', `isLoading changed to ${isLoading}`)
+        logr.info('use_evts_mgr', `uE: isLoading changed to ${isLoading}`)
     }, [isLoading])
 
-    // Update events in EventsManager when data changes
+    // Update events in FilterEventsManager when data changes
     useEffect(() => {
         if (data?.events) {
-            eventsManager.setEvents(data.events)
+            logr.info('use_evts_mgr', `uE: Calling fltrEvtMgr.setEvents(${data.events.length})`)
+            fltrEvtMgr.setEvents(data.events)
         }
-    }, [data?.events, eventsManager])
+    }, [data?.events, fltrEvtMgr])
 
     // Apply initial filters if provided
     useEffect(() => {
         if (dateRange) {
-            eventsManager.setDateRange(dateRange)
+            fltrEvtMgr.setDateRange(dateRange)
         }
         if (searchQuery) {
-            eventsManager.setSearchQuery(searchQuery)
+            fltrEvtMgr.setSearchQuery(searchQuery)
         }
         if (mapBounds) {
-            eventsManager.setMapBounds(mapBounds)
+            fltrEvtMgr.setMapBounds(mapBounds)
         }
         if (showUnknownLocationsOnly !== undefined) {
-            eventsManager.setShowUnknownLocationsOnly(showUnknownLocationsOnly)
+            fltrEvtMgr.setShowUnknownLocationsOnly(showUnknownLocationsOnly)
         }
-    }, [dateRange, searchQuery, mapBounds, showUnknownLocationsOnly, eventsManager])
+    }, [dateRange, searchQuery, mapBounds, showUnknownLocationsOnly, fltrEvtMgr])
 
     // Log when the return values change
     useEffect(() => {
         if (data && !isLoading && data.events) {
-            debugLog('events', 'Events hook return values updated', {
-                totalEvents: data.events?.length || 0,
-                filteredEvents: eventsManager.cmf_events_filtered.length,
+            logr.info('use_evts_mgr', 'uE: Events hook return values updated', {
+                dataEventsLength: data.events?.length || 0,
+                filteredEventsLength: fltrEvtMgr.cmf_events_filtered.length,
                 calendarName: data.calendar_name || '',
             })
         }
-    }, [data, isLoading, eventsManager])
+    }, [data, isLoading, fltrEvtMgr])
 
     // Create a streamlined interface for the hook
     return {
         events: {
-            all: eventsManager.cmf_events_all,
-            withLocations: eventsManager.cmf_events_locations,
-            withoutLocations: eventsManager.cmf_events_unknown_locations,
-            filtered: eventsManager.cmf_events_filtered,
-            filteredWithLocations: eventsManager.cmf_events_filtered,
+            all: fltrEvtMgr.cmf_events_all,
+            withLocations: fltrEvtMgr.cmf_events_locations,
+            withoutLocations: fltrEvtMgr.cmf_events_unknown_locations,
+            filtered: fltrEvtMgr.cmf_events_filtered,
+            filteredWithLocations: fltrEvtMgr.cmf_events_filtered,
+            rawData: data?.events || [],
         },
         filters: {
-            setDateRange: (range) => eventsManager.setDateRange(range),
-            setSearchQuery: (query) => eventsManager.setSearchQuery(query),
-            setMapBounds: (bounds) => eventsManager.setMapBounds(bounds),
-            setShowUnknownLocationsOnly: (show) => eventsManager.setShowUnknownLocationsOnly(show),
-            resetAll: () => eventsManager.resetAllFilters(),
-            getStats: () => eventsManager.getFilterStats(),
+            setDateRange: (range) => fltrEvtMgr.setDateRange(range),
+            setSearchQuery: (query) => fltrEvtMgr.setSearchQuery(query),
+            setMapBounds: (bounds) => fltrEvtMgr.setMapBounds(bounds),
+            setShowUnknownLocationsOnly: (show) => fltrEvtMgr.setShowUnknownLocationsOnly(show),
+            resetAll: () => fltrEvtMgr.resetAllFilters(),
+            getStats: () => fltrEvtMgr.getFilterStats(),
         },
         calendar: {
             name: data?.calendar_name || '',
             totalCount: data?.total_count || 0,
             unknownLocationsCount: data?.unknown_locations_count || 0,
         },
-        isLoading,
-        error: error || null,
-        eventsManager, // Expose the manager for advanced use cases
-        
+        apiIsLoading: isLoading,
+        apiError: error || null,
+        fltrEvtMgr, // Expose the manager for advanced use cases
+
         // For backward compatibility with useEvents
-        filteredEvents: eventsManager.cmf_events_filtered,
+        filteredEvents: fltrEvtMgr.cmf_events_filtered,
         totalCount: data?.total_count || 0,
-        filteredCount: eventsManager.cmf_events_filtered.length,
+        filteredCount: fltrEvtMgr.cmf_events_filtered.length,
         unknownLocationsCount: data?.unknown_locations_count || 0,
         calendarName: data?.calendar_name || '',
     }

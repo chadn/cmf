@@ -63,9 +63,9 @@ describe('EventList', () => {
         render(
             <EventList
                 events={mockEvents}
-                isLoading={false}
-                error={null}
+                selectedEventId={null}
                 onEventSelect={mockOnEventSelect}
+                apiIsLoading={false}
             />
         )
 
@@ -91,9 +91,9 @@ describe('EventList', () => {
         render(
             <EventList
                 events={mockEvents}
-                isLoading={false}
-                error={null}
+                selectedEventId={null}
                 onEventSelect={mockOnEventSelect}
+                apiIsLoading={false}
             />
         )
 
@@ -109,10 +109,10 @@ describe('EventList', () => {
 
         render(
             <EventList
-                events={[]}
-                isLoading={true}
-                error={null}
+                events={mockEvents}
+                selectedEventId={null}
                 onEventSelect={mockOnEventSelect}
+                apiIsLoading={true}
             />
         )
 
@@ -125,16 +125,14 @@ describe('EventList', () => {
 
         render(
             <EventList
-                events={[]}
-                isLoading={false}
-                error={mockError}
+                events={mockEvents}
+                selectedEventId={null}
                 onEventSelect={mockOnEventSelect}
+                apiIsLoading={false}
             />
         )
 
-        expect(
-            screen.getByText('Error loading events: Test error message')
-        ).toBeInTheDocument()
+        expect(screen.getByText('Error loading events: Test error message')).toBeInTheDocument()
     })
 
     it('displays empty state when no events are found', () => {
@@ -142,15 +140,17 @@ describe('EventList', () => {
 
         render(
             <EventList
-                events={[]}
-                isLoading={false}
-                error={null}
+                events={mockEvents}
+                selectedEventId={null}
                 onEventSelect={mockOnEventSelect}
+                apiIsLoading={false}
             />
         )
 
         expect(
-            screen.getByText('No events found. Try adjusting your filters, moving the map, or clicking x on any filter above to remove.')
+            screen.getByText(
+                'No events found. Try adjusting your filters, moving the map, or clicking x on any filter above to remove.'
+            )
         ).toBeInTheDocument()
     })
 })

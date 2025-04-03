@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { MapMarker } from '@/types/map'
 import { formatEventDate, formatEventDuration } from '@/lib/utils/date'
 import { truncateLocation } from '@/lib/utils/location'
-import { debugLog } from '@/lib/utils/debug'
+import { logr } from '@/lib/utils/logr'
 
 interface MapPopupProps {
     marker: MapMarker
@@ -12,11 +12,7 @@ interface MapPopupProps {
     onEventSelect?: (eventId: string) => void
 }
 
-const MapPopup: React.FC<MapPopupProps> = ({
-    marker,
-    selectedEventId,
-    onEventSelect,
-}) => {
+const MapPopup: React.FC<MapPopupProps> = ({ marker, selectedEventId, onEventSelect }) => {
     const { events } = marker
 
     // Default to first event if no valid event is selected
@@ -38,45 +34,28 @@ const MapPopup: React.FC<MapPopupProps> = ({
         const newIndex = getInitialIndex()
         setCurrentIndex(newIndex)
 
-        debugLog(
-            'popup',
-            `Event selection updated: ${events[newIndex]?.name}`,
-            {
-                selectedEventId,
-                totalEvents: events.length,
-                selectedIndex: newIndex,
-            }
-        )
+        logr.log('map-popup', `Event selection updated: ${events[newIndex]?.name}`, {
+            eventIndex: newIndex,
+            totalEvents: events.length,
+        })
     }, [selectedEventId, events])
 
     // Safety check - ensure we have events
     if (!events || events.length === 0) {
-        return (
-            <div className="p-2 text-sm bg-white text-gray-800 rounded shadow">
-                No events at this location
-            </div>
-        )
+        return <div className="p-2 text-sm bg-white text-gray-800 rounded shadow">No events at this location</div>
     }
 
     // Safety check - ensure currentIndex is valid
     if (currentIndex < 0 || currentIndex >= events.length) {
         setCurrentIndex(0)
-        return (
-            <div className="p-2 text-sm bg-white text-gray-800 rounded shadow">
-                Loading event details...
-            </div>
-        )
+        return <div className="p-2 text-sm bg-white text-gray-800 rounded shadow">Loading event details...</div>
     }
 
     const currentEvent = events[currentIndex]
 
     // Final safety check
     if (!currentEvent) {
-        return (
-            <div className="p-2 text-sm bg-white text-gray-800 rounded shadow">
-                Event details unavailable
-            </div>
-        )
+        return <div className="p-2 text-sm bg-white text-gray-800 rounded shadow">Event details unavailable</div>
     }
 
     // Handle pagination
@@ -99,24 +78,16 @@ const MapPopup: React.FC<MapPopupProps> = ({
     return (
         <div className="max-w-xs bg-white text-gray-800 p-3 rounded shadow">
             {/* Event title */}
-            <h3 className="font-bold text-md mb-1 text-gray-900 pr-6">
-                {currentEvent.name}
-            </h3>
+            <h3 className="font-bold text-md mb-1 text-gray-900 pr-6">{currentEvent.name}</h3>
 
             {/* Event date and duration */}
             <p className="text-sm mb-1 text-gray-700">
                 {formatEventDate(currentEvent.startDate)} (
-                {formatEventDuration(
-                    currentEvent.startDate,
-                    currentEvent.endDate
-                )}
-                )
+                {formatEventDuration(currentEvent.startDate, currentEvent.endDate)})
             </p>
 
             {/* Event location */}
-            <p className="text-sm mb-2 text-gray-700">
-                {truncateLocation(currentEvent.location, 60)}
-            </p>
+            <p className="text-sm mb-2 text-gray-700">{truncateLocation(currentEvent.location, 60)}</p>
 
             {/* Event description (truncated) */}
             {currentEvent.description && (
@@ -140,19 +111,13 @@ const MapPopup: React.FC<MapPopupProps> = ({
             {/* Pagination controls (if multiple events) */}
             {events.length > 1 && (
                 <div className="flex justify-between items-center text-xs mt-2 pt-2 border-t border-gray-200">
-                    <button
-                        onClick={goToPrev}
-                        className="text-blue-600 hover:underline"
-                    >
+                    <button onClick={goToPrev} className="text-blue-600 hover:underline">
                         Previous
                     </button>
                     <span className="text-gray-600">
                         {currentIndex + 1} of {events.length}
                     </span>
-                    <button
-                        onClick={goToNext}
-                        className="text-blue-600 hover:underline"
-                    >
+                    <button onClick={goToNext} className="text-blue-600 hover:underline">
                         Next
                     </button>
                 </div>

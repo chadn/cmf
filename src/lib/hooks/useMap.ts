@@ -2,7 +2,7 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { MapViewport, MapBounds, MapMarker } from '@/types/map'
 import { CalendarEvent } from '@/types/events'
-import { clientDebug, debugLog } from '@/lib/utils/debug'
+import { logr } from '@/lib/utils/logr'
 
 interface UseMapProps {
     events: CalendarEvent[]
@@ -89,7 +89,7 @@ const generateMapMarkers = (events: CalendarEvent[]): MapMarker[] => {
 
     // Ensure events is an array before iterating
     if (!events || !Array.isArray(events)) {
-        debugLog('map', 'No events provided to generate markers', { events })
+        logr.info('map', 'No events provided to generate markers', { events })
         return []
     }
 
@@ -122,7 +122,7 @@ const generateMapMarkers = (events: CalendarEvent[]): MapMarker[] => {
 
     const markers = Array.from(markersMap.values())
 
-    debugLog(
+    logr.info(
         'map',
         `Generated ${markers.length} markers from ${eventsWithLocation} events with locations, ` +
             `skipped ${eventsWithoutLocation} events without resolvable location`
@@ -138,12 +138,11 @@ const generateMapMarkers = (events: CalendarEvent[]): MapMarker[] => {
  * @param {Partial<MapViewport>} [props.initialViewport] - Initial viewport settings
  * @returns {UseMapReturn} - Map state and functions
  */
-export function useMap({
-    events,
-    initialViewport = {},
-}: UseMapProps): UseMapReturn {
+export function useMap({ events, initialViewport = {} }: UseMapProps): UseMapReturn {
     // Flag to track internal updates to prevent loops
     const isInternalUpdate = useRef(false)
+    // need useRef else variable gets re-initialized on every component render
+    const lastResetToAllEventsCount = useRef(0)
 
     // Memoize markers generation from events
     const markers = useMemo(() => generateMapMarkers(events), [events])
@@ -151,7 +150,7 @@ export function useMap({
     // Combine viewport and map state to reduce state variables
     const [mapState, setMapState] = useState<MapState>(() => {
         const calculatedViewport = calculateMapViewport(markers)
-        debugLog('map', 'Setting initial viewport', calculatedViewport)
+        logr.info('map', 'uE: Setting initial viewport', calculatedViewport)
 
         return {
             viewport: {
@@ -173,24 +172,34 @@ export function useMap({
 
     // Log when the hook initializes
     useEffect(() => {
-        debugLog('map', 'useMap hook initialized', {
+        logr.info('map', 'uE: useMap hook initialized', {
             initialViewport: { ...mapState.viewport },
             eventsCount: events.length,
         })
     }, [])
 
     // Update Markers shown on map to match events not filtered out
-    const updateMarkersShown = useCallback((events: CalendarEvent[]) => {
-        debugLog('map', `updateMarkersShown: now ${markers.length} markers, ${events.length} events`)
-
-    }, [markers, events])
+    const updateMarkersShown = useCallback(
+        (events: CalendarEvent[]) => {
+            logr.info('map', `updateMarkersShown: now ${markers.length} markers, ${events.length} events`)
+        },
+        [markers, events]
+    )
 
     // Reset to show all events
     const resetToAllEvents = useCallback(() => {
-        debugLog('map', 'Resetting map to show all events', {
+        logr.info('map', 'resetToAllEvents', {
             eventsCount: events ? events.length : 0,
+            oldEventsCount: lastResetToAllEventsCount.current,
             markerCount: markers.length,
         })
+        if (events.length !== lastResetToAllEventsCount.current) {
+            lastResetToAllEventsCount.current = events.length
+        } else {
+            // count has not changed, so do not reset
+            // TODO: better to compare all events, not just the length
+            return
+        }
 
         const newViewport = calculateMapViewport(markers)
 
@@ -226,17 +235,14 @@ export function useMap({
         if (selectedMarkerId) {
             const marker = markers.find((m) => m.id === selectedMarkerId)
             if (marker) {
-                clientDebug.log('map', `Selected marker: ${selectedMarkerId}`)
-                debugLog('map', `Selected marker: ${selectedMarkerId}`, {
+                logr.info('map', `uE: Selected marker: ${selectedMarkerId}`, {
                     latitude: marker.latitude,
                     longitude: marker.longitude,
                     eventCount: marker.events.length,
                 })
             }
         } else if (selectedMarkerId === null) {
-            // TODO: Chad refactor debugLog vs clientDebug - both of these log to browser console
-            debugLog('map', 'debugLog Marker selection cleared')
-            clientDebug.log('map', 'clientDebug Marker selection cleared')
+            logr.info('map', 'uE: Marker selection cleared')
         }
     }, [selectedMarkerId, markers])
 
@@ -244,7 +250,7 @@ export function useMap({
     useEffect(() => {
         // Only reset when events first load or change to a new set
         if (markers.length > 0 && !eventsInitialized) {
-            debugLog('map', 'First load of events, showing all on map', {
+            logr.info('map', 'uE: First load of events, showing all on map', {
                 markerCount: markers.length,
             })
             resetToAllEvents()
@@ -255,9 +261,9 @@ export function useMap({
     // Reset initialization flag when events array reference changes completely
     useEffect(() => {
         //setEventsInitialized(false)
-        debugLog(
+        logr.info(
             'map',
-            `Events (len=${events.length}) reference changed completely, consider resetting map on next render`
+            `uE: Events (len=${events.length}) reference changed completely, consider resetting map on next render`
         )
     }, [events])
 

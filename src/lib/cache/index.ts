@@ -1,26 +1,22 @@
 import { ResolvedLocation } from '@/types/events'
 import * as upstashCache from './upstash'
 import * as filesystemCache from './filesystem'
-import { debugLog } from '../utils/debug'
+import { logr } from '../utils/logr'
 
 // Determine which cache implementation to use based on environment
 const isDevelopment = process.env.NODE_ENV === 'development'
 
-debugLog(
-    'cache',
+logr.log(
+    'setup',
     `NODE_ENV='${process.env.NODE_ENV}' Using cache:`,
-    isDevelopment
-        ? `filesystem (${filesystemCache.LOCATIONS_CACHE_FILE})`
-        : 'upstash redis'
+    isDevelopment ? `filesystem (${filesystemCache.LOCATIONS_CACHE_FILE})` : 'upstash redis'
 )
 /**
  * Gets a location from cache
  * @param locationKey - The location string to use as a key
  * @returns Promise with the cached location or null if not found
  */
-export async function getCachedLocation(
-    locationKey: string
-): Promise<ResolvedLocation | null> {
+export async function getCachedLocation(locationKey: string): Promise<ResolvedLocation | null> {
     if (isDevelopment) {
         return filesystemCache.getLocation(locationKey)
     } else {
@@ -34,10 +30,7 @@ export async function getCachedLocation(
  * @param location - The resolved location data to cache
  * @returns Promise that resolves when caching is complete
  */
-export async function cacheLocation(
-    locationKey: string,
-    location: ResolvedLocation
-): Promise<void> {
+export async function cacheLocation(locationKey: string, location: ResolvedLocation): Promise<void> {
     if (isDevelopment) {
         return filesystemCache.setLocation(locationKey, location)
     } else {

@@ -6,11 +6,15 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 import { MapViewport, MapBounds, MapMarker } from '@/types/map'
 import MapMarkerComponent from './MapMarker'
 import MapPopup from './MapPopup'
-import { debugLog } from '@/lib/utils/debug'
+import { logr } from '@/lib/utils/logr'
 // Import maplibre-gl as a type
 import type maplibregl from 'maplibre-gl'
 import { CalendarEvent } from '@/types/events'
 
+/**
+ * MapContainer handles the display and interaction with the map
+ * It manages markers, popups, viewport changes, and user interactions
+ */
 interface MapContainerProps {
     viewport: MapViewport
     onViewportChange: (viewport: MapViewport) => void
@@ -36,9 +40,9 @@ const MapContainer: React.FC<MapContainerProps> = ({
     onEventSelect,
     isMapOfAllEvents = false,
 }) => {
-    const mapRef = useRef<any>(null)
+    const mapRef = useRef<any>(null) // TODO: Type this properly with MapRef from react-map-gl
     const [mapLoaded, setMapLoaded] = useState(false)
-    const [userInteracted, setUserInteracted] = useState(false)
+    const [userInteracted, setUserInteracted] = useState(false) // TODO: Consider if this state is still needed as it's not used effectively
     const boundsUpdateTimerRef = useRef<NodeJS.Timeout | null>(null)
 
     // Simplified state: Only track the current popup info
@@ -46,7 +50,7 @@ const MapContainer: React.FC<MapContainerProps> = ({
 
     // Log when component mounts
     useEffect(() => {
-        debugLog('map', 'MapContainer component mounted', {
+        logr.info('map', 'MapContainer component mounted', {
             initialViewport: viewport,
             markerCount: markers.length,
         })
@@ -55,35 +59,43 @@ const MapContainer: React.FC<MapContainerProps> = ({
     // Close popup when selected marker changes to null
     useEffect(() => {
         if (!selectedMarkerId) {
-            // TODO: bug here, infinite loop is happening
-            setPopupInfo(null)
+            // TODO: DONE. Fix potential infinite loop by checking if popupInfo is already null
+            // Only set to null if it's not already null to prevent unnecessary rerenders
+            if (popupInfo !== null) {
+                setPopupInfo(null)
+            }
         }
-    }, [selectedMarkerId])
-    
+    }, [selectedMarkerId, popupInfo])
+
     // Simplified effect: Update popup when selected marker changes
     useEffect(() => {
+        // Only execute this effect when we have a selectedMarkerId
         if (selectedMarkerId) {
             const marker = markers.find((m) => m.id === selectedMarkerId)
 
+            // Check if marker exists and has events
             if (marker && marker.events && marker.events.length > 0) {
-                setPopupInfo(marker)
+                // Only update popupInfo if it's different to prevent unnecessary rerenders
+                if (!popupInfo || popupInfo.id !== marker.id) {
+                    setPopupInfo(marker)
+                }
 
                 // If no specific event is selected or the selected event is not in this marker,
                 // default to the first event in this marker
-                if (
-                    !selectedEventId ||
-                    !marker.events.find((e) => e.id === selectedEventId)
-                ) {
+                if (!selectedEventId || !marker.events.find((e) => e.id === selectedEventId)) {
                     const firstEventId = marker.events[0]?.id || null
                     if (firstEventId) {
                         onEventSelect(firstEventId)
                     }
                 }
             } else {
-                setPopupInfo(null)
+                // Only set to null if it's not already null
+                if (popupInfo !== null) {
+                    setPopupInfo(null)
+                }
             }
         }
-    }, [selectedMarkerId, markers, selectedEventId, onEventSelect])
+    }, [selectedMarkerId, markers, selectedEventId, onEventSelect, popupInfo])
 
     // Handle map load
     const handleMapLoad = () => {
@@ -105,7 +117,11 @@ const MapContainer: React.FC<MapContainerProps> = ({
     // Handle viewport change
     const handleViewportChange = (newViewport: ViewState) => {
         setUserInteracted(true)
-        debugLog('map', 'handleViewportChange called, setUserInteracted=true but did user trigger? CHAD consider delete setUserInteracted')
+        // TODO: Evaluate if setUserInteracted is providing value or if it should be removed
+        logr.info(
+            'map',
+            'handleViewportChange called, setUserInteracted=true but did user trigger? CHAD consider delete setUserInteracted'
+        )
 
         // Pass the complete viewport state to the parent component
         onViewportChange({
@@ -121,7 +137,10 @@ const MapContainer: React.FC<MapContainerProps> = ({
         updateBoundsWithDebounce()
     }
 
-    // Separated debounce logic for better organization
+    /**
+     * Debounces bounds updates to improve performance
+     * Only updates bounds after user has stopped interacting with the map for a period
+     */
     const updateBoundsWithDebounce = () => {
         if (!mapRef.current || !mapLoaded) return
 
@@ -142,26 +161,26 @@ const MapContainer: React.FC<MapContainerProps> = ({
                         west: bounds.getWest(),
                     }
                     onBoundsChange(newBounds)
-                    debugLog(
-                        'map',
-                        `Bounds updated after debounce timeout=${timeoutMs}ms`,
-                        newBounds
-                    )
+                    logr.info('map', `Bounds updated after debounce timeout=${timeoutMs}ms`, newBounds)
                 } catch (error) {
-                    debugLog('map', 'Error updating bounds', error)
+                    logr.info('map', 'Error updating bounds', error)
                 }
             }
         }, timeoutMs) // Increased to 500ms for more reliable updates
     }
 
     // Reset userInteracted when returning to "Map of All Events" view
+    // TODO: Consider if this effect is necessary or if userInteracted state can be removed altogether
     useEffect(() => {
         if (isMapOfAllEvents) {
             setUserInteracted(false)
         }
     }, [isMapOfAllEvents])
 
-    // Simplified marker click handler
+    /**
+     * Handles marker click events
+     * Selects the marker and shows its popup with events
+     */
     const handleMarkerClick = (marker: MapMarker) => {
         if (!marker.events || marker.events.length === 0) return
 
@@ -186,21 +205,19 @@ const MapContainer: React.FC<MapContainerProps> = ({
         setPopupInfo(null)
     }
 
-
     return (
         <div className="relative w-full h-full" style={{ minHeight: '100%' }}>
             <Map
                 ref={mapRef}
                 // @ts-ignore - This works at runtime but has type issues
+                // TODO: Fix type issues with mapLib import
                 mapLib={import('maplibre-gl')}
                 mapStyle={{
                     version: 8,
                     sources: {
                         'osm-tiles': {
                             type: 'raster',
-                            tiles: [
-                                'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                            ],
+                            tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
                             tileSize: 256,
                             attribution: '© OpenStreetMap contributors',
                         },
@@ -238,12 +255,7 @@ const MapContainer: React.FC<MapContainerProps> = ({
                 touchRotate={false} // Disable touch rotation for simpler interaction
             >
                 {/* Navigation controls */}
-                <NavigationControl
-                    position="top-right"
-                    showCompass={true}
-                    showZoom={true}
-                    visualizePitch={true}
-                />
+                <NavigationControl position="top-right" showCompass={true} showZoom={true} visualizePitch={true} />
 
                 {/* Markers */}
                 {markers.map((marker) => (
@@ -254,34 +266,29 @@ const MapContainer: React.FC<MapContainerProps> = ({
                         anchor="bottom"
                         onClick={() => handleMarkerClick(marker)}
                     >
-                        <MapMarkerComponent
-                            count={marker.events.length}
-                            isSelected={marker.id === selectedMarkerId}
-                        />
+                        <MapMarkerComponent count={marker.events.length} isSelected={marker.id === selectedMarkerId} />
                     </Marker>
                 ))}
 
                 {/* Popup - simplified condition */}
-                {selectedMarkerId &&
-                    popupInfo &&
-                    popupInfo.events &&
-                    popupInfo.events.length > 0 && (
-                        <Popup
-                            longitude={popupInfo.longitude}
-                            latitude={popupInfo.latitude}
-                            anchor="bottom"
-                            onClose={handlePopupClose}
-                            closeButton={true}
-                            closeOnClick={false}
-                            className="map-popup"
-                        >
-                            <MapPopup
-                                marker={popupInfo}
-                                selectedEventId={selectedEventId}
-                                onEventSelect={handleEventSelect}
-                            />
-                        </Popup>
-                    )}
+                {/* TODO: Consider simplifying this condition for better readability */}
+                {selectedMarkerId && popupInfo && popupInfo.events && popupInfo.events.length > 0 && (
+                    <Popup
+                        longitude={popupInfo.longitude}
+                        latitude={popupInfo.latitude}
+                        anchor="bottom"
+                        onClose={handlePopupClose}
+                        closeButton={true}
+                        closeOnClick={false}
+                        className="map-popup"
+                    >
+                        <MapPopup
+                            marker={popupInfo}
+                            selectedEventId={selectedEventId}
+                            onEventSelect={handleEventSelect}
+                        />
+                    </Popup>
+                )}
             </Map>
         </div>
     )
