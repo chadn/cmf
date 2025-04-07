@@ -26,11 +26,8 @@ function HomeContent() {
     // Local state for filters
     const [searchQuery, setLocalSearchQuery] = useState('')
     const [dateRange, setLocalDateRange] = useState<{ start: string; end: string } | undefined>(undefined)
-
-    // Log component mount and calendar ID - only once when component mounts
-    useEffect(() => {
-        logr.info('app', `uE: Calendar ID gc=${calendarId}`)
-    }, [calendarId]) // Added calendarId to dependencies to ensure logs on calendar change
+    type AppInitState = 'reset' | 'starting' | 'complete'
+    const [appInitState, setAppInitState] = useState<AppInitState>('reset')
 
     // Use our new EventsManager hook to get events and filter methods
     const { events, filters, calendar, apiIsLoading, apiError, fltrEvtMgr } = useEventsManager({ calendarId })
@@ -45,28 +42,42 @@ function HomeContent() {
         markers,
         selectedMarkerId,
         setSelectedMarkerId,
-        updateMarkersShown,
-        resetToAllEvents,
+        resetMapToAllEvents,
         isMapOfAllEvents,
-    } = useMap({ events: events.filtered })
+    } = useMap({ eventsShown: events.shown(), eventsAll: events.all })
 
-    // Log component mount and calendar ID - only once when component mounts
+    // Reset when we get new calendar
     useEffect(() => {
-        if (!apiIsLoading && events.filteredWithLocations.length > 0) {
-            logr.info(
-                'app',
-                `isLoading=false, Loading finished ${events.filteredWithLocations.length} events, setTimeout resetToAllEvents`
-            )
+        setAppInitState('reset')
+        logr.info('app', `uE: Calendar ID gc=${calendarId}, setAppInitState=reset`)
+    }, [calendarId])
+
+    useEffect(() => {
+        // consider calling resetMapToAllEvents here instead of in useEffect below
+        logr.info('app', `uE: events.all=${events.all.length}`)
+    }, [events.all])
+
+    // resetMapToAllEvents is called only once after api loads, and again if the calendarId changes
+    useEffect(() => {
+        const l = events.shown().length
+        const all = events.all ? events.all.length : 0
+        const msg = `uE: appInitState=${appInitState},apiIsLoading=${apiIsLoading}, evnts.shown=${l}, evnts.all=${all}`
+        logr.debug('app', msg)
+
+        // Initialize if we haven't yet AND the API finished loading, and we have events, regardless of shown count
+        if (appInitState === 'reset' && !apiIsLoading && all > 0) {
+            logr.info('app', `uE: api loaded and not initialized, so setTimeout resetMapToAllEvents`)
+            setAppInitState('starting')
             setTimeout(() => {
-                logr.info('app', 'uE: apiIsLoading=false, calling resetToAllEvents')
-                resetToAllEvents()
+                logr.info('app', `uE: api loaded and initializing, shown=${l}, all=${all}, calling resetMapToAllEvents`)
+                resetMapToAllEvents()
+                setTimeout(() => {
+                    logr.info('app', 'uE: api loaded and initialized, setting setAppInitState=complete')
+                    setAppInitState('complete')
+                }, 100)
             }, 100)
-        } else {
-            // TODO: Chad - consider pausing stuff
-            const l = events.filteredWithLocations ? events.filteredWithLocations.length : 0
-            logr.info('app', `uE: CHAD apiIsLoading=${apiIsLoading}, evnts.withLocations=${l}`)
         }
-    }, [apiIsLoading, resetToAllEvents, events.filteredWithLocations]) // Added calendarId to dependencies to ensure logs on calendar change
+    }, [apiIsLoading, appInitState, resetMapToAllEvents, events])
 
     // Handle search query changes
     const handleSearchChange = useCallback(
@@ -94,10 +105,15 @@ function HomeContent() {
     // Handle map bounds change
     const handleBoundsChange = useCallback(
         (bounds: MapBounds) => {
+            // Ignore bounds changes during initialization
+            if (appInitState !== 'complete') {
+                logr.debug('app', 'Ignoring bounds change during initialization')
+                return
+            }
             logr.info('app', 'Map bounds changed', bounds)
             filters.setMapBounds(bounds)
         },
-        [filters]
+        [filters, appInitState]
     )
 
     // Handle map filter removal
@@ -106,9 +122,8 @@ function HomeContent() {
         filters.setMapBounds(undefined)
         setSelectedMarkerId(null)
         setSelectedEventId(null)
-        // Call resetToAllEvents to properly reset the map to show all events
-        resetToAllEvents()
-        updateMarkersShown(events.filtered)
+        // Call resetMapToAllEvents to properly reset the map to show all events
+        resetMapToAllEvents()
     }
 
     // Handle unknown locations filter toggle
@@ -123,8 +138,8 @@ function HomeContent() {
         setLocalSearchQuery('')
         setLocalDateRange(undefined)
         filters.resetAll()
-        resetToAllEvents()
-    }, [filters, resetToAllEvents])
+        resetMapToAllEvents()
+    }, [filters, resetMapToAllEvents])
 
     // Handler for selecting an event from the list
     const handleEventSelect = useCallback(
@@ -139,7 +154,12 @@ function HomeContent() {
 
             // Find the event and its marker
             const event = events.all.find((e) => e.id === eventId)
-            if (!event || !event.resolved_location?.lat || !event.resolved_location?.lng) {
+            if (
+                !event ||
+                event.resolved_location?.status !== 'resolved' ||
+                !event.resolved_location.lat ||
+                !event.resolved_location.lng
+            ) {
                 return
             }
 
@@ -160,34 +180,22 @@ function HomeContent() {
 
     // Expose events data to window for debugging
     useEffect(() => {
-        logr.info('app', `uE: updateMarkersShown(${events.filtered.length})`)
-        updateMarkersShown(events.filtered)
-    }, [events.filtered, updateMarkersShown])
-
-    useEffect(() => {
         if (events?.all?.length > 0 && typeof window !== 'undefined') {
             // Add events to window for debugging
             const temp_cmf_events = {
                 all: events.all,
                 filtered: events.filtered,
-                filteredWithLocations: events.filteredWithLocations,
+                shown: events.shown(),
                 withoutLocations: events.withoutLocations,
                 totalCount: calendar.totalCount,
-                //unknown_locations_count: calendar.unknownLocationsCount, // TODO: CHAD - probably delete this
                 calendar_name: calendar.name || '',
                 calendarId: calendarId,
             }
             window.cmf_events = temp_cmf_events
 
-            logr.debug('app', 'Events data exposed to window.cmf_events', window.cmf_events)
+            //logr.debug('app', 'Events data exposed to window.cmf_events', window.cmf_events)
         }
-    }, [
-        events, // NOTE: events is an object with multiple properties, when any change this effect runs
-        calendar.totalCount,
-        calendar.unknownLocationsCount,
-        calendar.name,
-        calendarId,
-    ])
+    }, [events, calendar.totalCount, calendar.name, calendarId])
 
     // Get filter stats
     const { mapFilteredCount, searchFilteredCount, dateFilteredCount } = filters.getStats()
@@ -214,13 +222,13 @@ function HomeContent() {
                 <div className="w-full md:w-1/2 h-full overflow-auto p-4 border-r">
                     <div className="mb-4">
                         <p>
-                            Map showing {events.filtered.length} of {calendar.totalCount} events
-                            {calendar.unknownLocationsCount > 0 && (
+                            Showing {events.shown().length} of {events.all.length} events
+                            {events.withoutLocations.length > 0 && (
                                 <button
                                     onClick={handleUnknownLocationsToggle}
-                                    className="ml-2 text-blue-500 text-xs hover:underline"
+                                    className="ml-2 text-xs text-blue-500 hover:text-blue-700"
                                 >
-                                    ({calendar.unknownLocationsCount} bad addr)
+                                    Show {events.withoutLocations.length} unmapped events
                                 </button>
                             )}
                         </p>
@@ -317,7 +325,7 @@ function HomeContent() {
                     />
 
                     <EventList
-                        events={events.filtered}
+                        events={events}
                         selectedEventId={selectedEventId}
                         onEventSelect={handleEventSelect}
                         apiIsLoading={apiIsLoading}
@@ -340,7 +348,7 @@ function HomeContent() {
                             }
                         }}
                         onBoundsChange={handleBoundsChange}
-                        onResetView={resetToAllEvents}
+                        onResetView={resetMapToAllEvents}
                         selectedEventId={selectedEventId}
                         onEventSelect={setSelectedEventId}
                         isMapOfAllEvents={isMapOfAllEvents}

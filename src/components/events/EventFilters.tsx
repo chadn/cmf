@@ -7,9 +7,7 @@ interface EventFiltersProps {
     searchQuery: string
     onSearchChange: (query: string) => void
     dateRange?: { start: string; end: string }
-    onDateRangeChange: (
-        range: { start: string; end: string } | undefined
-    ) => void
+    onDateRangeChange: (range: { start: string; end: string } | undefined) => void
     onReset: () => void
 }
 
@@ -26,9 +24,7 @@ export default function EventFilters({
     const now = new Date()
     const minDate = subMonths(now, 1)
     const maxDate = addMonths(now, 3)
-    const totalDays = Math.floor(
-        (maxDate.getTime() - minDate.getTime()) / (1000 * 60 * 60 * 24)
-    )
+    const totalDays = Math.floor((maxDate.getTime() - minDate.getTime()) / (1000 * 60 * 60 * 24))
 
     const [startValue, setStartValue] = useState(0)
     const [endValue, setEndValue] = useState(totalDays)
@@ -89,9 +85,7 @@ export default function EventFilters({
     const getDateButtonText = () => {
         const startDate = new Date(getDateFromValue(startValue))
         const endDate = new Date(getDateFromValue(endValue))
-        const msg = `Date Sliders: ${formatDateForButton(
-            startDate
-        )} - ${formatDateForButton(endDate)}`
+        const msg = `Date Sliders: ${formatDateForButton(startDate)} - ${formatDateForButton(endDate)}`
 
         if (!showDateSliders) {
             return `Show ${msg}`
@@ -125,11 +119,7 @@ export default function EventFilters({
                     <div className="space-y-4 p-4 bg-gray-50 rounded">
                         <div>
                             <label className="block text-sm text-gray-600">
-                                Start Date:{' '}
-                                {format(
-                                    new Date(getDateFromValue(startValue)),
-                                    'MMM d, yyyy'
-                                )}
+                                Start Date: {format(new Date(getDateFromValue(startValue)), 'MMM d, yyyy')}
                             </label>
                             <input
                                 type="range"
@@ -142,11 +132,7 @@ export default function EventFilters({
                         </div>
                         <div>
                             <label className="block text-sm text-gray-600">
-                                End Date:{' '}
-                                {format(
-                                    new Date(getDateFromValue(endValue)),
-                                    'MMM d, yyyy'
-                                )}
+                                End Date: {format(new Date(getDateFromValue(endValue)), 'MMM d, yyyy')}
                             </label>
                             <input
                                 type="range"

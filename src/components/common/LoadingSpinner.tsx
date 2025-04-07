@@ -8,11 +8,7 @@ interface LoadingSpinnerProps {
     className?: string
 }
 
-const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
-    size = 'medium',
-    color = 'primary',
-    className = '',
-}) => {
+const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ size = 'medium', color = 'primary', className = '' }) => {
     // Determine size classes
     const sizeClasses = {
         small: 'w-4 h-4',
@@ -27,10 +23,7 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
     }
 
     return (
-        <div
-            className={`flex justify-center items-center ${className}`}
-            data-testid="loading-spinner-container"
-        >
+        <div className={`flex justify-center items-center ${className}`} data-testid="loading-spinner-container">
             <svg
                 className={`animate-spin ${sizeClasses[size]} ${colorClasses[color]}`}
                 xmlns="http://www.w3.org/2000/svg"
@@ -39,14 +32,7 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
                 role="status"
                 aria-label="Loading"
             >
-                <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                ></circle>
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path
                     className="opacity-75"
                     fill="currentColor"

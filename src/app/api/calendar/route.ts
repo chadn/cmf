@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { fetchCalendarEvents, extractUrls } from '@/lib/api/calendar'
 import { batchGeocodeLocations } from '@/lib/api/geocoding'
-import { CalendarEvent, CMFEvents } from '@/types/events'
+import { CalendarEvent } from '@/types/events'
 import { GoogleCalendarEvent } from '@/types/api'
 import { logr } from '@/lib/utils/logr'
 
@@ -62,8 +62,8 @@ export async function GET(request: NextRequest) {
                 return {
                     id: item.id,
                     name: item.summary,
-                    startDate,
-                    endDate,
+                    start: startDate,
+                    end: endDate,
                     location: item.location || '',
                     description: item.description || '',
                     description_urls: extractUrls(item.description || ''),
@@ -109,20 +109,20 @@ export async function GET(request: NextRequest) {
             logr.info('api-cal', `Events with unknown locations: ${unknownLocationsCount}`)
 
             // Construct the response
-            const response: CMFEvents = {
+            const response = {
                 events: eventsWithLocationResolved,
-                total_count: eventsWithLocationResolved.length,
-                unknown_locations_count: unknownLocationsCount,
-                calendar_name: calendarData.summary,
-                calendar_id: calendarId,
-                calendar_start_date: '',
-                calendar_end_date: '',
+                calendar: {
+                    name: calendarData.summary,
+                    id: calendarId,
+                    totalCount: eventsWithLocationResolved.length,
+                    unknownLocationsCount: unknownLocationsCount,
+                },
             }
 
             logr.info('api-cal', 'API response prepared', {
-                total_count: response.total_count,
-                unknown_locations_count: response.unknown_locations_count,
-                calendar_name: response.calendar_name,
+                totalCount: response.calendar.totalCount,
+                unknownLocationsCount: response.calendar.unknownLocationsCount,
+                calendarName: response.calendar.name,
             })
 
             return NextResponse.json(response)

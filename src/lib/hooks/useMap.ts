@@ -1,12 +1,12 @@
 'use client'
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
-import { MapViewport, MapBounds, MapMarker } from '@/types/map'
+import { MapViewport, MapBounds, MapMarker, MapState } from '@/types/map'
 import { CalendarEvent } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
 
 interface UseMapProps {
-    events: CalendarEvent[]
-    initialViewport?: Partial<MapViewport>
+    eventsShown: CalendarEvent[] // Events that are currently visible (filtered and have locations)
+    eventsAll: CalendarEvent[] // All events from the API
 }
 
 interface UseMapReturn {
@@ -16,13 +16,7 @@ interface UseMapReturn {
     markers: MapMarker[]
     selectedMarkerId: string | null
     setSelectedMarkerId: (id: string | null) => void
-    updateMarkersShown: (events: CalendarEvent[]) => void
-    resetToAllEvents: () => void
-    isMapOfAllEvents: boolean
-}
-
-interface MapState {
-    viewport: MapViewport
+    resetMapToAllEvents: () => void
     isMapOfAllEvents: boolean
 }
 
@@ -80,7 +74,7 @@ const calculateMapViewport = (markers: MapMarker[]): MapViewport => {
 }
 
 /**
- * Generate map markers from events with locations
+ * Generate map markers from events
  */
 const generateMapMarkers = (events: CalendarEvent[]): MapMarker[] => {
     const markersMap = new Map<string, MapMarker>()
@@ -138,86 +132,149 @@ const generateMapMarkers = (events: CalendarEvent[]): MapMarker[] => {
  * @param {Partial<MapViewport>} [props.initialViewport] - Initial viewport settings
  * @returns {UseMapReturn} - Map state and functions
  */
-export function useMap({ events, initialViewport = {} }: UseMapProps): UseMapReturn {
+export function useMap({ eventsShown, eventsAll }: UseMapProps): UseMapReturn {
     // Flag to track internal updates to prevent loops
     const isInternalUpdate = useRef(false)
-    // need useRef else variable gets re-initialized on every component render
-    const lastResetToAllEventsCount = useRef(0)
 
     // Memoize markers generation from events
-    const markers = useMemo(() => generateMapMarkers(events), [events])
+    const markersFromAllEvents = useMemo(() => generateMapMarkers(eventsAll), [eventsAll])
 
-    // Combine viewport and map state to reduce state variables
+    // Combine all map state into a single state object
     const [mapState, setMapState] = useState<MapState>(() => {
-        const calculatedViewport = calculateMapViewport(markers)
+        const calculatedViewport = calculateMapViewport(markersFromAllEvents)
         logr.info('map', 'uE: Setting initial viewport', calculatedViewport)
 
         return {
             viewport: {
                 ...calculatedViewport,
-                ...initialViewport,
             },
+            bounds: null,
+            markers: [],
             isMapOfAllEvents: true,
+            selectedMarkerId: null,
         }
     })
 
-    // Map bounds state
-    const [bounds, setBounds] = useState<MapBounds | null>(null)
-
-    // Selected marker state
-    const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null)
-
     // Track if events have been initialized
     const [eventsInitialized, setEventsInitialized] = useState(false)
+
+    // Memoize filtered markers based on eventsShown
+    const filteredMarkers = useMemo(() => {
+        // During initialization or when showing all events, use eventsAll
+        if (!eventsInitialized || mapState.isMapOfAllEvents) {
+            return markersFromAllEvents
+        }
+
+        if (!eventsShown) return []
+
+        // Create a Set of event IDs that should be shown
+        const shownEventIds = new Set(eventsShown.map((event) => event.id))
+
+        // Filter markers and their events
+        return markersFromAllEvents
+            .map((marker) => ({
+                ...marker,
+                events: marker.events.filter((event) => shownEventIds.has(event.id)),
+            }))
+            .filter((marker) => marker.events.length > 0) // Only keep markers that still have events
+    }, [eventsShown, markersFromAllEvents, eventsInitialized, mapState.isMapOfAllEvents])
+
+    // Reset initialization when eventsAll changes (e.g., calendar switch)
+    useEffect(() => {
+        setEventsInitialized(false)
+    }, [eventsAll])
 
     // Log when the hook initializes
     useEffect(() => {
         logr.info('map', 'uE: useMap hook initialized', {
             initialViewport: { ...mapState.viewport },
-            eventsCount: events.length,
+            eventsCount: eventsAll.length,
         })
     }, [])
 
-    // Update Markers shown on map to match events not filtered out
-    const updateMarkersShown = useCallback(
-        (events: CalendarEvent[]) => {
-            logr.info('map', `updateMarkersShown: now ${markers.length} markers, ${events.length} events`)
-        },
-        [markers, events]
-    )
-
-    // Reset to show all events
-    const resetToAllEvents = useCallback(() => {
-        logr.info('map', 'resetToAllEvents', {
-            eventsCount: events ? events.length : 0,
-            oldEventsCount: lastResetToAllEventsCount.current,
-            markerCount: markers.length,
-        })
-        if (events.length !== lastResetToAllEventsCount.current) {
-            lastResetToAllEventsCount.current = events.length
-        } else {
-            // count has not changed, so do not reset
-            // TODO: better to compare all events, not just the length
-            return
+    // Update markers when filtered markers change
+    useEffect(() => {
+        // Check if markers array length changed as quick comparison
+        let markersChanged = filteredMarkers.length == mapState.markers.length
+        if (!markersChanged) {
+            // If same length, check if any marker IDs changed
+            const currentIds = new Set(mapState.markers.map((m) => m.id))
+            markersChanged = filteredMarkers.some((marker) => !currentIds.has(marker.id))
         }
 
-        const newViewport = calculateMapViewport(markers)
+        if (markersChanged) {
+            const el = eventsInitialized ? eventsShown.length : eventsAll.length
+            const ol = mapState.markers.length
+            logr.info('map', `uE: markers changed, ${filteredMarkers.length} markers, was ${ol}, from ${el} events`)
+            setMapState((prev) => ({
+                ...prev,
+                markers: filteredMarkers,
+            }))
+        }
+    }, [filteredMarkers, mapState.markers, setMapState, eventsShown.length, eventsAll.length, eventsInitialized])
 
-        // Mark as internal update to prevent infinite loops
-        isInternalUpdate.current = true
+    // Update viewport to show all events
+    const resetMapToAllEvents = useCallback(() => {
+        logr.info('map', `resetMapToAllEvents: called, all ${eventsAll.length} events`)
+        if (!eventsAll || eventsAll.length === 0) return
 
-        setMapState({
-            viewport: newViewport,
-            isMapOfAllEvents: true,
-        })
+        // Use the existing calculateMapViewport function instead of duplicating the calculation
+        const newViewport = calculateMapViewport(markersFromAllEvents)
 
-        setBounds(null)
+        // Calculate bounds for filtering
+        const validCoords = markersFromAllEvents.map((marker) => ({
+            lat: marker.latitude,
+            lng: marker.longitude,
+        }))
 
-        // Reset flag after state updates are queued
-        setTimeout(() => {
-            isInternalUpdate.current = false
-        }, 0)
-    }, [markers, events])
+        if (validCoords.length === 0) return
+
+        // Calculate bounds
+        const bounds = validCoords.reduce(
+            (acc, coord) => ({
+                north: Math.max(acc.north, coord.lat),
+                south: Math.min(acc.south, coord.lat),
+                east: Math.max(acc.east, coord.lng),
+                west: Math.min(acc.west, coord.lng),
+            }),
+            {
+                north: validCoords[0].lat,
+                south: validCoords[0].lat,
+                east: validCoords[0].lng,
+                west: validCoords[0].lng,
+            }
+        )
+
+        // Add padding
+        const padding = 0.1
+        const newBounds = {
+            north: bounds.north + padding,
+            south: bounds.south - padding,
+            east: bounds.east + padding,
+            west: bounds.west - padding,
+        }
+
+        // Simple equality check for viewport
+        const viewportChanged =
+            newViewport.latitude !== mapState.viewport.latitude ||
+            newViewport.longitude !== mapState.viewport.longitude ||
+            newViewport.zoom !== mapState.viewport.zoom
+
+        // Only update if viewport or bounds have changed
+        if (viewportChanged || JSON.stringify(newBounds) !== JSON.stringify(mapState.bounds)) {
+            logr.info('map', `resetMapToAllEvents: updating map to show all ${markersFromAllEvents.length} markers`)
+
+            setMapState((prev) => ({
+                ...prev,
+                viewport: newViewport,
+                bounds: newBounds,
+                isMapOfAllEvents: true,
+                markers: markersFromAllEvents,
+            }))
+        } else {
+            logr.debug('map', `resetMapToAllEvents: no change needed for ${markersFromAllEvents.length} markers`)
+        }
+    }, [eventsAll, markersFromAllEvents, mapState.viewport, mapState.bounds, setMapState])
 
     // Handle viewport changes from user interaction
     const handleViewportChange = useCallback((newViewport: MapViewport) => {
@@ -225,6 +282,7 @@ export function useMap({ events, initialViewport = {} }: UseMapProps): UseMapRet
         if (isInternalUpdate.current) return
 
         setMapState((prev) => ({
+            ...prev,
             viewport: newViewport,
             isMapOfAllEvents: false, // User changed the viewport, so no longer showing all events
         }))
@@ -232,50 +290,41 @@ export function useMap({ events, initialViewport = {} }: UseMapProps): UseMapRet
 
     // Log when selected marker changes
     useEffect(() => {
-        if (selectedMarkerId) {
-            const marker = markers.find((m) => m.id === selectedMarkerId)
+        if (mapState.selectedMarkerId) {
+            const marker = markersFromAllEvents.find((m) => m.id === mapState.selectedMarkerId)
             if (marker) {
-                logr.info('map', `uE: Selected marker: ${selectedMarkerId}`, {
+                logr.info('map', `uE: Selected marker: ${mapState.selectedMarkerId}`, {
                     latitude: marker.latitude,
                     longitude: marker.longitude,
                     eventCount: marker.events.length,
                 })
             }
-        } else if (selectedMarkerId === null) {
+        } else if (mapState.selectedMarkerId === null) {
             logr.info('map', 'uE: Marker selection cleared')
         }
-    }, [selectedMarkerId, markers])
+    }, [mapState.selectedMarkerId, markersFromAllEvents])
 
-    // Initialize map to show all events on first load
+    // Initialize map to show all events on first load or calendar switch
     useEffect(() => {
         // Only reset when events first load or change to a new set
-        if (markers.length > 0 && !eventsInitialized) {
-            logr.info('map', 'uE: First load of events, showing all on map', {
-                markerCount: markers.length,
-            })
-            resetToAllEvents()
+        if (!eventsInitialized && markersFromAllEvents.length > 0) {
             setEventsInitialized(true)
+            logr.info(
+                'map',
+                `uE: First load of events or calendar switch, showing all ${markersFromAllEvents.length} markers on map`
+            )
+            resetMapToAllEvents()
         }
-    }, [markers.length, eventsInitialized, resetToAllEvents])
-
-    // Reset initialization flag when events array reference changes completely
-    useEffect(() => {
-        //setEventsInitialized(false)
-        logr.info(
-            'map',
-            `uE: Events (len=${events.length}) reference changed completely, consider resetting map on next render`
-        )
-    }, [events])
+    }, [markersFromAllEvents.length, eventsInitialized, resetMapToAllEvents])
 
     return {
         viewport: mapState.viewport,
         setViewport: handleViewportChange,
-        bounds,
-        markers,
-        selectedMarkerId,
-        setSelectedMarkerId,
-        updateMarkersShown,
-        resetToAllEvents,
+        bounds: mapState.bounds,
+        markers: mapState.markers,
+        selectedMarkerId: mapState.selectedMarkerId,
+        setSelectedMarkerId: (id: string | null) => setMapState((prev) => ({ ...prev, selectedMarkerId: id })),
+        resetMapToAllEvents,
         isMapOfAllEvents: mapState.isMapOfAllEvents,
     }
 }

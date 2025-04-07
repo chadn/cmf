@@ -9,8 +9,8 @@ describe('MapPopup', () => {
     const mockEvent: CalendarEvent = {
         id: '1',
         name: 'Test Event',
-        startDate: '2023-01-01T02:00:00Z',
-        endDate: '2023-01-01T04:00:00Z',
+        start: '2023-01-01T02:00:00Z',
+        end: '2023-01-01T04:00:00Z',
         location: 'Test Location',
         description: 'Test Description',
         description_urls: [],
@@ -77,8 +77,6 @@ describe('MapPopup', () => {
 
         // The actual formatted date will depend on the formatEventDate implementation
         // This is a simplified check for the format MM/dd EEE h:mm a
-        expect(
-            screen.getByText(/\d{2}\/\d{2} \w{3} \d{1,2}:\d{2} [AP]M/)
-        ).toBeInTheDocument()
+        expect(screen.getByText(/\d{2}\/\d{2} \w{3} \d{1,2}:\d{2} [AP]M/)).toBeInTheDocument()
     })
 })

@@ -19,35 +19,23 @@ function HeaderContent({ calendarName }: HeaderProps) {
                 <div className="flex justify-between h-16 items-center">
                     <div className="flex items-center">
                         <Link href="/" className="flex items-center">
-                            <span className="text-xl font-bold text-primary">
-                                Calendar Map Filter
-                            </span>
+                            <span className="text-xl font-bold text-primary">Calendar Map Filter</span>
                         </Link>
-                        {calendarName && (
-                            <span className="ml-4 text-sm text-gray-500">
-                                {calendarName}
-                            </span>
-                        )}
+                        {calendarName && <span className="ml-4 text-sm text-gray-500">{calendarName}</span>}
                     </div>
 
                     <div className="flex items-center space-x-4">
                         {/* Calendar selector - simplified version */}
                         {calendarId && (
                             <div className="text-sm">
-                                <Link
-                                    href="/"
-                                    className="text-primary hover:underline"
-                                >
+                                <Link href="/" className="text-primary hover:underline">
                                     Change Calendar
                                 </Link>
                             </div>
                         )}
 
                         {/* Help button */}
-                        <button
-                            className="text-gray-500 hover:text-gray-700"
-                            aria-label="Help"
-                        >
+                        <button className="text-gray-500 hover:text-gray-700" aria-label="Help">
                             <svg
                                 xmlns="http://www.w3.org/2000/svg"
                                 className="h-5 w-5"

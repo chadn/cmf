@@ -14,8 +14,8 @@ describe('EventList', () => {
             description_urls: [],
             original_event_url: 'https://example.com/event1',
             location: 'New York, NY',
-            startDate: '2025-03-15T10:00:00Z',
-            endDate: '2025-03-15T12:00:00Z',
+            start: '2025-03-15T10:00:00Z',
+            end: '2025-03-15T12:00:00Z',
             resolved_location: {
                 original_location: 'New York, NY',
                 formatted_address: 'New York, NY, USA',
@@ -31,8 +31,8 @@ describe('EventList', () => {
             description_urls: [],
             original_event_url: 'https://example.com/event2',
             location: 'Los Angeles, CA',
-            startDate: '2025-03-20T14:00:00Z',
-            endDate: '2025-03-20T16:00:00Z',
+            start: '2025-03-20T14:00:00Z',
+            end: '2025-03-20T16:00:00Z',
             resolved_location: {
                 original_location: 'Los Angeles, CA',
                 formatted_address: 'Los Angeles, CA, USA',
@@ -48,8 +48,8 @@ describe('EventList', () => {
             description_urls: [],
             original_event_url: 'https://example.com/event3',
             location: 'Unknown Location',
-            startDate: '2025-03-25T09:00:00Z',
-            endDate: '2025-03-25T11:00:00Z',
+            start: '2025-03-25T09:00:00Z',
+            end: '2025-03-25T11:00:00Z',
             resolved_location: {
                 original_location: 'Unknown Location',
                 status: 'unresolved',
@@ -57,12 +57,16 @@ describe('EventList', () => {
         },
     ]
 
+    const mockEventsManager = {
+        shown: () => mockEvents,
+    }
+
     it('renders a list of events', () => {
         const mockOnEventSelect = jest.fn()
 
         render(
             <EventList
-                events={mockEvents}
+                events={mockEventsManager}
                 selectedEventId={null}
                 onEventSelect={mockOnEventSelect}
                 apiIsLoading={false}
@@ -90,7 +94,7 @@ describe('EventList', () => {
 
         render(
             <EventList
-                events={mockEvents}
+                events={mockEventsManager}
                 selectedEventId={null}
                 onEventSelect={mockOnEventSelect}
                 apiIsLoading={false}
@@ -109,7 +113,7 @@ describe('EventList', () => {
 
         render(
             <EventList
-                events={mockEvents}
+                events={mockEventsManager}
                 selectedEventId={null}
                 onEventSelect={mockOnEventSelect}
                 apiIsLoading={true}
@@ -119,38 +123,21 @@ describe('EventList', () => {
         expect(screen.getByText('Loading events...')).toBeInTheDocument()
     })
 
-    it('displays error state', () => {
-        const mockOnEventSelect = jest.fn()
-        const mockError = new Error('Test error message')
-
-        render(
-            <EventList
-                events={mockEvents}
-                selectedEventId={null}
-                onEventSelect={mockOnEventSelect}
-                apiIsLoading={false}
-            />
-        )
-
-        expect(screen.getByText('Error loading events: Test error message')).toBeInTheDocument()
-    })
-
     it('displays empty state when no events are found', () => {
         const mockOnEventSelect = jest.fn()
+        const emptyEventsManager = {
+            shown: () => [],
+        }
 
         render(
             <EventList
-                events={mockEvents}
+                events={emptyEventsManager}
                 selectedEventId={null}
                 onEventSelect={mockOnEventSelect}
                 apiIsLoading={false}
             />
         )
 
-        expect(
-            screen.getByText(
-                'No events found. Try adjusting your filters, moving the map, or clicking x on any filter above to remove.'
-            )
-        ).toBeInTheDocument()
+        expect(screen.getByText('No events found')).toBeInTheDocument()
     })
 })

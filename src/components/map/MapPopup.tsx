@@ -82,8 +82,7 @@ const MapPopup: React.FC<MapPopupProps> = ({ marker, selectedEventId, onEventSel
 
             {/* Event date and duration */}
             <p className="text-sm mb-1 text-gray-700">
-                {formatEventDate(currentEvent.startDate)} (
-                {formatEventDuration(currentEvent.startDate, currentEvent.endDate)})
+                {formatEventDate(currentEvent.start)} ({formatEventDuration(currentEvent.start, currentEvent.end)})
             </p>
 
             {/* Event location */}

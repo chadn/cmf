@@ -7,60 +7,60 @@ npm test
 > calendar-map-filter@0.1.0 test
 > jest
 ...
------------------------|---------|----------|---------|---------|--------------------------------
-File                   | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
------------------------|---------|----------|---------|---------|--------------------------------
-All files              |   27.17 |    26.17 |   27.31 |   26.77 |
- app                   |       0 |        0 |       0 |       0 |
-  layout.tsx           |       0 |      100 |       0 |       0 | 2-12
-  page.tsx             |       0 |        0 |       0 |       0 | 3-378
- app/api/calendar      |       0 |        0 |       0 |       0 |
-  route.ts             |       0 |        0 |       0 |       0 | 1-194
- app/api/info          |       0 |        0 |       0 |       0 |
-  route.ts             |       0 |        0 |       0 |       0 | 1-58
- app/home              |       0 |      100 |       0 |       0 |
-  page.tsx             |       0 |      100 |       0 |       0 | 3-77
- app/privacy           |       0 |      100 |       0 |       0 |
-  page.tsx             |       0 |      100 |       0 |       0 | 3-147
- app/terms             |       0 |      100 |       0 |       0 |
-  page.tsx             |       0 |      100 |       0 |       0 | 3-164
- components/common     |     100 |      100 |     100 |     100 |
-  ErrorMessage.tsx     |     100 |      100 |     100 |     100 |
-  LoadingSpinner.tsx   |     100 |      100 |     100 |     100 |
- components/events     |   69.79 |    41.53 |      64 |   69.14 |
-  EventDetails.tsx     |     100 |      100 |     100 |     100 |
-  EventFilters.tsx     |   82.22 |       80 |      80 |   82.22 | 64-67,79-82
-  EventList.tsx        |   52.27 |    31.48 |   41.66 |   51.16 | 57,66-79,84-88,100-156,207-208
- components/home       |     100 |      100 |     100 |     100 |
-  CalendarSelector.tsx |     100 |      100 |     100 |     100 |
- components/layout     |     100 |       75 |     100 |     100 |
-  Footer.tsx           |     100 |      100 |     100 |     100 |
-  Header.tsx           |     100 |       75 |     100 |     100 | 14
- components/map        |   42.96 |    27.86 |   29.62 |   41.73 |
-  MapContainer.tsx     |   12.16 |        0 |       0 |   11.42 | 39-255
-  MapMarker.tsx        |   94.44 |    88.88 |     100 |     100 | 14
-  MapPopup.tsx         |   80.55 |    47.36 |   83.33 |   84.84 | 27-28,63,87,95
- lib/api               |       0 |        0 |       0 |       0 |
-  calendar.ts          |       0 |        0 |       0 |       0 | 1-85
-  geocoding.ts         |       0 |        0 |       0 |       0 | 1-314
- lib/cache             |       0 |        0 |       0 |       0 |
-  filesystem.ts        |       0 |        0 |       0 |       0 | 1-84
-  upstash.ts           |       0 |        0 |       0 |       0 | 1-97
- lib/events            |       0 |        0 |       0 |       0 |
-  FilterEventsManager.ts     |       0 |        0 |       0 |       0 | 5-257
- lib/hooks             |       0 |        0 |       0 |       0 |
-  useEventsManager.ts  |       0 |        0 |       0 |       0 | 2-183
-  useMap.ts            |       0 |        0 |       0 |       0 | 2-264
- lib/utils             |   83.62 |    84.72 |     100 |   85.32 |
-  date.ts              |   80.64 |      100 |     100 |   80.64 | 16-17,58-59,76-77
-  debug.ts             |   77.96 |    75.67 |     100 |   81.48 | 26,43-46,106,124-127
-  location.ts          |     100 |    91.66 |     100 |     100 | 90-94
------------------------|---------|----------|---------|---------|--------------------------------
+-------------------------|---------|----------|---------|---------|--------------------------------
+File                     | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
+-------------------------|---------|----------|---------|---------|--------------------------------
+All files                |   22.55 |       20 |   24.09 |   22.15 |
+ app                     |       0 |        0 |       0 |       0 |
+  layout.tsx             |       0 |      100 |       0 |       0 | 2-12
+  page.tsx               |       0 |        0 |       0 |       0 | 3-364
+ app/api/calendar        |       0 |        0 |       0 |       0 |
+  route.ts               |       0 |        0 |       0 |       0 | 1-136
+ app/api/info            |       0 |        0 |       0 |       0 |
+  route.ts               |       0 |        0 |       0 |       0 | 1-51
+ app/home                |       0 |      100 |       0 |       0 |
+  page.tsx               |       0 |      100 |       0 |       0 | 3-77
+ app/privacy             |       0 |      100 |       0 |       0 |
+  page.tsx               |       0 |      100 |       0 |       0 | 3-147
+ app/terms               |       0 |      100 |       0 |       0 |
+  page.tsx               |       0 |      100 |       0 |       0 | 3-164
+ components/common       |     100 |      100 |     100 |     100 |
+  ErrorMessage.tsx       |     100 |      100 |     100 |     100 |
+  LoadingSpinner.tsx     |     100 |      100 |     100 |     100 |
+ components/events       |    70.1 |       40 |      64 |   69.47 |
+  EventDetails.tsx       |     100 |      100 |     100 |     100 |
+  EventFilters.tsx       |   82.22 |       80 |      80 |   82.22 | 60-63,75-78
+  EventList.tsx          |   53.33 |    29.62 |   41.66 |   52.27 | 52,57-66,71-75,87-137,173-174
+ components/home         |     100 |      100 |     100 |     100 |
+  CalendarSelector.tsx   |     100 |      100 |     100 |     100 |
+ components/layout       |     100 |       75 |     100 |     100 |
+  Footer.tsx             |     100 |      100 |     100 |     100 |
+  Header.tsx             |     100 |       75 |     100 |     100 | 14
+ components/map          |   41.98 |    25.75 |   29.62 |   41.02 |
+  MapContainer.tsx       |   11.68 |        0 |       0 |   11.11 | 43-267
+  MapMarker.tsx          |   94.44 |    88.88 |     100 |     100 | 14
+  MapPopup.tsx           |   80.55 |    47.36 |   83.33 |   84.84 | 23-24,50,66,74
+ lib/api                 |       0 |        0 |       0 |       0 |
+  calendar.ts            |       0 |        0 |       0 |       0 | 1-75
+  geocoding.ts           |       0 |        0 |       0 |       0 | 1-277
+ lib/cache               |       0 |        0 |       0 |       0 |
+  filesystem.ts          |       0 |        0 |       0 |       0 | 1-84
+  upstash.ts             |       0 |        0 |       0 |       0 | 1-97
+ lib/events              |       0 |        0 |       0 |       0 |
+  FilterEventsManager.ts |       0 |        0 |       0 |       0 | 5-260
+ lib/hooks               |       0 |        0 |       0 |       0 |
+  useEventsManager.ts    |       0 |        0 |       0 |       0 | 2-256
+  useMap.ts              |       0 |        0 |       0 |       0 | 2-326
+ lib/utils               |   61.32 |    60.29 |   76.19 |    59.8 |
+  date.ts                |   80.64 |      100 |     100 |   80.64 | 16-17,58-59,76-77
+  location.ts            |     100 |    91.66 |     100 |     100 | 90-94
+  logr.ts                |   28.57 |    24.24 |      50 |   25.53 | 16-38,50-80,97-105,120,126-129
+-------------------------|---------|----------|---------|---------|--------------------------------
 
-Test Suites: 14 passed, 14 total
-Tests:       81 passed, 81 total
+Test Suites: 13 passed, 13 total
+Tests:       73 passed, 73 total
 Snapshots:   0 total
-Time:        2.794 s
+Time:        2.281 s
 Ran all test suites.
 ```
 

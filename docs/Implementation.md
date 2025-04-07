@@ -27,6 +27,7 @@ Do not try to make map interactions WCAG compliant if it creates any nontrivial 
 In order to prevent abuse, do not provide server side API endpoint for geocoding.
 Server should cache geocoded results - recommend best way to store.
 The server code should just provide feed to cmf_events json, which can be streamed.
+UPDATE: cmf_events json is not required.
 
 MapLibre is good to start due to React and Typescript support.
 
@@ -210,6 +211,11 @@ The application will follow a hybrid architecture with:
   /Implementation.md      # Implementation details and architecture decisions
 ```
 
+```
+tre >> docs/Implementation.md
+...
+```
+
 [View Test coverage](tests.md) of above files.
 
 ## Event Filtering Implementation
@@ -224,10 +230,10 @@ The event filtering system has been implemented using a class-based approach wit
 
     - **Clear Event Collections**:
 
-        - `cmf_events_all`: All events from the calendar (unfiltered)
-        - `cmf_events_locations`: Events with successfully resolved locations
-        - `cmf_events_unknown_locations`: Events with unresolved or unknown locations
-        - `cmf_events_filtered`: Events that match all current filters (date, search, map bounds)
+        - `events.all`: All events from the calendar (unfiltered)
+        - `events.withLocations`: Events with successfully resolved locations
+        - `events.withoutLocations`: Events with unresolved or unknown locations
+        - `events.filtered`: Events that match all current filters (date, search, map bounds)
 
     - **Filter Methods**:
 
@@ -247,68 +253,16 @@ The event filtering system has been implemented using a class-based approach wit
     - Initializes an FilterEventsManager instance
     - Fetches calendar data from the API
     - Updates the FilterEventsManager when data is received
-    - Returns a structured object with:
-        - `events`: Object containing different event collections (`all`, `withLocations`, `withoutLocations`, `filtered`)
-        - `filters`: Object containing methods for manipulating filters and getting filter statistics
-        - `calendar`: Object containing metadata about the calendar (name, totalCount, unknownLocationsCount)
-        - `apiIsLoading`: Loading state
-        - `apiError`: Error state
-        - `filterEventsManager`: Direct access to the FilterEventsManager instance (for advanced use cases)
-        - `filteredEvents`: Backward compatibility property for older components
-        - `totalCount`: Total count of events
-        - `filteredCount`: Count of filtered events
-        - `unknownLocationsCount`: Count of events with unknown locations
-        - `calendarName`: Name of the calendar
-    - Also provides backward compatibility properties for older components
+    - Returns both the event collections and filter methods for use in components
+    - Provides metadata about the events (total count, loading state, etc.)
 
 3. **Map Integration**:
 
     The `useMap` hook has been updated to:
 
-    - Use the `events.withLocations` property instead of direct access to the FilterEventsManager
+    - Use `events.withLocations` consistently, fixing a previous bug in `resetMapToAllEvents`
     - Clear bounds when resetting to show all events
     - Reset the view properly when map filters are cleared
-
-### Recent Improvements (March 2025)
-
-1. **Restructured Hook Return Values**:
-
-    - The `useEventsManager` hook now returns a more structured and intuitive object
-    - Events are grouped under an `events` object with clear property names:
-        - `events.all` (formerly `cmf_events_all`)
-        - `events.withLocations` (formerly `cmf_events_locations`)
-        - `events.withoutLocations` (formerly `cmf_events_unknown_locations`)
-        - `events.filtered` (formerly `cmf_events_filtered`)
-    - Filter methods are grouped under a `filters` object:
-        - `filters.setDateRange`
-        - `filters.setSearchQuery`
-        - `filters.setMapBounds`
-        - `filters.setShowUnknownLocationsOnly`
-        - `filters.resetAll` (formerly `resetAllFilters`)
-        - `filters.getStats` (formerly `getFilterStats`)
-    - Calendar metadata is grouped under a `calendar` object:
-        - `calendar.name`
-        - `calendar.totalCount`
-        - `calendar.unknownLocationsCount`
-
-2. **Improved Error Handling**:
-
-    - Added comprehensive error handling to prevent runtime errors
-    - Implemented try-catch blocks in critical methods
-    - Added fallbacks for `null` or `undefined` values
-    - Fixed binding issues in the `hasResolvedLocation` method using arrow function syntax
-
-3. **Enhanced Debugging**:
-
-    - Added extensive console logging throughout the codebase
-    - Improved error reporting with contextual information
-    - Implemented rate limiting for log messages to prevent console flooding
-
-4. **Bug Fixes**:
-    - Fixed an issue where `getFilterStats` was incorrectly called directly instead of through the `filters` object
-    - Addressed potential `this` binding issues in the FilterEventsManager class
-    - Ensured that all event collections have proper null checks and fallbacks
-    - Fixed the initialization sequence to improve stability
 
 ### Filter Implementation
 
@@ -341,16 +295,15 @@ The filters are integrated with UI components:
 1. **EventFilters Component**:
 
     - Maintains local UI state for date slider positions and visibility
-    - Synchronizes with the filters methods from useEventsManager
+    - Synchronizes with the FilterEventsManager's filter state
     - Provides UI controls for searching and date range selection
     - Automatically resets UI state when filters are cleared
 
 2. **Page Component**:
     - Maintains local state for active filters to ensure UI and filter state are synchronized
     - Connects FilterEventsManager methods to UI components
-    - Connects filter methods to UI components
     - Displays filter chips showing active filters with options to remove them
-    - Uses `events.filtered` to display the current filtered event list
+    - Ensures the event list always shows `events.filtered` (filtered events)
 
 ### Benefits of this Approach
 
@@ -360,11 +313,10 @@ The filters are integrated with UI components:
     - UI state is managed in the relevant components
     - Data fetching is handled by the useEventsManager hook
 
-2. **Intuitive API Design**:
+2. **Clear Naming Convention**:
 
-    - Nested objects provide clear organization of related functionality
-    - Consistent and descriptive naming makes the API intuitive to use
-    - Backward compatibility properties ensure existing code continues to work
+    - Consistent prefix `events.` makes event collections easily identifiable
+    - Descriptive suffixes (`_all`, `_locations`, `_active`) clearly indicate purpose
 
 3. **Extensibility**:
 
@@ -373,15 +325,48 @@ The filters are integrated with UI components:
     - UI components can be updated independently of filtering logic
 
 4. **Performance**:
-
     - Filtering is performed using memoized calculations
     - Only re-filters when dependencies change
     - Avoids unnecessary rerenders by separating UI and data state
 
-5. **Robustness**:
-    - Comprehensive error handling prevents runtime crashes
-    - Fallbacks ensure the application degrades gracefully when data is missing
-    - Detailed logging helps diagnose issues in development and production
+### Next.js App Router Best Practices
+
+1. **Route Organization**:
+
+    - Use the App Router's file-based routing system
+    - Implement route groups with parentheses notation `(groupName)` for logical organization without affecting URL structure
+    - Create shared layouts for related routes
+    - Implement loading and error states at appropriate route levels
+
+2. **Server vs. Client Components**:
+
+    - Default to Server Components for improved performance
+    - Use the "use client" directive only when necessary (interactive components like events results list, map, hooks usage)
+    - Keep data fetching in Server Components when possible
+    - Implement proper component boundaries between server and client components
+
+3. **Data Fetching**:
+
+    - Use React Server Components for initial data fetching
+    - Implement SWR for client-side data fetching and caching
+    - Use route handlers (app/api/\*) for backend API endpoints
+    - Implement proper caching strategies using Next.js cache mechanisms
+
+4. **Component Organization**:
+    - Organize components by domain/feature rather than by type
+    - Create clear boundaries between UI components and feature components
+    - Implement proper prop typing with TypeScript
+    - Use composition over inheritance for component reuse
+
+### Data Flow (Refined)
+
+1. User requests the application with a calendar ID as a URL parameter
+2. Next.js Server Component fetches calendar data from Google Calendar API
+3. Server geocodes event locations (using cached results from Upstash for Redis when available)
+4. Server renders initial HTML with preloaded data, not waiting for geocoding to complete.
+5. Client hydrates the application and initializes the map
+6. User interactions trigger client-side filtering and map updates
+7. Additional data is fetched as needed via API routes with SWR for caching
 
 ## Tech Stack Choices and reasoning
 
@@ -599,10 +584,10 @@ The event filtering system has been implemented using a class-based approach wit
 
     - **Clear Event Collections**:
 
-        - `cmf_events_all`: All events from the calendar (unfiltered)
-        - `cmf_events_locations`: Events with successfully resolved locations
-        - `cmf_events_unknown_locations`: Events with unresolved or unknown locations
-        - `cmf_events_filtered`: Events that match all current filters (date, search, map bounds)
+        - `events.all`: All events from the calendar (unfiltered)
+        - `events.withLocations`: Events with successfully resolved locations
+        - `events.withoutLocations`: Events with unresolved or unknown locations
+        - `events.filtered`: Events that match all current filters (date, search, map bounds)
 
     - **Filter Methods**:
 
@@ -626,14 +611,9 @@ The event filtering system has been implemented using a class-based approach wit
         - `events`: Object containing different event collections (`all`, `withLocations`, `withoutLocations`, `filtered`)
         - `filters`: Object containing methods for manipulating filters and getting filter statistics
         - `calendar`: Object containing metadata about the calendar (name, totalCount, unknownLocationsCount)
-        - `apiIsLoading`: Loading state
-        - `apiError`: Error state
-        - `filterEventsManager`: Direct access to the FilterEventsManager instance (for advanced use cases)
-        - `filteredEvents`: Backward compatibility property for older components
-        - `totalCount`: Total count of events
-        - `filteredCount`: Count of filtered events
-        - `unknownLocationsCount`: Count of events with unknown locations
-        - `calendarName`: Name of the calendar
+        - `isLoading`: Loading state
+        - `error`: Error state
+        - `fltrEvtMgr`: Direct access to the FilterEventsManager instance (for advanced use cases)
     - Also provides backward compatibility properties for older components
 
 3. **Map Integration**:
@@ -757,3 +737,112 @@ The filters are integrated with UI components:
     - Comprehensive error handling prevents runtime crashes
     - Fallbacks ensure the application degrades gracefully when data is missing
     - Detailed logging helps diagnose issues in development and production
+
+# Implementation Details
+
+## Core Data Structures
+
+The application uses TypeScript interfaces and types defined in the following files:
+
+-   `src/types/events.ts`: Defines event-related types including `CalendarEvent`, `Location`, `EventFilters`, and state management types
+-   `src/types/map.ts`: Contains map-related types for viewport, bounds, markers, and map state
+-   `src/types/api.ts`: Defines API request/response types and external service interfaces
+
+## State Management
+
+### Events State
+
+The application uses a combination of React's `useReducer` and `useSWR` for state management:
+
+1. **Events Context** (`useEventsManager`):
+
+    - Manages core event data and loading states
+    - Uses `useReducer` for state updates
+    - Provides filtered views of events through `FilterEventsManager`
+
+2. **Filter Events Manager**:
+    - Handles filtering logic for events
+    - Maintains separate arrays for different event states:
+        - `all`: All events from API
+        - `filtered`: Events passing current filters
+        - `withLocations`: Events with resolved locations
+        - `withoutLocations`: Events without resolved locations
+
+### Map State
+
+The map state is managed through the `useMap` hook:
+
+1. **Map State**:
+
+    - Combines viewport, bounds, markers, and selection state
+    - Handles initialization and calendar switches
+    - Manages marker creation and filtering
+
+2. **Initialization States**:
+    ```typescript
+    type AppInitState = 'reset' | 'starting' | 'complete'
+    ```
+    - Controls the initialization flow
+    - Prevents filter updates during initialization
+    - Manages calendar switches
+
+## Key Components
+
+### Event List
+
+-   Displays filtered events
+-   Handles event selection
+-   Shows event details and location information
+
+### Map Container
+
+-   Renders the map with markers
+-   Manages viewport and bounds
+-   Handles marker selection and event filtering
+
+### Event Filters
+
+-   Manages search, date, and map filters
+-   Updates filter state through `FilterEventsManager`
+-   Shows active filter indicators
+
+## Data Flow
+
+1. **Initial Load**:
+
+    - API data fetched via `useSWR`
+    - Events stored in `FilterEventsManager`
+    - Map initialized with all events
+    - Filters applied after initialization
+
+2. **Filter Updates**:
+
+    - User interaction triggers filter changes
+    - `FilterEventsManager` updates filtered events
+    - Map markers update based on filtered events
+    - Event list updates to show filtered events
+
+3. **Calendar Switch**:
+    - New calendar data fetched
+    - Map state reset to show all events
+    - Filters reapplied after initialization
+    - UI updated with new event data
+
+## Performance Considerations
+
+1. **Memoization**:
+
+    - Filtered events memoized to prevent unnecessary recalculations
+    - Map markers memoized based on filtered events
+    - Event list items memoized for efficient rendering
+
+2. **State Updates**:
+
+    - Batched state updates during initialization
+    - Controlled filter updates to prevent unnecessary re-renders
+    - Efficient marker updates based on event changes
+
+3. **Data Structures**:
+    - Optimized marker creation with unique IDs
+    - Efficient filtering through `FilterEventsManager`
+    - Clear separation of concerns between components

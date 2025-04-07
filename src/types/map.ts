@@ -34,3 +34,18 @@ export interface MapMarker {
     events: CalendarEvent[] // Array of events that occur at this location
     // TODO: Consider adding a color or icon property to distinguish different types of events
 }
+
+/**
+ * Represents the complete state of the map component
+ */
+export interface MapState {
+    viewport: MapViewport
+    bounds: MapBounds | null
+    markers: MapMarker[]
+    isMapOfAllEvents: boolean
+    selectedMarkerId: string | null
+}
+
+// NOTE: The MapViewportWithBounds interface has been removed as it was redundant.
+// If you need both viewport and bounds together, use:
+// { ...viewport, bounds: mapBounds } or type it as MapViewport & { bounds: MapBounds }

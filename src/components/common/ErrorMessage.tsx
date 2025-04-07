@@ -8,11 +8,7 @@ interface ErrorMessageProps {
     onRetry?: () => void
 }
 
-const ErrorMessage: React.FC<ErrorMessageProps> = ({
-    message,
-    className = '',
-    onRetry,
-}) => {
+const ErrorMessage: React.FC<ErrorMessageProps> = ({ message, className = '', onRetry }) => {
     return (
         <div
             className={`bg-red-50 border border-red-200 rounded-md p-4 ${className}`}

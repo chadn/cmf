@@ -120,7 +120,7 @@ const MapContainer: React.FC<MapContainerProps> = ({
         // TODO: Evaluate if setUserInteracted is providing value or if it should be removed
         logr.info(
             'map',
-            'handleViewportChange called, setUserInteracted=true but did user trigger? CHAD consider delete setUserInteracted'
+            'handleViewportChange called, setUserInteracted=true but did user trigger? YES - at least some of the time. CHAD consider delete setUserInteracted'
         )
 
         // Pass the complete viewport state to the parent component

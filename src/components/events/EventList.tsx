@@ -7,7 +7,9 @@ import { truncateLocation } from '@/lib/utils/location'
 import LoadingSpinner from '@/components/common/LoadingSpinner'
 
 interface EventListProps {
-    events: CalendarEvent[]
+    events: {
+        shown: () => CalendarEvent[]
+    }
     selectedEventId: string | null
     onEventSelect: (eventId: string | null) => void
     apiIsLoading: boolean
@@ -29,7 +31,8 @@ const EventList: React.FC<EventListProps> = ({ events, selectedEventId, onEventS
         )
     }
 
-    if (events.length === 0) {
+    const shownEvents = events.shown()
+    if (shownEvents.length === 0) {
         return (
             <div className="p-4 text-center">
                 {apiIsLoading ? (
@@ -44,16 +47,16 @@ const EventList: React.FC<EventListProps> = ({ events, selectedEventId, onEventS
     }
 
     // Sort events based on the selected field and direction
-    const sortedEvents = [...events].sort((a, b) => {
+    const sortedEvents = [...shownEvents].sort((a, b) => {
         if (sortField === 'name') {
             return sortDirection === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name)
         } else if (sortField === 'startDate') {
             return sortDirection === 'asc'
-                ? new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
-                : new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+                ? new Date(a.start).getTime() - new Date(b.start).getTime()
+                : new Date(b.start).getTime() - new Date(a.start).getTime()
         } else if (sortField === 'duration') {
-            const aDuration = new Date(a.endDate).getTime() - new Date(a.startDate).getTime()
-            const bDuration = new Date(b.endDate).getTime() - new Date(b.startDate).getTime()
+            const aDuration = new Date(a.end).getTime() - new Date(a.start).getTime()
+            const bDuration = new Date(b.end).getTime() - new Date(b.start).getTime()
             return sortDirection === 'asc' ? aDuration - bDuration : bDuration - aDuration
         } else if (sortField === 'location') {
             return sortDirection === 'asc'
@@ -91,7 +94,7 @@ const EventList: React.FC<EventListProps> = ({ events, selectedEventId, onEventS
     return (
         <div className="mt-1">
             <h2 className="text-sm font-semibold mb-1 flex justify-between items-center">
-                <span>Events ({events.length})</span>
+                <span>Events ({shownEvents.length})</span>
             </h2>
 
             <div className="overflow-x-auto">
@@ -156,11 +159,11 @@ const EventList: React.FC<EventListProps> = ({ events, selectedEventId, onEventS
                                     )}
                                 </td>
                                 <td className="px-1 py-1 whitespace-nowrap">
-                                    <div className="text-xs text-gray-600">{formatStartDate(event.startDate)}</div>
+                                    <div className="text-xs text-gray-600">{formatStartDate(event.start)}</div>
                                 </td>
                                 <td className="px-1 py-1 whitespace-nowrap">
                                     <div className="text-xs text-gray-600">
-                                        {formatEventDuration(event.startDate, event.endDate)}
+                                        {formatEventDuration(event.start, event.end)}
                                     </div>
                                 </td>
                                 <td className="px-1 py-1">
