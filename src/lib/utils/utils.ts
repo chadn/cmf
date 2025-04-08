@@ -1,3 +1,5 @@
+import { logr } from '@/lib/utils/logr'
+
 // Custom fetcher function, basically a wrapper to log API requests and responses
 export const fetcherLogr = async (url: string) => {
     logr.info('browser', `Request to url: ${url}`)

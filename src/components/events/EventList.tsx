@@ -143,10 +143,13 @@ const EventList: React.FC<EventListProps> = ({ evts, selectedEventId, onEventSel
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-100">
                         {sortedEvents.map((event) => (
-                            // TODO: if event.id == selectedEventId, add a class to the row that highlights it
                             <tr
                                 key={event.id}
-                                className="hover:bg-gray-50 cursor-pointer border-b border-gray-100"
+                                className={`cursor-pointer border-b border-gray-100 ${
+                                    event.id === selectedEventId
+                                        ? 'bg-blue-50 border-l-4 border-l-accent'
+                                        : 'hover:bg-gray-50'
+                                }`}
                                 onClick={() => onEventSelect(event.id)}
                             >
                                 <td className="px-1 py-1">
