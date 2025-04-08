@@ -23,6 +23,9 @@ function HomeContent() {
     const calendarStartDate = searchParams.get('sd') || ''
     const calendarEndDate = searchParams.get('ed') || ''
 
+    // Ref for the events sidebar container
+    const eventsSidebarRef = useRef<HTMLDivElement>(null)
+
     // Local state for filters
     const [searchQuery, setLocalSearchQuery] = useState('')
     const [dateRange, setLocalDateRange] = useState<{ start: string; end: string } | undefined>(undefined)
@@ -181,6 +184,13 @@ function HomeContent() {
         }
     }, [evts, calendar.name])
 
+    // Function to scroll the events list to the top
+    const scrollEventsToTop = useCallback(() => {
+        if (eventsSidebarRef.current) {
+            eventsSidebarRef.current.scrollTop = 0
+        }
+    }, [])
+
     // If no calendar ID is provided, show the calendar selector
     if (!calendarId) {
         return (
@@ -196,28 +206,20 @@ function HomeContent() {
 
     return (
         <div className="min-h-screen flex flex-col h-screen">
-            <Header calendarName={calendar.name} />
+            <Header
+                calendarName={calendar.name}
+                eventCount={{ shown: evts.shownEvents.length, total: evts.allEvents.length }}
+                onInfoClick={scrollEventsToTop}
+            />
 
-            <main className="flex-grow flex flex-col md:flex-row h-[calc(100vh-120px)]">
+            <main className="flex-grow flex flex-col md:flex-row h-[calc(100vh-64px)]">
                 {/* Sidebar with filters and event list */}
-                <div className="w-full md:w-1/2 h-full overflow-auto p-4 border-r">
-                    <div className="mb-4">
-                        <p>
-                            Showing {evts.shownEvents.length} of {evts.allEvents.length} events
-                            {evts.unknownLocationsFilteredEvents.length > 0 &&
-                                1 && ( // temp disable by && 0
-                                    <button
-                                        onClick={handleUnknownLocationsToggle}
-                                        className="ml-2 text-xs text-blue-500 hover:text-blue-700"
-                                    >
-                                        Show {evts.unknownLocationsFilteredEvents.length} unmapped events
-                                    </button>
-                                )}
-                        </p>
-                    </div>
-
+                <div
+                    ref={eventsSidebarRef}
+                    className="w-full md:w-1/2 lg:w-2/5 h-[40vh] md:h-full overflow-auto p-2 border-r"
+                >
                     {/* Active filters display */}
-                    <div className="mb-4 flex flex-wrap gap-2">
+                    <div className="mb-1 flex flex-wrap gap-2">
                         {!isMapOfAllEvents && evts.mapFilteredEvents.length > 0 && (
                             <div className="inline-flex items-center bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
                                 <svg
@@ -315,7 +317,7 @@ function HomeContent() {
                 </div>
 
                 {/* Map */}
-                <div className="w-full md:w-1/2 h-[500px] md:h-full">
+                <div className="w-full md:w-1/2 lg:w-3/5 h-[60vh] md:h-full">
                     <MapContainer
                         viewport={viewport}
                         onViewportChange={setViewport}
@@ -337,8 +339,6 @@ function HomeContent() {
                     />
                 </div>
             </main>
-
-            <Footer />
         </div>
     )
 }

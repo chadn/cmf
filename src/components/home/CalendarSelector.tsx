@@ -60,6 +60,7 @@ const CalendarSelector: React.FC = () => {
 
     return (
         <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-md">
+            <h2 className="text-xl font-bold text-center mb-6">Welcome to Calendar Map Filter</h2>
             <h2 className="text-xl font-bold text-center mb-6">Enter a Google Calendar ID</h2>
 
             <form onSubmit={handleSubmit} className="space-y-4">

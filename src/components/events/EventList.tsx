@@ -76,8 +76,24 @@ const EventList: React.FC<EventListProps> = ({ evts, selectedEventId, onEventSel
 
     // Format the start date according to specs: "MM/DD Day hh:mm am/pm"
     const formatStartDate = (dateString: string) => {
-        const date = new Date(dateString)
         return formatEventDate(dateString)
+    }
+
+    // Extract date, day and time separately for the two-line display
+    const extractDateParts = (dateString: string) => {
+        const fullDate = formatEventDate(dateString)
+        // Split the date into parts (MM/DD Day and Time)
+        const parts = fullDate.match(/^([\d/]+\s[A-Za-z]+)\s(.+)$/)
+        if (parts && parts.length >= 3) {
+            return {
+                dateDay: parts[1], // MM/DD Day
+                time: parts[2], // hh:mm am/pm
+            }
+        }
+        return {
+            dateDay: fullDate,
+            time: '',
+        }
     }
 
     // Toggle expanded location
@@ -90,18 +106,14 @@ const EventList: React.FC<EventListProps> = ({ evts, selectedEventId, onEventSel
     }
 
     return (
-        <div className="mt-1">
-            <h2 className="text-sm font-semibold mb-1 flex justify-between items-center">
-                <span>Events ({shownEvents.length})</span>
-            </h2>
-
+        <div className="mt-0.5">
             <div className="overflow-x-auto">
                 <table className="w-full text-xs border-collapse">
                     <thead className="bg-gray-50">
                         <tr>
                             <th
                                 scope="col"
-                                className="px-1 py-1 text-left text-xxs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                                className="px-1 py-0.5 text-left text-xxs font-medium text-gray-500 uppercase tracking-wider cursor-pointer w-1/2"
                                 onClick={() => handleSort('name')}
                             >
                                 Event Name
@@ -111,7 +123,7 @@ const EventList: React.FC<EventListProps> = ({ evts, selectedEventId, onEventSel
                             </th>
                             <th
                                 scope="col"
-                                className="px-1 py-1 text-left text-xxs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                                className="px-1 py-0.5 text-left text-xxs font-medium text-gray-500 uppercase tracking-wider cursor-pointer w-1/6"
                                 onClick={() => handleSort('startDate')}
                             >
                                 Start Date
@@ -121,7 +133,7 @@ const EventList: React.FC<EventListProps> = ({ evts, selectedEventId, onEventSel
                             </th>
                             <th
                                 scope="col"
-                                className="px-1 py-1 text-left text-xxs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                                className="px-1 py-0.5 text-left text-xxs font-medium text-gray-500 uppercase tracking-wider cursor-pointer w-1/6"
                                 onClick={() => handleSort('duration')}
                             >
                                 Duration
@@ -131,7 +143,7 @@ const EventList: React.FC<EventListProps> = ({ evts, selectedEventId, onEventSel
                             </th>
                             <th
                                 scope="col"
-                                className="px-1 py-1 text-left text-xxs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                                className="px-1 py-0.5 text-left text-xxs font-medium text-gray-500 uppercase tracking-wider cursor-pointer w-1/6"
                                 onClick={() => handleSort('location')}
                             >
                                 Location
@@ -152,25 +164,35 @@ const EventList: React.FC<EventListProps> = ({ evts, selectedEventId, onEventSel
                                 }`}
                                 onClick={() => onEventSelect(event.id)}
                             >
-                                <td className="px-1 py-1">
-                                    <div className="text-xs font-medium text-primary">
-                                        {event.name.length > 60 ? `${event.name.substring(0, 60)}...` : event.name}
+                                <td className="px-1 py-0.5 w-1/2">
+                                    <div className="text-xs font-medium text-primary break-words md:break-normal">
+                                        {event.name.length > 120 ? `${event.name.substring(0, 120)}...` : event.name}
                                     </div>
                                     {event.resolved_location?.status === 'unresolved' && (
                                         <div className="text-xxs text-error">⚠ Unmapped</div>
                                     )}
                                 </td>
-                                <td className="px-1 py-1 whitespace-nowrap">
-                                    <div className="text-xs text-gray-600">{formatStartDate(event.start)}</div>
+                                <td className="px-1 py-0.5 whitespace-nowrap">
+                                    <div className="md:hidden flex flex-col">
+                                        <div className="text-xs text-gray-600">
+                                            {extractDateParts(event.start).dateDay}
+                                        </div>
+                                        <div className="text-xs text-gray-500">
+                                            {extractDateParts(event.start).time}
+                                        </div>
+                                    </div>
+                                    <div className="hidden md:block text-xs text-gray-600">
+                                        {formatStartDate(event.start)}
+                                    </div>
                                 </td>
-                                <td className="px-1 py-1 whitespace-nowrap">
+                                <td className="px-1 py-0.5 whitespace-nowrap">
                                     <div className="text-xs text-gray-600">
                                         {formatEventDuration(event.start, event.end)}
                                     </div>
                                 </td>
-                                <td className="px-1 py-1">
+                                <td className="px-1 py-0.5">
                                     <div
-                                        className="text-xs text-gray-500 cursor-pointer"
+                                        className="text-xs text-gray-500 cursor-pointer break-words"
                                         onClick={(e) => {
                                             e.stopPropagation()
                                             toggleLocationExpand(event.id)
@@ -180,12 +202,14 @@ const EventList: React.FC<EventListProps> = ({ evts, selectedEventId, onEventSel
                                             expandedLocation === event.id ? (
                                                 event.location
                                             ) : (
-                                                truncateLocation(event.location, 40)
+                                                <span className="line-clamp-2 md:line-clamp-1">
+                                                    {truncateLocation(event.location, 60)}
+                                                </span>
                                             )
                                         ) : (
                                             <span className="text-gray-400 italic text-xxs">No location</span>
                                         )}
-                                        {event.location && event.location.length > 40 && (
+                                        {event.location && event.location.length > 60 && (
                                             <span className="ml-1 text-blue-500 text-xxs">
                                                 {expandedLocation === event.id ? '(less)' : '(more)'}
                                             </span>

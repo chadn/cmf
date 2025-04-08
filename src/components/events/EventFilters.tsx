@@ -94,29 +94,18 @@ export default function EventFilters({
     }
 
     return (
-        <div className="space-y-4">
-            <div className="flex flex-col space-y-2">
-                <input
-                    type="text"
-                    placeholder="Search by name, location, or description"
-                    value={searchQuery}
-                    onChange={(e) => onSearchChange(e.target.value)}
-                    className="p-2 border rounded w-full text-black"
-                    data-testid="search-input"
-                />
-            </div>
-
-            <div className="flex flex-col space-y-2">
+        <div className="space-y-2">
+            <div className="flex flex-col space-y-1">
                 <button
                     onClick={toggleDateSliders}
-                    className="text-blue-500 hover:text-blue-700 text-left"
+                    className="text-blue-500 hover:text-blue-700 text-left text-sm"
                     data-testid="date-range-dropdown"
                 >
                     {getDateButtonText()}
                 </button>
 
                 {showDateSliders && (
-                    <div className="space-y-4 p-4 bg-gray-50 rounded">
+                    <div className="space-y-3 p-3 bg-gray-50 rounded">
                         <div>
                             <label className="block text-sm text-gray-600">
                                 Start Date: {format(new Date(getDateFromValue(startValue)), 'MMM d, yyyy')}
@@ -145,6 +134,17 @@ export default function EventFilters({
                         </div>
                     </div>
                 )}
+            </div>
+
+            <div className="flex flex-col space-y-1">
+                <input
+                    type="text"
+                    placeholder="Search name, location, or description"
+                    value={searchQuery}
+                    onChange={(e) => onSearchChange(e.target.value)}
+                    className="p-2 border rounded w-full text-black"
+                    data-testid="search-input"
+                />
             </div>
         </div>
     )

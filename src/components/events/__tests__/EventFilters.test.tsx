@@ -23,18 +23,14 @@ describe('EventFilters Component', () => {
     test('renders search input correctly', () => {
         render(<EventFilters {...defaultProps} />)
 
-        const searchInput = screen.getByPlaceholderText(
-            'Search by name, location, or description'
-        )
+        const searchInput = screen.getByPlaceholderText('Search name, location, or description')
         expect(searchInput).toBeInTheDocument()
     })
 
     test('calls onSearchChange when search input changes', () => {
         render(<EventFilters {...defaultProps} />)
 
-        const searchInput = screen.getByPlaceholderText(
-            'Search by name, location, or description'
-        )
+        const searchInput = screen.getByPlaceholderText('Search name, location, or description')
         fireEvent.change(searchInput, { target: { value: 'test search' } })
 
         expect(mockOnSearchChange).toHaveBeenCalledWith('test search')
@@ -44,9 +40,7 @@ describe('EventFilters Component', () => {
         render(<EventFilters {...defaultProps} />)
 
         // Check if the button contains text that includes "Date Sliders"
-        const dateButton = screen.getByText(
-            /Show Date Sliders:/i
-        )
+        const dateButton = screen.getByText(/Show Date Sliders:/i)
         expect(dateButton).toBeInTheDocument()
     })
 
@@ -54,9 +48,7 @@ describe('EventFilters Component', () => {
         render(<EventFilters {...defaultProps} />)
 
         // Check if the button contains text that includes "Date Sliders"
-        const dateButton = screen.getByText(
-            /Show Date Sliders:/i
-        )
+        const dateButton = screen.getByText(/Show Date Sliders:/i)
         fireEvent.click(dateButton)
 
         // In the new UI, we should now see two sliders
@@ -67,9 +59,7 @@ describe('EventFilters Component', () => {
         render(<EventFilters {...defaultProps} />)
 
         // First show the sliders
-        const dateButton = screen.getByText(
-            /Show Date Sliders:/i
-        )
+        const dateButton = screen.getByText(/Show Date Sliders:/i)
         fireEvent.click(dateButton)
 
         // Find the start date slider
@@ -93,6 +83,5 @@ describe('EventFilters Component', () => {
         // Check if the date range button has a data-testid attribute
         const dateDropdown = screen.getByTestId('date-range-dropdown')
         expect(dateDropdown).toBeInTheDocument()
-
     })
 })
