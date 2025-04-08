@@ -100,6 +100,8 @@ export class FilterEventsManager {
         return !!(
             event.name?.toLowerCase().includes(query) ||
             event.location?.toLowerCase().includes(query) ||
+            event.resolved_location?.formatted_address?.toLowerCase().includes(query) ||
+            event.resolved_location?.types?.some((type) => type.toLowerCase().includes(query)) || // bars, night_club, point_of_interest, restaurant, etc.
             event.description?.toLowerCase().includes(query)
         )
     }
