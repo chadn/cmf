@@ -194,12 +194,13 @@ export function useMap({ eventsShown, eventsAll }: UseMapProps): UseMapReturn {
 
     // Update markers when filtered markers change
     useEffect(() => {
-        // Check if markers array length changed as quick comparison
-        let markersChanged = filteredMarkers.length == mapState.markers.length
+        // save time by first checking if markers array length changed
+        let markersChanged = filteredMarkers.length !== mapState.markers.length
         if (!markersChanged) {
-            // If same length, check if any marker IDs changed
+            // If same length, check if any ID in one set isn't in the other
             const currentIds = new Set(mapState.markers.map((m) => m.id))
-            markersChanged = filteredMarkers.some((marker) => !currentIds.has(marker.id))
+            const newIds = new Set(filteredMarkers.map((m) => m.id))
+            markersChanged = Array.from(currentIds).some((id) => !newIds.has(id))
         }
 
         if (markersChanged) {
