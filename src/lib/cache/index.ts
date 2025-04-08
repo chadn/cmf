@@ -1,4 +1,4 @@
-import { ResolvedLocation } from '@/types/events'
+import { Location } from '@/types/events'
 import * as upstashCache from './upstash'
 import * as filesystemCache from './filesystem'
 import { logr } from '../utils/logr'
@@ -16,7 +16,7 @@ logr.log(
  * @param locationKey - The location string to use as a key
  * @returns Promise with the cached location or null if not found
  */
-export async function getCachedLocation(locationKey: string): Promise<ResolvedLocation | null> {
+export async function getCachedLocation(locationKey: string): Promise<Location | null> {
     if (isDevelopment) {
         return filesystemCache.getLocation(locationKey)
     } else {
@@ -30,7 +30,7 @@ export async function getCachedLocation(locationKey: string): Promise<ResolvedLo
  * @param location - The resolved location data to cache
  * @returns Promise that resolves when caching is complete
  */
-export async function cacheLocation(locationKey: string, location: ResolvedLocation): Promise<void> {
+export async function cacheLocation(locationKey: string, location: Location): Promise<void> {
     if (isDevelopment) {
         return filesystemCache.setLocation(locationKey, location)
     } else {

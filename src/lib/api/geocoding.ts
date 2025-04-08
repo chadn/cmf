@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { GeocodeResponse, GoogleGeocodeResult } from '@/types/api'
-import { ResolvedLocation } from '@/types/events'
+import { Location } from '@/types/events'
 import { getCachedLocation, cacheLocation } from '@/lib/cache'
 import { logr } from '@/lib/utils/logr'
 
@@ -36,7 +36,7 @@ const FIXED_LOCATIONS = [
 ]
 
 // See if location already has Lat and Lon in it. If so, extract and return ResolvedLocation, else return false
-export function customLocationParserLatLon(locationString: string): ResolvedLocation | false {
+export function customLocationParserLatLon(locationString: string): Location | false {
     // Check for latitude and longitude in the format "lat,lng", allowing for spaces  and negative values
     // Example: "37.774929,-122.419418"
     // 6 decimal places is less than 1m precision, which is good enough for our purposes
@@ -54,7 +54,7 @@ export function customLocationParserLatLon(locationString: string): ResolvedLoca
     return false
 }
 
-export function customLocationParserDegMinSec(locationString: string): ResolvedLocation | false {
+export function customLocationParserDegMinSec(locationString: string): Location | false {
     // Check to see if match 41°07'16.0"N 1°00'16.9"E  Google Maps accepts this format
     const latLonRegex2 = /^([\s0-9°'".-]+)(Nn|Ss)\s*([\s0-9°'".-]+)(Ee|Ww)/
     const DegMinSecRegex = /(-?\d{1,3})\s*°\s*(\d{1,2})\s*'\s*(\d{1,2}\.\d{1,3})/
@@ -77,7 +77,7 @@ export function customLocationParserDegMinSec(locationString: string): ResolvedL
             const latFinal = lat * latSign
             const lngFinal = lng * lngSign
             const formatted_address = `${latFinal.toFixed(6)},${lngFinal.toFixed(6)}`
-            const ret: ResolvedLocation = {
+            const ret: Location = {
                 original_location: locationString,
                 formatted_address: formatted_address,
                 lat: latFinal,
@@ -90,7 +90,7 @@ export function customLocationParserDegMinSec(locationString: string): ResolvedL
     return false
 }
 
-export function customLocationParserDegMinDecimal(locationString: string): ResolvedLocation | false {
+export function customLocationParserDegMinDecimal(locationString: string): Location | false {
     // Finally check to match locations with degrees, minutes, seconds.
     // N 41° 07.266 E 001° 00.281
     const latLonDMSRegex =
@@ -114,7 +114,7 @@ export function customLocationParserDegMinDecimal(locationString: string): Resol
         const lngFinal = lng * lngSign
         const formatted_address = `${latFinal.toFixed(6)},${lngFinal.toFixed(6)}`
 
-        const ret: ResolvedLocation = {
+        const ret: Location = {
             original_location: locationString,
             formatted_address: formatted_address,
             lat: latFinal,
@@ -132,7 +132,7 @@ export const customLocationParsers = [
     customLocationParserDegMinDecimal,
 ]
 
-export function updateResolvedLocation(result: ResolvedLocation, apiData: GoogleGeocodeResult): ResolvedLocation {
+export function updateResolvedLocation(result: Location, apiData: GoogleGeocodeResult): Location {
     try {
         return {
             original_location: result.original_location,
@@ -156,7 +156,7 @@ export function updateResolvedLocation(result: ResolvedLocation, apiData: Google
     }
 }
 
-async function resolveLocation(result: ResolvedLocation): Promise<ResolvedLocation> {
+async function resolveLocation(result: Location): Promise<Location> {
     // check custom parser
     for (let i = 0; i < customLocationParsers.length; i++) {
         const parser = customLocationParsers[i]
@@ -197,7 +197,7 @@ async function resolveLocation(result: ResolvedLocation): Promise<ResolvedLocati
  * @param locationString - The location text to geocode
  * @returns Promise with geocoded location data
  */
-export async function geocodeLocation(locationString: string): Promise<ResolvedLocation> {
+export async function geocodeLocation(locationString: string): Promise<Location> {
     if (!locationString) {
         return {
             original_location: '',
@@ -217,9 +217,9 @@ export async function geocodeLocation(locationString: string): Promise<ResolvedL
         }
     }
 
-    let result: ResolvedLocation = {
+    let result: Location = {
         original_location: locationString,
-        status: 'pending',
+        status: 'unresolved',
     }
     locationString = locationString.trim()
     // Check cache first
@@ -247,7 +247,7 @@ export async function geocodeLocation(locationString: string): Promise<ResolvedL
  * @param locations - Array of location strings to geocode
  * @returns Promise with array of geocoded locations
  */
-export async function batchGeocodeLocations(locations: string[]): Promise<ResolvedLocation[]> {
+export async function batchGeocodeLocations(locations: string[]): Promise<Location[]> {
     // Filter out duplicates to minimize API calls
     const uniqueLocations = Array.from(new Set(locations))
 
@@ -257,7 +257,7 @@ export async function batchGeocodeLocations(locations: string[]): Promise<Resolv
     // Process in batches of 10 with delayMs in between to avoid rate limits
     const batchSize = 10
     const delayMs = 20
-    const results: ResolvedLocation[] = []
+    const results: Location[] = []
 
     for (let i = 0; i < uniqueLocations.length; i += batchSize) {
         const batch = uniqueLocations.slice(i, i + batchSize)

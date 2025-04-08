@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import { ResolvedLocation } from '@/types/events'
+import { Location } from '@/types/events'
 
 // Cache file path
 const CACHE_DIR = path.join(process.cwd(), '.cache')
@@ -19,7 +19,7 @@ function initializeCache(): void {
 }
 
 // Helper to load the cache file
-function loadCache(): Record<string, ResolvedLocation> {
+function loadCache(): Record<string, Location> {
     initializeCache()
     if (!fs.existsSync(LOCATIONS_CACHE_FILE)) {
         return {}
@@ -35,14 +35,10 @@ function loadCache(): Record<string, ResolvedLocation> {
 }
 
 // Helper to save the cache file
-function saveCache(cache: Record<string, ResolvedLocation>): void {
+function saveCache(cache: Record<string, Location>): void {
     initializeCache()
     try {
-        fs.writeFileSync(
-            LOCATIONS_CACHE_FILE,
-            JSON.stringify(cache, null, 2),
-            'utf8'
-        )
+        fs.writeFileSync(LOCATIONS_CACHE_FILE, JSON.stringify(cache, null, 2), 'utf8')
     } catch (error) {
         console.error('Error saving cache file:', error)
     }
@@ -53,9 +49,7 @@ function saveCache(cache: Record<string, ResolvedLocation>): void {
  * @param locationKey - The location string to use as a key
  * @returns Promise with the cached location or null if not found
  */
-export async function getLocation(
-    locationKey: string
-): Promise<ResolvedLocation | null> {
+export async function getLocation(locationKey: string): Promise<Location | null> {
     const cache = loadCache()
     return cache[locationKey] || null
 }
@@ -66,10 +60,7 @@ export async function getLocation(
  * @param location - The resolved location data to cache
  * @returns Promise that resolves when caching is complete
  */
-export async function setLocation(
-    locationKey: string,
-    location: ResolvedLocation
-): Promise<void> {
+export async function setLocation(locationKey: string, location: Location): Promise<void> {
     const cache = loadCache()
     cache[locationKey] = location
     saveCache(cache)

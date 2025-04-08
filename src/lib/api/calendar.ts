@@ -57,7 +57,8 @@ export async function fetchCalendarEvents(
         }
         return response.data
     } catch (error) {
-        logr.info('api-cal', `fetchCalendarEvents error: ${error.message}`)
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+        logr.info('api-cal', `fetchCalendarEvents error: ${errorMessage}`)
         console.error('Error fetching calendar events:', error)
         throw error
     }

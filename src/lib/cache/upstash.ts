@@ -1,5 +1,5 @@
 import { Redis } from '@upstash/redis'
-import { ResolvedLocation } from '@/types/events'
+import { Location } from '@/types/events'
 
 // Cache key prefix
 const LOCATION_KEY_PREFIX = 'location:'
@@ -27,9 +27,7 @@ function getRedisClient(): Redis {
  * @param locationKey - The location string to use as a key
  * @returns Promise with the cached location or null if not found
  */
-export async function getLocation(
-    locationKey: string
-): Promise<ResolvedLocation | null> {
+export async function getLocation(locationKey: string): Promise<Location | null> {
     try {
         // Skip if Upstash is not configured
         if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) {
@@ -40,7 +38,7 @@ export async function getLocation(
         const cacheKey = `${LOCATION_KEY_PREFIX}${locationKey}`
         const cachedData = await client.get(cacheKey)
 
-        return (cachedData as ResolvedLocation) || null
+        return (cachedData as Location) || null
     } catch (error) {
         console.error('Error getting location from Redis cache:', error)
         return null
@@ -53,10 +51,7 @@ export async function getLocation(
  * @param location - The resolved location data to cache
  * @returns Promise that resolves when caching is complete
  */
-export async function setLocation(
-    locationKey: string,
-    location: ResolvedLocation
-): Promise<void> {
+export async function setLocation(locationKey: string, location: Location): Promise<void> {
     try {
         // Skip if Upstash is not configured
         if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) {
