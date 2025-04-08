@@ -53,7 +53,7 @@ export const logr = {
     // Helper function to check if a message was recently logged
     recentlyCalled: (area: string, message: string, data?: any): boolean => {
         const now = Date.now()
-        const recentInMs = 500 // was 1000ms
+        const recentInMs = 100 // was 1000ms
         let datastr = ''
         try {
             datastr = JSON.stringify(data || '')
@@ -64,7 +64,7 @@ export const logr = {
         }
         const logKey = `${area}:${message}:${datastr}`
 
-        // Check if this exact message was logged in the last second
+        // Check if this exact message was logged within recentInMs
         if (logr._recentLogs[logKey] && now - logr._recentLogs[logKey] < recentInMs) {
             return true // Was recently called
         }

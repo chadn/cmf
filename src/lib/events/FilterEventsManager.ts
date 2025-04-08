@@ -1,22 +1,8 @@
 'use client'
 
-import { CalendarEvent } from '@/types/events'
+import { CalendarEvent, EventsFilter, FilteredEvents, FilterStats } from '@/types/events'
 import { MapBounds } from '@/types/map'
 import { logr } from '@/lib/utils/logr'
-
-export interface EventsFilter {
-    dateRange?: { start: string; end: string }
-    searchQuery?: string
-    mapBounds?: MapBounds
-    showUnknownLocationsOnly?: boolean
-}
-
-export interface FilterStats {
-    mapFilteredCount: number
-    searchFilteredCount: number
-    dateFilteredCount: number
-    totalFilteredCount: number
-}
 
 /**
  * Class for managing calendar events and applying filters
@@ -39,9 +25,7 @@ export class FilterEventsManager {
      */
     setEvents(events: CalendarEvent[]) {
         this.allEvents = events
-        logr.info('fltr_evts_mgr', `setEvents(${events.length}) set eventsManager.allEvents`, {
-            eventsCount: events.length,
-        })
+        logr.info('fltr_evts_mgr', `setEvents(${events.length}) set eventsManager.allEvents=${this.allEvents.length}`)
     }
 
     /**
@@ -110,7 +94,7 @@ export class FilterEventsManager {
      * Apply map bounds filter to an event
      * This filter checks if the event's location falls within the specified map bounds.
      */
-    private applyBoundsFilter(event: CalendarEvent): boolean {
+    private applyMapFilter(event: CalendarEvent): boolean {
         if (!this.filters.mapBounds) return true
         if (!this.hasResolvedLocation(event)) return false
 
@@ -138,60 +122,52 @@ export class FilterEventsManager {
     }
 
     /**
-     * Apply all filters and return events that should be shown, aka filtered events (not filtered out)
-     * TODO: Consider splitting this into 2 function differentiate between events with and without resolved locations (filteredWithLocations)
-     * and show them in different lists.  This would be useful for showing events with unknown locations
-     * in the filtered results.  Events list could show with and without resolved locations, map show just with.
+     * Get filtered events
      */
-    // cmf_events_shown was called cmf_events_filtered
-    get cmf_events_shown(): CalendarEvent[] {
-        // If no filters are applied, return all events
+    getFilteredEvents(): FilteredEvents {
+        const filteredEvents: FilteredEvents = {
+            mapFilteredEvents: [],
+            searchFilteredEvents: [],
+            dateFilteredEvents: [],
+            unknownLocationsFilteredEvents: [],
+            filteredEvents: [],
+            shownEvents: [],
+            allEvents: this.allEvents,
+        }
+
         if (Object.keys(this.filters).length === 0) {
-            logr.info('fltr_evts_mgr', 'get cmf_events_shown returning all events')
-            return this.allEvents
-        }
-        logr.info('fltr_evts_mgr', 'get cmf_events_shown computing filtered events')
-
-        const filterCounts = {
-            dateFiltered: 0,
-            searchFiltered: 0,
-            boundsFiltered: 0,
-            unknownLocationsFiltered: 0,
+            logr.debug('fltr_evts_mgr', 'getFilteredEvents returning all events, no filters exist')
+            filteredEvents.shownEvents = this.allEvents
+            return filteredEvents
         }
 
-        const filtered = this.allEvents.filter((event) => {
-            // Apply all filters sequentially
-            if (!this.applyDateFilter(event)) {
-                filterCounts.dateFiltered++
-                return false
+        this.allEvents.forEach((event) => {
+            let filtered = false
+            if (!this.applyMapFilter(event) && this.filters.mapBounds) {
+                filteredEvents.mapFilteredEvents.push(event)
+                filtered = true
             }
-
-            if (!this.applySearchFilter(event)) {
-                filterCounts.searchFiltered++
-                return false
+            if (!this.applySearchFilter(event) && this.filters.searchQuery) {
+                filteredEvents.searchFilteredEvents.push(event)
+                filtered = true
             }
-
-            if (!this.applyBoundsFilter(event)) {
-                filterCounts.boundsFiltered++
-                return false
+            if (!this.applyDateFilter(event) && this.filters.dateRange) {
+                filteredEvents.dateFilteredEvents.push(event)
+                filtered = true
             }
-
-            if (!this.applyUnknownLocationsFilter(event)) {
-                filterCounts.unknownLocationsFiltered++
-                return false
+            if (!this.applyUnknownLocationsFilter(event) && this.filters.showUnknownLocationsOnly) {
+                filteredEvents.unknownLocationsFilteredEvents.push(event)
+                filtered = true
             }
-
-            return true
+            if (filtered) {
+                filteredEvents.filteredEvents.push(event)
+            } else {
+                filteredEvents.shownEvents.push(event)
+            }
         })
-        //console.log(`get cmf_events_filtered ${this.allEvents.length} events, ${filtered.length} filtered events`)
+        logr.debug('fltr_evts_mgr', 'getFilteredEvents returning filteredEvents:', filteredEvents)
 
-        logr.info('fltr_evts_mgr', 'get cmf_events_shown', {
-            originalCount: this.allEvents.length,
-            filteredCount: filtered.length,
-            ...filterCounts,
-        })
-
-        return filtered
+        return filteredEvents
     }
 
     /**
@@ -239,31 +215,17 @@ export class FilterEventsManager {
 
     // Get filter stats - for displaying filter chips, etc.
     getFilterStats(): FilterStats {
-        let mapFilteredCount = 0
-        let searchFilteredCount = 0
-        let dateFilteredCount = 0
-
-        this.allEvents.forEach((event) => {
-            if (!this.applyBoundsFilter(event) && this.filters.mapBounds) {
-                mapFilteredCount++
-            }
-
-            if (!this.applySearchFilter(event) && this.filters.searchQuery) {
-                searchFilteredCount++
-            }
-
-            if (!this.applyDateFilter(event) && this.filters.dateRange) {
-                dateFilteredCount++
-            }
-        })
-
-        const totalFilteredCount = mapFilteredCount + searchFilteredCount + dateFilteredCount
-
-        return {
-            mapFilteredCount,
-            searchFilteredCount,
-            dateFilteredCount,
-            totalFilteredCount,
+        const filteredEvents = this.getFilteredEvents()
+        const stats: FilterStats = {
+            mapFilteredCount: filteredEvents.mapFilteredEvents.length,
+            searchFilteredCount: filteredEvents.searchFilteredEvents.length,
+            dateFilteredCount: filteredEvents.dateFilteredEvents.length,
+            unknownLocationsFilteredCount: filteredEvents.unknownLocationsFilteredEvents.length,
+            totalFilteredCount: filteredEvents.filteredEvents.length,
+            totalShownCount: filteredEvents.shownEvents.length,
+            totalEventsCount: this.allEvents.length,
         }
+        logr.debug('fltr_evts_mgr', 'getFilterStats:', stats)
+        return stats
     }
 }

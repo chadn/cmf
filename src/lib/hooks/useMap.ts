@@ -1,13 +1,8 @@
 'use client'
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { MapViewport, MapBounds, MapMarker, MapState } from '@/types/map'
-import { CalendarEvent } from '@/types/events'
+import { CalendarEvent, FilteredEvents } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
-
-interface UseMapProps {
-    eventsShown: CalendarEvent[] // Events that are currently visible (filtered and have locations)
-    eventsAll: CalendarEvent[] // All events from the API
-}
 
 interface UseMapReturn {
     viewport: MapViewport
@@ -18,6 +13,17 @@ interface UseMapReturn {
     setSelectedMarkerId: (id: string | null) => void
     resetMapToAllEvents: () => void
     isMapOfAllEvents: boolean
+}
+
+export const genMarkerId = (event: CalendarEvent): string => {
+    if (
+        event.resolved_location?.status !== 'resolved' ||
+        !event.resolved_location?.lat ||
+        !event.resolved_location?.lng
+    ) {
+        return ''
+    }
+    return `${event.resolved_location.lat.toFixed(6)},${event.resolved_location.lng.toFixed(6)}`
 }
 
 /**
@@ -95,7 +101,7 @@ const generateMapMarkers = (events: CalendarEvent[]): MapMarker[] => {
         ) {
             eventsWithLocation++
             // Create a unique ID for the marker based on coordinates
-            const id = `${event.resolved_location.lat.toFixed(6)},${event.resolved_location.lng.toFixed(6)}`
+            const id = genMarkerId(event)
 
             if (markersMap.has(id)) {
                 // Add event to existing marker
@@ -132,12 +138,12 @@ const generateMapMarkers = (events: CalendarEvent[]): MapMarker[] => {
  * @param {Partial<MapViewport>} [props.initialViewport] - Initial viewport settings
  * @returns {UseMapReturn} - Map state and functions
  */
-export function useMap({ eventsShown, eventsAll }: UseMapProps): UseMapReturn {
+export function useMap(evts: FilteredEvents): UseMapReturn {
     // Flag to track internal updates to prevent loops
     const isInternalUpdate = useRef(false)
 
     // Memoize markers generation from events
-    const markersFromAllEvents = useMemo(() => generateMapMarkers(eventsAll), [eventsAll])
+    const markersFromAllEvents = useMemo(() => generateMapMarkers(evts.allEvents), [evts.allEvents])
 
     // Combine all map state into a single state object
     const [mapState, setMapState] = useState<MapState>(() => {
@@ -158,17 +164,17 @@ export function useMap({ eventsShown, eventsAll }: UseMapProps): UseMapReturn {
     // Track if events have been initialized
     const [eventsInitialized, setEventsInitialized] = useState(false)
 
-    // Memoize filtered markers based on eventsShown
+    // Memoize filtered markers based on evts.shownEvents
     const filteredMarkers = useMemo(() => {
-        // During initialization or when showing all events, use eventsAll
+        // During initialization or when showing all events, use evts.allEvents
         if (!eventsInitialized || mapState.isMapOfAllEvents) {
             return markersFromAllEvents
         }
 
-        if (!eventsShown) return []
+        if (!evts.shownEvents) return []
 
         // Create a Set of event IDs that should be shown
-        const shownEventIds = new Set(eventsShown.map((event) => event.id))
+        const shownEventIds = new Set(evts.shownEvents.map((event) => event.id))
 
         // Filter markers and their events
         return markersFromAllEvents
@@ -177,18 +183,18 @@ export function useMap({ eventsShown, eventsAll }: UseMapProps): UseMapReturn {
                 events: marker.events.filter((event) => shownEventIds.has(event.id)),
             }))
             .filter((marker) => marker.events.length > 0) // Only keep markers that still have events
-    }, [eventsShown, markersFromAllEvents, eventsInitialized, mapState.isMapOfAllEvents])
+    }, [evts.shownEvents, markersFromAllEvents, eventsInitialized, mapState.isMapOfAllEvents])
 
-    // Reset initialization when eventsAll changes (e.g., calendar switch)
+    // Reset initialization when evts.allEvents changes (e.g., calendar switch)
     useEffect(() => {
         setEventsInitialized(false)
-    }, [eventsAll])
+    }, [evts.allEvents])
 
     // Log when the hook initializes
     useEffect(() => {
         logr.info('map', 'uE: useMap hook initialized', {
             initialViewport: { ...mapState.viewport },
-            eventsCount: eventsAll.length,
+            eventsCount: evts.allEvents.length,
         })
     }, [])
 
@@ -204,7 +210,7 @@ export function useMap({ eventsShown, eventsAll }: UseMapProps): UseMapReturn {
         }
 
         if (markersChanged) {
-            const el = eventsInitialized ? eventsShown.length : eventsAll.length
+            const el = eventsInitialized ? evts.shownEvents.length : evts.allEvents.length
             const ol = mapState.markers.length
             logr.info('map', `uE: markers changed, ${filteredMarkers.length} markers, was ${ol}, from ${el} events`)
             setMapState((prev) => ({
@@ -212,12 +218,19 @@ export function useMap({ eventsShown, eventsAll }: UseMapProps): UseMapReturn {
                 markers: filteredMarkers,
             }))
         }
-    }, [filteredMarkers, mapState.markers, setMapState, eventsShown.length, eventsAll.length, eventsInitialized])
+    }, [
+        filteredMarkers,
+        mapState.markers,
+        setMapState,
+        evts.shownEvents.length,
+        evts.allEvents.length,
+        eventsInitialized,
+    ])
 
     // Update viewport to show all events
     const resetMapToAllEvents = useCallback(() => {
-        logr.info('map', `resetMapToAllEvents: called, all ${eventsAll.length} events`)
-        if (!eventsAll || eventsAll.length === 0) return
+        logr.info('map', `resetMapToAllEvents: called, all ${evts.allEvents.length} events`)
+        if (!evts.allEvents || evts.allEvents.length === 0) return
 
         // Use the existing calculateMapViewport function instead of duplicating the calculation
         const newViewport = calculateMapViewport(markersFromAllEvents)
@@ -275,7 +288,7 @@ export function useMap({ eventsShown, eventsAll }: UseMapProps): UseMapReturn {
         } else {
             logr.debug('map', `resetMapToAllEvents: no change needed for ${markersFromAllEvents.length} markers`)
         }
-    }, [eventsAll, markersFromAllEvents, mapState.viewport, mapState.bounds, setMapState])
+    }, [evts.allEvents, markersFromAllEvents, mapState.viewport, mapState.bounds, setMapState])
 
     // Handle viewport changes from user interaction
     const handleViewportChange = useCallback((newViewport: MapViewport) => {

@@ -14,23 +14,6 @@ export function truncateLocation(location: string, maxLength: number = 40): stri
 }
 
 /**
- * Checks if a location is within the given map bounds
- * @param location - The location to check
- * @param bounds - The map bounds to check against
- * @returns boolean indicating if the location is within bounds
- */
-export function isLocationInBounds(location: Location, bounds: MapBounds): boolean {
-    if (!location.lat || !location.lng) return false
-
-    return (
-        location.lat >= bounds.south &&
-        location.lat <= bounds.north &&
-        location.lng >= bounds.west &&
-        location.lng <= bounds.east
-    )
-}
-
-/**
  * Finds the largest city in a set of locations
  * Used as a fallback for the "Map of All Events" view
  * @param locations - Array of resolved locations

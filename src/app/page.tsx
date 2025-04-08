@@ -9,7 +9,7 @@ import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import CalendarSelector from '@/components/home/CalendarSelector'
 import { useEventsManager } from '@/lib/hooks/useEventsManager'
-import { useMap } from '@/lib/hooks/useMap'
+import { useMap, genMarkerId } from '@/lib/hooks/useMap'
 import { MapBounds } from '@/types/map'
 import { logr } from '@/lib/utils/logr'
 
@@ -30,7 +30,7 @@ function HomeContent() {
     const [appInitState, setAppInitState] = useState<AppInitState>('reset')
 
     // Use our new EventsManager hook to get events and filter methods
-    const { events, filters, calendar, apiIsLoading, apiError, fltrEvtMgr } = useEventsManager({ calendarId })
+    const { eventsFn, evts, filters, calendar, apiIsLoading } = useEventsManager({ calendarId })
 
     // State for selected event
     const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
@@ -44,7 +44,7 @@ function HomeContent() {
         setSelectedMarkerId,
         resetMapToAllEvents,
         isMapOfAllEvents,
-    } = useMap({ eventsShown: events.shown(), eventsAll: events.all })
+    } = useMap(eventsFn())
 
     // Reset when we get new calendar
     useEffect(() => {
@@ -52,16 +52,12 @@ function HomeContent() {
         logr.info('app', `uE: Calendar ID gc=${calendarId}, setAppInitState=reset`)
     }, [calendarId])
 
-    useEffect(() => {
-        // consider calling resetMapToAllEvents here instead of in useEffect below
-        logr.info('app', `uE: events.all=${events.all.length}`)
-    }, [events.all])
-
     // resetMapToAllEvents is called only once after api loads, and again if the calendarId changes
     useEffect(() => {
-        const l = events.shown().length
-        const all = events.all ? events.all.length : 0
-        const msg = `uE: appInitState=${appInitState},apiIsLoading=${apiIsLoading}, evnts.shown=${l}, evnts.all=${all}`
+        const l = eventsFn().shownEvents.length
+        const k = evts.shownEvents.length
+        const all = evts.allEvents ? evts.allEvents.length : 0
+        const msg = `uE: appInitState=${appInitState},apiIsLoading=${apiIsLoading}, evnts.shown=${l}:${k}, evnts.all=${all}`
         logr.debug('app', msg)
 
         // Initialize if we haven't yet AND the API finished loading, and we have events, regardless of shown count
@@ -77,7 +73,7 @@ function HomeContent() {
                 }, 100)
             }, 100)
         }
-    }, [apiIsLoading, appInitState, resetMapToAllEvents, events])
+    }, [apiIsLoading, appInitState, resetMapToAllEvents, evts])
 
     // Handle search query changes
     const handleSearchChange = useCallback(
@@ -153,7 +149,7 @@ function HomeContent() {
             }
 
             // Find the event and its marker
-            const event = events.all.find((e) => e.id === eventId)
+            const event = evts.allEvents.find((e) => e.id === eventId)
             if (
                 !event ||
                 event.resolved_location?.status !== 'resolved' ||
@@ -162,43 +158,28 @@ function HomeContent() {
             ) {
                 return
             }
-
-            // Generate marker ID
-            const markerId = `${event.resolved_location.lat.toFixed(6)},${event.resolved_location.lng.toFixed(6)}`
+            const markerId = genMarkerId(event)
+            if (!markerId) return
 
             // Set marker and update viewport
             setSelectedMarkerId(markerId)
             setViewport({
                 ...viewport,
-                latitude: event.resolved_location.lat,
-                longitude: event.resolved_location.lng,
+                latitude: event.resolved_location.lat || 0,
+                longitude: event.resolved_location.lng || 0,
                 zoom: 14,
             })
         },
-        [events.all, setSelectedMarkerId, setViewport, viewport]
+        [evts.allEvents, setSelectedMarkerId, setViewport, viewport]
     )
 
     // Expose events data to window for debugging
     useEffect(() => {
-        if (events?.all?.length > 0 && typeof window !== 'undefined') {
-            // Add events to window for debugging
-            const temp_cmf_events = {
-                all: events.all,
-                filtered: events.filtered,
-                shown: events.shown(),
-                withoutLocations: events.withoutLocations,
-                totalCount: calendar.totalCount,
-                calendar_name: calendar.name || '',
-                calendarId: calendarId,
-            }
-            window.cmf_events = temp_cmf_events
-
-            //logr.debug('app', 'Events data exposed to window.cmf_events', window.cmf_events)
+        if (typeof window !== 'undefined') {
+            // window.cmf_events is FilteredEvents + calendar name
+            window.cmf_events = { ...evts, calendar: calendar.name }
         }
-    }, [events, calendar.totalCount, calendar.name, calendarId])
-
-    // Get filter stats
-    const { mapFilteredCount, searchFilteredCount, dateFilteredCount } = filters.getStats()
+    }, [evts, calendar.name])
 
     // If no calendar ID is provided, show the calendar selector
     if (!calendarId) {
@@ -222,21 +203,22 @@ function HomeContent() {
                 <div className="w-full md:w-1/2 h-full overflow-auto p-4 border-r">
                     <div className="mb-4">
                         <p>
-                            Showing {events.shown().length} of {events.all.length} events
-                            {events.withoutLocations.length > 0 && (
-                                <button
-                                    onClick={handleUnknownLocationsToggle}
-                                    className="ml-2 text-xs text-blue-500 hover:text-blue-700"
-                                >
-                                    Show {events.withoutLocations.length} unmapped events
-                                </button>
-                            )}
+                            Showing {evts.shownEvents.length} of {evts.allEvents.length} events
+                            {evts.unknownLocationsFilteredEvents.length > 0 &&
+                                1 && ( // temp disable by && 0
+                                    <button
+                                        onClick={handleUnknownLocationsToggle}
+                                        className="ml-2 text-xs text-blue-500 hover:text-blue-700"
+                                    >
+                                        Show {evts.unknownLocationsFilteredEvents.length} unmapped events
+                                    </button>
+                                )}
                         </p>
                     </div>
 
                     {/* Active filters display */}
                     <div className="mb-4 flex flex-wrap gap-2">
-                        {!isMapOfAllEvents && mapFilteredCount > 0 && (
+                        {!isMapOfAllEvents && evts.mapFilteredEvents.length > 0 && (
                             <div className="inline-flex items-center bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
@@ -252,7 +234,7 @@ function HomeContent() {
                                         d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4"
                                     />
                                 </svg>
-                                {mapFilteredCount} Filtered by Map
+                                {evts.mapFilteredEvents.length} Filtered by Map
                                 <button
                                     onClick={handleClearMapFilter}
                                     className="ml-1 text-blue-700 hover:text-blue-900"
@@ -262,7 +244,7 @@ function HomeContent() {
                                 </button>
                             </div>
                         )}
-                        {searchFilteredCount > 0 && (
+                        {evts.searchFilteredEvents.length > 0 && (
                             <div className="inline-flex items-center bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
@@ -278,7 +260,7 @@ function HomeContent() {
                                         d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
                                     />
                                 </svg>
-                                {searchFilteredCount} Filtered by Search
+                                {evts.searchFilteredEvents.length} Filtered by Search
                                 <button
                                     onClick={() => handleSearchChange('')}
                                     className="ml-1 text-blue-700 hover:text-blue-900"
@@ -288,7 +270,7 @@ function HomeContent() {
                                 </button>
                             </div>
                         )}
-                        {dateFilteredCount > 0 && (
+                        {evts.dateFilteredEvents.length > 0 && (
                             <div className="inline-flex items-center bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
@@ -304,7 +286,7 @@ function HomeContent() {
                                         d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                                     />
                                 </svg>
-                                {dateFilteredCount} Filtered by Date
+                                {evts.dateFilteredEvents.length} Filtered by Date
                                 <button
                                     onClick={() => handleDateRangeChange(undefined)}
                                     className="ml-1 text-blue-700 hover:text-blue-900"
@@ -325,7 +307,7 @@ function HomeContent() {
                     />
 
                     <EventList
-                        events={events}
+                        evts={evts}
                         selectedEventId={selectedEventId}
                         onEventSelect={handleEventSelect}
                         apiIsLoading={apiIsLoading}

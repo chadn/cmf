@@ -1,15 +1,13 @@
 'use client'
 
 import React, { useState } from 'react'
-import { CalendarEvent } from '@/types/events'
+import { FilteredEvents } from '@/types/events'
 import { formatEventDate, formatEventDuration } from '@/lib/utils/date'
 import { truncateLocation } from '@/lib/utils/location'
 import LoadingSpinner from '@/components/common/LoadingSpinner'
 
 interface EventListProps {
-    events: {
-        shown: () => CalendarEvent[]
-    }
+    evts: FilteredEvents
     selectedEventId: string | null
     onEventSelect: (eventId: string | null) => void
     apiIsLoading: boolean
@@ -18,7 +16,7 @@ interface EventListProps {
 type SortField = 'name' | 'startDate' | 'duration' | 'location'
 type SortDirection = 'asc' | 'desc'
 
-const EventList: React.FC<EventListProps> = ({ events, selectedEventId, onEventSelect, apiIsLoading }) => {
+const EventList: React.FC<EventListProps> = ({ evts, selectedEventId, onEventSelect, apiIsLoading }) => {
     const [sortField, setSortField] = useState<SortField>('startDate')
     const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
     const [expandedLocation, setExpandedLocation] = useState<string | null>(null)
@@ -31,7 +29,7 @@ const EventList: React.FC<EventListProps> = ({ events, selectedEventId, onEventS
         )
     }
 
-    const shownEvents = events.shown()
+    const shownEvents = evts.shownEvents
     if (shownEvents.length === 0) {
         return (
             <div className="p-4 text-center">
@@ -145,6 +143,7 @@ const EventList: React.FC<EventListProps> = ({ events, selectedEventId, onEventS
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-100">
                         {sortedEvents.map((event) => (
+                            // TODO: if event.id == selectedEventId, add a class to the row that highlights it
                             <tr
                                 key={event.id}
                                 className="hover:bg-gray-50 cursor-pointer border-b border-gray-100"

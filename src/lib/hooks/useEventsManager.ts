@@ -1,10 +1,11 @@
 'use client'
 import { useState, useEffect, useMemo, useReducer } from 'react'
 import useSWR from 'swr'
-import { CalendarEvent, EventsState, EventsAction, EventFilters } from '@/types/events'
+import { CalendarEvent, EventsState, EventsAction, FilteredEvents } from '@/types/events'
 import { MapBounds } from '@/types/map'
 import { FilterEventsManager } from '@/lib/events/FilterEventsManager'
 import { logr } from '@/lib/utils/logr'
+import { fetcherLogr } from '@/lib/utils/utils'
 
 interface UseEventsManagerProps {
     calendarId?: string
@@ -15,37 +16,23 @@ interface UseEventsManagerProps {
 }
 
 interface UseEventsManagerResult {
-    events: {
-        all: CalendarEvent[]
-        withLocations: CalendarEvent[]
-        withoutLocations: CalendarEvent[]
-        filtered: CalendarEvent[]
-        filteredWithLocations: CalendarEvent[]
-        rawData: CalendarEvent[]
-        shown: () => CalendarEvent[]
-    }
+    eventsFn: () => FilteredEvents
+    evts: FilteredEvents
     filters: {
         setDateRange: (dateRange: { start: string; end: string } | undefined) => void
         setSearchQuery: (query: string) => void
         setMapBounds: (bounds: MapBounds | undefined) => void
         setShowUnknownLocationsOnly: (show: boolean) => void
         resetAll: () => void
-        getStats: () => { mapFilteredCount: number; searchFilteredCount: number; dateFilteredCount: number }
     }
     calendar: {
         name: string
         totalCount: number
-        unknownLocationsCount: number
+        unknownLocationsCount: number // TODO: remove
     }
     apiIsLoading: boolean
     apiError: Error | null
     fltrEvtMgr: FilterEventsManager
-    // For backward compatibility
-    filteredEvents: CalendarEvent[]
-    totalCount: number
-    filteredCount: number
-    unknownLocationsCount: number
-    calendarName: string
 }
 
 // Initial state
@@ -72,21 +59,6 @@ function eventsReducer(state: EventsState, action: EventsAction): EventsState {
             return { ...state, error: action.payload }
         default:
             return state
-    }
-}
-
-// Custom fetcher function, basically a wrapper to log API requests and responses
-// TODO: move this to a separate file
-const fetcher = async (url: string) => {
-    logr.info('browser', `Request to url: ${url}`)
-    try {
-        const response = await fetch(url)
-        const data = await response.json()
-        logr.info('browser', `Response from url: ${url} (${response.status})`, data)
-        return data
-    } catch (error) {
-        logr.info('browser', `Error from url: ${url}`, error)
-        throw error
     }
 }
 
@@ -129,7 +101,7 @@ export function useEventsManager({
         data: apiData,
         error: apiError,
         isLoading: apiIsLoading,
-    } = useSWR(apiUrl, fetcher, {
+    } = useSWR(apiUrl, fetcherLogr, {
         revalidateOnFocus: false,
         onSuccess: (data) => {
             if (!data) return
@@ -189,7 +161,8 @@ export function useEventsManager({
 
     // Memoize derived data
     const filteredEvents = useMemo(() => {
-        return fltrEvtMgr.cmf_events_shown
+        const filtered = fltrEvtMgr.getFilteredEvents()
+        return filtered.shownEvents
     }, [fltrEvtMgr])
 
     const eventsWithLocations = useMemo(() => {
@@ -213,25 +186,8 @@ export function useEventsManager({
     }, [apiData, apiIsLoading, filteredEvents])
 
     return {
-        events: {
-            all: state.events,
-            withLocations: eventsWithLocations,
-            withoutLocations: state.events.filter(
-                (event) => !event.resolved_location || event.resolved_location.status !== 'resolved'
-            ),
-            filtered: filteredEvents,
-            filteredWithLocations: filteredEvents.filter(
-                (event) =>
-                    event.resolved_location?.status === 'resolved' &&
-                    event.resolved_location.lat &&
-                    event.resolved_location.lng
-            ),
-            rawData: apiData?.events || [],
-            shown: () => {
-                // Get events that pass all filters (already includes resolved locations)
-                return fltrEvtMgr.cmf_events_shown
-            },
-        },
+        eventsFn: () => fltrEvtMgr.getFilteredEvents(),
+        evts: fltrEvtMgr.getFilteredEvents(),
         filters: {
             setDateRange: (dateRange) => {
                 fltrEvtMgr.setDateRange(dateRange)
@@ -253,7 +209,6 @@ export function useEventsManager({
                 fltrEvtMgr.resetAllFilters()
                 dispatch({ type: 'SET_FILTERS', payload: {} })
             },
-            getStats: () => fltrEvtMgr.getFilterStats(),
         },
         calendar: {
             name: apiData?.calendar?.name || '',
@@ -263,11 +218,5 @@ export function useEventsManager({
         apiIsLoading: apiIsLoading || state.isLoading,
         apiError: apiError || state.error,
         fltrEvtMgr,
-        // For backward compatibility
-        filteredEvents: filteredEvents,
-        totalCount: apiData?.calendar?.totalCount || 0,
-        filteredCount: filteredEvents.length,
-        unknownLocationsCount: apiData?.calendar?.unknownLocationsCount || 0,
-        calendarName: apiData?.calendar?.name || '',
     }
 }

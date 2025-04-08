@@ -9,7 +9,7 @@ export interface Location {
     formatted_address?: string
     lat?: number
     lng?: number
-    types?: string[]
+    types?: string[] // google maps location types: bars, night_club, point_of_interest, restaurant, etc.
 }
 
 export interface CalendarEvent {
@@ -61,4 +61,33 @@ export interface GoogleCalendarEvent {
         timeZone: string
     }
     location?: string
+}
+
+export interface EventsFilter {
+    dateRange?: { start: string; end: string }
+    searchQuery?: string
+    mapBounds?: MapBounds
+    showUnknownLocationsOnly?: boolean
+}
+
+export interface FilteredEvents {
+    mapFilteredEvents: CalendarEvent[]
+    searchFilteredEvents: CalendarEvent[]
+    dateFilteredEvents: CalendarEvent[]
+    unknownLocationsFilteredEvents: CalendarEvent[]
+    // totalFiltered is all filtered out, is less than or equal to the sum of all filtered, since some events can be filtered out by multiple filters
+    filteredEvents: CalendarEvent[]
+    // totalShown is events that pass all filters, not filetred out. allEvents - totalFilteredEvents
+    shownEvents: CalendarEvent[]
+    allEvents: CalendarEvent[]
+}
+
+export interface FilterStats {
+    mapFilteredCount: number
+    searchFilteredCount: number
+    dateFilteredCount: number
+    unknownLocationsFilteredCount: number
+    totalFilteredCount: number
+    totalShownCount: number
+    totalEventsCount: number
 }
