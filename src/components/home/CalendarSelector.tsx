@@ -63,7 +63,7 @@ const CalendarSelector: React.FC = () => {
     }
 
     return (
-        <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-md border-t border-black">
+        <div className="max-w-md mx-auto px-8 py-6 bg-white rounded-lg shadow-md border-t border-black">
             <h2 className="text-xl font-bold text-center mb-6 text-blue-600">Welcome to Calendar Map Filter</h2>
             <h2 className="text-xl font-bold text-center mb-4 text-blue-600">Enter a Google Calendar ID</h2>
 
@@ -104,8 +104,8 @@ const CalendarSelector: React.FC = () => {
                             onClick={() => handleExampleSelect(calendar.id)}
                             disabled={isLoading}
                         >
-                            <div className="font-medium text-gray-500">{calendar.name}</div>
-                            <div className="text-xs text-gray-500 truncate">{calendar.id}</div>
+                            <div className="font-medium text-white">{calendar.name}</div>
+                            <div className="text-xs text-white truncate">{calendar.id}</div>
                         </button>
                     ))}
                 </div>
