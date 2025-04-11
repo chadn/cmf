@@ -23,14 +23,15 @@ See [Bugs and Known Issues ](docs/bugs.md)
 
 ## 🔗 Tech Stack
 
--   [Next.js](https://nextjs.org/) - React framework with SSR
--   [React](https://reactjs.org/) - UI library
--   [TypeScript](https://www.typescriptlang.org/) - Type-safe JavaScript
--   [MapLibre GL JS](https://maplibre.org/) - Open-source maps
--   [SWR](https://swr.vercel.app/) - Data fetching and caching
--   [Google Calendar API](https://developers.google.com/calendar)
--   [Google Maps Geocoding API](https://developers.google.com/maps/documentation/geocoding/requests-geocoding)
--   [Upstash Redis](https://upstash.com/) - Serverless Redis for caching geocoding
+-   **Frontend**: [Next.js](https://nextjs.org/) - React framework with SSR
+-   **Frontend**: [React](https://reactjs.org/) - UI library
+-   **Language**: [TypeScript](https://www.typescriptlang.org/) - Type-safe JavaScript
+-   **Map**:[MapLibre GL JS](https://maplibre.org/) - Open-source maps
+-   **Data Fetching**:[SWR](https://swr.vercel.app/) - Data fetching and caching
+-   **Data Input**: [Google Calendar API](https://developers.google.com/calendar)
+-   **Location Lookup**: [Google Maps Geocoding API](https://developers.google.com/maps/documentation/geocoding/requests-geocoding)
+-   **Caching**: [Upstash Redis](https://upstash.com/) - Serverless Redis for caching geocoding. filesystem for development.
+-   **Deployment**: Vercel (recommended)
 
 ## 📋 Requirements
 
@@ -124,7 +125,7 @@ For more detailed information, see the following documentation:
 -   [Product Specification](docs/product.md)
 -   [Implementation Details](docs/Implementation.md) includes directory structure and implementation decisions.
 -   [Test coverage](docs/tests.md) output of `npm test`.
--   [Bugs and Features](docs/bugs.md) 
+-   [Bugs and Features](docs/bugs.md)
 
 ## History
 
@@ -132,8 +133,8 @@ In 2010 I had the idea to use a map to filter Calendar events, and built a simil
 This original version used Google Maps and Google Calendar, so it was called GCM for Google Calendar Map.
 https://chadnorwood.com/projects/gcm/
 
-Around 2015 it stopped working. 
-Before 2015 Google Maps was totally free and abuse was rare. Once Google Maps started costing money I disabled GCM. 
+Around 2015 it stopped working.
+Before 2015 Google Maps was totally free and abuse was rare. Once Google Maps started costing money I disabled GCM.
 
 Ever since then I considered rewriting to use free maps, and finally made it happen.
 

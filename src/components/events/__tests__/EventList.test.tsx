@@ -2,7 +2,7 @@ import React from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
 import EventList from '../EventList'
 import '@testing-library/jest-dom'
-import { CalendarEvent } from '@/types/events'
+import { CalendarEvent, FilteredEvents } from '@/types/events'
 
 describe('EventList', () => {
     // Mock data for testing
@@ -57,8 +57,14 @@ describe('EventList', () => {
         },
     ]
 
-    const mockEventsManager = {
-        shown: () => mockEvents,
+    const mockEventsManager: FilteredEvents = {
+        shownEvents: mockEvents,
+        mapFilteredEvents: [],
+        searchFilteredEvents: [],
+        dateFilteredEvents: [],
+        unknownLocationsFilteredEvents: [],
+        filteredEvents: [],
+        allEvents: mockEvents,
     }
 
     it('renders a list of events', () => {
@@ -66,15 +72,12 @@ describe('EventList', () => {
 
         render(
             <EventList
-                events={mockEventsManager}
+                evts={mockEventsManager}
                 selectedEventId={null}
                 onEventSelect={mockOnEventSelect}
                 apiIsLoading={false}
             />
         )
-
-        // Check that the events count is displayed
-        expect(screen.getByText('Events (3)')).toBeInTheDocument()
 
         // Check that all event names are displayed
         expect(screen.getByText('Test Event 1')).toBeInTheDocument()
@@ -94,7 +97,7 @@ describe('EventList', () => {
 
         render(
             <EventList
-                events={mockEventsManager}
+                evts={mockEventsManager}
                 selectedEventId={null}
                 onEventSelect={mockOnEventSelect}
                 apiIsLoading={false}
@@ -113,7 +116,7 @@ describe('EventList', () => {
 
         render(
             <EventList
-                events={mockEventsManager}
+                evts={mockEventsManager}
                 selectedEventId={null}
                 onEventSelect={mockOnEventSelect}
                 apiIsLoading={true}
@@ -125,13 +128,19 @@ describe('EventList', () => {
 
     it('displays empty state when no events are found', () => {
         const mockOnEventSelect = jest.fn()
-        const emptyEventsManager = {
-            shown: () => [],
+        const emptyEventsManager: FilteredEvents = {
+            shownEvents: [],
+            mapFilteredEvents: [],
+            searchFilteredEvents: [],
+            dateFilteredEvents: [],
+            unknownLocationsFilteredEvents: [],
+            filteredEvents: [],
+            allEvents: [],
         }
 
         render(
             <EventList
-                events={emptyEventsManager}
+                evts={emptyEventsManager}
                 selectedEventId={null}
                 onEventSelect={mockOnEventSelect}
                 apiIsLoading={false}

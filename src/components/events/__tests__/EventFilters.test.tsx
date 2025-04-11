@@ -36,19 +36,19 @@ describe('EventFilters Component', () => {
         expect(mockOnSearchChange).toHaveBeenCalledWith('test search')
     })
 
-    test('renders date slider button when no date range is selected', () => {
+    test('renders date range button with proper format', () => {
         render(<EventFilters {...defaultProps} />)
 
-        // Check if the button contains text that includes "Date Sliders"
-        const dateButton = screen.getByText(/Show Date Sliders:/i)
+        // Check if the button exists and contains the format with [CHANGE]
+        const dateButton = screen.getByText(/Showing:.+\[CHANGE\]/i)
         expect(dateButton).toBeInTheDocument()
     })
 
     test('shows date sliders when button is clicked', () => {
         render(<EventFilters {...defaultProps} />)
 
-        // Check if the button contains text that includes "Date Sliders"
-        const dateButton = screen.getByText(/Show Date Sliders:/i)
+        // Get the button by its test ID instead of text
+        const dateButton = screen.getByTestId('date-range-dropdown')
         fireEvent.click(dateButton)
 
         // In the new UI, we should now see two sliders
@@ -58,8 +58,8 @@ describe('EventFilters Component', () => {
     test('call onDateRangeChange when sliders change', () => {
         render(<EventFilters {...defaultProps} />)
 
-        // First show the sliders
-        const dateButton = screen.getByText(/Show Date Sliders:/i)
+        // First show the sliders using the test ID
+        const dateButton = screen.getByTestId('date-range-dropdown')
         fireEvent.click(dateButton)
 
         // Find the start date slider
@@ -83,5 +83,20 @@ describe('EventFilters Component', () => {
         // Check if the date range button has a data-testid attribute
         const dateDropdown = screen.getByTestId('date-range-dropdown')
         expect(dateDropdown).toBeInTheDocument()
+    })
+
+    test('displays quick selection buttons when expanded', () => {
+        render(<EventFilters {...defaultProps} />)
+
+        // Open the date selector
+        const dateButton = screen.getByTestId('date-range-dropdown')
+        fireEvent.click(dateButton)
+
+        // Check for the quick selection buttons
+        expect(screen.getByText('Past')).toBeInTheDocument()
+        expect(screen.getByText('Future')).toBeInTheDocument()
+        expect(screen.getByText('Next 3 days')).toBeInTheDocument()
+        expect(screen.getByText('Weekend')).toBeInTheDocument()
+        expect(screen.getByText('Today')).toBeInTheDocument()
     })
 })

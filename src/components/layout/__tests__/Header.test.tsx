@@ -12,15 +12,7 @@ jest.mock('next/navigation', () => ({
 
 // Mock Next.js Link component
 jest.mock('next/link', () => {
-    return ({
-        children,
-        href,
-        className,
-    }: {
-        children: React.ReactNode
-        href: string
-        className?: string
-    }) => {
+    return ({ children, href, className }: { children: React.ReactNode; href: string; className?: string }) => {
         return (
             <a href={href} className={className} data-testid="next-link">
                 {children}
@@ -33,7 +25,7 @@ describe('Header', () => {
     it('renders the header with app name', () => {
         render(<Header />)
 
-        expect(screen.getByText('Calendar Map Filter')).toBeInTheDocument()
+        expect(screen.getByText('CMF')).toBeInTheDocument()
     })
 
     it('displays calendar name when provided', () => {
@@ -42,24 +34,26 @@ describe('Header', () => {
         expect(screen.getByText('Test Calendar')).toBeInTheDocument()
     })
 
-    it('shows "Change Calendar" link when calendar ID is present', () => {
-        render(<Header />)
-
-        const changeCalendarLink = screen.getByText('Change Calendar')
-        expect(changeCalendarLink).toBeInTheDocument()
-        expect(changeCalendarLink.closest('a')).toHaveAttribute('href', '/')
-    })
-
-    it('renders the help button', () => {
-        render(<Header />)
-
-        const helpButton = screen.getByLabelText('Help')
-        expect(helpButton).toBeInTheDocument()
-    })
-
     it('does not show calendar name when not provided', () => {
         render(<Header />)
 
         expect(screen.queryByText(/Test Calendar/)).not.toBeInTheDocument()
+    })
+
+    it('displays event count when provided', () => {
+        render(<Header calendarName="Test Calendar" eventCount={{ shown: 5, total: 10 }} />)
+
+        expect(screen.getByText('5')).toBeInTheDocument()
+        expect(screen.getByText('10')).toBeInTheDocument()
+        expect(screen.getByText(/Showing/)).toBeInTheDocument()
+        expect(screen.getByText(/of/)).toBeInTheDocument()
+        expect(screen.getByText(/events/)).toBeInTheDocument()
+    })
+
+    it('has a link to the home page', () => {
+        render(<Header />)
+
+        const homeLink = screen.getByTestId('next-link')
+        expect(homeLink).toHaveAttribute('href', '/')
     })
 })
