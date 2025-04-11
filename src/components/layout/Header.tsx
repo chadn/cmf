@@ -15,6 +15,13 @@ function HeaderContent({ calendarName, eventCount, onInfoClick }: HeaderProps) {
     const searchParams = useSearchParams()
     const calendarId = searchParams.get('gc') || ''
 
+    // Tailwind CSS prefixes, use to increase calendar name font size as screens go bigger
+    // sm: - Small screens (640px and up)
+    // md: - Medium screens (768px and up)
+    // lg: - Large screens (1024px and up)
+    // xl: - Extra large screens (1280px and up)
+    // 2xl: - 2X Extra large screens (1536px and up)
+
     return (
         <header className="bg-white shadow-sm">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -23,21 +30,23 @@ function HeaderContent({ calendarName, eventCount, onInfoClick }: HeaderProps) {
                         <Link href="/" className="flex items-center">
                             <span className="text-xl font-bold text-primary">CMF</span>
                         </Link>
-                        {calendarName && (
-                            <div
-                                className="ml-4 flex flex-col sm:flex-row sm:items-center cursor-pointer hover:bg-gray-50 px-2 py-1 rounded transition-colors duration-150"
-                                onClick={onInfoClick}
-                                title="Click to scroll events to top"
-                            >
-                                <span className="text-sm text-gray-800">{calendarName}</span>
-                                {eventCount && (
-                                    <span className="text-xs text-gray-800 sm:ml-2">
-                                        Showing <span className="font-bold text-sm">{eventCount.shown}</span> of{' '}
-                                        <span className="font-bold text-sm">{eventCount.total}</span> events
-                                    </span>
-                                )}
-                            </div>
-                        )}
+                        <div
+                            className="ml-4 flex flex-col sm:flex-row sm:items-center cursor-pointer hover:bg-gray-50 px-2 py-1 rounded transition-colors duration-150"
+                            onClick={onInfoClick}
+                            title="Click to scroll events to top"
+                        >
+                            <span className="text-sm sm:text-lg md:text-2xl font-semibold text-gray-800">
+                                {calendarName || 'Loading Calendar...'}
+                            </span>
+                            {eventCount && (
+                                // text-sm (14px) for mobile devices
+                                // md:text-2xl (1.5rem or 24px) for medium screens and up (768px and wider)
+                                <span className="text-xs md:text-xl text-gray-800 sm:ml-2">
+                                    Showing <span className="font-bold text-sm md:text-2xl">{eventCount.shown}</span> of{' '}
+                                    <span className="font-bold text-sm md:text-2xl">{eventCount.total}</span> events
+                                </span>
+                            )}
+                        </div>
                     </div>
 
                     <div className="flex items-center space-x-4"></div>

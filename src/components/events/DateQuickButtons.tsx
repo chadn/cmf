@@ -35,8 +35,8 @@ export default function DateQuickButtons({
     return (
         <div className="mt-3 flex flex-wrap gap-1 justify-between">
             <button
-                data-umami-event="DateButton"
-                data-umami-event-btn="Past"
+                data-umami-event="DateQuickButton"
+                data-umami-event-dateqbtn="Past"
                 onClick={() => {
                     // Past: start slider as far back as can go, end slider to today
                     setStartValue(0)
@@ -51,8 +51,8 @@ export default function DateQuickButtons({
                 Past
             </button>
             <button
-                data-umami-event="DateButton"
-                data-umami-event-btn="Future"
+                data-umami-event="DateQuickButton"
+                data-umami-event-dateqbtn="Future"
                 onClick={() => {
                     // Future: start slider to today, end slider as far forward as can go
                     setStartValue(todayValue)
@@ -67,8 +67,8 @@ export default function DateQuickButtons({
                 Future
             </button>
             <button
-                data-umami-event="DateButton"
-                data-umami-event-btn="Next3Days"
+                data-umami-event="DateQuickButton"
+                data-umami-event-dateqbtn="Next3Days"
                 onClick={() => {
                     // Next 3 days: start slider to today, end slider to be 3 days from today
                     const threeDaysLaterValue = Math.min(todayValue + 3, totalDays)
@@ -84,8 +84,8 @@ export default function DateQuickButtons({
                 Next 3 days
             </button>
             <button
-                data-umami-event="DateButton"
-                data-umami-event-btn="Weekend"
+                data-umami-event="DateQuickButton"
+                data-umami-event-dateqbtn="Weekend"
                 onClick={() => {
                     // Weekend: start slider to a future Friday (or today if today is Friday or Saturday),
                     // end slider to Sunday after Friday
@@ -121,8 +121,8 @@ export default function DateQuickButtons({
                 Weekend
             </button>
             <button
-                data-umami-event="DateButton"
-                data-umami-event-btn="Today"
+                data-umami-event="DateQuickButton"
+                data-umami-event-dateqbtn="Today"
                 onClick={() => {
                     // Today: both sliders set to today
                     setStartValue(todayValue)

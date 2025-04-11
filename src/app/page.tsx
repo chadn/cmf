@@ -55,7 +55,7 @@ function HomeContent() {
         setAppInitState('reset')
         logr.info('app', `uE: Calendar ID gc=${calendarId}, setAppInitState=reset`)
         if (typeof umami !== 'undefined') {
-            umami.track('loadCalendar', { gc: calendarId })
+            umami.track('LoadCalendar', { gc: calendarId, numEvents: evts.allEvents.length })
         }
     }, [calendarId])
 

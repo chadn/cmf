@@ -82,7 +82,7 @@ export default function DateRangeSelector({
         <div className="bg-white rounded-md shadow-sm overflow-hidden">
             <button
                 onClick={() => setShowDateSliders(!showDateSliders)}
-                className="w-full text-left text-sm p-1 text-gray-700 hover:bg-gray-50 transition-colors"
+                className="w-full text-left text-sm md:text-xl p-1 text-gray-700 hover:bg-gray-50 transition-colors"
                 data-testid="date-range-dropdown"
             >
                 {getDateButtonText()}
