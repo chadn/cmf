@@ -38,6 +38,8 @@ export default function ActiveFilters({
                     </svg>
                     {evts.mapFilteredEvents.length} Filtered by Map
                     <button
+                        data-umami-event="clearFilter"
+                        data-umami-event-btn="Map"
                         onClick={onClearMapFilter}
                         className="ml-1 text-blue-700 hover:text-blue-900"
                         aria-label="Remove map filter"
@@ -64,6 +66,8 @@ export default function ActiveFilters({
                     </svg>
                     {evts.searchFilteredEvents.length} Filtered by Search
                     <button
+                        data-umami-event="clearFilter"
+                        data-umami-event-btn="Search"
                         onClick={onClearSearchFilter}
                         className="ml-1 text-blue-700 hover:text-blue-900"
                         aria-label="Remove search filter"
@@ -90,6 +94,8 @@ export default function ActiveFilters({
                     </svg>
                     {evts.dateFilteredEvents.length} Filtered by Date
                     <button
+                        data-umami-event="clearFilter"
+                        data-umami-event-btn="Date"
                         onClick={onClearDateFilter}
                         className="ml-1 text-blue-700 hover:text-blue-900"
                         aria-label="Remove date filter"

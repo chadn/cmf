@@ -40,6 +40,10 @@ const CalendarSelector: React.FC = () => {
         }
 
         logr.info('calendar', 'Calendar ID submitted', { calendarId })
+        if (typeof umami !== 'undefined') {
+            umami.track('ViewCalendar', { gc: calendarId })
+        }
+
         setIsLoading(true)
         setError(null)
 
@@ -59,9 +63,9 @@ const CalendarSelector: React.FC = () => {
     }
 
     return (
-        <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-md">
-            <h2 className="text-xl font-bold text-center mb-6">Welcome to Calendar Map Filter</h2>
-            <h2 className="text-xl font-bold text-center mb-6">Enter a Google Calendar ID</h2>
+        <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-md border-t border-black">
+            <h2 className="text-xl font-bold text-center mb-6 text-blue-600">Welcome to Calendar Map Filter</h2>
+            <h2 className="text-xl font-bold text-center mb-4 text-blue-600">Enter a Google Calendar ID</h2>
 
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="form-control">
@@ -88,12 +92,15 @@ const CalendarSelector: React.FC = () => {
 
             {/* Example calendars */}
             <div className="mt-8">
-                <h3 className="text-sm font-medium text-gray-500 mb-2">Or try an example:</h3>
+                <h3 className="text-sm font-medium text-gray-500 mb-2">
+                    {' '}
+                    Or try an example - click below then click View Calendar:
+                </h3>
                 <div className="space-y-2">
                     {exampleCalendars.map((calendar) => (
                         <button
                             key={calendar.id}
-                            className="w-full text-left px-3 py-2 border rounded hover:bg-gray-50"
+                            className="w-full text-left px-3 py-2 border rounded btn btn-primary"
                             onClick={() => handleExampleSelect(calendar.id)}
                             disabled={isLoading}
                         >

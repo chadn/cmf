@@ -54,6 +54,9 @@ function HomeContent() {
     useEffect(() => {
         setAppInitState('reset')
         logr.info('app', `uE: Calendar ID gc=${calendarId}, setAppInitState=reset`)
+        if (typeof umami !== 'undefined') {
+            umami.track('loadCalendar', { gc: calendarId })
+        }
     }, [calendarId])
 
     // resetMapToAllEvents is called only once after api loads, and again if the calendarId changes
@@ -197,7 +200,7 @@ function HomeContent() {
         return (
             <div className="min-h-screen flex flex-col">
                 <Header />
-                <main className="flex-grow flex items-center justify-center p-4">
+                <main className="flex-grow flex items-center justify-center">
                     <CalendarSelector />
                 </main>
                 <Footer />
