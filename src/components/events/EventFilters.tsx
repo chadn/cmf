@@ -85,29 +85,33 @@ export default function EventFilters({
     const getDateButtonText = () => {
         const startDate = new Date(getDateFromValue(startValue))
         const endDate = new Date(getDateFromValue(endValue))
-        const msg = `Date Sliders: ${formatDateForButton(startDate)} - ${formatDateForButton(endDate)}`
+        const msg = `Showing: ${formatDateForButton(startDate)} - ${formatDateForButton(endDate)}`
 
         if (!showDateSliders) {
-            return `Show ${msg}`
+            return `${msg} [CHANGE]`
         }
-        return `Hide ${msg}`
+        return `${msg} [HIDE]`
     }
 
     return (
-        <div className="space-y-2">
-            <div className="flex flex-col space-y-1">
+        <div className="relative">
+            <div className="bg-white rounded-md shadow-sm overflow-hidden">
                 <button
                     onClick={toggleDateSliders}
-                    className="text-blue-500 hover:text-blue-700 text-left text-sm"
+                    className="w-full text-left text-sm p-1 text-gray-700 hover:bg-gray-50 transition-colors"
                     data-testid="date-range-dropdown"
                 >
                     {getDateButtonText()}
                 </button>
 
-                {showDateSliders && (
-                    <div className="space-y-3 p-3 bg-gray-50 rounded">
-                        <div>
-                            <label className="block text-sm text-gray-600">
+                <div
+                    className={`overflow-hidden transition-[max-height] duration-700 ease-in-out ${
+                        showDateSliders ? 'max-h-48' : 'max-h-0'
+                    }`}
+                >
+                    <div className="p-2 border-t border-gray-100 bg-white shadow-md">
+                        <div className="mb-2">
+                            <label className="block text-xs text-gray-600 mb-0.5">
                                 Start Date: {format(new Date(getDateFromValue(startValue)), 'MMM d, yyyy')}
                             </label>
                             <input
@@ -120,7 +124,7 @@ export default function EventFilters({
                             />
                         </div>
                         <div>
-                            <label className="block text-sm text-gray-600">
+                            <label className="block text-xs text-gray-600 mb-0.5">
                                 End Date: {format(new Date(getDateFromValue(endValue)), 'MMM d, yyyy')}
                             </label>
                             <input
@@ -133,10 +137,10 @@ export default function EventFilters({
                             />
                         </div>
                     </div>
-                )}
+                </div>
             </div>
 
-            <div className="flex flex-col space-y-1">
+            <div className="mt-0.5">
                 <input
                     type="text"
                     placeholder="Search name, location, or description"

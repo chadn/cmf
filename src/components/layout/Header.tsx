@@ -29,10 +29,11 @@ function HeaderContent({ calendarName, eventCount, onInfoClick }: HeaderProps) {
                                 onClick={onInfoClick}
                                 title="Click to scroll events to top"
                             >
-                                <span className="text-sm text-gray-500">{calendarName}</span>
+                                <span className="text-sm text-gray-800">{calendarName}</span>
                                 {eventCount && (
-                                    <span className="text-xs text-gray-400 sm:ml-2">
-                                        Showing {eventCount.shown} of {eventCount.total} events
+                                    <span className="text-xs text-gray-800 sm:ml-2">
+                                        Showing <span className="font-bold text-sm">{eventCount.shown}</span> of{' '}
+                                        <span className="font-bold text-sm">{eventCount.total}</span> events
                                     </span>
                                 )}
                             </div>
