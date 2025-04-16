@@ -174,7 +174,7 @@ function HomeContent() {
             // Calculate the offset based on the current zoom level
             // Higher zoom levels need smaller offsets
             const zoomFactor = Math.max(1, viewport.zoom / 10)
-            const latOffset = -0.005 / zoomFactor // Adjust this value as needed
+            const latOffset = -0.003 / zoomFactor // Adjust this value as needed
 
             // Update viewport with adjusted latitude to ensure popup is fully visible
             setViewport({
