@@ -30,6 +30,11 @@ export async function GET(request: NextRequest) {
         // Get calendar ID from query parameters
         const calendarId = request.nextUrl.searchParams.get('id')
 
+        // TODO: support Facebook Events
+        // create new function that parses search params and returns
+        // calendartype (facebook, google, outlook, etc)
+        // calendar id or whatever is needed for the fetchCalendarEvents function
+
         if (!calendarId) {
             logr.info('api-cal', 'Missing calendar ID in request')
             return NextResponse.json({ error: 'Calendar ID is required' }, { status: 400 })

@@ -18,6 +18,9 @@ const CalendarSelector: React.FC = () => {
         logr.info('component', 'CalendarSelector component mounted')
     }, [])
 
+    // TODO: support Facebook Events
+    // After making it work, add a facebook example to exampleCalendars
+
     // Example calendar IDs for demonstration
     const exampleCalendars = [
         {

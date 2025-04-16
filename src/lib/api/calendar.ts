@@ -5,6 +5,13 @@ import { logr } from '@/lib/utils/logr'
 
 const GOOGLE_CALENDAR_API_BASE = 'https://www.googleapis.com/calendar/v3/calendars'
 
+// TODO: support Facebook Events
+// rename fetchCalendarEvents to fetchGoogleCalendarEvents.
+// Create new function fetchCalendarEvents that supports any type of calendar.
+// If google calendar, then return fetchGoogleCalendarEvents.
+// If facebook, see fetchSourceCalendars() in  https://github.com/derekantrican/GAS-ICS-Sync/blob/master/Helpers.gs
+// parse using https://github.com/kewisch/ical.js
+
 /**
  * Fetches events from Google Calendar API
  * @param calendarId - The ID of the Google Calendar
