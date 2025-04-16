@@ -10,12 +10,14 @@ npm test
 -------------------------|---------|----------|---------|---------|-----------------------------------
 File                     | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
 -------------------------|---------|----------|---------|---------|-----------------------------------
-All files                |   27.04 |     25.4 |   29.25 |   26.57 |
+All files                |    29.1 |    26.48 |   29.14 |   28.84 |
  app                     |       0 |        0 |       0 |       0 |
   layout.tsx             |       0 |      100 |       0 |       0 | 2-13
   page.tsx               |       0 |        0 |       0 |       0 | 3-276
  app/api/calendar        |       0 |        0 |       0 |       0 |
-  route.ts               |       0 |        0 |       0 |       0 | 1-136
+  route.ts               |       0 |        0 |       0 |       0 | 1-141
+ app/api/geocode         |       0 |        0 |       0 |       0 |
+  route.ts               |       0 |        0 |       0 |       0 | 1-33
  app/api/info            |       0 |        0 |       0 |       0 |
   route.ts               |       0 |        0 |       0 |       0 | 1-51
  app/home                |       0 |      100 |       0 |       0 |
@@ -27,24 +29,24 @@ All files                |   27.04 |     25.4 |   29.25 |   26.57 |
  components/common       |     100 |      100 |     100 |     100 |
   ErrorMessage.tsx       |     100 |      100 |     100 |     100 |
   LoadingSpinner.tsx     |     100 |      100 |     100 |     100 |
- components/events       |   76.11 |    41.02 |   71.42 |   75.75 |
-  ActiveFilters.tsx      |       0 |        0 |       0 |       0 | 3-14
+ components/events       |   72.93 |     42.3 |   66.66 |   73.07 |
+  ActiveFilters.tsx      |       0 |        0 |       0 |       0 | 3-46
   DateQuickButtons.tsx   |   93.33 |    33.33 |     100 |   93.33 | 101,104
-  DateRangeSelector.tsx  |   89.18 |    83.33 |    87.5 |   89.18 | 56-59
+  DateRangeSelector.tsx  |    87.5 |    85.71 |   85.71 |    87.5 | 56-59
   EventDetails.tsx       |     100 |      100 |     100 |     100 |
   EventFilters.tsx       |      75 |      100 |   66.66 |      75 | 24-25
   EventList.tsx          |      56 |    33.89 |   46.15 |    55.1 | 50,55-64,69-73,93,101-147,197-198
  components/home         |     100 |      100 |     100 |     100 |
   CalendarSelector.tsx   |     100 |      100 |     100 |     100 |
- components/layout       |     100 |       75 |     100 |     100 |
+ components/layout       |     100 |    71.42 |     100 |     100 |
   Footer.tsx             |     100 |      100 |     100 |     100 |
-  Header.tsx             |     100 |       75 |     100 |     100 | 16
+  Header.tsx             |     100 |    71.42 |     100 |     100 | 16-17
  components/map          |   46.56 |    37.87 |   33.33 |   44.44 |
   MapContainer.tsx       |   11.68 |        0 |       0 |   11.11 | 43-267
   MapMarker.tsx          |   94.44 |    88.88 |     100 |     100 | 14
   MapPopup.tsx           |   97.22 |    89.47 |     100 |   96.96 | 50
  lib/api                 |       0 |        0 |       0 |       0 |
-  calendar.ts            |       0 |        0 |       0 |       0 | 1-76
+  calendar.ts            |       0 |        0 |       0 |       0 | 1-83
   geocoding.ts           |       0 |        0 |       0 |       0 | 1-277
  lib/cache               |       0 |        0 |       0 |       0 |
   filesystem.ts          |       0 |        0 |       0 |       0 | 1-75
@@ -53,18 +55,18 @@ All files                |   27.04 |     25.4 |   29.25 |   26.57 |
   FilterEventsManager.ts |       0 |        0 |       0 |       0 | 5-229
  lib/hooks               |       0 |        0 |       0 |       0 |
   useEventsManager.ts    |       0 |        0 |       0 |       0 | 2-210
-  useMap.ts              |       0 |        0 |       0 |       0 | 2-340
- lib/utils               |   72.26 |    79.41 |    90.9 |    70.9 |
+  useMap.ts              |       0 |        0 |       0 |       0 | 2-190
+ lib/utils               |   77.08 |    81.25 |   90.47 |   76.64 |
   date.ts                |   80.64 |      100 |     100 |   80.64 | 16-17,58-59,76-77
-  location.ts            |     100 |     91.3 |     100 |     100 | 74-75
+  location.ts            |     100 |      100 |     100 |     100 |
   logr.ts                |   68.62 |     64.7 |      90 |   67.34 | 38,60-85,124
   utils.ts               |       0 |      100 |       0 |       0 | 1-13
 -------------------------|---------|----------|---------|---------|-----------------------------------
 
 Test Suites: 15 passed, 15 total
-Tests:       101 passed, 101 total
+Tests:       102 passed, 102 total
 Snapshots:   0 total
-Time:        2.542 s
+Time:        2.505 s
 Ran all test suites.
 ```
 

@@ -1,17 +1,11 @@
-import {
-    truncateLocation,
-    isLocationWithinBounds,
-    calculateCenter,
-    findLargestCity,
-} from '../location'
-import { MapBounds } from '@/types/map'
-import { ResolvedLocation } from '@/types/events'
+import { truncateLocation, calculateMapBoundsAndViewport, generateMapMarkers, genMarkerId } from '../location'
+import { MapBounds, MapMarker } from '@/types/map'
+import { CalendarEvent } from '@/types/events'
 
-describe('Location Utilities', () => {
+describe('Location and Map Utilities', () => {
     describe('truncateLocation', () => {
         it('truncates a location string that exceeds the max length', () => {
-            const longLocation =
-                'This is a very long location string that should be truncated'
+            const longLocation = 'This is a very long location string that should be truncated'
             const result = truncateLocation(longLocation, 20)
             expect(result).toBe('This is a very lo...')
             expect(result.length).toBe(20)
@@ -34,163 +28,360 @@ describe('Location Utilities', () => {
         })
     })
 
-    describe('isLocationWithinBounds', () => {
-        const bounds: MapBounds = {
-            north: 40,
-            south: 30,
-            east: 20,
-            west: 10,
-        }
+    describe('calculateMapBoundsAndViewport', () => {
+        it('should return default values for empty markers array', () => {
+            const result = calculateMapBoundsAndViewport([])
 
-        it('returns true for a location within bounds', () => {
-            const location: ResolvedLocation = {
-                original_location: 'Test Location',
-                formatted_address: 'Test Location',
-                lat: 35,
-                lng: 15,
-                status: 'resolved',
-            }
-            expect(isLocationWithinBounds(location, bounds)).toBe(true)
+            expect(result.bounds).toBeNull()
+            expect(result.viewport).toEqual({
+                latitude: 0,
+                longitude: 0,
+                zoom: 1,
+                bearing: 0,
+                pitch: 0,
+            })
         })
 
-        it('returns false for a location outside bounds', () => {
-            const location: ResolvedLocation = {
-                original_location: 'Test Location',
-                formatted_address: 'Test Location',
-                lat: 45,
-                lng: 25,
-                status: 'resolved',
+        it('should handle single marker correctly', () => {
+            const marker: MapMarker = {
+                id: '1',
+                latitude: 37.7749,
+                longitude: -122.4194,
+                events: [],
             }
-            expect(isLocationWithinBounds(location, bounds)).toBe(false)
+
+            const result = calculateMapBoundsAndViewport([marker])
+
+            expect(result.bounds).toEqual({
+                north: 37.7749,
+                south: 37.7749,
+                east: -122.4194,
+                west: -122.4194,
+            })
+            expect(result.viewport).toEqual({
+                latitude: 37.7749,
+                longitude: -122.4194,
+                zoom: 14,
+                bearing: 0,
+                pitch: 0,
+            })
         })
 
-        it('returns false for an unresolved location', () => {
-            const location: ResolvedLocation = {
-                original_location: 'Test Location',
-                status: 'unresolved',
+        it('should calculate correct bounds and viewport for multiple markers', () => {
+            const markers: MapMarker[] = [
+                {
+                    id: '1',
+                    latitude: 37.7749,
+                    longitude: -122.4194,
+                    events: [],
+                },
+                {
+                    id: '2',
+                    latitude: 37.7833,
+                    longitude: -122.4167,
+                    events: [],
+                },
+                {
+                    id: '3',
+                    latitude: 37.7935,
+                    longitude: -122.4399,
+                    events: [],
+                },
+            ]
+
+            const result = calculateMapBoundsAndViewport(markers)
+
+            // Check that bounds include all markers with padding
+            expect(result.bounds).toBeDefined()
+            if (result.bounds) {
+                expect(result.bounds.north).toBeGreaterThan(37.7935) // Should be max lat + padding
+                expect(result.bounds.south).toBeLessThan(37.7749) // Should be min lat - padding
+                expect(result.bounds.east).toBeGreaterThan(-122.4167) // Should be max lng + padding
+                expect(result.bounds.west).toBeLessThan(-122.4399) // Should be min lng - padding
             }
-            expect(isLocationWithinBounds(location, bounds)).toBe(false)
+
+            // Check viewport center is between min and max coordinates
+            expect(result.viewport.latitude).toBeGreaterThan(37.7749)
+            expect(result.viewport.latitude).toBeLessThan(37.7935)
+            expect(result.viewport.longitude).toBeGreaterThan(-122.4399)
+            expect(result.viewport.longitude).toBeLessThan(-122.4167)
+
+            // Check zoom is within expected range
+            expect(result.viewport.zoom).toBeGreaterThanOrEqual(1)
+            expect(result.viewport.zoom).toBeLessThanOrEqual(15)
+
+            // Check other viewport properties
+            expect(result.viewport.bearing).toBe(0)
+            expect(result.viewport.pitch).toBe(0)
         })
 
-        it('returns false for a location with missing coordinates', () => {
-            const location: ResolvedLocation = {
-                original_location: 'Test Location',
-                formatted_address: 'Test Location',
-                status: 'resolved',
-            }
-            expect(isLocationWithinBounds(location, bounds)).toBe(false)
+        it('should handle markers with same coordinates', () => {
+            const markers: MapMarker[] = [
+                {
+                    id: '1',
+                    latitude: 37.7749,
+                    longitude: -122.4194,
+                    events: [],
+                },
+                {
+                    id: '2',
+                    latitude: 37.7749,
+                    longitude: -122.4194,
+                    events: [],
+                },
+            ]
+
+            const result = calculateMapBoundsAndViewport(markers)
+
+            expect(result.bounds).toEqual({
+                north: 37.7749,
+                south: 37.7749,
+                east: -122.4194,
+                west: -122.4194,
+            })
+            expect(result.viewport).toEqual({
+                latitude: 37.7749,
+                longitude: -122.4194,
+                zoom: 15,
+                bearing: 0,
+                pitch: 0,
+            })
         })
     })
 
-    describe('calculateCenter', () => {
-        it('calculates the center point of multiple locations', () => {
-            const locations: ResolvedLocation[] = [
-                {
-                    original_location: 'Location 1',
-                    formatted_address: 'Location 1',
-                    lat: 10,
-                    lng: 20,
-                    status: 'resolved',
-                },
-                {
-                    original_location: 'Location 2',
-                    formatted_address: 'Location 2',
-                    lat: 30,
-                    lng: 40,
-                    status: 'resolved',
-                },
-            ]
-            const center = calculateCenter(locations)
-            expect(center.latitude).toBe(20) // Average of 10 and 30
-            expect(center.longitude).toBe(30) // Average of 20 and 40
-        })
-
-        it('returns default US center for empty locations array', () => {
-            const center = calculateCenter([])
-            expect(center.latitude).toBe(39.8283)
-            expect(center.longitude).toBe(-98.5795)
-        })
-
-        it('filters out unresolved locations', () => {
-            const locations: ResolvedLocation[] = [
-                {
-                    original_location: 'Location 1',
-                    formatted_address: 'Location 1',
-                    lat: 10,
-                    lng: 20,
-                    status: 'resolved',
-                },
-                {
-                    original_location: 'Location 2',
+    describe('genMarkerId', () => {
+        it('should return empty string for unresolved location', () => {
+            const event: CalendarEvent = {
+                id: '1',
+                name: 'Test Event',
+                original_event_url: 'https://example.com',
+                description: 'Test Description',
+                description_urls: [],
+                start: '2023-01-01T10:00:00Z',
+                end: '2023-01-01T11:00:00Z',
+                location: 'Test Location',
+                resolved_location: {
                     status: 'unresolved',
+                    original_location: 'Test Location',
                 },
-            ]
-            const center = calculateCenter(locations)
-            expect(center.latitude).toBe(10)
-            expect(center.longitude).toBe(20)
+            }
+
+            expect(genMarkerId(event)).toBe('')
+        })
+
+        it('should return empty string for location without coordinates', () => {
+            const event: CalendarEvent = {
+                id: '1',
+                name: 'Test Event',
+                original_event_url: 'https://example.com',
+                description: 'Test Description',
+                description_urls: [],
+                start: '2023-01-01T10:00:00Z',
+                end: '2023-01-01T11:00:00Z',
+                location: 'Test Location',
+                resolved_location: {
+                    status: 'resolved',
+                    original_location: 'Test Location',
+                    formatted_address: 'Test Location',
+                },
+            }
+
+            expect(genMarkerId(event)).toBe('')
+        })
+
+        it('should generate a valid marker ID from coordinates', () => {
+            const event: CalendarEvent = {
+                id: '1',
+                name: 'Test Event',
+                original_event_url: 'https://example.com',
+                description: 'Test Description',
+                description_urls: [],
+                start: '2023-01-01T10:00:00Z',
+                end: '2023-01-01T11:00:00Z',
+                location: 'Test Location',
+                resolved_location: {
+                    status: 'resolved',
+                    original_location: 'Test Location',
+                    formatted_address: 'Test Location',
+                    lat: 37.7749,
+                    lng: -122.4194,
+                },
+            }
+
+            expect(genMarkerId(event)).toBe('37.774900,-122.419400')
         })
     })
 
-    describe('findLargestCity', () => {
-        it('returns the first resolved location when multiple are available', () => {
-            const locations: ResolvedLocation[] = [
-                {
-                    original_location: 'New York',
-                    formatted_address: 'New York, NY, USA',
-                    lat: 40.7128,
-                    lng: -74.006,
-                    status: 'resolved',
-                },
-                {
-                    original_location: 'Los Angeles',
-                    formatted_address: 'Los Angeles, CA, USA',
-                    lat: 34.0522,
-                    lng: -118.2437,
-                    status: 'resolved',
-                },
-            ]
-            const result = findLargestCity(locations)
-            expect(result).toEqual(locations[0])
+    describe('generateMapMarkers', () => {
+        it('should return empty array for empty events array', () => {
+            const result = generateMapMarkers([])
+            expect(result).toEqual([])
         })
 
-        it('returns null for empty locations array', () => {
-            const result = findLargestCity([])
-            expect(result).toBeNull()
+        it('should return empty array for non-array input', () => {
+            // @ts-ignore - Testing invalid input
+            const result = generateMapMarkers(null)
+            expect(result).toEqual([])
         })
 
-        it('returns null when no resolved locations are available', () => {
-            const locations: ResolvedLocation[] = [
+        it('should generate markers for events with valid locations', () => {
+            const events: CalendarEvent[] = [
                 {
-                    original_location: 'Unknown Place',
-                    status: 'unresolved',
+                    id: '1',
+                    name: 'Event 1',
+                    original_event_url: 'https://example.com/1',
+                    description: 'Description 1',
+                    description_urls: [],
+                    start: '2023-01-01T10:00:00Z',
+                    end: '2023-01-01T11:00:00Z',
+                    location: 'Location 1',
+                    resolved_location: {
+                        status: 'resolved',
+                        original_location: 'Location 1',
+                        formatted_address: 'Location 1',
+                        lat: 37.7749,
+                        lng: -122.4194,
+                    },
                 },
                 {
-                    original_location: 'Another Unknown',
-                    status: 'unresolved',
+                    id: '2',
+                    name: 'Event 2',
+                    original_event_url: 'https://example.com/2',
+                    description: 'Description 2',
+                    description_urls: [],
+                    start: '2023-01-01T12:00:00Z',
+                    end: '2023-01-01T13:00:00Z',
+                    location: 'Location 2',
+                    resolved_location: {
+                        status: 'resolved',
+                        original_location: 'Location 2',
+                        formatted_address: 'Location 2',
+                        lat: 37.7833,
+                        lng: -122.4167,
+                    },
                 },
             ]
-            const result = findLargestCity(locations)
-            expect(result).toBeNull()
+
+            const result = generateMapMarkers(events)
+
+            expect(result.length).toBe(2)
+            expect(result[0].id).toBe('37.774900,-122.419400')
+            expect(result[0].latitude).toBe(37.7749)
+            expect(result[0].longitude).toBe(-122.4194)
+            expect(result[0].events.length).toBe(1)
+            expect(result[0].events[0].id).toBe('1')
+
+            expect(result[1].id).toBe('37.783300,-122.416700')
+            expect(result[1].latitude).toBe(37.7833)
+            expect(result[1].longitude).toBe(-122.4167)
+            expect(result[1].events.length).toBe(1)
+            expect(result[1].events[0].id).toBe('2')
         })
 
-        it('filters out locations without coordinates', () => {
-            const locations: ResolvedLocation[] = [
+        it('should group events at the same location into a single marker', () => {
+            const events: CalendarEvent[] = [
                 {
-                    original_location: 'Incomplete Location',
-                    formatted_address: 'Incomplete Location',
-                    status: 'resolved',
-                    // Missing lat/lng
+                    id: '1',
+                    name: 'Event 1',
+                    original_event_url: 'https://example.com/1',
+                    description: 'Description 1',
+                    description_urls: [],
+                    start: '2023-01-01T10:00:00Z',
+                    end: '2023-01-01T11:00:00Z',
+                    location: 'Location 1',
+                    resolved_location: {
+                        status: 'resolved',
+                        original_location: 'Location 1',
+                        formatted_address: 'Location 1',
+                        lat: 37.7749,
+                        lng: -122.4194,
+                    },
                 },
                 {
-                    original_location: 'Complete Location',
-                    formatted_address: 'Complete Location',
-                    lat: 40.7128,
-                    lng: -74.006,
-                    status: 'resolved',
+                    id: '2',
+                    name: 'Event 2',
+                    original_event_url: 'https://example.com/2',
+                    description: 'Description 2',
+                    description_urls: [],
+                    start: '2023-01-01T12:00:00Z',
+                    end: '2023-01-01T13:00:00Z',
+                    location: 'Location 2',
+                    resolved_location: {
+                        status: 'resolved',
+                        original_location: 'Location 2',
+                        formatted_address: 'Location 2',
+                        lat: 37.7749,
+                        lng: -122.4194,
+                    },
                 },
             ]
-            const result = findLargestCity(locations)
-            expect(result).toEqual(locations[1])
+
+            const result = generateMapMarkers(events)
+
+            expect(result.length).toBe(1)
+            expect(result[0].id).toBe('37.774900,-122.419400')
+            expect(result[0].latitude).toBe(37.7749)
+            expect(result[0].longitude).toBe(-122.4194)
+            expect(result[0].events.length).toBe(2)
+            expect(result[0].events.map((e) => e.id)).toEqual(['1', '2'])
+        })
+
+        it('should skip events without valid locations', () => {
+            const events: CalendarEvent[] = [
+                {
+                    id: '1',
+                    name: 'Event 1',
+                    original_event_url: 'https://example.com/1',
+                    description: 'Description 1',
+                    description_urls: [],
+                    start: '2023-01-01T10:00:00Z',
+                    end: '2023-01-01T11:00:00Z',
+                    location: 'Location 1',
+                    resolved_location: {
+                        status: 'resolved',
+                        original_location: 'Location 1',
+                        formatted_address: 'Location 1',
+                        lat: 37.7749,
+                        lng: -122.4194,
+                    },
+                },
+                {
+                    id: '2',
+                    name: 'Event 2',
+                    original_event_url: 'https://example.com/2',
+                    description: 'Description 2',
+                    description_urls: [],
+                    start: '2023-01-01T12:00:00Z',
+                    end: '2023-01-01T13:00:00Z',
+                    location: 'Location 2',
+                    resolved_location: {
+                        status: 'unresolved',
+                        original_location: 'Location 2',
+                    },
+                },
+                {
+                    id: '3',
+                    name: 'Event 3',
+                    original_event_url: 'https://example.com/3',
+                    description: 'Description 3',
+                    description_urls: [],
+                    start: '2023-01-01T14:00:00Z',
+                    end: '2023-01-01T15:00:00Z',
+                    location: 'Location 3',
+                    resolved_location: {
+                        status: 'resolved',
+                        original_location: 'Location 3',
+                        formatted_address: 'Location 3',
+                        // Missing lat/lng
+                    },
+                },
+            ]
+
+            const result = generateMapMarkers(events)
+
+            expect(result.length).toBe(1)
+            expect(result[0].events.length).toBe(1)
+            expect(result[0].events[0].id).toBe('1')
         })
     })
 })

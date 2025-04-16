@@ -46,7 +46,7 @@ const MapContainer: React.FC<MapContainerProps> = ({
     const boundsUpdateTimerRef = useRef<NodeJS.Timeout | null>(null)
 
     // Simplified state: Only track the current popup info
-    const [popupInfo, setPopupInfo] = useState<MapMarker | null>(null)
+    const [popupMarker, setPopupMarker] = useState<MapMarker | null>(null)
 
     // Log when component mounts
     useEffect(() => {
@@ -59,13 +59,13 @@ const MapContainer: React.FC<MapContainerProps> = ({
     // Close popup when selected marker changes to null
     useEffect(() => {
         if (!selectedMarkerId) {
-            // TODO: DONE. Fix potential infinite loop by checking if popupInfo is already null
+            // TODO: DONE. Fix potential infinite loop by checking if popupMarker is already null
             // Only set to null if it's not already null to prevent unnecessary rerenders
-            if (popupInfo !== null) {
-                setPopupInfo(null)
+            if (popupMarker !== null) {
+                setPopupMarker(null)
             }
         }
-    }, [selectedMarkerId, popupInfo])
+    }, [selectedMarkerId, popupMarker])
 
     // Simplified effect: Update popup when selected marker changes
     useEffect(() => {
@@ -75,9 +75,9 @@ const MapContainer: React.FC<MapContainerProps> = ({
 
             // Check if marker exists and has events
             if (marker && marker.events && marker.events.length > 0) {
-                // Only update popupInfo if it's different to prevent unnecessary rerenders
-                if (!popupInfo || popupInfo.id !== marker.id) {
-                    setPopupInfo(marker)
+                // Only update popupMarker if it's different to prevent unnecessary rerenders
+                if (!popupMarker || popupMarker.id !== marker.id) {
+                    setPopupMarker(marker)
                 }
 
                 // If no specific event is selected or the selected event is not in this marker,
@@ -90,12 +90,12 @@ const MapContainer: React.FC<MapContainerProps> = ({
                 }
             } else {
                 // Only set to null if it's not already null
-                if (popupInfo !== null) {
-                    setPopupInfo(null)
+                if (popupMarker !== null) {
+                    setPopupMarker(null)
                 }
             }
         }
-    }, [selectedMarkerId, markers, selectedEventId, onEventSelect, popupInfo])
+    }, [selectedMarkerId, markers, selectedEventId, onEventSelect, popupMarker])
 
     // Handle map load
     const handleMapLoad = () => {
@@ -202,7 +202,7 @@ const MapContainer: React.FC<MapContainerProps> = ({
     const handlePopupClose = () => {
         onMarkerSelect(null)
         onEventSelect(null)
-        setPopupInfo(null)
+        setPopupMarker(null)
     }
 
     return (
@@ -272,10 +272,10 @@ const MapContainer: React.FC<MapContainerProps> = ({
 
                 {/* Popup - simplified condition */}
                 {/* TODO: Consider simplifying this condition for better readability */}
-                {selectedMarkerId && popupInfo && popupInfo.events && popupInfo.events.length > 0 && (
+                {selectedMarkerId && popupMarker && popupMarker.events && popupMarker.events.length > 0 && (
                     <Popup
-                        longitude={popupInfo.longitude}
-                        latitude={popupInfo.latitude}
+                        longitude={popupMarker.longitude}
+                        latitude={popupMarker.latitude}
                         anchor="bottom"
                         onClose={handlePopupClose}
                         closeButton={true}
@@ -283,7 +283,7 @@ const MapContainer: React.FC<MapContainerProps> = ({
                         className="map-popup"
                     >
                         <MapPopup
-                            marker={popupInfo}
+                            marker={popupMarker}
                             selectedEventId={selectedEventId}
                             onEventSelect={handleEventSelect}
                         />
