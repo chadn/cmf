@@ -39,9 +39,13 @@ describe('EventFilters Component', () => {
     test('renders date range button with proper format', () => {
         render(<EventFilters {...defaultProps} />)
 
-        // Check if the button exists and contains the format with [CHANGE]
-        const dateButton = screen.getByText(/Showing:.+\[CHANGE\]/i)
+        // Get the button by its test ID
+        const dateButton = screen.getByTestId('date-range-dropdown')
         expect(dateButton).toBeInTheDocument()
+
+        // Check that the button contains the expected format
+        expect(dateButton).toHaveTextContent(/Showing:/)
+        expect(dateButton).toHaveTextContent(/\[CHANGE\]/)
     })
 
     test('shows date sliders when button is clicked', () => {

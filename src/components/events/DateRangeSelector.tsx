@@ -66,17 +66,8 @@ export default function DateRangeSelector({
     const formatDateForButton = (date: Date) => {
         return format(date, 'MMM d EEE')
     }
-
-    const getDateButtonText = () => {
-        const startDate = new Date(getDateFromValue(startValue))
-        const endDate = new Date(getDateFromValue(endValue))
-        const msg = `Showing: ${formatDateForButton(startDate)} - ${formatDateForButton(endDate)}`
-
-        if (!showDateSliders) {
-            return `${msg} [CHANGE]`
-        }
-        return `${msg} [HIDE]`
-    }
+    const startDateText = formatDateForButton(new Date(getDateFromValue(startValue)))
+    const endDateText = formatDateForButton(new Date(getDateFromValue(endValue)))
 
     return (
         <div className="bg-white rounded-md shadow-sm overflow-hidden">
@@ -85,7 +76,8 @@ export default function DateRangeSelector({
                 className="w-full text-left text-sm md:text-xl p-1 text-gray-700 hover:bg-gray-50 transition-colors"
                 data-testid="date-range-dropdown"
             >
-                {getDateButtonText()}
+                Showing: {startDateText} - {endDateText}{' '}
+                <span className="text-xs text-blue-500">[{showDateSliders ? 'HIDE' : 'CHANGE'}]</span>
             </button>
 
             <div
