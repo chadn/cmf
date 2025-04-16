@@ -57,8 +57,8 @@ describe('CalendarSelector', () => {
 
         // Check for main elements
         expect(screen.getByText('Welcome to Calendar Map Filter')).toBeInTheDocument()
-        expect(screen.getByText('Enter a Google Calendar ID')).toBeInTheDocument()
-        expect(screen.getByLabelText('Calendar ID')).toBeInTheDocument()
+        expect(screen.getByText('Enter Google Calendar ID')).toBeInTheDocument()
+        expect(screen.getByLabelText('Enter Google Calendar ID')).toBeInTheDocument()
         expect(screen.getByText('View Calendar')).toBeInTheDocument()
 
         // Fixed test - check for the correct text
@@ -95,7 +95,7 @@ describe('CalendarSelector', () => {
         expect(screen.getByText('Please enter a Calendar ID')).toBeInTheDocument()
 
         // Now enter a valid ID
-        const input = screen.getByLabelText('Calendar ID')
+        const input = screen.getByLabelText('Enter Google Calendar ID')
         fireEvent.change(input, { target: { value: 'test@example.com' } })
 
         // Submit again
@@ -109,7 +109,7 @@ describe('CalendarSelector', () => {
         render(<CalendarSelector />)
 
         // Fill in the calendar ID
-        const input = screen.getByLabelText('Calendar ID')
+        const input = screen.getByLabelText('Enter Google Calendar ID')
         fireEvent.change(input, { target: { value: 'test@example.com' } })
 
         // Submit the form
@@ -134,7 +134,7 @@ describe('CalendarSelector', () => {
         fireEvent.click(exampleCalendarButton)
 
         // Check that the input value was updated
-        const input = screen.getByLabelText('Calendar ID') as HTMLInputElement
+        const input = screen.getByLabelText('Enter Google Calendar ID') as HTMLInputElement
         expect(input.value).toBe('geocachingspain@gmail.com')
 
         // Check logging was called
@@ -148,7 +148,7 @@ describe('CalendarSelector', () => {
         render(<CalendarSelector />)
 
         // Fill in the calendar ID
-        const input = screen.getByLabelText('Calendar ID')
+        const input = screen.getByLabelText('Enter Google Calendar ID')
         fireEvent.change(input, { target: { value: 'test@example.com' } })
 
         // Submit the form

@@ -30,7 +30,7 @@ export default function DateQuickButtons({
     const todayValue = getTodayValue()
 
     // Common button style
-    const buttonClass = 'text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 py-1 px-2 rounded'
+    const buttonClass = 'text-xs bg-blue-100 hover:bg-blue-200 text-blue-800 py-1 px-2 rounded'
 
     return (
         <div className="mt-3 flex flex-wrap gap-1 justify-between">

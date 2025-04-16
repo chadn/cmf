@@ -14,6 +14,7 @@ interface HeaderProps {
 function HeaderContent({ calendarName, eventCount, onInfoClick }: HeaderProps) {
     const searchParams = useSearchParams()
     const calendarId = searchParams.get('gc') || ''
+    const calendarHeader = calendarId ? calendarName || 'Loading Calendar...' : 'Calendar Map Filter'
 
     // Tailwind CSS prefixes, use to increase calendar name font size as screens go bigger
     // sm: - Small screens (640px and up)
@@ -36,7 +37,7 @@ function HeaderContent({ calendarName, eventCount, onInfoClick }: HeaderProps) {
                             title="Click to scroll events to top"
                         >
                             <span className="text-sm sm:text-lg md:text-2xl font-semibold text-gray-800">
-                                {calendarName || 'Loading Calendar...'}
+                                {calendarHeader}
                             </span>
                             {eventCount && (
                                 // text-sm (14px) for mobile devices

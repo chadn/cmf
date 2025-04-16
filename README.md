@@ -2,29 +2,29 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
+If you love maps, and have many events in your Calendar, this is for you.
+
 A visualization tool that displays calendar events on both an interactive map and a filterable list, allowing users to spatially browse and filter events based on geographic location.
 A React + Next.js application that displays Google Calendar events on an interactive map with powerful filtering capabilities.
 
-## STATUS
+## Status
 
-WORK IN PROGRESS: https://cmf-chad.vercel.app/
-
-See [Bugs and Known Issues ](docs/bugs.md)
+-   Work In Progress: https://cmf-chad.vercel.app/
+-   See [Bugs and Known Issues ](docs/bugs.md)
 
 ## 🌟 Features
 
--   **Calendar Integration**: Connect to Google Calendar (with support for Microsoft Outlook and Apple Calendar planned)
+-   **Calendar Integration**: Connect to Google Calendar (with planned support for Facebook Events, Microsoft Outlook, and Apple Calendar)
 -   **Interactive Map**: View all your calendar events on a MapLibre GL map
 -   **Smart Filtering**: Filter events by date range, search terms, and map bounds
 -   **Location Geocoding**: Automatically converts event locations to map coordinates
 -   **Responsive Design**: Works on desktop and mobile devices
 -   **Performance Optimized**: Caches geocoded locations to reduce API calls
--   **Dark Mode Support**: Automatically adapts to your system preferences
 
 ## 🔗 Tech Stack
 
--   **Frontend**: [Next.js](https://nextjs.org/) - React framework with SSR
--   **Frontend**: [React](https://reactjs.org/) - UI library
+-   **Frontend**: [React](https://reactjs.org/) - React framework with SSR (Server Side Rendering)
+-   **Fullstack, Hosting**: [Next.js](https://nextjs.org/) and [Vercel](https://vercel.com/docs/frameworks/nextjs)
 -   **Language**: [TypeScript](https://www.typescriptlang.org/) - Type-safe JavaScript
 -   **Map**:[MapLibre GL JS](https://maplibre.org/) - Open-source maps
 -   **Data Fetching**:[SWR](https://swr.vercel.app/) - Data fetching and caching
