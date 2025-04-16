@@ -35,11 +35,17 @@
 # (nil)
 #
 # Use the api with a better location name to cache in redis
-# curl 'https://cmf-chad.vercel.app/api/geocode?a=Asiento,sf,ca'
-
-# redis-cli --tls -u redis://fine-kiwi-61313.upstash.io:6379 copy "location:Asiento,sf,ca" "location:Asiento"
-# redis-cli --tls -u redis://fine-kiwi-61313.upstash.io:6379 get "location:Asiento"
-# "{\"original_location\":\"Asiento,sf,ca\",\"formatted_address\":\"2730 21st St, San Francisco, CA 94110, USA\",\"lat\":37.7577512,\"lng\":-122.4094629,\"status\":\"resolved\"}"
+# curl 'https://cmf-chad.vercel.app/api/geocode?a=Fairfax+COMMUNITY+Church,fairfax,ca'
+#
+# redis-cli --tls -u redis://fine-kiwi-61313.upstash.io:6379 keys '*'|grep -i fairfax
+# location:Fairfax COMMUNITY Church, California
+# location:Fairfax COMMUNITY Church,fairfax,ca
+#
+# redis-cli --tls -u redis://fine-kiwi-61313.upstash.io:6379 get 'location:Fairfax COMMUNITY Church,fairfax,ca'
+# "{\"original_location\":\"Fairfax COMMUNITY Church,fairfax,ca\",\"formatted_address\":\"2398 Sir Francis Drake Blvd, Fairfax, CA 94930, USA\",\"lat\":37.995274,\"lng\":-122.5954602,\"types\":[\"church\",\"establishment\",\"place_of_worship\",\"point_of_interest\"],\"status\":\"resolved\"}"
+#
+# -- Now set but edit original_location to match key
+# redis-cli --tls -u redis://fine-kiwi-61313.upstash.io:6379 set 'location:Fairfax COMMUNITY Church, California' "{\"original_location\":\"Fairfax COMMUNITY Church, California\",\"formatted_address\":\"2398 Sir Francis Drake Blvd, Fairfax, CA 94930, USA\",\"lat\":37.995274,\"lng\":-122.5954602,\"types\":[\"church\",\"establishment\",\"place_of_worship\",\"point_of_interest\"],\"status\":\"resolved\"}"
 #
 # OR if that doesn't work, no api call, just set manually:
 #
