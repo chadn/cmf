@@ -170,11 +170,25 @@ function HomeContent() {
 
             // Set marker and update viewport
             setSelectedMarkerId(markerId)
+
+            // Calculate the offset based on the current zoom level
+            // Higher zoom levels need smaller offsets
+            const zoomFactor = Math.max(1, viewport.zoom / 10)
+            const latOffset = -0.005 / zoomFactor // Adjust this value as needed
+
+            // Update viewport with adjusted latitude to ensure popup is fully visible
             setViewport({
                 ...viewport,
-                latitude: event.resolved_location.lat || 0,
+                latitude: (event.resolved_location.lat || 0) - latOffset, // Move map down slightly
                 longitude: event.resolved_location.lng || 0,
                 zoom: 14,
+            })
+
+            logr.info('map', 'Adjusted viewport for popup visibility', {
+                originalLat: event.resolved_location.lat,
+                adjustedLat: (event.resolved_location.lat || 0) - latOffset,
+                offset: latOffset,
+                zoom: viewport.zoom,
             })
         },
         [evts.allEvents, setSelectedMarkerId, setViewport, viewport]
