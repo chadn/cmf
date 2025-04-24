@@ -1,14 +1,14 @@
 'use client'
 import { useState, useEffect, useMemo, useReducer } from 'react'
 import useSWR from 'swr'
-import { CalendarEvent, EventsState, EventsAction, FilteredEvents } from '@/types/events'
+import { EventsState, EventsAction, FilteredEvents } from '@/types/events'
 import { MapBounds } from '@/types/map'
 import { FilterEventsManager } from '@/lib/events/FilterEventsManager'
 import { logr } from '@/lib/utils/logr'
 import { fetcherLogr } from '@/lib/utils/utils'
 
 interface UseEventsManagerProps {
-    calendarId?: string
+    calendarId?: string | null
     dateRange?: { start: string; end: string }
     searchQuery?: string
     mapBounds?: MapBounds

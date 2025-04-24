@@ -106,58 +106,109 @@ export function calculateMapBoundsAndViewport(markers: MapMarker[]): {
         }
     }
 
-    if (markers.length === 1) {
-        const marker = markers[0]
+    // Calculate bounds
+    const bounds = calculateBoundsFromMarkers(markers)
+
+    // Calculate viewport
+    const viewport = calculateViewportFromBounds(bounds)
+
+    return {
+        bounds,
+        viewport,
+    }
+}
+
+/**
+ * Calculates map bounds from a set of markers
+ * @param markers - Array of map markers to calculate bounds for
+ * @returns MapBounds object representing the bounds of all markers
+ */
+export function calculateBoundsFromMarkers(markers: MapMarker[]): MapBounds {
+    if (markers.length === 0) {
         return {
-            bounds: {
-                north: marker.latitude,
-                south: marker.latitude,
-                east: marker.longitude,
-                west: marker.longitude,
-            },
-            viewport: {
-                latitude: marker.latitude,
-                longitude: marker.longitude,
-                zoom: 14,
-                bearing: 0,
-                pitch: 0,
-            },
+            north: 0,
+            south: 0,
+            east: 0,
+            west: 0,
         }
     }
 
-    const latitudes = markers.map((m) => m.latitude)
-    const longitudes = markers.map((m) => m.longitude)
-    const minLat = Math.min(...latitudes)
-    const maxLat = Math.max(...latitudes)
-    const minLng = Math.min(...longitudes)
-    const maxLng = Math.max(...longitudes)
+    // Initialize with the first marker's coordinates
+    let north = markers[0].latitude
+    let south = markers[0].latitude
+    let east = markers[0].longitude
+    let west = markers[0].longitude
 
-    // Add 10% padding to bounds
-    const latPadding = (maxLat - minLat) * 0.1
-    const lngPadding = (maxLng - minLng) * 0.1
-
-    // Calculate center point
-    const centerLat = (minLat + maxLat) / 2
-    const centerLng = (minLng + maxLng) / 2
-
-    // Calculate zoom level to fit all markers
-    const latZoom = Math.log2(360 / (maxLat - minLat + 2 * latPadding)) - 1
-    const lngZoom = Math.log2(360 / (maxLng - minLng + 2 * lngPadding)) - 1
-    const zoom = Math.min(Math.max(Math.min(latZoom, lngZoom), 1), 15)
+    // Find the min/max coordinates
+    markers.forEach((marker) => {
+        north = Math.max(north, marker.latitude)
+        south = Math.min(south, marker.latitude)
+        east = Math.max(east, marker.longitude)
+        west = Math.min(west, marker.longitude)
+    })
 
     return {
-        bounds: {
-            north: maxLat + latPadding,
-            south: minLat - latPadding,
-            east: maxLng + lngPadding,
-            west: minLng - lngPadding,
-        },
-        viewport: {
-            latitude: centerLat,
-            longitude: centerLng,
-            zoom,
-            bearing: 0,
-            pitch: 0,
-        },
+        north,
+        south,
+        east,
+        west,
+    }
+}
+
+/**
+ * Calculates viewport settings from map bounds
+ * @param bounds - MapBounds object to calculate viewport from
+ * @returns MapViewport object with appropriate settings
+ */
+export function calculateViewportFromBounds(bounds: MapBounds): MapViewport {
+    // Calculate center
+    const latitude = (bounds.north + bounds.south) / 2
+    const longitude = (bounds.east + bounds.west) / 2
+
+    // Calculate appropriate zoom level based on bounds size
+    const latDiff = bounds.north - bounds.south
+    const lonDiff = bounds.east - bounds.west
+    const maxDiff = Math.max(latDiff, lonDiff)
+
+    // Determine zoom level based on the size of the bounds
+    // This is a simplified calculation and may need adjustment
+    let zoom = 1
+    if (maxDiff > 0) {
+        // Logarithmic scale for zoom level
+        zoom = Math.floor(16 - Math.log2(maxDiff * 10))
+        // Clamp zoom level
+        zoom = Math.max(1, Math.min(zoom, 20))
+    }
+
+    return {
+        latitude,
+        longitude,
+        zoom,
+        bearing: 0,
+        pitch: 0,
+    }
+}
+
+/**
+ * Calculates approximate map bounds from a viewport
+ * This is a simplified calculation that creates a bounding box around the viewport center
+ * based on the zoom level
+ *
+ * @param viewport - The map viewport
+ * @returns MapBounds object representing the approximate bounds
+ */
+export function calculateBoundsFromViewport(viewport: MapViewport): MapBounds {
+    // Calculate the approximate degrees of latitude/longitude visible at this zoom level
+    // Higher zoom levels show less area
+    const zoomFactor = Math.pow(2, 20 - viewport.zoom) // 20 is max zoom
+    const latDelta = 180 / zoomFactor
+    const lonDelta = 360 / zoomFactor
+
+    // Calculate bounds
+    return {
+        north: viewport.latitude + latDelta / 2,
+        south: viewport.latitude - latDelta / 2,
+        east: viewport.longitude + lonDelta / 2,
+        west: viewport.longitude - lonDelta / 2,
     }
 }
