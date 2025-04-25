@@ -1,7 +1,11 @@
 import { UrlParams } from '@/types/urlparams'
+import { logr } from '@/lib/utils/logr'
 
 /**
  * URL parameter validation utilities
+ * NOTE THIS IS NOT USED ANYMORE, WE ARE USING NUQS NOW.
+ * KEEPING IT HERE FOR REFERENCE even though it was not in a working state.
+ * we may we need to switch back to using URL params again.
  */
 
 /**
@@ -53,21 +57,19 @@ export const isValidDateParam = (date: string): boolean => {
  */
 export class UrlParamsManager {
     private searchParams: URLSearchParams
-    private currentParams: UrlParams
     public initialParams: UrlParams
 
     constructor(searchParams?: URLSearchParams) {
         this.searchParams = searchParams || new URLSearchParams()
-
-        // Create empty params objects
-        const emptyParams = this.createEmptyParams()
-        this.currentParams = emptyParams
-        this.initialParams = emptyParams
-
-        if (searchParams) {
-            this.storeValidUrlParams(searchParams)
-            this.initialParams = { ...this.currentParams }
+        if (!this.searchParams) {
+            if (typeof window !== 'undefined') {
+                this.searchParams = new URLSearchParams(window.location.search)
+            } else {
+                logr.warn('browser', 'No search params provided, using empty URLSearchParams')
+                this.searchParams = new URLSearchParams()
+            }
         }
+        this.initialParams = this.storeValidUrlParams()
     }
 
     // Default values for parameters
@@ -102,51 +104,30 @@ export class UrlParamsManager {
     }
 
     // Stores valid parameters from URL into currentParams
-    storeValidUrlParams(searchParams: URLSearchParams): void {
-        this.searchParams = searchParams
-        this.currentParams = this.createEmptyParams()
+    storeValidUrlParams(searchParams?: URLSearchParams): UrlParams {
+        searchParams = searchParams || this.searchParams
+        const params = this.createEmptyParams()
 
         // Process each parameter
         this.getParamKeys().forEach((param) => {
             const value = searchParams.get(param)
 
             if (value && this.isValid(param)) {
-                this.setTypedValue(param, value)
+                if (param === 'lat' || param === 'lon') {
+                    params[param] = parseFloat(value)
+                } else if (param === 'zoom') {
+                    params[param] = parseInt(value)
+                } else {
+                    params[param] = value as any
+                }
             } else if (value) {
-                console.warn(`Invalid URL parameter ${param}=${value}`)
+                logr.warn('browser', `Skipping Invalid URL parameter ${param}=${value}`)
+            } else {
+                logr.info('browser', `Skipping URL parameter not found ${param}`)
             }
         })
-    }
-
-    // Sets the correct typed value for a parameter
-    private setTypedValue(param: keyof UrlParams, value: string): void {
-        switch (param) {
-            case 'lat':
-            case 'lon':
-                this.currentParams[param] = parseFloat(value)
-                break
-            case 'zoom':
-                this.currentParams.zoom = parseInt(value)
-                break
-            default:
-                ;(this.currentParams as any)[param] = value
-        }
-    }
-
-    // Updates the URL to reflect current parameter values
-    updateUrlParams(): void {
-        const params = new URLSearchParams()
-
-        // Only add non-null values to URL
-        this.getParamKeys().forEach((param) => {
-            const value = this.currentParams[param]
-            if (value !== null) {
-                params.set(param, value.toString())
-            }
-        })
-
-        const newUrl = `${window.location.pathname}?${params.toString()}`
-        window.history.replaceState({}, '', newUrl)
+        logr.info('browser', `Storing valid URL parameters ${JSON.stringify(params)}`)
+        return params
     }
 
     // Validates a specific URL parameter
@@ -180,7 +161,13 @@ export class UrlParamsManager {
 
     // Gets a parameter value with fallbacks to defaults
     get(param: keyof UrlParams): string | number | null {
-        const value = this.currentParams[param]
+        const val = this._get(param)
+        logr.info('browser', `Getting URL parameter ${param}=${val}`)
+        return val
+    }
+    // Gets a parameter value with fallbacks to defaults
+    _get(param: keyof UrlParams): string | number | null {
+        const value = this.searchParams.get(param) || null
 
         // Return existing value
         if (value !== null) {
@@ -199,30 +186,29 @@ export class UrlParamsManager {
         return null
     }
 
-    // Sets one or more URL parameters
-    set(params: { [key: string]: string | number }): void {
+    // Sets one or more URL parameters. if value is null, the parameter is removed.
+    set(params: { [key: string]: string | number | null }): void {
         const paramsCurrent = new URLSearchParams(this.searchParams.toString())
 
         Object.entries(params).forEach(([key, value]) => {
-            paramsCurrent.set(key, value.toString())
+            if (value === null) {
+                logr.info('browser', `Deleting URL parameter ${key}`)
+                paramsCurrent.delete(key)
+            } else {
+                logr.info('browser', `Setting URL parameter ${key}=${value}`)
+                paramsCurrent.set(key, value.toString())
+            }
         })
 
         const newUrl = `${window.location.pathname}?${paramsCurrent.toString()}`
         window.history.replaceState({}, '', newUrl)
     }
 
-    // Checks if viewport parameters are valid
-    isValidViewport(): boolean {
-        const lat = this.get('lat') as number | null
-        const lon = this.get('lon') as number | null
-        const zoom = this.get('zoom') as number | null
-
-        return lat !== null && lon !== null && zoom !== null && isValidViewport(lat, lon, zoom)
-    }
-
     // Deletes specified parameters from the URL
     delete(paramsRemoving: string[]): void {
         const paramsCurrent = new URLSearchParams(this.searchParams.toString())
+
+        logr.info('browser', `Deleting URL parameter(s) ${paramsRemoving}`)
 
         paramsRemoving.forEach((param) => paramsCurrent.delete(param))
 
@@ -241,13 +227,13 @@ export class UrlParamsManager {
         return result as UrlParams
     }
 
-    // Resets parameters to their initial values
-    resetToInitial(updateUrl: boolean = true): void {
-        this.currentParams = { ...this.initialParams }
+    // Checks if viewport parameters are valid
+    isValidViewport(): boolean {
+        const lat = this.get('lat') as number | null
+        const lon = this.get('lon') as number | null
+        const zoom = this.get('zoom') as number | null
 
-        if (updateUrl) {
-            this.updateUrlParams()
-        }
+        return lat !== null && lon !== null && zoom !== null && isValidViewport(lat, lon, zoom)
     }
 }
 

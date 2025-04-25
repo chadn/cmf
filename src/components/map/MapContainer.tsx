@@ -42,7 +42,6 @@ const MapContainer: React.FC<MapContainerProps> = ({
 }) => {
     const mapRef = useRef<any>(null) // TODO: Type this properly with MapRef from react-map-gl
     const [mapLoaded, setMapLoaded] = useState(false)
-    const [userInteracted, setUserInteracted] = useState(false) // TODO: Consider if this state is still needed as it's not used effectively
     const boundsUpdateTimerRef = useRef<NodeJS.Timeout | null>(null)
 
     // Simplified state: Only track the current popup info
@@ -116,13 +115,6 @@ const MapContainer: React.FC<MapContainerProps> = ({
 
     // Handle viewport change
     const handleViewportChange = (newViewport: ViewState) => {
-        setUserInteracted(true)
-        // TODO: Evaluate if setUserInteracted is providing value or if it should be removed
-        logr.info(
-            'map',
-            'handleViewportChange called, setUserInteracted=true but did user trigger? YES - at least some of the time. CHAD consider delete setUserInteracted'
-        )
-
         // Pass the complete viewport state to the parent component
         onViewportChange({
             latitude: newViewport.latitude,
@@ -168,14 +160,6 @@ const MapContainer: React.FC<MapContainerProps> = ({
             }
         }, timeoutMs) // Increased to 500ms for more reliable updates
     }
-
-    // Reset userInteracted when returning to "Map of All Events" view
-    // TODO: Consider if this effect is necessary or if userInteracted state can be removed altogether
-    useEffect(() => {
-        if (isMapOfAllEvents) {
-            setUserInteracted(false)
-        }
-    }, [isMapOfAllEvents])
 
     /**
      * Handles marker click events

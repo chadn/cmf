@@ -44,7 +44,7 @@ export function useMap(evts: FilteredEvents): UseMapReturn {
     // Combine all map state into a single state object
     const [mapState, setMapState] = useState<MapState>(() => {
         const { bounds, viewport } = calculateMapBoundsAndViewport(markersFromAllEvents)
-        logr.info('map', 'uE: Setting initial viewport', viewport)
+        logr.info('map', 'setMapState', viewport)
 
         return {
             viewport,
@@ -80,7 +80,9 @@ export function useMap(evts: FilteredEvents): UseMapReturn {
     }, [evts.shownEvents, markersFromAllEvents, eventsInitialized, mapState.isMapOfAllEvents])
 
     // Reset initialization when evts.allEvents changes (e.g., calendar switch)
+    // TODO - do we need this?
     useEffect(() => {
+        logr.info('map', `uE: MAYBE DELME? evts.allEvents=${evts.allEvents.length}`)
         setEventsInitialized(false)
     }, [evts.allEvents])
 
@@ -138,13 +140,15 @@ export function useMap(evts: FilteredEvents): UseMapReturn {
             markers: markersFromAllEvents,
             isMapOfAllEvents: true,
         }))
+        logr.info('map', `resetMapToAllEvents done.`)
     }, [evts.allEvents, markersFromAllEvents])
 
     // Handle viewport changes from user interaction
-    const handleViewportChange = useCallback((newViewport: MapViewport) => {
+    const setViewport = useCallback((newViewport: MapViewport) => {
         // Skip if this is an internal update
         if (isInternalUpdate.current) return
 
+        logr.info('map', 'setViewport from user interaction', newViewport)
         setMapState((prev) => ({
             ...prev,
             viewport: newViewport,
@@ -153,6 +157,10 @@ export function useMap(evts: FilteredEvents): UseMapReturn {
     }, [])
 
     // Log when selected marker changes
+    useEffect(() => {
+        logr.info('map', `uE: selectedMarkerId now ${mapState.selectedMarkerId}`)
+    }, [mapState.selectedMarkerId])
+    /* 
     useEffect(() => {
         if (mapState.selectedMarkerId) {
             const marker = markersFromAllEvents.find((m) => m.id === mapState.selectedMarkerId)
@@ -167,7 +175,9 @@ export function useMap(evts: FilteredEvents): UseMapReturn {
             logr.info('map', 'uE: Marker selection cleared')
         }
     }, [mapState.selectedMarkerId, markersFromAllEvents])
+    */
 
+    /*
     // Initialize map to show all events on first load or calendar switch
     useEffect(() => {
         // Only reset when events first load or change to a new set
@@ -180,10 +190,11 @@ export function useMap(evts: FilteredEvents): UseMapReturn {
             resetMapToAllEvents()
         }
     }, [markersFromAllEvents.length, eventsInitialized, resetMapToAllEvents])
+    */
 
     return {
         viewport: mapState.viewport,
-        setViewport: handleViewportChange,
+        setViewport,
         bounds: mapState.bounds,
         markers: mapState.markers,
         selectedMarkerId: mapState.selectedMarkerId,

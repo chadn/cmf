@@ -1,6 +1,7 @@
 import { MapBounds, MapViewport, MapMarker } from '@/types/map'
 import { Location, CalendarEvent } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
+import { createParser } from 'nuqs'
 
 /**
  * Truncates a location string to a maximum length
@@ -42,7 +43,7 @@ export function generateMapMarkers(events: CalendarEvent[]): MapMarker[] {
 
     // Ensure events is an array before iterating
     if (!events || !Array.isArray(events)) {
-        logr.info('map', 'No events provided to generate markers', { events })
+        logr.info('location', 'No events provided to generate markers', { events })
         return []
     }
 
@@ -76,7 +77,7 @@ export function generateMapMarkers(events: CalendarEvent[]): MapMarker[] {
     const markers = Array.from(markersMap.values())
 
     logr.info(
-        'map',
+        'location',
         `Generated ${markers.length} markers from ${eventsWithLocation} events with locations, ` +
             `skipped ${eventsWithoutLocation} events without resolvable location`
     )
@@ -112,6 +113,7 @@ export function calculateMapBoundsAndViewport(markers: MapMarker[]): {
     // Calculate viewport
     const viewport = calculateViewportFromBounds(bounds)
 
+    logr.info('location', 'calculateMapBoundsAndViewport return:', { bounds, viewport })
     return {
         bounds,
         viewport,
@@ -175,10 +177,23 @@ export function calculateViewportFromBounds(bounds: MapBounds): MapViewport {
     let zoom = 1
     if (maxDiff > 0) {
         // Logarithmic scale for zoom level
-        zoom = Math.floor(16 - Math.log2(maxDiff * 10))
-        // Clamp zoom level
-        zoom = Math.max(1, Math.min(zoom, 20))
+        // Lower base value (12 instead of 14) will reduce zoom by 2 levels across the board
+        // Keeping multiplier at 5 for consistency
+        zoom = Math.floor(12 - Math.log2(maxDiff * 5))
+
+        // Further reduce all zoom levels by 2 to get desired effect
+        zoom -= 1
+
+        // Add additional zoom reduction for very small differences to prevent extreme zoom
+        if (maxDiff < 0.01) {
+            zoom -= 1
+        }
+
+        // Clamp zoom level to reasonable bounds
+        zoom = Math.max(1, Math.min(zoom, 15))
     }
+
+    logr.info('location', `calculateViewportFromBounds: maxDiff=${maxDiff}, zoom=${zoom}`)
 
     return {
         latitude,
@@ -212,3 +227,47 @@ export function calculateBoundsFromViewport(viewport: MapViewport): MapBounds {
         west: viewport.longitude - lonDelta / 2,
     }
 }
+
+// Return a valid MapViewport, with default values if invalid
+// url params have a value of  null if they do not or should not exist.
+export const viewportUrlToViewport = (lat: number | null, lon: number | null, z: number | null): MapViewport => {
+    return {
+        latitude: lat !== null && lat <= 180 && lat >= -180 ? lat : 0,
+        longitude: lon !== null && lon <= 180 && lon >= -180 ? lon : 0,
+        zoom: z !== null && z <= 22 && z > 0 ? z : 0,
+        bearing: 0,
+        pitch: 0,
+    }
+}
+// Custom parsers to read and write values to the URL
+// url params have a value of  null if they do not or should not exist.
+export const parseAsZoom = createParser({
+    // parse: a function that takes a string and returns the parsed value, or null if invalid.
+    parse(queryValue) {
+        const val = parseFloat(queryValue)
+        if (isNaN(val) || val < 1 || val > 22) return null
+        return val
+    },
+    // serialize: a function that takes the parsed value and returns a string used in the URL.
+    serialize(value) {
+        logr.info('location', `serialize zoom:${value}`)
+        // if the value is an integer, return it as a string no decimal places
+        if (value === parseInt(value.toString())) {
+            return value.toString()
+        }
+        // otherwise, return it as a string with 1 decimal place
+        return value.toFixed(1)
+    },
+})
+export const parseAsLatLon = createParser({
+    // parse: a function that takes a string and returns the parsed value, or null if invalid.
+    parse(queryValue) {
+        const val = parseFloat(queryValue)
+        if (isNaN(val) || val < -180 || val > 180) return null
+        return val
+    },
+    // serialize: a function that takes the parsed value and returns a string used in the URL.
+    serialize(value) {
+        return value.toFixed(5)
+    },
+})

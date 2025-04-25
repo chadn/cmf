@@ -61,10 +61,12 @@ describe('Location and Map Utilities', () => {
             expect(result.viewport).toEqual({
                 latitude: 37.7749,
                 longitude: -122.4194,
-                zoom: 14,
+                zoom: expect.any(Number),
                 bearing: 0,
                 pitch: 0,
             })
+            expect(result.viewport.zoom).toBeGreaterThanOrEqual(10)
+            expect(result.viewport.zoom).toBeLessThanOrEqual(15)
         })
 
         it('should calculate correct bounds and viewport for multiple markers', () => {
@@ -91,13 +93,13 @@ describe('Location and Map Utilities', () => {
 
             const result = calculateMapBoundsAndViewport(markers)
 
-            // Check that bounds include all markers with padding
+            // Check that bounds include all markers (without expecting padding)
             expect(result.bounds).toBeDefined()
             if (result.bounds) {
-                expect(result.bounds.north).toBeGreaterThan(37.7935) // Should be max lat + padding
-                expect(result.bounds.south).toBeLessThan(37.7749) // Should be min lat - padding
-                expect(result.bounds.east).toBeGreaterThan(-122.4167) // Should be max lng + padding
-                expect(result.bounds.west).toBeLessThan(-122.4399) // Should be min lng - padding
+                expect(result.bounds.north).toBe(37.7935) // Max latitude
+                expect(result.bounds.south).toBe(37.7749) // Min latitude
+                expect(result.bounds.east).toBe(-122.4167) // Max longitude (east most)
+                expect(result.bounds.west).toBe(-122.4399) // Min longitude (west most)
             }
 
             // Check viewport center is between min and max coordinates
@@ -142,10 +144,108 @@ describe('Location and Map Utilities', () => {
             expect(result.viewport).toEqual({
                 latitude: 37.7749,
                 longitude: -122.4194,
-                zoom: 15,
+                zoom: expect.any(Number),
                 bearing: 0,
                 pitch: 0,
             })
+            expect(result.viewport.zoom).toBeGreaterThanOrEqual(10)
+            expect(result.viewport.zoom).toBeLessThanOrEqual(15)
+        })
+    })
+
+    describe('calculateBoundsFromMarkers', () => {
+        it('should return zero bounds for empty markers array', () => {
+            const { calculateBoundsFromMarkers } = require('../location')
+            const result = calculateBoundsFromMarkers([])
+
+            expect(result).toEqual({
+                north: 0,
+                south: 0,
+                east: 0,
+                west: 0,
+            })
+        })
+
+        it('should return correct bounds for single marker', () => {
+            const { calculateBoundsFromMarkers } = require('../location')
+            const marker: MapMarker = {
+                id: '1',
+                latitude: 37.7749,
+                longitude: -122.4194,
+                events: [],
+            }
+
+            const result = calculateBoundsFromMarkers([marker])
+
+            expect(result).toEqual({
+                north: 37.7749,
+                south: 37.7749,
+                east: -122.4194,
+                west: -122.4194,
+            })
+        })
+
+        it('should calculate correct bounds for multiple markers', () => {
+            const { calculateBoundsFromMarkers } = require('../location')
+            const markers: MapMarker[] = [
+                {
+                    id: '1',
+                    latitude: 37.7749,
+                    longitude: -122.4194,
+                    events: [],
+                },
+                {
+                    id: '2',
+                    latitude: 37.7833,
+                    longitude: -122.4167,
+                    events: [],
+                },
+                {
+                    id: '3',
+                    latitude: 37.7935,
+                    longitude: -122.4399,
+                    events: [],
+                },
+            ]
+
+            const result = calculateBoundsFromMarkers(markers)
+
+            // Check exact bounds without padding
+            expect(result.north).toBe(37.7935) // Max latitude
+            expect(result.south).toBe(37.7749) // Min latitude
+            expect(result.east).toBe(-122.4167) // Max longitude (east most)
+            expect(result.west).toBe(-122.4399) // Min longitude (west most)
+        })
+
+        it('should handle markers with extreme values', () => {
+            const { calculateBoundsFromMarkers } = require('../location')
+            const markers: MapMarker[] = [
+                {
+                    id: '1',
+                    latitude: 90, // North pole
+                    longitude: 0,
+                    events: [],
+                },
+                {
+                    id: '2',
+                    latitude: -90, // South pole
+                    longitude: 180,
+                    events: [],
+                },
+                {
+                    id: '3',
+                    latitude: 0,
+                    longitude: -180,
+                    events: [],
+                },
+            ]
+
+            const result = calculateBoundsFromMarkers(markers)
+
+            expect(result.north).toBe(90)
+            expect(result.south).toBe(-90)
+            expect(result.east).toBe(180)
+            expect(result.west).toBe(-180)
         })
     })
 

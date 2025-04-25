@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, Suspense, useRef } from 'react'
+import { useState, useEffect, useCallback, Suspense, useRef, useReducer } from 'react'
 import MapContainer from '@/components/map/MapContainer'
 import EventList from '@/components/events/EventList'
 import EventFilters from '@/components/events/EventFilters'
@@ -12,15 +12,78 @@ import { useMap, genMarkerId } from '@/lib/hooks/useMap'
 import { MapBounds } from '@/types/map'
 import { logr } from '@/lib/utils/logr'
 import ActiveFilters from '@/components/events/ActiveFilters'
-import { UrlParamsManager } from '@/lib/utils/url'
-import { calculateBoundsFromViewport } from '@/lib/utils/location'
-
+import { viewportUrlToViewport, parseAsZoom, parseAsLatLon } from '@/lib/utils/location'
+import { parseAsInteger, parseAsFloat, useQueryState, useQueryStates } from 'nuqs'
 // quiet window.cmf_events build error - https://stackoverflow.com/questions/56457935/typescript-error-property-x-does-not-exist-on-type-window
 declare const window: any
 
+// Application state machine types
+type AppState = 'uninitialized' | 'no-calendar' | 'cal-init' | 'map-init' | 'main-state' | 'menu-shown'
+
+// Actions that can be dispatched to change or transition state
+type AppAction =
+    | { type: 'RESET_STATE' }
+    | { type: 'CALENDAR_LOADING' }
+    | { type: 'CALENDAR_LOADED'; hasEvents: boolean }
+    | { type: 'INIT_MAP_WITH_ALL_EVENTS' }
+    | { type: 'MAP_INITIALIZED' }
+    | { type: 'SHOW_MENU' }
+    | { type: 'HIDE_MENU' }
+
+// Application state machine, appState.
+// uninitialized - first initial state, nothing is known. Initial URL params are stored.
+// no-calendar - when there is no url param for calendar, show calendar selector - may not need this.
+// cal-init - fetching events for calendar based on initial URL params
+// map-init - update map based on initial URL params and updated calendar events
+// main-state - respond to user interactions, updates some url parameters
+// menu-shown - map and filters on pause, user can view info about CMF - link to GitHub, blog, stats on current calendar and filter
+function appReducer(state: AppState, action: AppAction): AppState {
+    let newState = state
+    switch (action.type) {
+        case 'RESET_STATE':
+            newState = 'uninitialized'
+            break
+        case 'CALENDAR_LOADING':
+            newState = 'cal-init'
+            break
+        case 'CALENDAR_LOADED':
+            // type guard added to quiet build error
+            if (action.type === 'CALENDAR_LOADED') {
+                // Only proceed if we have events
+                newState = action.hasEvents ? 'map-init' : state
+            }
+            break
+        case 'MAP_INITIALIZED':
+            newState = 'main-state'
+            break
+        case 'SHOW_MENU':
+            newState = 'menu-shown'
+            break
+        case 'HIDE_MENU':
+            newState = 'main-state'
+            break
+    }
+    if (newState !== state) {
+        logr.info('app', `action=${action.type} making appState=${newState}, oldState=${state}`)
+    } else {
+        logr.info('app', `action=${action.type} no change in appState=${newState}`)
+    }
+    return newState
+}
+
 function HomeContent() {
-    const [urlParams] = useState(() => new UrlParamsManager())
-    const calendarId = urlParams.get('gc') as string | null
+    // URL query state parameters
+    const [calendarId, setCalendarId] = useQueryState('gc', { defaultValue: '' })
+    const [selectedEventIdUrl, setSelectedEventIdUrl] = useQueryState('se', { defaultValue: '' })
+    const [viewportUrl, setViewportUrl] = useQueryStates({
+        z: parseAsZoom,
+        lat: parseAsLatLon,
+        lon: parseAsLatLon,
+    })
+    logr.info(
+        'app',
+        `HomeContent Start: gc=${calendarId}, se=${selectedEventIdUrl}, viewportUrl=${JSON.stringify(viewportUrl)}`
+    )
 
     // Ref for the events sidebar container
     const eventsSidebarRef = useRef<HTMLDivElement>(null)
@@ -29,21 +92,10 @@ function HomeContent() {
     const [searchQuery, setLocalSearchQuery] = useState('')
     const [dateRange, setLocalDateRange] = useState<{ start: string; end: string } | undefined>(undefined)
 
-    // Application state machine
-    // uninitialized - first initial state, nothing is known. Initial URL params are stored.
-    // no-calendar - when there is no url param for calendar, show calendar selector
-    // cal-init - fetching events for calendar based on initial URL params
-    // map-init - update map based on initial URL params and updated calendar events
-    // main-state - respond to user interactions, updates some url parameters
-    // menu-shown - map and filters on pause, user can view info about CMF - link to GitHub, blog, stats on current calendar and filter
-    type AppInitState = 'uninitialized' | 'no-calendar' | 'cal-init' | 'map-init' | 'main-state' | 'menu-shown'
-    const [appInitState, setAppInitState] = useState<AppInitState>('uninitialized')
+    const [appState, dispatch] = useReducer(appReducer, 'uninitialized')
 
     // Use our new EventsManager hook to get events and filter methods
     const { eventsFn, evts, filters, calendar, apiIsLoading } = useEventsManager({ calendarId })
-
-    // State for selected event
-    const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
 
     // Map state - now uses events with locations instead of filtered events
     const {
@@ -57,69 +109,50 @@ function HomeContent() {
     } = useMap(eventsFn())
 
     // Reset when we get new calendar
+    // Handle transition when calendar changes,
     useEffect(() => {
-        // When calendar changes, go back to uninitialized state
-        setAppInitState('uninitialized')
-        logr.info('app', `uE: Calendar ID gc=${calendarId}, setAppInitState=uninitialized`)
+        logr.info('app', `uE: Calendar ID changed gc=${calendarId}, changing appState`)
+        if (!calendarId) {
+            dispatch({ type: 'RESET_STATE' })
+        } else {
+            dispatch({ type: 'CALENDAR_LOADING' })
+        }
         if (typeof umami !== 'undefined') {
             umami.track('LoadCalendar', { gc: calendarId ?? 'null', numEvents: evts.allEvents.length })
         }
     }, [calendarId])
 
-    // resetMapToAllEvents is called only once after api loads, and again if the calendarId changes
-    // Handle state transitions for initialization
+    // Handle transition from cal-init via CALENDAR_LOADED action to map-init
     useEffect(() => {
-        const l = eventsFn().shownEvents.length
+        if (appState !== 'cal-init') return
+
         const k = evts.shownEvents.length
         const all = evts.allEvents ? evts.allEvents.length : 0
-        const msg = `uE: appInitState=${appInitState}, apiIsLoading=${apiIsLoading}, evnts.shown=${l}:${k}, evnts.all=${all}`
+        const msg = `uE: appState:cal-init, apiIsLoading=${apiIsLoading}, evnts.shown=${k}, evnts.all=${all}`
         logr.debug('app', msg)
-
         // Initialize if API loaded and we have events
-        if (appInitState === 'uninitialized' && !apiIsLoading && all > 0) {
-            setAppInitState('map-init')
-
-            // Handle viewport initialization
-            if (urlParams.isValidViewport()) {
-                logr.info('app', `uE: api loaded, using url params for viewport`)
-                const latitude = urlParams.get('lat') as number
-                const longitude = urlParams.get('lon') as number
-                const zoom = urlParams.get('zoom') as number
-
-                const newViewport = {
-                    latitude,
-                    longitude,
-                    zoom,
-                    bearing: 0,
-                    pitch: 0,
-                }
-                setViewport(newViewport)
-
-                // Calculate bounds from the viewport and set them
-                const bounds = calculateBoundsFromViewport(newViewport)
-                filters.setMapBounds(bounds)
-
-                // Transition to main state after a short delay
-                setTimeout(() => {
-                    logr.info('app', 'uE: map initialized, transitioning to main-state')
-                    setAppInitState('main-state')
-                }, 100)
-            } else {
-                // No valid viewport in URL, use all events to set map bounds
-                logr.info('app', `uE: api loaded, no valid viewport in URL, showing all events`)
-                setTimeout(() => {
-                    logr.info('app', `uE: initializing map with all events (${all} total)`)
-                    resetMapToAllEvents()
-
-                    // Transition to main state after a short delay
-                    setTimeout(() => {
-                        logr.info('app', 'uE: map initialized with all events, transitioning to main-state')
-                        setAppInitState('main-state')
-                    }, 100)
-                }, 100)
-            }
+        if (!apiIsLoading && all > 0) {
+            dispatch({ type: 'CALENDAR_LOADED', hasEvents: all > 0 })
         }
-    }, [apiIsLoading, appInitState, resetMapToAllEvents, evts, urlParams, filters, eventsFn])
+    }, [apiIsLoading, appState, evts])
+
+    // Handle transition from map-init via MAP_INITIALIZED action to main-state
+    useEffect(() => {
+        if (appState !== 'map-init') return
+
+        if (selectedEventIdUrl) {
+            logr.info('app', 'uE: map-init: selectedEventIdUrl is set, resetMapToAllEvents')
+            handleEventSelect(selectedEventIdUrl)
+        } else if (viewportUrl.z === null) {
+            logr.info('app', 'uE: map-init: zoom is null (not set), resetMapToAllEvents')
+            resetMapToAllEvents()
+        } else {
+            logr.info('app', `uE: map-init: zoom=${viewportUrl.z}, setViewport from URL`)
+            setViewport(viewportUrlToViewport(viewportUrl.lat, viewportUrl.lon, viewportUrl.z))
+        }
+        logr.info('app', 'uE: map-init done (url params)')
+        dispatch({ type: 'MAP_INITIALIZED' })
+    }, [appState, filters, selectedEventIdUrl, setViewport, resetMapToAllEvents])
 
     // Handle search query changes
     const handleSearchChange = useCallback(
@@ -148,26 +181,29 @@ function HomeContent() {
     const handleBoundsChange = useCallback(
         (bounds: MapBounds) => {
             // Ignore bounds changes during initialization
-            if (appInitState !== 'main-state') {
-                logr.debug('app', 'Ignoring bounds change during initialization')
+            if (appState !== 'main-state') {
+                logr.info('app', 'Ignoring bounds change during initialization')
                 return
             }
             logr.info('app', 'Map bounds changed', bounds)
             filters.setMapBounds(bounds)
         },
-        [filters, appInitState]
+        [filters, appState]
     )
 
     // Handle map filter removal
     const handleClearMapFilter = () => {
+        if (appState !== 'main-state') {
+            logr.info('app', 'Ignoring handleClearMapFilter during initialization')
+            return
+        }
         logr.info('app', 'Map filter cleared')
         filters.setMapBounds(undefined)
         setSelectedMarkerId(null)
-        setSelectedEventId(null)
+        setSelectedEventIdUrl(null)
         // Call resetMapToAllEvents to properly reset the map to show all events
+        logr.info('app', 'calling resetMapToAllEvents after Clearing URL for zoom, latitude, and longitude')
         resetMapToAllEvents()
-        urlParams.delete(['zoom', 'lat', 'lon'])
-        logr.info('app', 'Cleared URL parameters for zoom, latitude, and longitude')
     }
 
     // Handle unknown locations filter toggle
@@ -185,56 +221,59 @@ function HomeContent() {
         resetMapToAllEvents()
     }, [filters, resetMapToAllEvents])
 
+    const handleEventSelect = (eventId: string | null) => {
+        logr.info('app', `handleEventSelect() selectedEventIdUrl from ${selectedEventIdUrl} to ${eventId}`)
+        setSelectedEventIdUrl(eventId)
+
+        // If event is null, clear marker selection
+        if (!eventId) {
+            setSelectedMarkerId(null)
+            return
+        }
+
+        // Find the event and its marker
+        const event = evts.allEvents.find((e) => e.id === eventId)
+        if (
+            !event ||
+            event.resolved_location?.status !== 'resolved' ||
+            !event.resolved_location.lat ||
+            !event.resolved_location.lng
+        ) {
+            return
+        }
+        const markerId = genMarkerId(event)
+        if (!markerId) return
+
+        // Set marker and update viewport
+        setSelectedMarkerId(markerId)
+
+        // Calculate the offset based on the current zoom level
+        // Higher zoom levels need smaller offsets
+        const zoomFactor = Math.max(1, viewport.zoom / 10)
+        const latOffset = -0.003 / zoomFactor // Adjust this value as needed
+
+        // Update viewport with adjusted latitude to ensure popup is fully visible
+        setViewport({
+            ...viewport,
+            latitude: (event.resolved_location.lat || 0) - latOffset, // Move map down slightly
+            longitude: event.resolved_location.lng || 0,
+            zoom: 14,
+        })
+
+        logr.info('app', 'Adjusted viewport for popup visibility', {
+            originalLat: event.resolved_location.lat,
+            adjustedLat: (event.resolved_location.lat || 0) - latOffset,
+            offset: latOffset,
+            zoom: viewport.zoom,
+        })
+    }
     // Handler for selecting an event from the list
-    const handleEventSelect = useCallback(
-        (eventId: string | null) => {
-            setSelectedEventId(eventId)
-
-            // If event is null, clear marker selection
-            if (!eventId) {
-                setSelectedMarkerId(null)
-                return
-            }
-
-            // Find the event and its marker
-            const event = evts.allEvents.find((e) => e.id === eventId)
-            if (
-                !event ||
-                event.resolved_location?.status !== 'resolved' ||
-                !event.resolved_location.lat ||
-                !event.resolved_location.lng
-            ) {
-                return
-            }
-            const markerId = genMarkerId(event)
-            if (!markerId) return
-
-            // Set marker and update viewport
-            setSelectedMarkerId(markerId)
-
-            // Calculate the offset based on the current zoom level
-            // Higher zoom levels need smaller offsets
-            const zoomFactor = Math.max(1, viewport.zoom / 10)
-            const latOffset = -0.003 / zoomFactor // Adjust this value as needed
-
-            // Update viewport with adjusted latitude to ensure popup is fully visible
-            setViewport({
-                ...viewport,
-                latitude: (event.resolved_location.lat || 0) - latOffset, // Move map down slightly
-                longitude: event.resolved_location.lng || 0,
-                zoom: 14,
-            })
-
-            logr.info('map', 'Adjusted viewport for popup visibility', {
-                originalLat: event.resolved_location.lat,
-                adjustedLat: (event.resolved_location.lat || 0) - latOffset,
-                offset: latOffset,
-                zoom: viewport.zoom,
-            })
-        },
-        [evts.allEvents, setSelectedMarkerId, setViewport, viewport]
-    )
-
+    const handleEventSelectCb = useCallback(handleEventSelect, [
+        evts.allEvents,
+        setSelectedMarkerId,
+        setViewport,
+        viewport,
+    ])
     // Expose events data to window for debugging
     useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -253,15 +292,23 @@ function HomeContent() {
     // Update URL parameters when viewport changes
     useEffect(() => {
         // Skip during initialization
-        if (appInitState !== 'main-state') return
+        if (appState !== 'main-state') return
 
-        urlParams.set({
-            zoom: Math.round(viewport.zoom),
-            lat: viewport.latitude.toFixed(5),
-            lon: viewport.longitude.toFixed(5),
-        })
-        logr.info('map', `Updated URL parameters, zoom=${viewport.zoom}`)
-    }, [viewport, urlParams, appInitState])
+        // Because we want to only have url params when needed,
+        // and because when selectedEventIdUrl is set the map will zoom to that,
+        // we don't need zoom, lat, or lon when selectedEventIdUrl is set.
+        if (selectedEventIdUrl && selectedEventIdUrl !== '') {
+            // Remove viewport parameters and just keep the selected event ID
+            setViewportUrl({ lat: null, lon: null, z: null })
+        } else {
+            setViewportUrl({
+                lat: viewport.latitude,
+                lon: viewport.longitude,
+                z: viewport.zoom,
+            })
+        }
+        logr.info('app', `Updated URL parameters, selectedEventIdUrl=${selectedEventIdUrl}, zoom=${viewport.zoom}`)
+    }, [viewport, appState, selectedEventIdUrl, setViewportUrl])
 
     // If no calendar ID is provided, show the calendar selector
     if (!calendarId) {
@@ -308,8 +355,8 @@ function HomeContent() {
 
                     <EventList
                         evts={evts}
-                        selectedEventId={selectedEventId}
-                        onEventSelect={handleEventSelect}
+                        selectedEventId={selectedEventIdUrl}
+                        onEventSelect={handleEventSelectCb}
                         apiIsLoading={apiIsLoading}
                     />
                 </div>
@@ -326,13 +373,13 @@ function HomeContent() {
 
                             // If markerId is null, clear event selection too
                             if (!markerId) {
-                                setSelectedEventId(null)
+                                setSelectedEventIdUrl(null)
                             }
                         }}
                         onBoundsChange={handleBoundsChange}
                         onResetView={resetMapToAllEvents}
-                        selectedEventId={selectedEventId}
-                        onEventSelect={setSelectedEventId}
+                        selectedEventId={selectedEventIdUrl}
+                        onEventSelect={setSelectedEventIdUrl}
                         isMapOfAllEvents={isMapOfAllEvents}
                     />
                 </div>
