@@ -12,19 +12,19 @@ import { useMap, genMarkerId } from '@/lib/hooks/useMap'
 import { MapBounds } from '@/types/map'
 import { logr } from '@/lib/utils/logr'
 import ActiveFilters from '@/components/events/ActiveFilters'
-import { viewportUrlToViewport, parseAsZoom, parseAsLatLon } from '@/lib/utils/location'
+import { viewportUrlToViewport, parseAsEventSource, parseAsZoom, parseAsLatLon } from '@/lib/utils/location'
 import { parseAsInteger, parseAsFloat, useQueryState, useQueryStates } from 'nuqs'
 // quiet window.cmf_events build error - https://stackoverflow.com/questions/56457935/typescript-error-property-x-does-not-exist-on-type-window
 declare const window: any
 
 // Application state machine types
-type AppState = 'uninitialized' | 'no-calendar' | 'cal-init' | 'map-init' | 'main-state' | 'menu-shown'
+type AppState = 'uninitialized' | 'no-calendar' | 'events-init' | 'map-init' | 'main-state' | 'menu-shown'
 
 // Actions that can be dispatched to change or transition state
 type AppAction =
     | { type: 'RESET_STATE' }
-    | { type: 'CALENDAR_LOADING' }
-    | { type: 'CALENDAR_LOADED'; hasEvents: boolean }
+    | { type: 'EVENTS_LOADING' }
+    | { type: 'EVENTS_LOADED'; hasEvents: boolean }
     | { type: 'INIT_MAP_WITH_ALL_EVENTS' }
     | { type: 'MAP_INITIALIZED' }
     | { type: 'SHOW_MENU' }
@@ -32,8 +32,7 @@ type AppAction =
 
 // Application state machine, appState.
 // uninitialized - first initial state, nothing is known. Initial URL params are stored.
-// no-calendar - when there is no url param for calendar, show calendar selector - may not need this.
-// cal-init - fetching events for calendar based on initial URL params
+// events-init - fetching events for calendar based on initial URL params
 // map-init - update map based on initial URL params and updated calendar events
 // main-state - respond to user interactions, updates some url parameters
 // menu-shown - map and filters on pause, user can view info about CMF - link to GitHub, blog, stats on current calendar and filter
@@ -43,12 +42,12 @@ function appReducer(state: AppState, action: AppAction): AppState {
         case 'RESET_STATE':
             newState = 'uninitialized'
             break
-        case 'CALENDAR_LOADING':
-            newState = 'cal-init'
+        case 'EVENTS_LOADING':
+            newState = 'events-init'
             break
-        case 'CALENDAR_LOADED':
+        case 'EVENTS_LOADED':
             // type guard added to quiet build error
-            if (action.type === 'CALENDAR_LOADED') {
+            if (action.type === 'EVENTS_LOADED') {
                 // Only proceed if we have events
                 newState = action.hasEvents ? 'map-init' : state
             }
@@ -73,17 +72,21 @@ function appReducer(state: AppState, action: AppAction): AppState {
 
 function HomeContent() {
     // URL query state parameters
-    const [calendarId, setCalendarId] = useQueryState('gc', { defaultValue: '' })
+    const [eventSource, setEventSource] = useQueryState('es', parseAsEventSource) // replaced gc calendarId
     const [selectedEventIdUrl, setSelectedEventIdUrl] = useQueryState('se', { defaultValue: '' })
     const [viewportUrl, setViewportUrl] = useQueryStates({
         z: parseAsZoom,
         lat: parseAsLatLon,
         lon: parseAsLatLon,
     })
-    logr.info(
-        'app',
-        `HomeContent Start: gc=${calendarId}, se=${selectedEventIdUrl}, viewportUrl=${JSON.stringify(viewportUrl)}`
-    )
+    const initialUrlParams = {
+        es: eventSource,
+        se: selectedEventIdUrl,
+        z: viewportUrl.z,
+        lat: viewportUrl.lat,
+        lon: viewportUrl.lon,
+    }
+    logr.info('app', `HomeContent initialUrlParams=${JSON.stringify(initialUrlParams)}`)
 
     // Ref for the events sidebar container
     const eventsSidebarRef = useRef<HTMLDivElement>(null)
@@ -95,7 +98,7 @@ function HomeContent() {
     const [appState, dispatch] = useReducer(appReducer, 'uninitialized')
 
     // Use our new EventsManager hook to get events and filter methods
-    const { eventsFn, evts, filters, calendar, apiIsLoading } = useEventsManager({ calendarId })
+    const { eventsFn, evts, filters, calendar, apiIsLoading } = useEventsManager({ eventSource })
 
     // Map state - now uses events with locations instead of filtered events
     const {
@@ -111,28 +114,28 @@ function HomeContent() {
     // Reset when we get new calendar
     // Handle transition when calendar changes,
     useEffect(() => {
-        logr.info('app', `uE: Calendar ID changed gc=${calendarId}, changing appState`)
-        if (!calendarId) {
+        logr.info('app', `uE: Event Src changed es=${eventSource}, changing appState`)
+        if (!eventSource) {
             dispatch({ type: 'RESET_STATE' })
         } else {
-            dispatch({ type: 'CALENDAR_LOADING' })
+            dispatch({ type: 'EVENTS_LOADING' })
         }
         if (typeof umami !== 'undefined') {
-            umami.track('LoadCalendar', { gc: calendarId ?? 'null', numEvents: evts.allEvents.length })
+            umami.track('LoadCalendar', { es: eventSource ?? 'null', numEvents: evts.allEvents.length })
         }
-    }, [calendarId])
+    }, [eventSource])
 
-    // Handle transition from cal-init via CALENDAR_LOADED action to map-init
+    // Handle transition from events-init via EVENTS_LOADED action to map-init
     useEffect(() => {
-        if (appState !== 'cal-init') return
+        if (appState !== 'events-init') return
 
         const k = evts.shownEvents.length
         const all = evts.allEvents ? evts.allEvents.length : 0
-        const msg = `uE: appState:cal-init, apiIsLoading=${apiIsLoading}, evnts.shown=${k}, evnts.all=${all}`
+        const msg = `uE: appState:events-init, apiIsLoading=${apiIsLoading}, evnts.shown=${k}, evnts.all=${all}`
         logr.debug('app', msg)
         // Initialize if API loaded and we have events
         if (!apiIsLoading && all > 0) {
-            dispatch({ type: 'CALENDAR_LOADED', hasEvents: all > 0 })
+            dispatch({ type: 'EVENTS_LOADED', hasEvents: all > 0 })
         }
     }, [apiIsLoading, appState, evts])
 
@@ -311,7 +314,7 @@ function HomeContent() {
     }, [viewport, appState, selectedEventIdUrl, setViewportUrl])
 
     // If no calendar ID is provided, show the calendar selector
-    if (!calendarId) {
+    if (!eventSource) {
         return (
             <div className="min-h-screen flex flex-col">
                 <Header />

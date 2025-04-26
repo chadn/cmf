@@ -8,7 +8,7 @@ import { logr } from '@/lib/utils/logr'
 import { fetcherLogr } from '@/lib/utils/utils'
 
 interface UseEventsManagerProps {
-    calendarId?: string | null
+    eventSource?: string | null
     dateRange?: { start: string; end: string }
     searchQuery?: string
     mapBounds?: MapBounds
@@ -63,7 +63,7 @@ function eventsReducer(state: EventsState, action: EventsAction): EventsState {
 }
 
 export function useEventsManager({
-    calendarId,
+    eventSource,
     dateRange,
     searchQuery,
     mapBounds,
@@ -77,12 +77,17 @@ export function useEventsManager({
 
     // Reset FilterEventsManager when calendar ID changes
     useEffect(() => {
-        logr.info(
-            'use_evts_mgr',
-            `uE: FilterEventsManager reset due to calendar ID change to: "${calendarId || 'none'}"`
-        )
+        logr.info('use_evts_mgr', `uE: FilterEventsManager reset, new eventSource: "${eventSource}"`)
         fltrEvtMgr.reset()
-    }, [calendarId, fltrEvtMgr])
+    }, [eventSource, fltrEvtMgr])
+
+    let calendarId = null
+    if (eventSource?.startsWith('gc:')) {
+        calendarId = eventSource.slice(3)
+    }
+    if (eventSource === 'protests') {
+        logr.warn('use_evts_mgr', `eventSource==protests NOT IMPLEMENTED YET.`)
+    }
 
     // Construct the API URL
     const apiUrl = calendarId ? `/api/calendar?id=${encodeURIComponent(calendarId)}` : null

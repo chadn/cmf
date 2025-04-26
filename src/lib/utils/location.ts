@@ -271,3 +271,16 @@ export const parseAsLatLon = createParser({
         return value.toFixed(5)
     },
 })
+export const parseAsEventSource = createParser({
+    // parse: a function that takes a string and returns the parsed value, or null if invalid.
+    parse(queryValue) {
+        if (typeof queryValue !== 'string') return null
+        if (queryValue.startsWith('gc:')) return queryValue
+        if (queryValue === 'protests') return queryValue
+        return null
+    },
+    // serialize: a function that takes the parsed value and returns a string used in the URL.
+    serialize(value) {
+        return value
+    },
+})

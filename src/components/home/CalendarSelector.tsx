@@ -52,7 +52,7 @@ const CalendarSelector: React.FC = () => {
 
         // In a real app, you might validate the calendar ID here
         // For now, we'll just redirect to the main page with the calendar ID
-        const redirectUrl = `/?gc=${encodeURIComponent(calendarId)}`
+        const redirectUrl = `/?es=gc:${encodeURIComponent(calendarId)}`
         logr.info('calendar', 'Redirecting to', { redirectUrl })
         router.push(redirectUrl)
     }
