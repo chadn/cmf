@@ -42,20 +42,20 @@ const MapPopup: React.FC<MapPopupProps> = ({ marker, selectedEventId, onEventSel
 
     // Safety check - ensure we have events
     if (!events || events.length === 0) {
-        return <div className="p-2 text-sm bg-white text-gray-800 rounded shadow">No events at this location</div>
+        return <div className="p-2 text-sm bg-white text-gray-800 rounded-lg shadow">No events at this location</div>
     }
 
     // Safety check - ensure currentIndex is valid
     if (currentIndex < 0 || currentIndex >= events.length) {
         setCurrentIndex(0)
-        return <div className="p-2 text-sm bg-white text-gray-800 rounded shadow">Loading event details...</div>
+        return <div className="p-2 text-sm bg-white text-gray-800 rounded-lg shadow">Loading event details...</div>
     }
 
     const currentEvent = events[currentIndex]
 
     // Final safety check
     if (!currentEvent) {
-        return <div className="p-2 text-sm bg-white text-gray-800 rounded shadow">Event details unavailable</div>
+        return <div className="p-2 text-sm bg-white text-gray-800 rounded-lg shadow">Event details unavailable</div>
     }
 
     // Handle pagination
@@ -76,7 +76,7 @@ const MapPopup: React.FC<MapPopupProps> = ({ marker, selectedEventId, onEventSel
     }
 
     return (
-        <div className="max-w-xs bg-white text-gray-800 p-3 rounded shadow">
+        <div className="max-w-xs bg-white text-gray-800 p-3 rounded-lg shadow">
             {/* Event title */}
             <h3 className="font-bold text-md mb-1 text-gray-900 pr-6">{currentEvent.name}</h3>
 

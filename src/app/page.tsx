@@ -242,6 +242,10 @@ function HomeContent() {
             !event.resolved_location.lat ||
             !event.resolved_location.lng
         ) {
+            if (event?.original_event_url) {
+                logr.info('app', `handleEventSelect() no resolved location, opening url=${event.original_event_url}`)
+                window.open(event.original_event_url, '_blank')
+            }
             return
         }
         const markerId = genMarkerId(event)

@@ -108,12 +108,12 @@ const EventList: React.FC<EventListProps> = ({ evts, selectedEventId, onEventSel
     return (
         <div className="mt-0.5">
             <div className="overflow-x-auto">
-                <table className="w-full text-xs border-collapse">
+                <table className="w-full text-xs border-collapse table-fixed">
                     <thead className="bg-gray-50">
                         <tr>
                             <th
                                 scope="col"
-                                className="px-1 py-0.5 text-left text-xxs font-medium text-gray-500 uppercase tracking-wider cursor-pointer w-1/2"
+                                className="px-1 py-0.5 text-left text-xxs font-medium text-gray-500 uppercase tracking-wider cursor-pointer w-[50%] md:w-1/2"
                                 onClick={() => handleSort('name')}
                             >
                                 Event Name
@@ -123,7 +123,7 @@ const EventList: React.FC<EventListProps> = ({ evts, selectedEventId, onEventSel
                             </th>
                             <th
                                 scope="col"
-                                className="px-1 py-0.5 text-left text-xxs font-medium text-gray-500 uppercase tracking-wider cursor-pointer w-1/6"
+                                className="px-1 py-0.5 text-left text-xxs font-medium text-gray-500 uppercase tracking-wider cursor-pointer w-[18%] md:w-1/6"
                                 onClick={() => handleSort('startDate')}
                             >
                                 Start Date
@@ -133,17 +133,17 @@ const EventList: React.FC<EventListProps> = ({ evts, selectedEventId, onEventSel
                             </th>
                             <th
                                 scope="col"
-                                className="px-1 py-0.5 text-left text-xxs font-medium text-gray-500 uppercase tracking-wider cursor-pointer w-1/6"
+                                className="px-1 py-0.5 text-left text-xxs font-medium text-gray-500 uppercase tracking-wider cursor-pointer w-[10%] md:w-1/6"
                                 onClick={() => handleSort('duration')}
                             >
-                                Duration
+                                Dur.
                                 {sortField === 'duration' && (
                                     <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
                                 )}
                             </th>
                             <th
                                 scope="col"
-                                className="px-1 py-0.5 text-left text-xxs font-medium text-gray-500 uppercase tracking-wider cursor-pointer w-1/6"
+                                className="px-1 py-0.5 text-left text-xxs font-medium text-gray-500 uppercase tracking-wider cursor-pointer w-[22%] md:w-1/6"
                                 onClick={() => handleSort('location')}
                             >
                                 Location
@@ -165,7 +165,7 @@ const EventList: React.FC<EventListProps> = ({ evts, selectedEventId, onEventSel
                                 onClick={() => onEventSelect(event.id)}
                             >
                                 <td className="px-1 py-0.5 w-1/2">
-                                    <div className="text-xs font-medium text-primary break-words md:break-normal">
+                                    <div className="text-xs font-medium text-primary break-words md:break-normal w-48 sm:w-56 md:w-auto">
                                         {event.name.length > 120 ? `${event.name.substring(0, 120)}...` : event.name}
                                     </div>
                                     {event.resolved_location?.status === 'unresolved' && (
