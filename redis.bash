@@ -66,11 +66,31 @@
 #######################################################################################################
 url="redis://fine-kiwi-61313.upstash.io:6379"
 rediscmd="redis-cli --tls -u $url"
-echo -e "\nDOES NOT WORK: $rediscmd"
-echo 
-echo "READ COMMENTS IN THis file."
-exit
 
+REDISCLI_AUTH=`env|grep REDISCLI_AUTH`
+if [ "$REDISCLI_AUTH" == "" ]; then
+	echo "REDISCLI_AUTH not found, try:"
+	echo "set -a && source .env.local && set +a"
+	exit
+fi
+if [[ "$1" =~ ^location: ]]; then
+    echo "$rediscmd get '$1'"
+    #$rediscmd get "$1"
+    echo "then do something like:"
+    echo "curl 'https://cmf-chad.vercel.app/api/geocode?a=Barbary,oakland,ca'"
+    exit
+fi
+if [ "$1" != "" ]; then
+    echo "$rediscmd keys '*'|grep -i $1"
+    #$rediscmd keys '*'|grep -i $1
+else
+    echo -e "\nEnter pattern to find location: "
+    read pattern
+    echo "$rediscmd keys '*'|grep -i $pattern"
+fi
+
+echo
+exit
 rediscmd="redis-cli -p 6379 -h fine-kiwi-61313.upstash.io --raw --no-auth-warning"
 
 
