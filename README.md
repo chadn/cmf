@@ -15,6 +15,7 @@ A React + Next.js application that displays Google Calendar events on an interac
 ## 🌟 Features
 
 -   **Calendar Integration**: Connect to Google Calendar (with planned support for Facebook Events, Microsoft Outlook, and Apple Calendar)
+-   **Event Sources System**: [Modular system](src/lib/api/eventSources/README.md) for fetching events, making it easy to add new event sources
 -   **Interactive Map**: View all your calendar events on a MapLibre GL map
 -   **Smart Filtering**: Filter events by date range, search terms, and map bounds
 -   **Location Geocoding**: Automatically converts event locations to map coordinates
@@ -88,6 +89,8 @@ Build the application for production:
 ```bash
 npm run build
 ```
+
+Note: Using Next.js's built-in SWC compiler exclusively, which is faster and simpler than using Babel
 
 Start the production server:
 

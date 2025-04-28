@@ -7,7 +7,7 @@
         "build": "next build",
         "start": "next start",
         "lint": "next lint",
-        "test": "jest"
+        "test": "jest --coverage"
     },
     "dependencies": {
         "@upstash/redis": "^1.25.1",

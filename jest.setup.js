@@ -97,19 +97,23 @@ console.error = (...args) => {
 // Mock TextDecoder and TextEncoder for mapbox-gl
 class MockTextDecoder {
     decode(data) {
-        return typeof data === 'string'
-            ? data
-            : Array.from(data)
-                  .map((byte) => String.fromCharCode(byte))
-                  .join('')
+        return typeof data === 'string' ? data : String.fromCharCode.apply(null, data)
     }
 }
 
 class MockTextEncoder {
     encode(str) {
-        return new Uint8Array([...str].map((char) => char.charCodeAt(0)))
+        return str.split('').map((char) => char.charCodeAt(0))
     }
 }
 
-global.TextDecoder = MockTextDecoder
-global.TextEncoder = MockTextEncoder
+window.TextDecoder = MockTextDecoder
+window.TextEncoder = MockTextEncoder
+
+// Mock nuqs for tests
+jest.mock('nuqs', () => ({
+    createParser: () => ({
+        parse: jest.fn(),
+        serialize: jest.fn(),
+    }),
+}))

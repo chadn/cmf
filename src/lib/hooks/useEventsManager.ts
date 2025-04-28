@@ -126,7 +126,6 @@ export function useEventsManager({
                 error: err.message,
                 apiUrl,
             })
-            logr.info('use_evts_mgr', `Error fetching events data for source: "${eventSource || 'unknown'}"`, err)
             dispatch({ type: 'SET_ERROR', payload: err })
         },
     })

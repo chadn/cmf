@@ -9,16 +9,15 @@ describe('EventDetails', () => {
     const mockEvent: CmfEvent = {
         id: 'event1',
         name: 'Test Event',
-        description:
-            'This is a test event description.\nIt has multiple lines.',
+        description: 'This is a test event description.\nIt has multiple lines.',
         description_urls: [
             'https://example.com',
             'https://test.com/very-long-url-that-should-be-truncated-in-the-ui-display',
         ],
         original_event_url: 'https://calendar.google.com/event?id=123456',
         location: 'New York, NY',
-        startDate: '2025-03-15T10:00:00Z',
-        endDate: '2025-03-15T12:00:00Z',
+        start: '2025-03-15T10:00:00Z',
+        end: '2025-03-15T12:00:00Z',
         resolved_location: {
             original_location: 'New York, NY',
             formatted_address: 'New York, NY, USA',
@@ -61,9 +60,7 @@ describe('EventDetails', () => {
 
         // Check that the description is displayed
         expect(screen.getByText(/Description/)).toBeInTheDocument()
-        expect(
-            screen.getByText('This is a test event description.')
-        ).toBeInTheDocument()
+        expect(screen.getByText('This is a test event description.')).toBeInTheDocument()
         expect(screen.getByText('It has multiple lines.')).toBeInTheDocument()
 
         // Check that the links are displayed
@@ -90,28 +87,16 @@ describe('EventDetails', () => {
     it('displays unresolved location message', () => {
         const mockOnClose = jest.fn()
 
-        render(
-            <EventDetails
-                event={mockEventWithUnresolvedLocation}
-                onClose={mockOnClose}
-            />
-        )
+        render(<EventDetails event={mockEventWithUnresolvedLocation} onClose={mockOnClose} />)
 
         // Check that the unresolved location message is displayed
-        expect(
-            screen.getByText('This location could not be mapped')
-        ).toBeInTheDocument()
+        expect(screen.getByText('This location could not be mapped')).toBeInTheDocument()
     })
 
     it('handles event without description', () => {
         const mockOnClose = jest.fn()
 
-        render(
-            <EventDetails
-                event={mockEventWithoutDescription}
-                onClose={mockOnClose}
-            />
-        )
+        render(<EventDetails event={mockEventWithoutDescription} onClose={mockOnClose} />)
 
         // Check that the description section is not displayed
         expect(screen.queryByText(/Description/)).not.toBeInTheDocument()

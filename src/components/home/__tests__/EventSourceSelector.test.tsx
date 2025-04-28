@@ -1,17 +1,17 @@
 import React from 'react'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import CalendarSelector from '../CalendarSelector'
+import EventSourceSelector from '../EventSourceSelector'
 import '@testing-library/jest-dom'
 import { useRouter } from 'next/navigation'
 import { logr } from '@/lib/utils/logr'
 
 // Add type declaration for the global umami object
 declare global {
-    var umami:
-        | {
-              track: jest.Mock
-          }
-        | undefined
+    interface Umami {
+        track: (eventName: string, eventData?: any) => void
+        identify: (userId: string) => void
+    }
+    var umami: Umami
 }
 
 // Mock the Next.js router
@@ -29,9 +29,10 @@ jest.mock('@/lib/utils/logr', () => ({
 // Mock Umami global object
 global.umami = {
     track: jest.fn(),
+    identify: jest.fn(),
 }
 
-describe('CalendarSelector', () => {
+describe('EventSourceSelector', () => {
     const mockPush = jest.fn()
     const mockUmamiTrack = jest.fn()
 
@@ -52,17 +53,17 @@ describe('CalendarSelector', () => {
         jest.clearAllMocks()
     })
 
-    it('renders the calendar selector form with correct styling', () => {
-        const { container } = render(<CalendarSelector />)
+    it('renders the event source selector form with correct styling', () => {
+        const { container } = render(<EventSourceSelector />)
 
         // Check for main elements
         expect(screen.getByText('Welcome to Calendar Map Filter')).toBeInTheDocument()
-        expect(screen.getByText('Enter Google Calendar ID')).toBeInTheDocument()
-        expect(screen.getByLabelText('Enter Google Calendar ID')).toBeInTheDocument()
-        expect(screen.getByText('View Calendar')).toBeInTheDocument()
+        expect(screen.getByText('Enter Event Source ID string')).toBeInTheDocument()
+        expect(screen.getByLabelText('Enter Event Source ID string')).toBeInTheDocument()
+        expect(screen.getByText('View Events')).toBeInTheDocument()
 
-        // Fixed test - check for the correct text
-        expect(screen.getByText(/Or try an example - click below then click View Calendar/i)).toBeInTheDocument()
+        // Check for the correct text
+        expect(screen.getByText(/Or try an example - click below then click View Events/i)).toBeInTheDocument()
 
         // Check for the border-t and border-black classes
         const mainContainer = container.firstChild as HTMLElement
@@ -71,88 +72,90 @@ describe('CalendarSelector', () => {
         expect(mainContainer).toHaveClass('px-8')
     })
 
-    it('shows error when submitting empty calendar ID', () => {
-        render(<CalendarSelector />)
+    it('shows error when submitting empty event source ID', () => {
+        render(<EventSourceSelector />)
 
         // Submit form with empty input
-        const submitButton = screen.getByText('View Calendar')
+        const submitButton = screen.getByText('View Events')
         fireEvent.click(submitButton)
 
         // Check for error message
-        expect(screen.getByText('Please enter a Calendar ID')).toBeInTheDocument()
+        expect(screen.getByText('Please enter a source ID')).toBeInTheDocument()
         expect(mockPush).not.toHaveBeenCalled()
         expect(logr.info).toHaveBeenCalledWith('calendar', 'Calendar submission error: empty ID')
     })
 
-    it('clears error when entering a valid calendar ID after error', () => {
-        render(<CalendarSelector />)
+    it('clears error when entering a valid event source ID after error', () => {
+        render(<EventSourceSelector />)
 
         // Submit form with empty input to trigger error
-        const submitButton = screen.getByText('View Calendar')
+        const submitButton = screen.getByText('View Events')
         fireEvent.click(submitButton)
 
         // Verify error is shown
-        expect(screen.getByText('Please enter a Calendar ID')).toBeInTheDocument()
+        expect(screen.getByText('Please enter a source ID')).toBeInTheDocument()
 
         // Now enter a valid ID
-        const input = screen.getByLabelText('Enter Google Calendar ID')
-        fireEvent.change(input, { target: { value: 'test@example.com' } })
+        const input = screen.getByLabelText('Enter Event Source ID string')
+        fireEvent.change(input, { target: { value: 'gc:test@example.com' } })
 
         // Submit again
         fireEvent.click(submitButton)
 
         // Error should be gone
-        expect(screen.queryByText('Please enter a Calendar ID')).not.toBeInTheDocument()
+        expect(screen.queryByText('Please enter a source ID')).not.toBeInTheDocument()
     })
 
-    it('redirects when submitting valid calendar ID and tracks with umami', async () => {
-        render(<CalendarSelector />)
+    it('redirects when submitting valid event source ID and tracks with umami', async () => {
+        render(<EventSourceSelector />)
 
-        // Fill in the calendar ID
-        const input = screen.getByLabelText('Enter Google Calendar ID')
-        fireEvent.change(input, { target: { value: 'test@example.com' } })
+        // Fill in the event source ID
+        const input = screen.getByLabelText('Enter Event Source ID string')
+        fireEvent.change(input, { target: { value: 'gc:test@example.com' } })
 
         // Submit the form
-        const submitButton = screen.getByText('View Calendar')
+        const submitButton = screen.getByText('View Events')
         fireEvent.click(submitButton)
 
         // Check that router.push was called with the correct URL
-        expect(mockPush).toHaveBeenCalledWith('/?gc=test%40example.com')
+        expect(mockPush).toHaveBeenCalledWith('/?es=gc%3Atest%40example.com')
 
         // Check umami tracking was called
-        expect(mockUmamiTrack).toHaveBeenCalledWith('ViewCalendar', { gc: 'test@example.com' })
+        expect(mockUmamiTrack).toHaveBeenCalledWith('ViewEventSource', { id: 'gc:test@example.com' })
 
         // Check logging was called
-        expect(logr.info).toHaveBeenCalledWith('calendar', 'Calendar ID submitted', { calendarId: 'test@example.com' })
+        expect(logr.info).toHaveBeenCalledWith('calendar', 'Event source ID submitted', {
+            sourceId: 'gc:test@example.com',
+        })
     })
 
-    it('selects an example calendar when clicked', () => {
-        render(<CalendarSelector />)
+    it('selects an example event source when clicked', () => {
+        render(<EventSourceSelector />)
 
-        // Find and click the example calendar
-        const exampleCalendarButton = screen.getByText('Geocaching in Spain')
-        fireEvent.click(exampleCalendarButton)
+        // Find and click the example event source
+        const exampleButton = screen.getByText('Geocaching in Spain (Google Calendar)')
+        fireEvent.click(exampleButton)
 
         // Check that the input value was updated
-        const input = screen.getByLabelText('Enter Google Calendar ID') as HTMLInputElement
-        expect(input.value).toBe('geocachingspain@gmail.com')
+        const input = screen.getByLabelText('Enter Event Source ID string') as HTMLInputElement
+        expect(input.value).toBe('gc:geocachingspain@gmail.com')
 
         // Check logging was called
-        expect(logr.info).toHaveBeenCalledWith('calendar', 'Example calendar selected', {
-            id: 'geocachingspain@gmail.com',
-            name: 'Geocaching in Spain',
+        expect(logr.info).toHaveBeenCalledWith('calendar', 'Example event source selected', {
+            id: 'gc:geocachingspain@gmail.com',
+            name: 'Geocaching in Spain (Google Calendar)',
         })
     })
 
     it('shows loading spinner when submitting and disables inputs', async () => {
-        render(<CalendarSelector />)
+        render(<EventSourceSelector />)
 
-        // Fill in the calendar ID
-        const input = screen.getByLabelText('Enter Google Calendar ID')
-        fireEvent.change(input, { target: { value: 'test@example.com' } })
+        // Fill in the event source ID
+        const input = screen.getByLabelText('Enter Event Source ID string')
+        fireEvent.change(input, { target: { value: 'gc:test@example.com' } })
 
         // Submit the form
-        const submitButton = screen.getByText('View Calendar')
+        const submitButton = screen.getByText('View Events')
         fireEvent.click(submitButton)
 
         // Check for loading spinner
@@ -176,15 +179,15 @@ describe('CalendarSelector', () => {
         })
     })
 
-    it('renders all example calendars correctly with white text', () => {
-        const { container } = render(<CalendarSelector />)
+    it('renders all example event sources correctly with white text', () => {
+        const { container } = render(<EventSourceSelector />)
 
         // Check that both examples are rendered
-        expect(screen.getByText('SF Bay Area Facebook Events')).toBeInTheDocument()
-        expect(screen.getByText('Geocaching in Spain')).toBeInTheDocument()
+        expect(screen.getByText('SF Bay Area Facebook Events (Google Calendar)')).toBeInTheDocument()
+        expect(screen.getByText('Geocaching in Spain (Google Calendar)')).toBeInTheDocument()
 
-        // Check for the correct calendar IDs
-        expect(screen.getByText('geocachingspain@gmail.com')).toBeInTheDocument()
+        // Check for the correct event source IDs
+        expect(screen.getByText('gc:geocachingspain@gmail.com')).toBeInTheDocument()
         expect(screen.getByText(/aabe6c219ee2af5b791ea6719e04a92990f9ccd1e68a3ff0d89bacd153a0b36d/)).toBeInTheDocument()
 
         // Check that text is white
@@ -206,7 +209,7 @@ describe('CalendarSelector', () => {
     })
 
     it('renders the help section with instructions for finding calendar ID', () => {
-        render(<CalendarSelector />)
+        render(<EventSourceSelector />)
 
         // Check for help section header
         expect(screen.getByText('How to find your Calendar ID:')).toBeInTheDocument()

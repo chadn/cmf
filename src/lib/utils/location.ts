@@ -173,15 +173,17 @@ export function calculateViewportFromBounds(bounds: MapBounds): MapViewport {
     const maxDiff = Math.max(latDiff, lonDiff)
 
     // Determine zoom level based on the size of the bounds
-    // This is a simplified calculation and may need adjustment
     let zoom = 1
-    if (maxDiff > 0) {
+    if (maxDiff === 0) {
+        // For single marker or markers with same coordinates, use a fixed zoom level
+        zoom = 13
+    } else if (maxDiff > 0) {
         // Logarithmic scale for zoom level
         // Lower base value (12 instead of 14) will reduce zoom by 2 levels across the board
         // Keeping multiplier at 5 for consistency
         zoom = Math.floor(12 - Math.log2(maxDiff * 5))
 
-        // Further reduce all zoom levels by 2 to get desired effect
+        // Further reduce all zoom levels by 1 to get desired effect
         zoom -= 1
 
         // Add additional zoom reduction for very small differences to prevent extreme zoom
