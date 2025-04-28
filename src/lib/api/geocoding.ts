@@ -35,6 +35,10 @@ const FIXED_LOCATIONS = [
     },
 ]
 
+if (!process.env.GOOGLE_MAPS_API_KEY) {
+    logr.warn('api-geo', 'Google Maps API key is not configured')
+}
+
 // See if location already has Lat and Lon in it. If so, extract and return ResolvedLocation, else return false
 export function customLocationParserLatLon(locationString: string): Location | false {
     // Check for latitude and longitude in the format "lat,lng", allowing for spaces  and negative values

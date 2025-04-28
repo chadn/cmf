@@ -58,12 +58,12 @@ export function registerEventSource(handler: BaseEventSourceHandler): void {
     if (existingHandler) {
         logr.error(
             'api-es',
-            `Prefix ${existingHandler.type.prefix} already registered for ${existingHandler.constructor.name} (${existingHandler.type.name}), not registering ${handler.constructor.name}`
+            `Prefix ${existingHandler.type.prefix} already registered for "${existingHandler.type.name}", not registering "${handler.type.name}"`
         )
         return
     }
     eventSourceHandlers.push(handler)
-    logr.info('api-es', `Registered event source handler: ${handler.type.prefix} ${handler.constructor.name}`)
+    logr.info('api-es', `Registered event source handler: ${handler.type.prefix}: for "${handler.type.name}"`)
 }
 
 /**
@@ -90,7 +90,7 @@ export async function fetchEvents(
     if (!handler) {
         throw new Error(`No handler available for event source: ${eventSourceId}`)
     }
-    logr.info('api-es', `Fetching events from ${handler.constructor.name} with id: ${sourceId}`)
+    logr.info('api-es', `Fetching events from "${handler.type.name}" with id: ${sourceId}`)
 
     return handler.fetchEvents({ ...params, id: sourceId })
 }
