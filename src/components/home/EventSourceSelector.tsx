@@ -28,6 +28,10 @@ const EventSourceSelector: React.FC = () => {
             name: 'Geocaching in Spain (Google Calendar)',
             id: 'gc:geocachingspain@gmail.com',
         },
+        {
+            name: 'Protests from pol-rev.com',
+            id: 'protest:all',
+        },
         // Facebook examples will be added when supported
         // {
         //     name: 'Sample Facebook Events',

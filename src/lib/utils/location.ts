@@ -277,8 +277,9 @@ export const parseAsEventSource = createParser({
     // parse: a function that takes a string and returns the parsed value, or null if invalid.
     parse(queryValue) {
         if (typeof queryValue !== 'string') return null
-        if (queryValue.startsWith('gc:')) return queryValue
-        if (queryValue === 'protests') return queryValue
+        // match any string that starts with ascii chars or digits then a colon then any number of digits
+        const regex = /^[a-zA-Z0-9]+:/
+        if (regex.test(queryValue)) return queryValue
         return null
     },
     // serialize: a function that takes the parsed value and returns a string used in the URL.

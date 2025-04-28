@@ -6,6 +6,7 @@ import { logr } from '@/lib/utils/logr'
 
 // Import event source handlers to ensure they're registered
 import '@/lib/api/eventSources/googleCalendar'
+import '@/lib/api/eventSources/protests'
 // Add other event source imports here as they're implemented
 // import '@/lib/api/eventSources/facebookEvents'
 
