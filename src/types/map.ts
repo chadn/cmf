@@ -1,4 +1,4 @@
-import { CalendarEvent } from './events'
+import { CmfEvent } from './events'
 
 /**
  * Represents the current view state of the map
@@ -31,7 +31,7 @@ export interface MapMarker {
     id: string              // Unique identifier for the marker, typically based on coordinates
     latitude: number        // Latitude position of the marker
     longitude: number       // Longitude position of the marker
-    events: CalendarEvent[] // Array of events that occur at this location
+    events: CmfEvent[] // Array of events that occur at this location
     // TODO: Consider adding a color or icon property to distinguish different types of events
 }
 

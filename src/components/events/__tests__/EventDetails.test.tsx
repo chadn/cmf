@@ -2,11 +2,11 @@ import React from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
 import EventDetails from '../EventDetails'
 import '@testing-library/jest-dom'
-import { CalendarEvent } from '@/types/events'
+import { CmfEvent } from '@/types/events'
 
 describe('EventDetails', () => {
     // Mock event data for testing
-    const mockEvent: CalendarEvent = {
+    const mockEvent: CmfEvent = {
         id: 'event1',
         name: 'Test Event',
         description:
@@ -28,7 +28,7 @@ describe('EventDetails', () => {
         },
     }
 
-    const mockEventWithUnresolvedLocation: CalendarEvent = {
+    const mockEventWithUnresolvedLocation: CmfEvent = {
         ...mockEvent,
         id: 'event2',
         resolved_location: {
@@ -37,7 +37,7 @@ describe('EventDetails', () => {
         },
     }
 
-    const mockEventWithoutDescription: CalendarEvent = {
+    const mockEventWithoutDescription: CmfEvent = {
         ...mockEvent,
         id: 'event3',
         description: '',

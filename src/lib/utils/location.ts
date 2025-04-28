@@ -1,5 +1,5 @@
 import { MapBounds, MapViewport, MapMarker } from '@/types/map'
-import { Location, CalendarEvent } from '@/types/events'
+import { Location, CmfEvent } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
 import { createParser } from 'nuqs'
 
@@ -20,7 +20,7 @@ export function truncateLocation(location: string, maxLength: number = 40): stri
  * @param event - The calendar event to generate an ID for
  * @returns A unique ID string based on the event's coordinates
  */
-export function genMarkerId(event: CalendarEvent): string {
+export function genMarkerId(event: CmfEvent): string {
     if (
         event.resolved_location?.status !== 'resolved' ||
         !event.resolved_location?.lat ||
@@ -36,7 +36,7 @@ export function genMarkerId(event: CalendarEvent): string {
  * @param events - Array of calendar events to generate markers from
  * @returns Array of map markers, with events at the same location grouped together
  */
-export function generateMapMarkers(events: CalendarEvent[]): MapMarker[] {
+export function generateMapMarkers(events: CmfEvent[]): MapMarker[] {
     const markersMap = new Map<string, MapMarker>()
     let eventsWithLocation = 0
     let eventsWithoutLocation = 0

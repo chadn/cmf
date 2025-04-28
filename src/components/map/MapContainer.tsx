@@ -9,7 +9,6 @@ import MapPopup from './MapPopup'
 import { logr } from '@/lib/utils/logr'
 // Import maplibre-gl as a type
 import type maplibregl from 'maplibre-gl'
-import { CalendarEvent } from '@/types/events'
 
 /**
  * MapContainer handles the display and interaction with the map

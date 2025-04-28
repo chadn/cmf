@@ -6,6 +6,7 @@ import { MapBounds } from '@/types/map'
 import { FilterEventsManager } from '@/lib/events/FilterEventsManager'
 import { logr } from '@/lib/utils/logr'
 import { fetcherLogr } from '@/lib/utils/utils'
+import { EventSourceResponse } from '../api/eventSources'
 
 interface UseEventsManagerProps {
     eventSource?: string | null
@@ -50,7 +51,7 @@ function eventsReducer(state: EventsState, action: EventsAction): EventsState {
         case 'SET_EVENTS':
             return { ...state, events: action.payload }
         case 'SET_FILTERS':
-            return { ...state, filters: action.payload }
+            return { ...state, filters: { ...state.filters, ...action.payload } }
         case 'SELECT_EVENT':
             return { ...state, selectedEventId: action.payload }
         case 'SET_LOADING':
@@ -69,13 +70,12 @@ export function useEventsManager({
     mapBounds,
     showUnknownLocationsOnly,
 }: UseEventsManagerProps = {}): UseEventsManagerResult {
-    // Create FilterEventsManager instance
     const [fltrEvtMgr] = useState(() => new FilterEventsManager())
 
     // Use reducer for state management
     const [state, dispatch] = useReducer(eventsReducer, initialState)
 
-    // Reset FilterEventsManager when calendar ID changes
+    // Reset FilterEventsManager when event source changes
     useEffect(() => {
         logr.info('use_evts_mgr', `uE: FilterEventsManager reset, new eventSource: "${eventSource}"`)
         fltrEvtMgr.reset()
@@ -89,31 +89,31 @@ export function useEventsManager({
         logr.warn('use_evts_mgr', `eventSource==protests NOT IMPLEMENTED YET.`)
     }
 
-    // Construct the API URL
-    const apiUrl = calendarId ? `/api/calendar?id=${encodeURIComponent(calendarId)}` : null
+    // Construct the API URL - use the new /api/events endpoint
+    const apiUrl = eventSource ? `/api/events?id=${encodeURIComponent(eventSource)}` : null
 
     // Log the API URL being used
     useEffect(() => {
         if (apiUrl) {
-            logr.info('use_evts_mgr', `uE: API URL for calendar data: "${apiUrl}"`)
+            logr.info('use_evts_mgr', `uE: API URL for events data: "${apiUrl}"`)
         }
     }, [apiUrl])
 
-    // Fetch events from API
     // understand this better: https://swr.vercel.app/docs/getting-started
-    // TODO: Chad - do we need useSWR here? apiIsLoading does not change in swr.vercel.app
+    // Fetch events from API using SWR
     const {
         data: apiData,
         error: apiError,
         isLoading: apiIsLoading,
     } = useSWR(apiUrl, fetcherLogr, {
         revalidateOnFocus: false,
-        onSuccess: (data) => {
+        onSuccess: (data: EventSourceResponse) => {
             if (!data) return
-            logr.info('use_evts_mgr', `✅ Calendar data fetched: "${data.calendar.name || 'Unknown Calendar'}"`, {
-                calendarId: data.calendar.id || 'unknown',
-                totalEvents: data.calendar.totalCount || 0,
-                unknownLocations: data.calendar.unknownLocationsCount || 0,
+            logr.info('use_evts_mgr', `✅ Events data fetched: "${data.metadata.name || 'Unknown Source'}"`, {
+                sourceId: data.metadata.id || 'unknown',
+                sourceType: data.metadata.type || 'unknown',
+                totalEvents: data.metadata.totalCount || 0,
+                unknownLocations: data.metadata.unknownLocationsCount || 0,
             })
             logr.debug('use_evts_mgr', `Before fltrEvtMgr.cmf_events_all=${fltrEvtMgr.cmf_events_all.length}`)
             logr.info('use_evts_mgr', `Calling fltrEvtMgr.setEvents(${data.events.length})`)
@@ -122,11 +122,11 @@ export function useEventsManager({
             logr.debug('use_evts_mgr', `After fltrEvtMgr.cmf_events_all=${fltrEvtMgr.cmf_events_all.length}`)
         },
         onError: (err) => {
-            logr.info('use_evts_mgr', `❌ Error fetching calendar data for ID: "${calendarId || 'unknown'}"`, {
+            logr.info('use_evts_mgr', `❌ Error fetching events data for source: "${eventSource || 'unknown'}"`, {
                 error: err.message,
                 apiUrl,
             })
-            logr.info('use_evts_mgr', `Error fetching calendar data for ID: "${calendarId || 'unknown'}"`, err)
+            logr.info('use_evts_mgr', `Error fetching events data for source: "${eventSource || 'unknown'}"`, err)
             dispatch({ type: 'SET_ERROR', payload: err })
         },
     })
@@ -136,6 +136,8 @@ export function useEventsManager({
     }, [apiIsLoading])
 
     // Update events in FilterEventsManager when data changes
+    // TODO: understand this better - do we need this?
+    /*
     useEffect(() => {
         if (apiData?.events) {
             logr.info('use_evts_mgr', `uE: Calling fltrEvtMgr.setEvents(${apiData.events.length})`)
@@ -143,7 +145,7 @@ export function useEventsManager({
             dispatch({ type: 'SET_EVENTS', payload: apiData.events })
         }
     }, [apiData?.events, fltrEvtMgr])
-
+    */
     // Apply initial filters if provided
     useEffect(() => {
         if (dateRange) {
@@ -162,7 +164,7 @@ export function useEventsManager({
             fltrEvtMgr.setShowUnknownLocationsOnly(showUnknownLocationsOnly)
             dispatch({ type: 'SET_FILTERS', payload: { ...state.filters, showUnknownLocationsOnly } })
         }
-    }, [dateRange, searchQuery, mapBounds, showUnknownLocationsOnly, fltrEvtMgr])
+    }, [dateRange, searchQuery, mapBounds, showUnknownLocationsOnly, fltrEvtMgr, state.filters])
 
     // Memoize derived data
     const filteredEvents = useMemo(() => {
@@ -180,16 +182,18 @@ export function useEventsManager({
     }, [state.events])
 
     // Log when the return values change
+    /*
     useEffect(() => {
         if (apiData && !apiIsLoading && apiData.events) {
             logr.info('use_evts_mgr', 'Events hook return values updated', {
                 totalEvents: apiData.events.length,
                 filteredEvents: filteredEvents.length,
-                calendarName: apiData.calendar.name || '',
+                sourceName: apiData.metadata.name || '',
+                sourceType: apiData.metadata.type || 'unknown',
             })
         }
     }, [apiData, apiIsLoading, filteredEvents])
-
+    */
     return {
         eventsFn: () => fltrEvtMgr.getFilteredEvents(),
         evts: fltrEvtMgr.getFilteredEvents(),

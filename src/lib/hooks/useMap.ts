@@ -1,7 +1,7 @@
 'use client'
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { MapViewport, MapBounds, MapMarker, MapState } from '@/types/map'
-import { CalendarEvent, FilteredEvents } from '@/types/events'
+import { CmfEvent, FilteredEvents } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
 import { calculateMapBoundsAndViewport, generateMapMarkers } from '@/lib/utils/location'
 
@@ -16,7 +16,7 @@ interface UseMapReturn {
     isMapOfAllEvents: boolean
 }
 
-export const genMarkerId = (event: CalendarEvent): string => {
+export const genMarkerId = (event: CmfEvent): string => {
     if (
         event.resolved_location?.status !== 'resolved' ||
         !event.resolved_location?.lat ||
@@ -30,7 +30,7 @@ export const genMarkerId = (event: CalendarEvent): string => {
 /**
  * Custom hook for managing map state and interactions
  * @param {UseMapProps} props - Props for the hook
- * @param {CalendarEvent[]} props.events - List of calendar events, usually filtered. Only events with locations are shown on the map.
+ * @param {CmfEvent[]} props.events - List of calendar events, usually filtered. Only events with locations are shown on the map.
  * @param {Partial<MapViewport>} [props.initialViewport] - Initial viewport settings
  * @returns {UseMapReturn} - Map state and functions
  */

@@ -5,12 +5,9 @@ import { logr } from '@/lib/utils/logr'
 
 const GOOGLE_CALENDAR_API_BASE = 'https://www.googleapis.com/calendar/v3/calendars'
 
-// TODO: support Facebook Events
-// rename fetchCalendarEvents to fetchGoogleCalendarEvents.
-// Create new function fetchCalendarEvents that supports any type of calendar.
-// If google calendar, then return fetchGoogleCalendarEvents.
-// If facebook, see fetchSourceCalendars() in  https://github.com/derekantrican/GAS-ICS-Sync/blob/master/Helpers.gs
-// parse using https://github.com/kewisch/ical.js
+// NOTE: This file is being maintained for backward compatibility
+// New code should use the event sources system in src/lib/api/eventSources/
+// @deprecated Use src/lib/api/eventSources/googleCalendar.ts instead
 
 /**
  * Fetches events from Google Calendar API
@@ -18,12 +15,14 @@ const GOOGLE_CALENDAR_API_BASE = 'https://www.googleapis.com/calendar/v3/calenda
  * @param timeMin - Start date for events (defaults to 1 month ago)
  * @param timeMax - End date for events (defaults to 3 months from now)
  * @returns Promise with calendar events
+ * @deprecated Use the EventSourceHandler system instead
  */
-export async function fetchCalendarEvents(
+export async function fetchGoogleCalendarEvents(
     calendarId: string,
     timeMin?: string,
     timeMax?: string
 ): Promise<GoogleCalendarResponse> {
+    logr.info('api-cal', '[DEPRECATED] Using legacy fetchGoogleCalendarEvents. Consider migrating to event sources.')
     if (!process.env.GOOGLE_CALENDAR_API_KEY) {
         logr.info('api-cal', 'Google Calendar API key is not configured')
         throw new Error('Google Calendar API key is not configured')
@@ -47,7 +46,7 @@ export async function fetchCalendarEvents(
 
     const apiUrl = `${GOOGLE_CALENDAR_API_BASE}/${encodeURIComponent(calendarId)}/events`
 
-    logr.info('api-cal', `fetchCalendarEvents request`, {
+    logr.info('api-cal', `fetchGoogleCalendarEvents request`, {
         calendarId: calendarId,
         timeMin: params.timeMin,
         timeMax: params.timeMax,
@@ -58,14 +57,14 @@ export async function fetchCalendarEvents(
         const response = await axios.get(apiUrl, { params })
 
         if (response.data && response.data.items) {
-            logr.info('api-cal', `fetchCalendarEvents response: ${response.data.items.length} events`)
+            logr.info('api-cal', `fetchGoogleCalendarEvents response: ${response.data.items.length} events`)
         } else {
-            logr.info('api', 'fetchCalendarEvents unexpected', response)
+            logr.info('api', 'fetchGoogleCalendarEvents unexpected', response)
         }
         return response.data
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
-        logr.info('api-cal', `fetchCalendarEvents error: ${errorMessage}`)
+        logr.info('api-cal', `fetchGoogleCalendarEvents error: ${errorMessage}`)
         console.error('Error fetching calendar events:', error)
         throw error
     }

@@ -1,11 +1,11 @@
 'use client'
 
 import React from 'react'
-import { CalendarEvent } from '@/types/events'
+import { CmfEvent } from '@/types/events'
 import { formatEventDate, formatEventDuration } from '@/lib/utils/date'
 
 interface EventDetailsProps {
-    event: CalendarEvent
+    event: CmfEvent
     onClose: () => void
 }
 

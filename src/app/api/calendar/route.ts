@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { fetchCalendarEvents, extractUrls } from '@/lib/api/calendar'
+import { fetchGoogleCalendarEvents, extractUrls } from '@/lib/api/calendar'
 import { batchGeocodeLocations } from '@/lib/api/geocoding'
-import { CalendarEvent } from '@/types/events'
+import { CmfEvent } from '@/types/events'
 import { GoogleCalendarEvent } from '@/types/api'
 import { logr } from '@/lib/utils/logr'
 
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
         // TODO: support Facebook Events
         // create new function that parses search params and returns
         // calendartype (facebook, google, outlook, etc)
-        // calendar id or whatever is needed for the fetchCalendarEvents function
+        // calendar id or whatever is needed for the fetchGoogleCalendarEvents function
 
         if (!calendarId) {
             logr.info('api-cal', 'Missing calendar ID in request')
@@ -53,13 +53,13 @@ export async function GET(request: NextRequest) {
         // Fetch events from Google Calendar API
         logr.info('api-cal', `Attempting to fetch calendar with ID: ${calendarId}`)
         try {
-            const calendarData = await fetchCalendarEvents(calendarId, timeMin, timeMax)
+            const calendarData = await fetchGoogleCalendarEvents(calendarId, timeMin, timeMax)
 
             logr.info('api-cal', `✅ Calendar successfully fetched: "${calendarData.summary}"`)
             logr.info('api-cal', `Total events in calendar: ${calendarData.items.length}`)
 
             // Transform Google Calendar events to our format
-            const events: CalendarEvent[] = calendarData.items.map((item: GoogleCalendarEvent) => {
+            const events: CmfEvent[] = calendarData.items.map((item: GoogleCalendarEvent) => {
                 // Handle start and end dates (could be dateTime or date)
                 const startDate = item.start.dateTime || item.start.date || ''
                 const endDate = item.end.dateTime || item.end.date || ''

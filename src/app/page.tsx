@@ -6,7 +6,7 @@ import EventList from '@/components/events/EventList'
 import EventFilters from '@/components/events/EventFilters'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
-import CalendarSelector from '@/components/home/CalendarSelector'
+import EventSourceSelector from '@/components/home/EventSourceSelector'
 import { useEventsManager } from '@/lib/hooks/useEventsManager'
 import { useMap, genMarkerId } from '@/lib/hooks/useMap'
 import { MapBounds } from '@/types/map'
@@ -323,7 +323,7 @@ function HomeContent() {
             <div className="min-h-screen flex flex-col">
                 <Header />
                 <main className="flex-grow flex items-center justify-center">
-                    <CalendarSelector />
+                    <EventSourceSelector />
                 </main>
                 <Footer />
             </div>

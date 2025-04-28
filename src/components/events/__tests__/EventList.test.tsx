@@ -2,11 +2,11 @@ import React from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
 import EventList from '../EventList'
 import '@testing-library/jest-dom'
-import { CalendarEvent, FilteredEvents } from '@/types/events'
+import { CmfEvent, FilteredEvents } from '@/types/events'
 
 describe('EventList', () => {
     // Mock data for testing
-    const mockEvents: CalendarEvent[] = [
+    const mockEvents: CmfEvent[] = [
         {
             id: 'event1',
             name: 'Test Event 1',

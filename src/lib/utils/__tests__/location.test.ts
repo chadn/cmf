@@ -1,6 +1,6 @@
 import { truncateLocation, calculateMapBoundsAndViewport, generateMapMarkers, genMarkerId } from '../location'
 import { MapBounds, MapMarker } from '@/types/map'
-import { CalendarEvent } from '@/types/events'
+import { CmfEvent } from '@/types/events'
 
 describe('Location and Map Utilities', () => {
     describe('truncateLocation', () => {
@@ -251,7 +251,7 @@ describe('Location and Map Utilities', () => {
 
     describe('genMarkerId', () => {
         it('should return empty string for unresolved location', () => {
-            const event: CalendarEvent = {
+            const event: CmfEvent = {
                 id: '1',
                 name: 'Test Event',
                 original_event_url: 'https://example.com',
@@ -270,7 +270,7 @@ describe('Location and Map Utilities', () => {
         })
 
         it('should return empty string for location without coordinates', () => {
-            const event: CalendarEvent = {
+            const event: CmfEvent = {
                 id: '1',
                 name: 'Test Event',
                 original_event_url: 'https://example.com',
@@ -290,7 +290,7 @@ describe('Location and Map Utilities', () => {
         })
 
         it('should generate a valid marker ID from coordinates', () => {
-            const event: CalendarEvent = {
+            const event: CmfEvent = {
                 id: '1',
                 name: 'Test Event',
                 original_event_url: 'https://example.com',
@@ -325,7 +325,7 @@ describe('Location and Map Utilities', () => {
         })
 
         it('should generate markers for events with valid locations', () => {
-            const events: CalendarEvent[] = [
+            const events: CmfEvent[] = [
                 {
                     id: '1',
                     name: 'Event 1',
@@ -379,7 +379,7 @@ describe('Location and Map Utilities', () => {
         })
 
         it('should group events at the same location into a single marker', () => {
-            const events: CalendarEvent[] = [
+            const events: CmfEvent[] = [
                 {
                     id: '1',
                     name: 'Event 1',
@@ -427,7 +427,7 @@ describe('Location and Map Utilities', () => {
         })
 
         it('should skip events without valid locations', () => {
-            const events: CalendarEvent[] = [
+            const events: CmfEvent[] = [
                 {
                     id: '1',
                     name: 'Event 1',

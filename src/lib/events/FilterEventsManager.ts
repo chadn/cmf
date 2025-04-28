@@ -1,6 +1,6 @@
 'use client'
 
-import { CalendarEvent, EventsFilter, FilteredEvents, FilterStats } from '@/types/events'
+import { CmfEvent, EventsFilter, FilteredEvents, FilterStats } from '@/types/events'
 import { MapBounds } from '@/types/map'
 import { logr } from '@/lib/utils/logr'
 
@@ -8,10 +8,10 @@ import { logr } from '@/lib/utils/logr'
  * Class for managing calendar events and applying filters
  */
 export class FilterEventsManager {
-    private allEvents: CalendarEvent[]
+    private allEvents: CmfEvent[]
     private filters: EventsFilter
 
-    constructor(events: CalendarEvent[] = []) {
+    constructor(events: CmfEvent[] = []) {
         this.allEvents = events
         this.filters = {}
         logr.info('fltr_evts_mgr', 'FilterEventsManager initialized', {
@@ -23,7 +23,7 @@ export class FilterEventsManager {
      * Update all events
      * @param events - List of calendar events
      */
-    setEvents(events: CalendarEvent[]) {
+    setEvents(events: CmfEvent[]) {
         this.allEvents = events
         logr.info('fltr_evts_mgr', `setEvents(${events.length}) set eventsManager.allEvents=${this.allEvents.length}`)
     }
@@ -31,14 +31,14 @@ export class FilterEventsManager {
     /**
      * Get all events (unfiltered)
      */
-    get cmf_events_all(): CalendarEvent[] {
+    get cmf_events_all(): CmfEvent[] {
         return this.allEvents
     }
 
     /**
      * Check if an event has a resolved location
      */
-    private hasResolvedLocation(event: CalendarEvent): boolean {
+    private hasResolvedLocation(event: CmfEvent): boolean {
         return !!(
             event.resolved_location?.status === 'resolved' &&
             event.resolved_location.lat &&
@@ -49,21 +49,21 @@ export class FilterEventsManager {
     /**
      * Get events with resolved locations
      */
-    get cmf_events_locations(): CalendarEvent[] {
+    get cmf_events_locations(): CmfEvent[] {
         return this.allEvents.filter(this.hasResolvedLocation)
     }
 
     /**
      * Get events with unknown or unresolved locations
      */
-    get cmf_events_unknown_locations(): CalendarEvent[] {
+    get cmf_events_unknown_locations(): CmfEvent[] {
         return this.allEvents.filter((event) => !this.hasResolvedLocation(event))
     }
 
     /**
      * Apply date range filter to an event
      */
-    private applyDateFilter(event: CalendarEvent): boolean {
+    private applyDateFilter(event: CmfEvent): boolean {
         if (!this.filters.dateRange) return true
 
         const eventStart = new Date(event.start)
@@ -77,7 +77,7 @@ export class FilterEventsManager {
     /**
      * Apply search query filter to an event
      */
-    private applySearchFilter(event: CalendarEvent): boolean {
+    private applySearchFilter(event: CmfEvent): boolean {
         if (!this.filters.searchQuery || this.filters.searchQuery.trim() === '') return true
 
         const query = this.filters.searchQuery.toLowerCase()
@@ -94,7 +94,7 @@ export class FilterEventsManager {
      * Apply map bounds filter to an event
      * This filter checks if the event's location falls within the specified map bounds.
      */
-    private applyMapFilter(event: CalendarEvent): boolean {
+    private applyMapFilter(event: CmfEvent): boolean {
         if (!this.filters.mapBounds) return true
         if (!this.hasResolvedLocation(event)) return false
 
@@ -115,7 +115,7 @@ export class FilterEventsManager {
     /**
      * Apply unknown locations filter to an event
      */
-    private applyUnknownLocationsFilter(event: CalendarEvent): boolean {
+    private applyUnknownLocationsFilter(event: CmfEvent): boolean {
         if (!this.filters.showUnknownLocationsOnly) return true
 
         return !this.hasResolvedLocation(event)

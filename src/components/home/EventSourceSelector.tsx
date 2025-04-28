@@ -7,62 +7,63 @@ import { logr } from '@/lib/utils/logr'
 // Basic debug log to verify DEBUG_LOGIC is enabled on the client
 // This will be filtered out by the debug utility if running on the server
 
-const CalendarSelector: React.FC = () => {
+const EventSourceSelector: React.FC = () => {
     const router = useRouter()
-    const [calendarId, setCalendarId] = useState('')
+    const [eventSourceId, setEventSourceId] = useState('')
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
     // Log component mount - this will only run in the browser
     useEffect(() => {
-        logr.info('component', 'CalendarSelector component mounted')
+        logr.info('component', 'EventSourceSelector component mounted')
     }, [])
 
-    // TODO: support Facebook Events
-    // After making it work, add a facebook example to exampleCalendars
-
-    // Example calendar IDs for demonstration
-    const exampleCalendars = [
+    // Example event sources for demonstration
+    const exampleEventSources = [
         {
-            name: 'SF Bay Area Facebook Events',
-            id: 'aabe6c219ee2af5b791ea6719e04a92990f9ccd1e68a3ff0d89bacd153a0b36d@group.calendar.google.com',
+            name: 'SF Bay Area Facebook Events (Google Calendar)',
+            id: 'gc:aabe6c219ee2af5b791ea6719e04a92990f9ccd1e68a3ff0d89bacd153a0b36d@group.calendar.google.com',
         },
         {
-            name: 'Geocaching in Spain',
-            id: 'geocachingspain@gmail.com',
+            name: 'Geocaching in Spain (Google Calendar)',
+            id: 'gc:geocachingspain@gmail.com',
         },
+        // Facebook examples will be added when supported
+        // {
+        //     name: 'Sample Facebook Events',
+        //     id: 'sample-facebook-id',
+        // },
     ]
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
 
-        if (!calendarId.trim()) {
+        if (!eventSourceId.trim()) {
             logr.info('calendar', 'Calendar submission error: empty ID')
-            setError('Please enter a Calendar ID')
+            setError('Please enter a source ID')
             return
         }
 
-        logr.info('calendar', 'Calendar ID submitted', { calendarId })
+        logr.info('calendar', 'Event source ID submitted', { sourceId: eventSourceId })
         if (typeof umami !== 'undefined') {
-            umami.track('ViewCalendar', { gc: calendarId })
+            umami.track('ViewEventSource', { id: eventSourceId })
         }
-
         setIsLoading(true)
         setError(null)
 
-        // In a real app, you might validate the calendar ID here
-        // For now, we'll just redirect to the main page with the calendar ID
-        const redirectUrl = `/?es=gc:${encodeURIComponent(calendarId)}`
+        // Redirect to the main page with the event source
+        const redirectUrl = `/?es=${encodeURIComponent(eventSourceId)}`
         logr.info('calendar', 'Redirecting to', { redirectUrl })
         router.push(redirectUrl)
     }
 
     const handleExampleSelect = (id: string) => {
-        logr.info('calendar', 'Example calendar selected', {
+        const example = exampleEventSources.find((es) => es.id === id)
+        logr.info('calendar', 'Example event source selected', {
             id,
-            name: exampleCalendars.find((cal) => cal.id === id)?.name,
+            name: example?.name,
         })
-        setCalendarId(id)
+        setEventSourceId(id)
     }
 
     return (
@@ -74,43 +75,42 @@ const CalendarSelector: React.FC = () => {
 
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="form-control">
-                    <label htmlFor="calendar-id" className="form-label">
-                        Enter Google Calendar ID
+                    <label htmlFor="event-source-id" className="form-label">
+                        Enter Event Source ID string
                     </label>
                     <input
-                        id="calendar-id"
+                        id="event-source-id"
                         type="text"
                         className="form-input"
-                        placeholder="your_calendar_id@group.calendar.google.com"
-                        value={calendarId}
-                        onChange={(e) => setCalendarId(e.target.value)}
+                        placeholder="Enter your event source ID"
+                        value={eventSourceId}
+                        onChange={(e) => setEventSourceId(e.target.value)}
                         disabled={isLoading}
                     />
                     {error && <p className="text-sm text-error mt-1">{error}</p>}
-                    <p className="text-xs text-gray-500 mt-1">Find your Calendar ID in Google Calendar settings</p>
+                    <p className="text-xs text-gray-500 mt-1">More here on finding event source id</p>
                 </div>
 
                 <button type="submit" className="w-full btn btn-primary py-2" disabled={isLoading}>
-                    {isLoading ? <LoadingSpinner size="small" color="white" /> : 'View Calendar'}
+                    {isLoading ? <LoadingSpinner size="small" color="white" /> : 'View Events'}
                 </button>
             </form>
 
-            {/* Example calendars */}
+            {/* Example event sources */}
             <div className="mt-8">
                 <h3 className="text-sm font-medium text-gray-500 mb-2">
-                    {' '}
-                    Or try an example - click below then click View Calendar:
+                    Or try an example - click below then click View Events:
                 </h3>
                 <div className="space-y-2">
-                    {exampleCalendars.map((calendar) => (
+                    {exampleEventSources.map((source) => (
                         <button
-                            key={calendar.id}
+                            key={`${source.id}`}
                             className="w-full text-left px-3 py-2 border rounded btn btn-primary"
-                            onClick={() => handleExampleSelect(calendar.id)}
+                            onClick={() => handleExampleSelect(source.id)}
                             disabled={isLoading}
                         >
-                            <div className="font-medium text-white">{calendar.name}</div>
-                            <div className="text-xs text-white truncate">{calendar.id}</div>
+                            <div className="font-medium text-white">{source.name}</div>
+                            <div className="text-xs text-white truncate">{source.id}</div>
                         </button>
                     ))}
                 </div>
@@ -133,4 +133,4 @@ const CalendarSelector: React.FC = () => {
     )
 }
 
-export default CalendarSelector
+export default EventSourceSelector

@@ -12,7 +12,7 @@ export interface Location {
     types?: string[] // google maps location types: bars, night_club, point_of_interest, restaurant, etc.
 }
 
-export interface CalendarEvent {
+export interface CmfEvent {
     id: string
     name: string
     original_event_url: string
@@ -33,7 +33,7 @@ export interface EventFilters {
 }
 
 export interface EventsState {
-    events: CalendarEvent[]
+    events: CmfEvent[]
     filters: EventFilters
     selectedEventId: string | null
     isLoading: boolean
@@ -41,7 +41,7 @@ export interface EventsState {
 }
 
 export type EventsAction =
-    | { type: 'SET_EVENTS'; payload: CalendarEvent[] }
+    | { type: 'SET_EVENTS'; payload: CmfEvent[] }
     | { type: 'SET_FILTERS'; payload: EventFilters }
     | { type: 'SELECT_EVENT'; payload: string | null } // can be selected by map or list
     | { type: 'SET_LOADING'; payload: boolean }
@@ -71,15 +71,15 @@ export interface EventsFilter {
 }
 
 export interface FilteredEvents {
-    mapFilteredEvents: CalendarEvent[]
-    searchFilteredEvents: CalendarEvent[]
-    dateFilteredEvents: CalendarEvent[]
-    unknownLocationsFilteredEvents: CalendarEvent[]
+    mapFilteredEvents: CmfEvent[]
+    searchFilteredEvents: CmfEvent[]
+    dateFilteredEvents: CmfEvent[]
+    unknownLocationsFilteredEvents: CmfEvent[]
     // totalFiltered is all filtered out, is less than or equal to the sum of all filtered, since some events can be filtered out by multiple filters
-    filteredEvents: CalendarEvent[]
+    filteredEvents: CmfEvent[]
     // totalShown is events that pass all filters, not filetred out. allEvents - totalFilteredEvents
-    shownEvents: CalendarEvent[]
-    allEvents: CalendarEvent[]
+    shownEvents: CmfEvent[]
+    allEvents: CmfEvent[]
 }
 
 export interface FilterStats {

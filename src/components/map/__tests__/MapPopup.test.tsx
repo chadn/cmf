@@ -3,7 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import '@testing-library/jest-dom'
 import MapPopup from '../MapPopup'
 import { MapMarker } from '@/types/map'
-import { CalendarEvent } from '@/types/events'
+import { CmfEvent } from '@/types/events'
 
 // Mock logr to avoid console outputs during tests
 jest.mock('@/lib/utils/logr', () => ({
@@ -15,7 +15,7 @@ jest.mock('@/lib/utils/logr', () => ({
 }))
 
 describe('MapPopup', () => {
-    const mockEvent: CalendarEvent = {
+    const mockEvent: CmfEvent = {
         id: '1',
         name: 'Test Event',
         start: '2023-01-01T02:00:00Z',
