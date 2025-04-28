@@ -183,9 +183,26 @@ const MapContainer: React.FC<MapContainerProps> = ({
 
     // Handle popup close - simplified
     const handlePopupClose = () => {
+        // Clear marker and event selection
         onMarkerSelect(null)
         onEventSelect(null)
         setPopupMarker(null)
+
+        // Force a filter update to refresh the showing count
+        // This ensures the showing count updates when the popup is closed
+        if (onBoundsChange) {
+            // Get current bounds from the map
+            if (mapRef.current) {
+                const bounds = mapRef.current.getMap().getBounds()
+                const currentBounds = {
+                    north: bounds.getNorth(),
+                    south: bounds.getSouth(),
+                    east: bounds.getEast(),
+                    west: bounds.getWest(),
+                }
+                onBoundsChange(currentBounds)
+            }
+        }
     }
 
     return (

@@ -42,7 +42,6 @@ export interface MapState {
     viewport: MapViewport
     bounds: MapBounds | null
     markers: MapMarker[]
-    isMapOfAllEvents: boolean
     selectedMarkerId: string | null
 }
 

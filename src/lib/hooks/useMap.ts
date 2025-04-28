@@ -50,41 +50,25 @@ export function useMap(evts: FilteredEvents): UseMapReturn {
             viewport,
             bounds,
             markers: markersFromAllEvents,
-            isMapOfAllEvents: true,
             selectedMarkerId: null,
         }
     })
 
-    // Track if events have been initialized
-    const [eventsInitialized, setEventsInitialized] = useState(false)
-
     // Memoize filtered markers based on evts.shownEvents
     const filteredMarkers = useMemo(() => {
-        // During initialization or when showing all events, use evts.allEvents
-        if (!eventsInitialized || mapState.isMapOfAllEvents) {
-            return markersFromAllEvents
-        }
-
         if (!evts.shownEvents) return []
 
-        // Create a Set of event IDs that should be shown
+        // Create a Set of event IDs that should be shown for efficient lookup
         const shownEventIds = new Set(evts.shownEvents.map((event) => event.id))
 
-        // Filter markers and their events
+        // Filter markers to only include those with events in the shown set
         return markersFromAllEvents
             .map((marker) => ({
                 ...marker,
                 events: marker.events.filter((event) => shownEventIds.has(event.id)),
             }))
-            .filter((marker) => marker.events.length > 0) // Only keep markers that still have events
-    }, [evts.shownEvents, markersFromAllEvents, eventsInitialized, mapState.isMapOfAllEvents])
-
-    // Reset initialization when evts.allEvents changes (e.g., calendar switch)
-    // TODO - do we need this?
-    useEffect(() => {
-        logr.info('map', `uE: MAYBE DELME? evts.allEvents=${evts.allEvents.length}`)
-        setEventsInitialized(false)
-    }, [evts.allEvents])
+            .filter((marker) => marker.events.length > 0)
+    }, [evts.shownEvents, markersFromAllEvents])
 
     // Log when the hook initializes
     useEffect(() => {
@@ -106,7 +90,7 @@ export function useMap(evts: FilteredEvents): UseMapReturn {
         }
 
         if (markersChanged) {
-            const el = eventsInitialized ? evts.shownEvents.length : evts.allEvents.length
+            const el = evts.shownEvents ? evts.shownEvents.length : evts.allEvents.length
             const ol = mapState.markers.length
             logr.info('map', `uE: markers changed, ${filteredMarkers.length} markers, was ${ol}, from ${el} events`)
             setMapState((prev) => ({
@@ -114,31 +98,23 @@ export function useMap(evts: FilteredEvents): UseMapReturn {
                 markers: filteredMarkers,
             }))
         }
-    }, [
-        filteredMarkers,
-        mapState.markers,
-        setMapState,
-        evts.shownEvents.length,
-        evts.allEvents.length,
-        eventsInitialized,
-    ])
+    }, [filteredMarkers, mapState.markers, setMapState, evts.shownEvents, evts.allEvents.length])
 
     // Update viewport to show all events
     const resetMapToAllEvents = useCallback(() => {
-        logr.info(
-            'map',
-            `resetMapToAllEvents: called, Showing all ${evts.allEvents.length} events and ${markersFromAllEvents.length} markers`
-        )
         if (!evts.allEvents || evts.allEvents.length === 0) return
 
-        const { bounds, viewport } = calculateMapBoundsAndViewport(markersFromAllEvents)
+        logr.info(
+            'map',
+            `resetMapToAllEvents: showing all ${evts.allEvents.length} events and ${markersFromAllEvents.length} markers`
+        )
 
+        const { bounds, viewport } = calculateMapBoundsAndViewport(markersFromAllEvents)
         setMapState((prev) => ({
             ...prev,
             viewport,
             bounds,
             markers: markersFromAllEvents,
-            isMapOfAllEvents: true,
         }))
         logr.info('map', `resetMapToAllEvents done.`)
     }, [evts.allEvents, markersFromAllEvents])
@@ -152,7 +128,6 @@ export function useMap(evts: FilteredEvents): UseMapReturn {
         setMapState((prev) => ({
             ...prev,
             viewport: newViewport,
-            isMapOfAllEvents: false, // User changed the viewport, so no longer showing all events
         }))
     }, [])
 
@@ -160,37 +135,6 @@ export function useMap(evts: FilteredEvents): UseMapReturn {
     useEffect(() => {
         logr.info('map', `uE: selectedMarkerId now ${mapState.selectedMarkerId}`)
     }, [mapState.selectedMarkerId])
-    /* 
-    useEffect(() => {
-        if (mapState.selectedMarkerId) {
-            const marker = markersFromAllEvents.find((m) => m.id === mapState.selectedMarkerId)
-            if (marker) {
-                logr.info('map', `uE: Selected marker: ${mapState.selectedMarkerId}`, {
-                    latitude: marker.latitude,
-                    longitude: marker.longitude,
-                    eventCount: marker.events.length,
-                })
-            }
-        } else if (mapState.selectedMarkerId === null) {
-            logr.info('map', 'uE: Marker selection cleared')
-        }
-    }, [mapState.selectedMarkerId, markersFromAllEvents])
-    */
-
-    /*
-    // Initialize map to show all events on first load or calendar switch
-    useEffect(() => {
-        // Only reset when events first load or change to a new set
-        if (!eventsInitialized && markersFromAllEvents.length > 0) {
-            setEventsInitialized(true)
-            logr.info(
-                'map',
-                `uE: First load of events or calendar switch, showing all ${markersFromAllEvents.length} markers on map`
-            )
-            resetMapToAllEvents()
-        }
-    }, [markersFromAllEvents.length, eventsInitialized, resetMapToAllEvents])
-    */
 
     return {
         viewport: mapState.viewport,
@@ -200,6 +144,6 @@ export function useMap(evts: FilteredEvents): UseMapReturn {
         selectedMarkerId: mapState.selectedMarkerId,
         setSelectedMarkerId: (id: string | null) => setMapState((prev) => ({ ...prev, selectedMarkerId: id })),
         resetMapToAllEvents,
-        isMapOfAllEvents: mapState.isMapOfAllEvents,
+        isMapOfAllEvents: evts.shownEvents && evts.shownEvents.length === evts.allEvents.length,
     }
 }
