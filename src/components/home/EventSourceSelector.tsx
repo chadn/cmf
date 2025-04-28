@@ -109,7 +109,7 @@ const EventSourceSelector: React.FC = () => {
                     {exampleEventSources.map((source) => (
                         <button
                             key={`${source.id}`}
-                            className="w-full text-left px-3 py-2 border rounded btn btn-primary"
+                            className="w-full text-left px-3 py-2 border rounded btn btn-secondary"
                             onClick={() => handleExampleSelect(source.id)}
                             disabled={isLoading}
                         >

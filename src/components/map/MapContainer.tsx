@@ -260,6 +260,7 @@ const MapContainer: React.FC<MapContainerProps> = ({
                         longitude={popupMarker.longitude}
                         latitude={popupMarker.latitude}
                         anchor="bottom"
+                        offset={[0, -20]}
                         onClose={handlePopupClose}
                         closeButton={true}
                         closeOnClick={false}

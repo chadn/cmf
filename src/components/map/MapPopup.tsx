@@ -104,7 +104,7 @@ const MapPopup: React.FC<MapPopupProps> = ({ marker, selectedEventId, onEventSel
                 rel="noopener noreferrer"
                 className="text-xs text-blue-600 hover:underline block mb-2"
             >
-                View in Calendar
+                View Original Event
             </a>
 
             {/* Pagination controls (if multiple events) */}

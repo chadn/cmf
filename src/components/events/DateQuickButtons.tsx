@@ -85,6 +85,23 @@ export default function DateQuickButtons({
             </button>
             <button
                 data-umami-event="DateQuickButton"
+                data-umami-event-dateqbtn="Next7Days"
+                onClick={() => {
+                    // Next 7 days: start slider to today, end slider to be 7 days from today
+                    const sevenDaysLaterValue = Math.min(todayValue + 7, totalDays)
+                    setStartValue(todayValue)
+                    setEndValue(sevenDaysLaterValue)
+                    onDateRangeChange({
+                        start: getDateFromValue(todayValue),
+                        end: getDateFromValue(sevenDaysLaterValue),
+                    })
+                }}
+                className={buttonClass}
+            >
+                Next 7 days
+            </button>
+            <button
+                data-umami-event="DateQuickButton"
                 data-umami-event-dateqbtn="Weekend"
                 onClick={() => {
                     // Weekend: start slider to a future Friday (or today if today is Friday or Saturday),

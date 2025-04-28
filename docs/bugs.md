@@ -4,6 +4,7 @@
 
 Working on fixing these:
 
+1. BUG: date sliders correctly filter event list, but markers on map do not update but should appear and dissappear like the events on the eventlist.
 1. Bug or Feature Change: When clicking on event for marker popup, map changes, filters and event showing count do not change but should.
 1. Bug or Feature Change: When popup is open and user moves map, not sure if event count should change .. it does, and probably keep it that way, but selected event should not disappear from event list
 1. Bug or Feature Change: show events with unresolved locations on events list. Currently if a user is trying to find an event by name or date, and doesn't realize the location is missing or unresolvable, they will not be able to find it. They should.

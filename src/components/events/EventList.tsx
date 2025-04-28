@@ -133,17 +133,18 @@ const EventList: React.FC<EventListProps> = ({ evts, selectedEventId, onEventSel
                             </th>
                             <th
                                 scope="col"
-                                className="px-1 py-0.5 text-left text-xxs font-medium text-gray-500 uppercase tracking-wider cursor-pointer w-[10%] md:w-1/6"
+                                className="px-1 py-0.5 text-left text-xxs font-medium text-gray-500 uppercase tracking-wider cursor-pointer w-[10%] md:w-1/12"
                                 onClick={() => handleSort('duration')}
                             >
-                                Dur.
+                                <span className="2xl:hidden">Dur.</span>
+                                <span className="hidden 2xl:inline">Duration</span>
                                 {sortField === 'duration' && (
                                     <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
                                 )}
                             </th>
                             <th
                                 scope="col"
-                                className="px-1 py-0.5 text-left text-xxs font-medium text-gray-500 uppercase tracking-wider cursor-pointer w-[22%] md:w-1/6"
+                                className="px-1 py-0.5 text-left text-xxs font-medium text-gray-500 uppercase tracking-wider cursor-pointer w-[22%] md:w-1/4"
                                 onClick={() => handleSort('location')}
                             >
                                 Location
@@ -173,7 +174,7 @@ const EventList: React.FC<EventListProps> = ({ evts, selectedEventId, onEventSel
                                     )}
                                 </td>
                                 <td className="px-1 py-0.5 whitespace-nowrap">
-                                    <div className="md:hidden flex flex-col">
+                                    <div className="2xl:hidden flex flex-col">
                                         <div className="text-xs text-gray-600">
                                             {extractDateParts(event.start).dateDay}
                                         </div>
@@ -181,7 +182,7 @@ const EventList: React.FC<EventListProps> = ({ evts, selectedEventId, onEventSel
                                             {extractDateParts(event.start).time}
                                         </div>
                                     </div>
-                                    <div className="hidden md:block text-xs text-gray-600">
+                                    <div className="hidden 2xl:block text-xs text-gray-600">
                                         {formatStartDate(event.start)}
                                     </div>
                                 </td>
