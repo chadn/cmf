@@ -18,8 +18,7 @@ import { parseAsInteger, parseAsFloat, useQueryState, useQueryStates } from 'nuq
 declare const window: any
 
 // Application state machine types
-type AppState = 'uninitialized' | 'no-calendar' | 'events-init' | 'map-init' | 'main-state' | 'menu-shown'
-
+type AppState = 'uninitialized' | 'events-init' | 'map-init' | 'main-state' | 'menu-shown'
 // Actions that can be dispatched to change or transition state
 type AppAction =
     | { type: 'RESET_STATE' }
@@ -32,10 +31,10 @@ type AppAction =
 
 // Application state machine, appState.
 // uninitialized - first initial state, nothing is known. Initial URL params are stored.
-// events-init - fetching events for calendar based on initial URL params
-// map-init - update map based on initial URL params and updated calendar events
+// events-init - fetching events from eventSource based on initial URL params
+// map-init - update map based on initial URL params and updated eventSource events
 // main-state - respond to user interactions, updates some url parameters
-// menu-shown - map and filters on pause, user can view info about CMF - link to GitHub, blog, stats on current calendar and filter
+// menu-shown - map and filters on pause, user can view info about CMF - link to GitHub, blog, stats on current eventSource and filter
 function appReducer(state: AppState, action: AppAction): AppState {
     let newState = state
     switch (action.type) {
@@ -72,7 +71,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
 
 function HomeContent() {
     // URL query state parameters
-    const [eventSource, setEventSource] = useQueryState('es', parseAsEventSource) // replaced gc calendarId
+    const [eventSourceId, setEventSourceId] = useQueryState('es', parseAsEventSource) // replaced gc calendarId
     const [selectedEventIdUrl, setSelectedEventIdUrl] = useQueryState('se', { defaultValue: '' })
     const [viewportUrl, setViewportUrl] = useQueryStates({
         z: parseAsZoom,
@@ -80,13 +79,15 @@ function HomeContent() {
         lon: parseAsLatLon,
     })
     const initialUrlParams = {
-        es: eventSource,
+        es: eventSourceId,
         se: selectedEventIdUrl,
         z: viewportUrl.z,
         lat: viewportUrl.lat,
         lon: viewportUrl.lon,
     }
     logr.info('app', `HomeContent initialUrlParams=${JSON.stringify(initialUrlParams)}`)
+    const [appState, dispatch] = useReducer(appReducer, 'uninitialized')
+    const [headerName, setHeaderName] = useState('Calendar Map Filter')
 
     // Ref for the events sidebar container
     const eventsSidebarRef = useRef<HTMLDivElement>(null)
@@ -95,10 +96,8 @@ function HomeContent() {
     const [searchQuery, setLocalSearchQuery] = useState('')
     const [dateRange, setLocalDateRange] = useState<{ start: string; end: string } | undefined>(undefined)
 
-    const [appState, dispatch] = useReducer(appReducer, 'uninitialized')
-
     // Use our new EventsManager hook to get events and filter methods
-    const { eventsFn, evts, filters, calendar, apiIsLoading } = useEventsManager({ eventSource })
+    const { eventsFn, evts, filters, eventSource, apiIsLoading } = useEventsManager({ eventSourceId })
 
     // Map state - now uses events with locations instead of filtered events
     const {
@@ -111,19 +110,21 @@ function HomeContent() {
         isMapOfAllEvents,
     } = useMap(eventsFn())
 
-    // Reset when we get new calendar
-    // Handle transition when calendar changes,
+    // Reset when we get new eventSourceId
+    // Handle transition when eventSourceId changes,
     useEffect(() => {
-        logr.info('app', `uE: Event Src changed es=${eventSource}, changing appState`)
-        if (!eventSource) {
+        logr.info('app', `uE: Event Src changed es=${eventSourceId}, changing appState`)
+        if (!eventSourceId) {
+            setHeaderName('Calendar Map Filter')
             dispatch({ type: 'RESET_STATE' })
         } else {
+            setHeaderName('Loading Event Source...')
             dispatch({ type: 'EVENTS_LOADING' })
         }
         if (typeof umami !== 'undefined') {
-            umami.track('LoadCalendar', { es: eventSource ?? 'null', numEvents: evts.allEvents.length })
+            umami.track('LoadCalendar', { es: eventSourceId ?? 'null', numEvents: evts.allEvents.length })
         }
-    }, [eventSource])
+    }, [eventSourceId])
 
     // Handle transition from events-init via EVENTS_LOADED action to map-init
     useEffect(() => {
@@ -135,9 +136,10 @@ function HomeContent() {
         logr.debug('app', msg)
         // Initialize if API loaded and we have events
         if (!apiIsLoading && all > 0) {
+            setHeaderName(eventSource?.name ?? 'Calendar Map Filter')
             dispatch({ type: 'EVENTS_LOADED', hasEvents: all > 0 })
         }
-    }, [apiIsLoading, appState, evts])
+    }, [apiIsLoading, appState, evts, eventSource])
 
     // Handle transition from map-init via MAP_INITIALIZED action to main-state
     useEffect(() => {
@@ -284,10 +286,10 @@ function HomeContent() {
     // Expose events data to window for debugging
     useEffect(() => {
         if (typeof window !== 'undefined') {
-            // window.cmf_events is FilteredEvents + calendar name
-            window.cmf_events = { ...evts, calendar: calendar.name }
+            // window.cmf_events is FilteredEvents + eventSource name
+            window.cmf_events = { ...evts, eventSource: eventSource }
         }
-    }, [evts, calendar.name])
+    }, [evts, eventSource])
 
     // Function to scroll the events list to the top
     const scrollEventsToTop = useCallback(() => {
@@ -317,11 +319,11 @@ function HomeContent() {
         logr.info('app', `Updated URL parameters, selectedEventIdUrl=${selectedEventIdUrl}, zoom=${viewport.zoom}`)
     }, [viewport, appState, selectedEventIdUrl, setViewportUrl])
 
-    // If no calendar ID is provided, show the calendar selector
-    if (!eventSource) {
+    // If no eventSourceId is provided, show the eventSource selector
+    if (!eventSourceId) {
         return (
             <div className="min-h-screen flex flex-col">
-                <Header />
+                <Header headerName={headerName} />
                 <main className="flex-grow flex items-center justify-center">
                     <EventSourceSelector />
                 </main>
@@ -333,7 +335,7 @@ function HomeContent() {
     return (
         <div className="min-h-screen flex flex-col h-screen">
             <Header
-                calendarName={calendar.name}
+                headerName={headerName}
                 eventCount={{ shown: evts.shownEvents.length, total: evts.allEvents.length }}
                 onInfoClick={scrollEventsToTop}
             />

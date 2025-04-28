@@ -27,20 +27,20 @@ export class GoogleCalendarEventSource extends BaseEventSourceHandler {
         const calendarData = await this.fetchGoogleCalendarEvents(params.id, params.timeMin, params.timeMax)
 
         // Transform Google Calendar events to our format
-        const events: CmfEvent[] = calendarData.items.map((item: GoogleCalendarEvent) => {
+        const events: CmfEvent[] = calendarData.items.map((gcEvt: GoogleCalendarEvent) => {
             // Handle start and end dates (could be dateTime or date)
-            const startDate = item.start.dateTime || item.start.date || ''
-            const endDate = item.end.dateTime || item.end.date || ''
+            const startDate = gcEvt.start.dateTime || gcEvt.start.date || ''
+            const endDate = gcEvt.end.dateTime || gcEvt.end.date || ''
 
             return {
-                id: item.id,
-                name: item.summary,
+                id: gcEvt.id,
+                name: gcEvt.summary,
                 start: startDate,
                 end: endDate,
-                location: item.location || '',
-                description: item.description || '',
-                description_urls: this.extractUrls(item.description || ''),
-                original_event_url: item.htmlLink,
+                location: gcEvt.location || '',
+                description: gcEvt.description || '',
+                description_urls: this.extractUrls(gcEvt.description || ''),
+                original_event_url: gcEvt.htmlLink,
                 // Resolved location will be added later
             }
         })

@@ -5,17 +5,12 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 
 interface HeaderProps {
-    calendarName?: string
+    headerName?: string
     eventCount?: { shown: number; total: number }
     onInfoClick?: () => void
 }
 
-// Create a sub-component that uses useSearchParams
-function HeaderContent({ calendarName, eventCount, onInfoClick }: HeaderProps) {
-    const searchParams = useSearchParams()
-    const calendarId = searchParams.get('gc') || ''
-    const calendarHeader = calendarId ? calendarName || 'Loading Calendar...' : 'Calendar Map Filter'
-
+function HeaderContent({ headerName, eventCount, onInfoClick }: HeaderProps) {
     // Tailwind CSS prefixes, use to increase calendar name font size as screens go bigger
     // sm: - Small screens (640px and up)
     // md: - Medium screens (768px and up)
@@ -37,7 +32,7 @@ function HeaderContent({ calendarName, eventCount, onInfoClick }: HeaderProps) {
                             title="Click to scroll events to top"
                         >
                             <span className="text-sm sm:text-lg md:text-2xl font-semibold text-gray-800">
-                                {calendarHeader}
+                                {headerName}
                             </span>
                             {eventCount && (
                                 // text-sm (14px) for mobile devices

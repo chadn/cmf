@@ -9,7 +9,7 @@ import { fetcherLogr } from '@/lib/utils/utils'
 import { EventSourceResponse } from '../api/eventSources'
 
 interface UseEventsManagerProps {
-    eventSource?: string | null
+    eventSourceId?: string | null
     dateRange?: { start: string; end: string }
     searchQuery?: string
     mapBounds?: MapBounds
@@ -26,7 +26,7 @@ interface UseEventsManagerResult {
         setShowUnknownLocationsOnly: (show: boolean) => void
         resetAll: () => void
     }
-    calendar: {
+    eventSource: {
         name: string
         totalCount: number
         unknownLocationsCount: number // TODO: remove
@@ -64,7 +64,7 @@ function eventsReducer(state: EventsState, action: EventsAction): EventsState {
 }
 
 export function useEventsManager({
-    eventSource,
+    eventSourceId,
     dateRange,
     searchQuery,
     mapBounds,
@@ -77,20 +77,12 @@ export function useEventsManager({
 
     // Reset FilterEventsManager when event source changes
     useEffect(() => {
-        logr.info('use_evts_mgr', `uE: FilterEventsManager reset, new eventSource: "${eventSource}"`)
+        logr.info('use_evts_mgr', `uE: FilterEventsManager reset, new eventSourceId: "${eventSourceId}"`)
         fltrEvtMgr.reset()
-    }, [eventSource, fltrEvtMgr])
-
-    let calendarId = null
-    if (eventSource?.startsWith('gc:')) {
-        calendarId = eventSource.slice(3)
-    }
-    if (eventSource === 'protests') {
-        logr.warn('use_evts_mgr', `eventSource==protests NOT IMPLEMENTED YET.`)
-    }
+    }, [eventSourceId, fltrEvtMgr])
 
     // Construct the API URL - use the new /api/events endpoint
-    const apiUrl = eventSource ? `/api/events?id=${encodeURIComponent(eventSource)}` : null
+    const apiUrl = eventSourceId ? `/api/events?id=${encodeURIComponent(eventSourceId)}` : null
 
     // Log the API URL being used
     useEffect(() => {
@@ -122,7 +114,7 @@ export function useEventsManager({
             logr.debug('use_evts_mgr', `After fltrEvtMgr.cmf_events_all=${fltrEvtMgr.cmf_events_all.length}`)
         },
         onError: (err) => {
-            logr.info('use_evts_mgr', `❌ Error fetching events data for source: "${eventSource || 'unknown'}"`, {
+            logr.info('use_evts_mgr', `❌ Error fetching events data for source: "${eventSourceId || 'unknown'}"`, {
                 error: err.message,
                 apiUrl,
             })
@@ -218,11 +210,7 @@ export function useEventsManager({
                 dispatch({ type: 'SET_FILTERS', payload: {} })
             },
         },
-        calendar: {
-            name: apiData?.calendar?.name || '',
-            totalCount: apiData?.calendar?.totalCount || 0,
-            unknownLocationsCount: apiData?.calendar?.unknownLocationsCount || 0,
-        },
+        eventSource: apiData?.metadata,
         apiIsLoading: apiIsLoading || state.isLoading,
         apiError: apiError || state.error,
         fltrEvtMgr,

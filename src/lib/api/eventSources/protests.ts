@@ -94,7 +94,7 @@ export class ProtestsEventSource extends BaseEventSourceHandler {
             events,
             metadata: {
                 id: 'protests',
-                name: 'Protests',
+                name: this.type.name,
                 totalCount: events.length,
                 unknownLocationsCount: 0, // This will be computed after geocoding
                 type: this.type,

@@ -77,16 +77,17 @@ const MapPopup: React.FC<MapPopupProps> = ({ marker, selectedEventId, onEventSel
 
     return (
         <div className="max-w-xs bg-white text-gray-800 p-3 rounded-lg shadow">
-            {/* Event title */}
-            <h3 className="font-bold text-md mb-1 text-gray-900 pr-6">{currentEvent.name}</h3>
+            <div className="flex flex-col gap-2">
+                <h3 className="font-semibold text-lg">{currentEvent.name}</h3>
+            </div>
 
             {/* Event date and duration */}
             <p className="text-sm mb-1 text-gray-700">
                 {formatEventDate(currentEvent.start)} ({formatEventDuration(currentEvent.start, currentEvent.end)})
             </p>
 
-            {/* Event location */}
-            <p className="text-sm mb-2 text-gray-700">{truncateLocation(currentEvent.location, 60)}</p>
+            {/* Event location skipping for now */}
+            {/* <p className="text-sm mb-2 text-gray-700">{truncateLocation(currentEvent.location, 60)}</p> */}
 
             {/* Event description (truncated) */}
             {currentEvent.description && (
