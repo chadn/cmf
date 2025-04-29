@@ -2,6 +2,7 @@ import { logr } from '@/lib/utils/logr'
 import { format, formatDistance, parseISO, isValid } from 'date-fns'
 import { createParser } from 'nuqs'
 import { dateQuickFilterLabels } from '@/components/events/DateQuickButtons'
+
 /**
  * Formats a date for display in the UI
  * @param dateString - ISO date string
@@ -73,14 +74,65 @@ export function getRelativeTimeString(dateString: string): string {
     }
 }
 
+// Returns a date object from a string that can be a date in one of these formats
+// RFC3339 date string
+//  YYYY-MM-DD
+// or a relative time string like 1d, -7d, 2w, 3m
+export function getDateFromUrlDateString(dateString: string): Date | null {
+    // Try parsing as YYYY-MM-DD or YYYY-M-D first
+    const dateRegex = /^(\d{4})-(\d{1,2})-(\d{1,2})$/
+    const dateMatch = dateString.match(dateRegex)
+    if (dateMatch) {
+        const [, year, month, day] = dateMatch
+        // Pad month and day with zeros if needed
+        const normalizedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+        const date = parseISO(normalizedDate)
+        // Check if the date is valid
+        if (isValid(date)) {
+            return date
+        }
+        return null
+    }
+
+    // Try parsing as a standard date (RFC3339)
+    const parsedDate = new Date(dateString)
+    if (!isNaN(parsedDate.getTime())) {
+        return parsedDate
+    }
+
+    // Try parsing as relative time (e.g., 1d, -7d, 2w, 3m)
+    const relativeRegex = /^(-?\d+)([dwm])$/
+    const match = dateString.match(relativeRegex)
+
+    if (match) {
+        const [, value, unit] = match
+        const numValue = parseInt(value, 10)
+        const now = new Date()
+
+        switch (unit) {
+            case 'd':
+                now.setDate(now.getDate() + numValue)
+                break
+            case 'w':
+                now.setDate(now.getDate() + numValue * 7)
+                break
+            case 'm':
+                now.setMonth(now.getMonth() + numValue)
+                break
+        }
+
+        return now
+    }
+
+    return null
+}
+
 // Custom parsers to read and write values to the URL
 // url params have a value of null if they do not or should not exist.
 export const parseAsCmfDate = createParser({
     // parse: a function that takes a string and returns the parsed value, or null if invalid.
     parse(queryValue) {
-        // valid strings can be: YYYY-MM-DD like 2025-4-30, 1d, -7d, 2w, 3m
-        const validDateRegex = /^(\d{4}-\d{1,2}-\d{1,2}|-?\d{1,2}(dwm))$/
-        if (queryValue.match(validDateRegex)) {
+        if (getDateFromUrlDateString(queryValue)) {
             return queryValue
         }
         return null

@@ -6,7 +6,8 @@ import { MapBounds } from '@/types/map'
 import { FilterEventsManager } from '@/lib/events/FilterEventsManager'
 import { logr } from '@/lib/utils/logr'
 import { fetcherLogr } from '@/lib/utils/utils'
-import { EventSourceResponse } from '../api/eventSources'
+import { EventSourceResponse } from '@/lib/api/eventSources'
+import { getDateFromUrlDateString } from '@/lib/utils/date'
 
 interface UseEventsManagerProps {
     eventSourceId?: string | null
@@ -14,6 +15,8 @@ interface UseEventsManagerProps {
     searchQuery?: string
     mapBounds?: MapBounds
     showUnknownLocationsOnly?: boolean
+    sd?: string // Start date from URL
+    ed?: string // End date from URL
 }
 
 interface UseEventsManagerResult {
@@ -69,6 +72,8 @@ export function useEventsManager({
     searchQuery,
     mapBounds,
     showUnknownLocationsOnly,
+    sd,
+    ed,
 }: UseEventsManagerProps = {}): UseEventsManagerResult {
     const [fltrEvtMgr] = useState(() => new FilterEventsManager())
 
@@ -81,8 +86,18 @@ export function useEventsManager({
         fltrEvtMgr.reset()
     }, [eventSourceId, fltrEvtMgr])
 
-    // Construct the API URL - use the new /api/events endpoint
-    const apiUrl = eventSourceId ? `/api/events?id=${encodeURIComponent(eventSourceId)}` : null
+    // Memoize the API URL construction
+    const apiUrl = useMemo(() => {
+        if (!eventSourceId) return null
+        // timeMin and timeMax must be RFC3339 date strings
+        const timeMin = getDateFromUrlDateString(sd || '-1m')?.toISOString()
+        const timeMax = getDateFromUrlDateString(ed || '3m')?.toISOString()
+        return (
+            `/api/events?id=${encodeURIComponent(eventSourceId)}` +
+            `&timeMin=${encodeURIComponent(timeMin || '')}` +
+            `&timeMax=${encodeURIComponent(timeMax || '')}`
+        )
+    }, [eventSourceId, sd, ed])
 
     // Log the API URL being used
     useEffect(() => {

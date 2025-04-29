@@ -160,7 +160,7 @@ const EventList: React.FC<EventListProps> = ({ evts, selectedEventId, onEventSel
                                 key={event.id}
                                 className={`cursor-pointer border-b border-gray-100 ${
                                     event.id === selectedEventId
-                                        ? 'bg-blue-50 border-l-4 border-l-accent'
+                                        ? 'bg-blue-100 border-l-4 border-l-accent'
                                         : 'hover:bg-gray-50'
                                 }`}
                                 onClick={() => onEventSelect(event.id)}

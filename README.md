@@ -10,7 +10,7 @@ A React + Next.js application that displays Google Calendar events on an interac
 ## Status
 
 -   Work In Progress: https://cmf-chad.vercel.app/
--   See [Bugs and Known Issues ](docs/bugs.md)
+-   See [How to Use](docs/usage.md) as well as [Bugs and Known Issues ](docs/bugs.md)
 
 ## 🌟 Features
 
@@ -125,6 +125,7 @@ npm start
 
 For more detailed information, see the following documentation:
 
+-   [How to Use the App](docs/usage.md)
 -   [Product Specification](docs/product.md)
 -   [Implementation Details](docs/Implementation.md) includes directory structure and implementation decisions.
 -   [Test coverage](docs/tests.md) output of `npm test`.

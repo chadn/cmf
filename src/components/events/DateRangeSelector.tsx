@@ -57,6 +57,10 @@ export default function DateRangeSelector({
                 start: getDateFromDays(newValue),
                 end: getDateFromDays(endValue),
             })
+            // Clear quick filter when manually adjusting sliders
+            if (onDateQuickFilterChange) {
+                onDateQuickFilterChange('')
+            }
         }
     }
 
@@ -68,6 +72,10 @@ export default function DateRangeSelector({
                 start: getDateFromDays(startValue),
                 end: getDateFromDays(newValue),
             })
+            // Clear quick filter when manually adjusting sliders
+            if (onDateQuickFilterChange) {
+                onDateQuickFilterChange('')
+            }
         }
     }
 

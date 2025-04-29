@@ -120,11 +120,15 @@ export class ProtestsEventSource extends BaseEventSourceHandler {
     }
 
     /**
-     * Fetches events from the Protests API
+     * Fetches events from the Protest API
+     * @param timeMin - Start date for events
+     * @param timeMax - End date for events
+     * @returns Promise with protest events
      */
     private async fetchProtestEvents(timeMin?: string, timeMax?: string): Promise<ProtestApiResponse> {
-        // Default time range if not provided
+        // Default to today if no start date provided
         const beginsOn = timeMin || format(new Date(), "yyyy-MM-dd'T'00:00:00.000'Z'")
+        // Default to 30 days from now if no end date provided
         const endsOn =
             timeMax || format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), "yyyy-MM-dd'T'23:59:59.999'Z'")
 

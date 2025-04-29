@@ -82,6 +82,12 @@ function HomeContent() {
         lon: parseAsLatLon,
     })
     const [searchQueryUrl, setSearchQueryUrl] = useQueryState('sq', { defaultValue: '' }) // search query
+    const [datesUrl, setDatesUrl] = useQueryStates({
+        sd: parseAsCmfDate.withDefault('-1m'), // app start date
+        ed: parseAsCmfDate.withDefault('3m'), // app end date
+        //fsd: parseAsCmfDate.withDefault('0d'), // filter start date  - not using, qf is good enough. leaving for future reference.
+        //fed: parseAsCmfDate, // filter end date
+    })
     // quick filter (today, next3days, future, past, etc)
     const [dateQuickFilterUrl, setDateQuickFilterUrl] = useQueryState('qf', parseAsDateQuickFilter)
     const initialUrlParams = {
@@ -91,6 +97,10 @@ function HomeContent() {
         lat: viewportUrl.lat,
         lon: viewportUrl.lon,
         sq: searchQueryUrl,
+        sd: datesUrl.sd,
+        ed: datesUrl.ed,
+        //fsd: datesUrl.fsd,
+        //fed: datesUrl.fed,
         qf: dateQuickFilterUrl,
     }
     logr.info('app', `HomeContent initialUrlParams=${JSON.stringify(initialUrlParams)}`)
@@ -105,7 +115,11 @@ function HomeContent() {
     const [dateRange, setLocalDateRange] = useState<{ start: string; end: string } | undefined>(undefined)
 
     // Use our new EventsManager hook to get events and filter methods
-    const { eventsFn, evts, filters, eventSource, apiIsLoading } = useEventsManager({ eventSourceId })
+    const { eventsFn, evts, filters, eventSource, apiIsLoading } = useEventsManager({
+        eventSourceId,
+        sd: datesUrl.sd,
+        ed: datesUrl.ed,
+    })
 
     // Map state - now uses events with locations instead of filtered events
     const {
@@ -166,6 +180,15 @@ function HomeContent() {
         logr.info('app', 'uE: map-init done (url params)')
         dispatch({ type: 'MAP_INITIALIZED' })
     }, [appState, filters, selectedEventIdUrl, setViewport, resetMapToAllEvents])
+
+    // Apply search filter when appState changes to main-state
+    useEffect(() => {
+        if (appState !== 'main-state') return
+        if (searchQueryUrl) {
+            logr.info('app', 'uE: main-state: applying search filter from URL', { searchQueryUrl })
+            filters.setSearchQuery(searchQueryUrl)
+        }
+    }, [appState])
 
     // Handle search query changes
     const handleSearchChange = useCallback(
@@ -359,7 +382,10 @@ function HomeContent() {
                         isMapOfAllEvents={isMapOfAllEvents}
                         onClearMapFilter={handleClearMapFilter}
                         onClearSearchFilter={() => handleSearchChange('')}
-                        onClearDateFilter={() => handleDateRangeChange(undefined)}
+                        onClearDateFilter={() => {
+                            handleDateRangeChange(undefined)
+                            setDateQuickFilterUrl('')
+                        }}
                     />
 
                     <EventFilters

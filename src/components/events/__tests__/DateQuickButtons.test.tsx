@@ -28,7 +28,7 @@ describe('DateQuickButtons', () => {
     // Mock the getDateFromValue function to simulate slider behavior
     const getDateFromDays = (value: number) => {
         const date = new Date(minDate.getTime() + value * 24 * 60 * 60 * 1000)
-        return date.toISOString().split('T')[0]
+        return date.toISOString()
     }
 
     beforeEach(() => {
