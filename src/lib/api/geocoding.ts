@@ -13,13 +13,6 @@ const CACHE_UNRESOLVED_LOCATIONS = true
 const USE_FIXED_LOCATIONS = false
 const FIXED_LOCATIONS = [
     {
-        name_address: 'Downtown Berkeley, CA',
-        formatted_address: 'Berkeley CA 94705',
-        lat: 37.8608, // Approximate coordinates for Berkeley
-        lng: -122.2451,
-        status: 'resolved' as const,
-    },
-    {
         name_address: 'Pinewood Picnic Area, Joaquin Miller Park',
         formatted_address: '3594 Sanborn Dr, Oakland, CA 94602',
         lat: 37.809926,
@@ -40,94 +33,103 @@ if (!process.env.GOOGLE_MAPS_API_KEY) {
 }
 
 // See if location already has Lat and Lon in it. If so, extract and return ResolvedLocation, else return false
-export function customLocationParserLatLon(locationString: string): Location | false {
-    // Check for latitude and longitude in the format "lat,lng", allowing for spaces  and negative values
-    // Example: "37.774929,-122.419418"
-    // 6 decimal places is less than 1m precision, which is good enough for our purposes
-    const latLonRegex = /^\s*(-?\d{1,3}\.\d{2,6}),\s*(-?\d{1,3}\.\d{2,6})/
-    let match = locationString.match(latLonRegex)
-    if (match) {
-        return {
-            original_location: locationString,
-            formatted_address: locationString,
-            lat: parseFloat(match[1]),
-            lng: parseFloat(match[2]),
-            status: 'resolved' as const,
-        }
+export function customLocationParserLatLon(location: string): Location | false {
+    const match = location.match(/^\s*(-?\d{1,3}(?:\.\d{1,6})?),\s*(-?\d{1,3}(?:\.\d{1,6})?)/)
+    if (!match) return false
+
+    const lat = parseFloat(match[1])
+    const lng = parseFloat(match[2])
+
+    // Validate lat/lng ranges
+    if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+        return false
     }
-    return false
+
+    return {
+        original_location: location,
+        formatted_address: `${lat},${lng}`,
+        lat,
+        lng,
+        status: 'resolved',
+    }
 }
 
-export function customLocationParserDegMinSec(locationString: string): Location | false {
-    // Check to see if match 41°07'16.0"N 1°00'16.9"E  Google Maps accepts this format
-    const latLonRegex2 = /^([\s0-9°'".-]+)(Nn|Ss)\s*([\s0-9°'".-]+)(Ee|Ww)/
-    const DegMinSecRegex = /(-?\d{1,3})\s*°\s*(\d{1,2})\s*'\s*(\d{1,2}\.\d{1,3})/
-    const match = locationString.match(latLonRegex2)
-    if (match) {
-        const latMatch = match[1].match(DegMinSecRegex)
-        const lngMatch = match[3].match(DegMinSecRegex)
-        if (latMatch && lngMatch) {
-            const latDegrees = parseFloat(latMatch[1])
-            const latMinutes = parseFloat(latMatch[2])
-            const latSeconds = parseFloat(latMatch[3]) * 60
-            const lngDegrees = parseFloat(lngMatch[1])
-            const lngMinutes = parseFloat(lngMatch[2])
-            const lngSeconds = parseFloat(lngMatch[3]) * 60
-            const lat = latDegrees + latMinutes / 60 + latSeconds / 3600
-            const lng = lngDegrees + lngMinutes / 60 + lngSeconds / 3600
-            // Adjust for N/S and E/W
-            const latSign = match[2].toUpperCase() === 'N' ? 1 : -1
-            const lngSign = match[4].toUpperCase() === 'E' ? 1 : -1
-            const latFinal = lat * latSign
-            const lngFinal = lng * lngSign
-            const formatted_address = `${latFinal.toFixed(6)},${lngFinal.toFixed(6)}`
-            const ret: Location = {
-                original_location: locationString,
-                formatted_address: formatted_address,
-                lat: latFinal,
-                lng: lngFinal,
-                status: 'resolved' as const,
-            }
-            return ret
-        }
+export function customLocationParserDegMinSec(location: string): Location | false {
+    const match = location.match(
+        /^(\d{1,3}°\s*\d{1,2}'\s*\d{1,2}(?:\.\d{1,3})?"\s*[NnSs])\s*(\d{1,3}°\s*\d{1,2}'\s*\d{1,2}(?:\.\d{1,3})?"\s*[EeWw])/
+    )
+    if (!match) return false
+
+    const latPart = match[1]
+    const lngPart = match[2]
+
+    const latMatch = latPart.match(/(\d{1,3})°\s*(\d{1,2})'\s*(\d{1,2}(?:\.\d{1,3})?)"([NnSs])/)
+    const lngMatch = lngPart.match(/(\d{1,3})°\s*(\d{1,2})'\s*(\d{1,2}(?:\.\d{1,3})?)"([EeWw])/)
+
+    if (!latMatch || !lngMatch) return false
+
+    const latDegrees = parseFloat(latMatch[1])
+    const latMinutes = parseFloat(latMatch[2])
+    const latSeconds = parseFloat(latMatch[3])
+    const latDir = latMatch[4].toUpperCase()
+
+    const lngDegrees = parseFloat(lngMatch[1])
+    const lngMinutes = parseFloat(lngMatch[2])
+    const lngSeconds = parseFloat(lngMatch[3])
+    const lngDir = lngMatch[4].toUpperCase()
+
+    // Validate degree ranges
+    if (latDegrees < 0 || latDegrees > 90 || lngDegrees < 0 || lngDegrees > 180) {
+        return false
     }
-    return false
+
+    let lat = Number((latDegrees + latMinutes / 60 + latSeconds / 3600).toFixed(6))
+    let lng = Number((lngDegrees + lngMinutes / 60 + lngSeconds / 3600).toFixed(6))
+
+    if (latDir === 'S') lat = -lat
+    if (lngDir === 'W') lng = -lng
+
+    return {
+        original_location: location,
+        formatted_address: `${lat.toFixed(6)},${lng.toFixed(6)}`,
+        lat,
+        lng,
+        status: 'resolved',
+    }
 }
 
-export function customLocationParserDegMinDecimal(locationString: string): Location | false {
-    // Finally check to match locations with degrees, minutes, seconds.
-    // N 41° 07.266 E 001° 00.281
-    const latLonDMSRegex =
-        /^\s*(Nn|Ss)\s*(-?\d{1,3})\s*°\s*(\d{1,2})\.(\d{1,6})\s*(Ee|wW)\s*(-?\d{1,3})\s*°\s*(\d{1,2})\.(\d{1,6})/
-    //   1         2                 3          4           5         6                 7          8
-    const matchDMS = locationString.match(latLonDMSRegex)
-    if (matchDMS) {
-        // Convert DMS to decimal degrees
-        const latDegrees = parseFloat(matchDMS[2])
-        const latMinutes = parseFloat(matchDMS[3])
-        const latSeconds = parseFloat(matchDMS[4]) * 60
-        const lngDegrees = parseFloat(matchDMS[6])
-        const lngMinutes = parseFloat(matchDMS[7])
-        const lngSeconds = parseFloat(matchDMS[8]) * 60
-        const lat = latDegrees + latMinutes / 60 + latSeconds / 3600
-        const lng = lngDegrees + lngMinutes / 60 + lngSeconds / 3600
-        // Adjust for N/S and E/W
-        const latSign = matchDMS[1].toUpperCase() === 'N' ? 1 : -1
-        const lngSign = matchDMS[5].toUpperCase() === 'E' ? 1 : -1
-        const latFinal = lat * latSign
-        const lngFinal = lng * lngSign
-        const formatted_address = `${latFinal.toFixed(6)},${lngFinal.toFixed(6)}`
+export function customLocationParserDegMinDecimal(location: string): Location | false {
+    const match = location.match(
+        /^([NnSs])\s*(\d{1,3})°\s*(\d{1,2})\.(\d{1,6})\s*([EeWw])\s*(\d{1,3})°\s*(\d{1,2})\.(\d{1,6})/
+    )
+    if (!match) return false
 
-        const ret: Location = {
-            original_location: locationString,
-            formatted_address: formatted_address,
-            lat: latFinal,
-            lng: lngFinal,
-            status: 'resolved' as const,
-        }
-        return ret
+    const latDir = match[1].toUpperCase()
+    const latDegrees = parseFloat(match[2])
+    const latMinutes = parseFloat(`${match[3]}.${match[4]}`)
+
+    const lngDir = match[5].toUpperCase()
+    const lngDegrees = parseFloat(match[6])
+    const lngMinutes = parseFloat(`${match[7]}.${match[8]}`)
+
+    // Validate degree ranges
+    if (latDegrees < 0 || latDegrees > 90 || lngDegrees < 0 || lngDegrees > 180) {
+        return false
     }
-    return false
+
+    let lat = Number((latDegrees + latMinutes / 60).toFixed(6))
+    let lng = Number((lngDegrees + lngMinutes / 60).toFixed(6))
+
+    if (latDir === 'S') lat = -lat
+    if (lngDir === 'W') lng = -lng
+
+    return {
+        original_location: location,
+        formatted_address: `${lat.toFixed(6)},${lng.toFixed(6)}`,
+        lat,
+        lng,
+        status: 'resolved',
+    }
 }
 
 export const customLocationParsers = [

@@ -29,7 +29,7 @@ describe('Header', () => {
     })
 
     it('displays calendar name when provided', () => {
-        render(<Header eventSourceName="Test Calendar" />)
+        render(<Header headerName="Test Calendar" />)
 
         expect(screen.getByText('Test Calendar')).toBeInTheDocument()
     })
@@ -41,7 +41,7 @@ describe('Header', () => {
     })
 
     it('displays event count when provided', () => {
-        render(<Header eventSourceName="Test Calendar" eventCount={{ shown: 5, total: 10 }} />)
+        render(<Header headerName="Test Calendar" eventCount={{ shown: 5, total: 10 }} />)
 
         expect(screen.getByText('5')).toBeInTheDocument()
         expect(screen.getByText('10')).toBeInTheDocument()

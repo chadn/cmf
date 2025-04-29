@@ -4,18 +4,18 @@ This document makes it easy to see test coverage and compare against the [Direct
 
 ```
 npm test
-> calendar-map-filter@0.1.0 test
+> calendar-map-filter@0.2.0 test
 > jest
 ...
 --------------------------|---------|----------|---------|---------|---------------------------------------------
 File                      | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
 --------------------------|---------|----------|---------|---------|---------------------------------------------
-All files                 |   68.66 |     50.6 |    64.7 |   69.16 |
+All files                 |   80.52 |    65.05 |   81.29 |   81.25 |
  components/common        |     100 |      100 |     100 |     100 |
   ErrorMessage.tsx        |     100 |      100 |     100 |     100 |
   LoadingSpinner.tsx      |     100 |      100 |     100 |     100 |
- components/events        |   74.04 |       44 |   70.58 |   73.64 |
-  DateQuickButtons.tsx    |   82.35 |    33.33 |    87.5 |   82.35 | 91-94,118,121
+ components/events        |    75.8 |    45.78 |   71.87 |    75.4 |
+  DateQuickButtons.tsx    |   92.59 |    54.54 |     100 |   92.59 | 67,69
   DateRangeSelector.tsx   |    87.5 |    85.71 |   85.71 |    87.5 | 56-59
   EventDetails.tsx        |     100 |      100 |     100 |     100 |
   EventFilters.tsx        |      75 |      100 |   66.66 |      75 | 24-25
@@ -25,20 +25,26 @@ All files                 |   68.66 |     50.6 |    64.7 |   69.16 |
  components/layout        |     100 |      100 |     100 |     100 |
   Footer.tsx              |     100 |      100 |     100 |     100 |
   Header.tsx              |     100 |      100 |     100 |     100 |
- components/map           |   46.92 |    37.31 |   34.61 |   44.82 |
-  MapContainer.tsx        |   11.84 |        0 |       0 |   11.26 | 42-267
-  MapMarker.tsx           |   94.44 |    88.88 |     100 |     100 | 14
-  MapPopup.tsx            |   97.22 |    89.47 |     100 |   96.96 | 50
- lib/utils                |   70.49 |    58.51 |   68.96 |   73.09 |
-  date.ts                 |   80.64 |      100 |     100 |   80.64 | 16-17,58-59,76-77
+ components/map           |   82.17 |    83.58 |   84.61 |   80.86 |
+  MapContainer.tsx        |   71.05 |    76.92 |   76.47 |   70.42 | 91-92,139-157,181,187-203
+  MapMarker.tsx           |     100 |      100 |     100 |     100 |
+  MapPopup.tsx            |   97.14 |    89.47 |     100 |   96.87 | 50
+ lib/api                  |   88.37 |    74.35 |   88.88 |   89.65 |
+  geocoding.ts            |   88.37 |    74.35 |   88.88 |   89.65 | 39,52,90,124,178-179,222-224,253,268,285
+ lib/hooks                |   80.32 |    33.33 |    90.9 |   85.41 |
+  useMap.ts               |   80.32 |    33.33 |    90.9 |   85.41 | 20-27,93-96
+ lib/utils                |   74.83 |     65.6 |   75.47 |   76.42 |
+  date.ts                 |   63.04 |    91.66 |   42.85 |    65.9 | 18-19,53-54,71-72,82-90,96-102
   location.ts             |   68.31 |    44.89 |      50 |   73.62 | 165,191,217-225,236,249-261,267-273,279-287
-  logr.ts                 |   68.62 |     64.7 |      90 |   67.34 | 38,60-85,124
+  logr.ts                 |   70.58 |     64.7 |     100 |   69.38 | 38,60-85
+  url.ts                  |   87.09 |    77.41 |   94.73 |   86.04 | 65-69,156-158,195-196,232-236
+  utils.ts                |     100 |      100 |     100 |     100 |
 --------------------------|---------|----------|---------|---------|---------------------------------------------
 
-Test Suites: 15 passed, 15 total
-Tests:       106 passed, 106 total
+Test Suites: 20 passed, 20 total
+Tests:       152 passed, 152 total
 Snapshots:   0 total
-Time:        1.972 s
+Time:        2.377 s
 Ran all test suites.
 ```
 

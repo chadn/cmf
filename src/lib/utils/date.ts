@@ -1,3 +1,4 @@
+import { logr } from '@/lib/utils/logr'
 import { format, formatDistance, parseISO, isValid } from 'date-fns'
 
 /**
@@ -13,7 +14,7 @@ export function formatEventDate(dateString: string): string {
         }
         return format(date, 'MM/dd EEE h:mm a')
     } catch (error) {
-        console.error('Error formatting date:', error)
+        logr.warn('date','Error formatting date:', error)
         return 'Invalid date'
     }
 }
@@ -24,10 +25,7 @@ export function formatEventDate(dateString: string): string {
  * @param endDateString - ISO end date string
  * @returns Formatted duration string (e.g., "2 hrs" or "3 days")
  */
-export function formatEventDuration(
-    startDateString: string,
-    endDateString: string
-): string {
+export function formatEventDuration(startDateString: string, endDateString: string): string {
     try {
         const startDate = parseISO(startDateString)
         const endDate = parseISO(endDateString)
@@ -44,18 +42,14 @@ export function formatEventDuration(
 
         if (durationHours < 24) {
             // Less than a day, show hours
-            return `${Math.round(durationHours)} hr${
-                durationHours !== 1 ? 's' : ''
-            }`
+            return `${Math.round(durationHours)} hr${durationHours !== 1 ? 's' : ''}`
         } else {
             // More than a day, show days
             const durationDays = durationHours / 24
-            return `${Math.round(durationDays)} day${
-                durationDays !== 1 ? 's' : ''
-            }`
+            return `${Math.round(durationDays)} day${durationDays !== 1 ? 's' : ''}`
         }
     } catch (error) {
-        console.error('Error calculating duration:', error)
+        logr.warn('date','Error calculating duration:', error)
         return ''
     }
 }
@@ -73,7 +67,7 @@ export function getRelativeTimeString(dateString: string): string {
         }
         return formatDistance(date, new Date(), { addSuffix: true })
     } catch (error) {
-        console.error('Error getting relative time:', error)
+        logr.warn('date','Error getting relative time:', error)
         return ''
     }
 }
