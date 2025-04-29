@@ -9,6 +9,9 @@ interface EventFiltersProps {
     dateRange?: { start: string; end: string }
     onDateRangeChange: (range: { start: string; end: string } | undefined) => void
     onReset: () => void
+    dateQuickFilterUrl?: string | null
+    onDateQuickFilterChange?: (value: string) => void
+    appState?: string
 }
 
 export default function EventFilters({
@@ -17,6 +20,9 @@ export default function EventFilters({
     dateRange,
     onDateRangeChange,
     onReset,
+    dateQuickFilterUrl,
+    onDateQuickFilterChange,
+    appState,
 }: EventFiltersProps) {
     const [showDateSliders, setShowDateSliders] = useState(false)
 
@@ -32,6 +38,9 @@ export default function EventFilters({
                 onDateRangeChange={onDateRangeChange}
                 showDateSliders={showDateSliders}
                 setShowDateSliders={setShowDateSliders}
+                dateQuickFilterUrl={dateQuickFilterUrl}
+                onDateQuickFilterChange={onDateQuickFilterChange}
+                appState={appState}
             />
 
             <div className="mt-0.5">

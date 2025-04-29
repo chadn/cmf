@@ -9,6 +9,9 @@ interface DateRangeSelectorProps {
     onDateRangeChange: (range: { start: string; end: string } | undefined) => void
     showDateSliders: boolean
     setShowDateSliders: (show: boolean) => void
+    dateQuickFilterUrl?: string | null
+    onDateQuickFilterChange?: (value: string) => void
+    appState?: string
 }
 
 export default function DateRangeSelector({
@@ -16,7 +19,12 @@ export default function DateRangeSelector({
     onDateRangeChange,
     showDateSliders,
     setShowDateSliders,
+    dateQuickFilterUrl,
+    onDateQuickFilterChange,
+    appState,
 }: DateRangeSelectorProps) {
+    // TODO: support passing in dates from datesUrl - see app/page.tsx
+
     // Set up date boundaries to match the calendar API's default range
     const now = new Date()
     const minDate = subMonths(now, 1)
@@ -35,8 +43,8 @@ export default function DateRangeSelector({
     }, [dateRange, totalDays])
 
     // Convert slider value to date
-    const getDateFromValue = (value: number) => {
-        const date = new Date(minDate.getTime() + value * (1000 * 60 * 60 * 24))
+    const getDateFromDays = (days: number) => {
+        const date = new Date(minDate.getTime() + days * (1000 * 60 * 60 * 24))
         return format(date, "yyyy-MM-dd'T'HH:mm:ss'Z'")
     }
 
@@ -46,8 +54,8 @@ export default function DateRangeSelector({
         if (newValue <= endValue) {
             setStartValue(newValue)
             onDateRangeChange({
-                start: getDateFromValue(newValue),
-                end: getDateFromValue(endValue),
+                start: getDateFromDays(newValue),
+                end: getDateFromDays(endValue),
             })
         }
     }
@@ -57,8 +65,8 @@ export default function DateRangeSelector({
         if (newValue >= startValue) {
             setEndValue(newValue)
             onDateRangeChange({
-                start: getDateFromValue(startValue),
-                end: getDateFromValue(newValue),
+                start: getDateFromDays(startValue),
+                end: getDateFromDays(newValue),
             })
         }
     }
@@ -66,8 +74,8 @@ export default function DateRangeSelector({
     const formatDateForButton = (date: Date) => {
         return format(date, 'MMM d EEE')
     }
-    const startDateText = formatDateForButton(new Date(getDateFromValue(startValue)))
-    const endDateText = formatDateForButton(new Date(getDateFromValue(endValue)))
+    const startDateText = formatDateForButton(new Date(getDateFromDays(startValue)))
+    const endDateText = formatDateForButton(new Date(getDateFromDays(endValue)))
 
     return (
         <div className="bg-white rounded-md shadow-sm overflow-hidden">
@@ -88,7 +96,7 @@ export default function DateRangeSelector({
                 <div className="p-2 border-t border-gray-100 bg-white shadow-md">
                     <div className="mb-2">
                         <label className="block text-xs text-gray-600 mb-0.5">
-                            Start Date: {format(new Date(getDateFromValue(startValue)), 'MMM d, yyyy')}
+                            Start Date: {format(new Date(getDateFromDays(startValue)), 'MMM d, yyyy')}
                         </label>
                         <input
                             type="range"
@@ -101,7 +109,7 @@ export default function DateRangeSelector({
                     </div>
                     <div>
                         <label className="block text-xs text-gray-600 mb-0.5">
-                            End Date: {format(new Date(getDateFromValue(endValue)), 'MMM d, yyyy')}
+                            End Date: {format(new Date(getDateFromDays(endValue)), 'MMM d, yyyy')}
                         </label>
                         <input
                             type="range"
@@ -119,8 +127,11 @@ export default function DateRangeSelector({
                         totalDays={totalDays}
                         setStartValue={setStartValue}
                         setEndValue={setEndValue}
-                        getDateFromValue={getDateFromValue}
+                        getDateFromDays={getDateFromDays}
                         onDateRangeChange={onDateRangeChange}
+                        dateQuickFilterUrl={dateQuickFilterUrl}
+                        onDateQuickFilterChange={onDateQuickFilterChange}
+                        appState={appState}
                     />
                 </div>
             </div>

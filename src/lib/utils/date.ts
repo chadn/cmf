@@ -1,6 +1,7 @@
 import { logr } from '@/lib/utils/logr'
 import { format, formatDistance, parseISO, isValid } from 'date-fns'
-
+import { createParser } from 'nuqs'
+import { dateQuickFilterLabels } from '@/components/events/DateQuickButtons'
 /**
  * Formats a date for display in the UI
  * @param dateString - ISO date string
@@ -14,7 +15,7 @@ export function formatEventDate(dateString: string): string {
         }
         return format(date, 'MM/dd EEE h:mm a')
     } catch (error) {
-        logr.warn('date','Error formatting date:', error)
+        logr.warn('date', 'Error formatting date:', error)
         return 'Invalid date'
     }
 }
@@ -49,7 +50,7 @@ export function formatEventDuration(startDateString: string, endDateString: stri
             return `${Math.round(durationDays)} day${durationDays !== 1 ? 's' : ''}`
         }
     } catch (error) {
-        logr.warn('date','Error calculating duration:', error)
+        logr.warn('date', 'Error calculating duration:', error)
         return ''
     }
 }
@@ -67,7 +68,52 @@ export function getRelativeTimeString(dateString: string): string {
         }
         return formatDistance(date, new Date(), { addSuffix: true })
     } catch (error) {
-        logr.warn('date','Error getting relative time:', error)
+        logr.warn('date', 'Error getting relative time:', error)
         return ''
     }
 }
+
+// Custom parsers to read and write values to the URL
+// url params have a value of null if they do not or should not exist.
+export const parseAsCmfDate = createParser({
+    // parse: a function that takes a string and returns the parsed value, or null if invalid.
+    parse(queryValue) {
+        // valid strings can be: YYYY-MM-DD like 2025-4-30, 1d, -7d, 2w, 3m
+        const validDateRegex = /^(\d{4}-\d{1,2}-\d{1,2}|-?\d{1,2}(dwm))$/
+        if (queryValue.match(validDateRegex)) {
+            return queryValue
+        }
+        return null
+    },
+    // serialize: a function that takes the parsed value and returns a string used in the URL.
+    serialize(value) {
+        return value
+    },
+})
+
+export const parseAsDateQuickFilter = createParser({
+    parse(queryValue) {
+        logr.info('date', 'parseAsDateQuickFilter parse queryValue:', queryValue)
+        if (!queryValue) return null
+
+        // Convert the query value to lowercase with no spaces for comparison
+        const normalizedQueryValue = queryValue.toLowerCase().replace(/\s+/g, '')
+
+        // Check if any of the labels match when normalized
+        const matchingLabel = dateQuickFilterLabels.find(
+            (label) => label.toLowerCase().replace(/\s+/g, '') === normalizedQueryValue
+        )
+
+        if (matchingLabel) {
+            return normalizedQueryValue
+        }
+
+        // if queryValue is not a value from quickFilterLabels, return null
+        return null
+    },
+    // serialize: a function that takes the parsed value and returns a string used in the URL.
+    serialize(value) {
+        logr.info('date', 'parseAsDateQuickFilter serialize queryValue:', value)
+        return value
+    },
+})

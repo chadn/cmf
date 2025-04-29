@@ -13,12 +13,14 @@ import { MapBounds } from '@/types/map'
 import { logr } from '@/lib/utils/logr'
 import ActiveFilters from '@/components/events/ActiveFilters'
 import { viewportUrlToViewport, parseAsEventSource, parseAsZoom, parseAsLatLon } from '@/lib/utils/location'
+import { parseAsCmfDate, parseAsDateQuickFilter } from '@/lib/utils/date'
 import { parseAsInteger, parseAsFloat, useQueryState, useQueryStates } from 'nuqs'
+
 // quiet window.cmf_events build error - https://stackoverflow.com/questions/56457935/typescript-error-property-x-does-not-exist-on-type-window
 declare const window: any
 
 // Application state machine types
-type AppState = 'uninitialized' | 'events-init' | 'map-init' | 'main-state' | 'menu-shown'
+type AppState = 'uninitialized' | 'events-init' | 'map-init' | 'main-prep' | 'main-state' | 'menu-shown'
 // Actions that can be dispatched to change or transition state
 type AppAction =
     | { type: 'RESET_STATE' }
@@ -33,6 +35,7 @@ type AppAction =
 // uninitialized - first initial state, nothing is known. Initial URL params are stored.
 // events-init - fetching events from eventSource based on initial URL params
 // map-init - update map based on initial URL params and updated eventSource events
+// main-prep - apply filters based on url parameters (IS THIS NEEDED?)
 // main-state - respond to user interactions, updates some url parameters
 // menu-shown - map and filters on pause, user can view info about CMF - link to GitHub, blog, stats on current eventSource and filter
 function appReducer(state: AppState, action: AppAction): AppState {
@@ -78,14 +81,20 @@ function HomeContent() {
         lat: parseAsLatLon,
         lon: parseAsLatLon,
     })
+    const [searchQueryUrl, setSearchQueryUrl] = useQueryState('sq', { defaultValue: '' }) // search query
+    // quick filter (today, next3days, future, past, etc)
+    const [dateQuickFilterUrl, setDateQuickFilterUrl] = useQueryState('qf', parseAsDateQuickFilter)
     const initialUrlParams = {
         es: eventSourceId,
         se: selectedEventIdUrl,
         z: viewportUrl.z,
         lat: viewportUrl.lat,
         lon: viewportUrl.lon,
+        sq: searchQueryUrl,
+        qf: dateQuickFilterUrl,
     }
     logr.info('app', `HomeContent initialUrlParams=${JSON.stringify(initialUrlParams)}`)
+
     const [appState, dispatch] = useReducer(appReducer, 'uninitialized')
     const [headerName, setHeaderName] = useState('Calendar Map Filter')
 
@@ -93,7 +102,6 @@ function HomeContent() {
     const eventsSidebarRef = useRef<HTMLDivElement>(null)
 
     // Local state for filters
-    const [searchQuery, setLocalSearchQuery] = useState('')
     const [dateRange, setLocalDateRange] = useState<{ start: string; end: string } | undefined>(undefined)
 
     // Use our new EventsManager hook to get events and filter methods
@@ -163,7 +171,7 @@ function HomeContent() {
     const handleSearchChange = useCallback(
         (query: string) => {
             logr.info('app', 'Search filter changed', { query })
-            setLocalSearchQuery(query)
+            setSearchQueryUrl(query)
             filters.setSearchQuery(query)
         },
         [filters]
@@ -205,7 +213,7 @@ function HomeContent() {
         logr.info('app', 'Map filter cleared')
         filters.setMapBounds(undefined)
         setSelectedMarkerId(null)
-        setSelectedEventIdUrl(null)
+        setSelectedEventIdUrl('') // match default value for param to clear from URL
         // Call resetMapToAllEvents to properly reset the map to show all events
         logr.info('app', 'calling resetMapToAllEvents after Clearing URL for zoom, latitude, and longitude')
         resetMapToAllEvents()
@@ -220,7 +228,7 @@ function HomeContent() {
     // Reset all filters
     const handleResetFilters = useCallback(() => {
         logr.info('app', 'Resetting all filters')
-        setLocalSearchQuery('')
+        setSearchQueryUrl('')
         setLocalDateRange(undefined)
         filters.resetAll()
         resetMapToAllEvents()
@@ -355,11 +363,14 @@ function HomeContent() {
                     />
 
                     <EventFilters
-                        searchQuery={searchQuery}
+                        searchQuery={searchQueryUrl}
                         onSearchChange={handleSearchChange}
                         dateRange={dateRange}
                         onDateRangeChange={handleDateRangeChange}
+                        dateQuickFilterUrl={dateQuickFilterUrl}
+                        onDateQuickFilterChange={setDateQuickFilterUrl}
                         onReset={handleResetFilters}
+                        appState={appState}
                     />
 
                     <EventList
@@ -382,7 +393,7 @@ function HomeContent() {
 
                             // If markerId is null, clear event selection too
                             if (!markerId) {
-                                setSelectedEventIdUrl(null)
+                                setSelectedEventIdUrl('')
                             }
                         }}
                         onBoundsChange={handleBoundsChange}

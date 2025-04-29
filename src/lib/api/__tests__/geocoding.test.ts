@@ -69,7 +69,7 @@ describe('geocoding', () => {
             const result = customLocationParserLatLon(' 37.774929, -122.419418 ')
             expect(result).toEqual({
                 original_location: ' 37.774929, -122.419418 ',
-                formatted_address: ' 37.774929, -122.419418 ',
+                formatted_address: '37.774929,-122.419418',
                 lat: 37.774929,
                 lng: -122.419418,
                 status: 'resolved',

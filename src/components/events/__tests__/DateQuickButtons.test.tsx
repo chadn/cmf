@@ -26,7 +26,7 @@ describe('DateQuickButtons', () => {
     const mockOnDateRangeChange = jest.fn()
 
     // Mock the getDateFromValue function to simulate slider behavior
-    const getDateFromValue = (value: number) => {
+    const getDateFromDays = (value: number) => {
         const date = new Date(minDate.getTime() + value * 24 * 60 * 60 * 1000)
         return date.toISOString().split('T')[0]
     }
@@ -43,7 +43,7 @@ describe('DateQuickButtons', () => {
                 totalDays={totalDays}
                 setStartValue={mockSetStartValue}
                 setEndValue={mockSetEndValue}
-                getDateFromValue={getDateFromValue}
+                getDateFromDays={getDateFromDays}
                 onDateRangeChange={mockOnDateRangeChange}
             />
         )
@@ -63,7 +63,7 @@ describe('DateQuickButtons', () => {
                 totalDays={totalDays}
                 setStartValue={mockSetStartValue}
                 setEndValue={mockSetEndValue}
-                getDateFromValue={getDateFromValue}
+                getDateFromDays={getDateFromDays}
                 onDateRangeChange={mockOnDateRangeChange}
             />
         )
@@ -79,8 +79,8 @@ describe('DateQuickButtons', () => {
         expect(mockSetEndValue).toHaveBeenCalledWith(todayValue)
         // onDateRangeChange should be called with correct dates
         expect(mockOnDateRangeChange).toHaveBeenCalledWith({
-            start: getDateFromValue(0),
-            end: getDateFromValue(todayValue),
+            start: getDateFromDays(0),
+            end: getDateFromDays(todayValue),
         })
     })
 
@@ -92,7 +92,7 @@ describe('DateQuickButtons', () => {
                 totalDays={totalDays}
                 setStartValue={mockSetStartValue}
                 setEndValue={mockSetEndValue}
-                getDateFromValue={getDateFromValue}
+                getDateFromDays={getDateFromDays}
                 onDateRangeChange={mockOnDateRangeChange}
             />
         )
@@ -104,8 +104,8 @@ describe('DateQuickButtons', () => {
         expect(mockSetStartValue).toHaveBeenCalledWith(todayValue)
         expect(mockSetEndValue).toHaveBeenCalledWith(totalDays)
         expect(mockOnDateRangeChange).toHaveBeenCalledWith({
-            start: getDateFromValue(todayValue),
-            end: getDateFromValue(totalDays),
+            start: getDateFromDays(todayValue),
+            end: getDateFromDays(totalDays),
         })
     })
 
@@ -117,7 +117,7 @@ describe('DateQuickButtons', () => {
                 totalDays={totalDays}
                 setStartValue={mockSetStartValue}
                 setEndValue={mockSetEndValue}
-                getDateFromValue={getDateFromValue}
+                getDateFromDays={getDateFromDays}
                 onDateRangeChange={mockOnDateRangeChange}
             />
         )
@@ -130,8 +130,8 @@ describe('DateQuickButtons', () => {
         expect(mockSetStartValue).toHaveBeenCalledWith(todayValue)
         expect(mockSetEndValue).toHaveBeenCalledWith(threeDaysLaterValue)
         expect(mockOnDateRangeChange).toHaveBeenCalledWith({
-            start: getDateFromValue(todayValue),
-            end: getDateFromValue(threeDaysLaterValue),
+            start: getDateFromDays(todayValue),
+            end: getDateFromDays(threeDaysLaterValue),
         })
     })
 
@@ -145,7 +145,7 @@ describe('DateQuickButtons', () => {
                 totalDays={totalDays}
                 setStartValue={mockSetStartValue}
                 setEndValue={mockSetEndValue}
-                getDateFromValue={getDateFromValue}
+                getDateFromDays={getDateFromDays}
                 onDateRangeChange={mockOnDateRangeChange}
             />
         )
@@ -167,7 +167,7 @@ describe('DateQuickButtons', () => {
                 totalDays={totalDays}
                 setStartValue={mockSetStartValue}
                 setEndValue={mockSetEndValue}
-                getDateFromValue={getDateFromValue}
+                getDateFromDays={getDateFromDays}
                 onDateRangeChange={mockOnDateRangeChange}
             />
         )
@@ -179,8 +179,8 @@ describe('DateQuickButtons', () => {
         expect(mockSetStartValue).toHaveBeenCalledWith(todayValue)
         expect(mockSetEndValue).toHaveBeenCalledWith(todayValue)
         expect(mockOnDateRangeChange).toHaveBeenCalledWith({
-            start: getDateFromValue(todayValue),
-            end: getDateFromValue(todayValue),
+            start: getDateFromDays(todayValue),
+            end: getDateFromDays(todayValue),
         })
     })
 })
