@@ -106,7 +106,7 @@ function HomeContent() {
         //fed: datesUrl.fed,
         qf: dateQuickFilterUrl,
     }
-    logr.info('app', `HomeContent initialUrlParams=${JSON.stringify(initialUrlParams)}`)
+    logr.debug('app', `HomeContent initialUrlParams=${JSON.stringify(initialUrlParams)}`)
 
     const [appState, dispatch] = useReducer(appReducer, 'uninitialized')
     const [headerName, setHeaderName] = useState('Calendar Map Filter')
@@ -406,10 +406,7 @@ function HomeContent() {
 
                     {apiError ? (
                         <div className="p-4">
-                            <ErrorMessage
-                                message={apiError.message}
-                                className="mb-4"
-                            />
+                            <ErrorMessage message={apiError.message} className="mb-4" />
                         </div>
                     ) : (
                         <EventList

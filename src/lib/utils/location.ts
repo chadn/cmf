@@ -184,7 +184,7 @@ export function calculateViewportFromBounds(bounds: MapBounds): MapViewport {
         zoom = Math.floor(12 - Math.log2(maxDiff * 5))
 
         // Further reduce all zoom levels by 1 to get desired effect
-        zoom -= 1
+        zoom -= 2
 
         // Add additional zoom reduction for very small differences to prevent extreme zoom
         if (maxDiff < 0.01) {
