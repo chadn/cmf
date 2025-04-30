@@ -15,6 +15,98 @@ CMF combines calendar event data with geographic visualization, allowing users t
 For example, as you adjust the date slider, you can see the real-time changes on what markers are showing in the map
 and changes on the numbers of how many events are showing and filtered by date.
 
+## Key Features
+
+### Real-Time Updates
+
+-   All changes (filters, map movement, searches) update instantly
+-   The events list and map markers stay synchronized
+-   Filter counts update in real-time as you interact
+
+### Map and Event List Integration
+
+-   The map and list views are always synchronized
+-   Clicking a marker highlights via blue background the corresponding event in the list
+-   The list shows only events visible on the current map view
+-   Use "Filtered by map" button to show all events regardless of map view
+
+### Location Requirements
+
+-   Events must have a valid location to appear on the map
+-   Locations can be addresses, coordinates, or unique place names
+-   Events without locations will only appear in the list view
+-   Invalid locations may cause events to be filtered out
+
+### Troubleshooting
+
+-   If events don't appear, check if they have valid locations
+-   If the map is empty, try removing filters or zooming out
+-   For Google Calendar issues, verify the calendar ID and sharing settings
+-   Clear browser cache if the app behaves unexpectedly
+
+## Mobile vs Desktop
+
+### Desktop Experience
+
+-   Map and event list appear side by side
+-   Larger map view for better navigation
+
+### Mobile Experience
+
+-   Map and event list stack vertically (map on bottom)
+-   Touch-friendly interface
+-   Responsive design adapts to screen size
+-   Swipe gestures for map navigation
+-   Collapsible sections to maximize screen space
+
+### Cross-Device Features
+
+-   Same URL sharing works on all devices
+-   Real-time updates work consistently
+-   All filters available on both platforms
+-   Calendar integration works the same way
+
+## Definitions
+
+1. Event Source - this could be a google calendar or non calendar event sources like pol-rev.com
+1. Event – contains name, location, date, and description. More than one event can be at same location or same time. Can be repeating.
+1. Map canvas – the area of the map you can see on the browser. If an event location is not on the map canvas, it will not be shown on the events list. See Map Filter
+1. Location – 'where' the event is. This should be an address, coordinates, or something unique enough for geolocation. Otherwise it can't put it on a map. Example of a location that are not addresses: "Mom's house"
+1. Marker – an icon at a location on the map canvas. When clicked, reveals details on events at that address (may be more than one event at same location)
+1. Event list – above the map (mobile) or next to the map (desktop), list (in table format) of matching events that are on map. The events listed are filtered and sortable by name, date, duration, location. Click on header to sort. When filtered, it may be a subset of all the events.
+1. Map Filter - The map itself will filter out events when moved or zoomed in, only showing events whose location is on the current map canvas. To zoom out or change map canvas to show all events, remove the map filter by clicking "Filtered by map" button.
+1. Search Filter - type any characters and the events will be filtered to match. The number of events filtered by search will be shown in the "Filtered by Search" count.
+1. Date Filter - date sliders are hidden initially, click on CHANGE next to the dates to filter the events.
+1. Filters – appears above events list. Currently there are just 2 filters – map and date. Existing filters are always listed, and can be removed by clicking them. When all filters are removed, all events are displayed in events list (map will change if necessary to show all events, too).
+
+## Initial View - Pick Event Source
+
+Here you can choose an example event source or type in your own.  
+To use examples, click on the grey buttons then click the blue "View Events" button.
+
+### Find your Google Calendar Id
+
+1. Go to Google Calendar in your browser
+2. Find the calendar you want to use in the left sidebar
+3. Click the three dots next to the calendar name
+4. Select "Settings and sharing"
+5. Scroll down to "Integrate calendar" section
+6. Copy the "Calendar ID" - it will look like `example@gmail.com` or `example@group.calendar.google.com`
+
+## Viewing Events
+
+After you select "View Events" with a valid event source like google calendar,
+The app will take a few seconds to fetch all the events and put them on the map.
+
+When it is ready, you will see
+
+-   a map with markers, where each marker has one or more events.
+-   the event list with names, dates, and location info of current events
+-   search box to find events
+-   date ranges that you can CHANGE to limit events to a smaller window
+
+Feel free to play around !
+
 ## URL Parameters
 
 CMF supports several URL parameters that allow for deep linking and sharing specific views:
@@ -80,12 +172,15 @@ It supports the following values:
 
 ## Example URLs
 
-https://cmf-chad.vercel.app/?es=gc:aabe6c219ee2af5b791ea6719e04a92990f9ccd1e68a3ff0d89bacd153a0b36d@group.calendar.google.com&lat=37.80722&lon=-122.29074&z=14
+Here are some example URLs showing different parameter combinations:
 
--   View events from a specific calendar: `?es=google_calendar_123`
--   View events in Portland: `?es=google_calendar_123&lat=45.5231&lon=-122.6765&z=12`
--   View concerts in the next week: `?es=google_calendar_123&qf=next7days&sq=concert`
--   View a specific event: `?es=google_calendar_123&se=event_123`
+-   Basic calendar view: [?es=gc:geocachingspain@gmail.com](https://cmf-chad.vercel.app/?es=gc:geocachingspain@gmail.com)
+-   View events in a specific location: [?lat=41.38233&lon=2.15997&z=9&es=gc:geocachingspain@gmail.com](https://cmf-chad.vercel.app/?lat=41.38233&lon=2.15997&z=9&es=gc:geocachingspain@gmail.com)
+-   View events happening over the next week: [?qf=next7days&es=gc:geocachingspain@gmail.com](https://cmf-chad.vercel.app/?qf=next7days&es=gc:geocachingspain@gmail.com)
+-   Search for specific events: [?sq=meet&es=gc:geocachingspain@gmail.com](https://cmf-chad.vercel.app/?sq=meet&es=gc:geocachingspain@gmail.com)
+-   View events up to 9 months from now: [?ed=9m&es=gc:geocachingspain@gmail.com](https://cmf-chad.vercel.app/?ed=9m&es=gc:geocachingspain@gmail.com)
+
+Note: Replace `geocachingspain@gmail.com` with your actual Google Calendar ID.
 
 ## Application States
 
