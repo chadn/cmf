@@ -96,12 +96,25 @@ export async function GET(request: NextRequest) {
 
             return NextResponse.json(response)
         } catch (error) {
-            logr.info('api-events', `❌ Failed to fetch events from source: ${eventSource}`, error)
-            return NextResponse.json({ error: 'Failed to fetch events' }, { status: 500 })
+            logr.info('api-events', `❌ Failed to fetch events from source: ${eventSource}`)
+            // Default error response
+            let statusCode = 500
+            let errorMessage = 'Internal server error'
+
+            if (error instanceof Error) {
+                // Try to extract status code from error message
+                const match = error.message.match(/^HTTP (\d+): (.+)$/)
+                if (match) {
+                    statusCode = parseInt(match[1], 10)
+                    errorMessage = match[2]
+                } else {
+                    errorMessage = error.message
+                }
+            }
+            return NextResponse.json({ error: errorMessage }, { status: statusCode })
         }
     } catch (error) {
-        logr.info('api-events', 'Error processing events', error)
-        console.error('Error processing events:', error)
-        return NextResponse.json({ error: 'Failed to fetch events' }, { status: 500 })
+        logr.warn('api-events', 'Unknown error fetching events', error)
+        return NextResponse.json({ error: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 })
     }
 }

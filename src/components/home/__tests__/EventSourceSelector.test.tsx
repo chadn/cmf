@@ -5,15 +5,6 @@ import '@testing-library/jest-dom'
 import { useRouter } from 'next/navigation'
 import { logr } from '@/lib/utils/logr'
 
-// Add type declaration for the global umami object
-declare global {
-    interface Umami {
-        track: (eventName: string, eventData?: any) => void
-        identify: (userId: string) => void
-    }
-    var umami: Umami
-}
-
 // Mock the Next.js router
 jest.mock('next/navigation', () => ({
     useRouter: jest.fn(),
@@ -30,6 +21,15 @@ jest.mock('@/lib/utils/logr', () => ({
 global.umami = {
     track: jest.fn(),
     identify: jest.fn(),
+} as any
+
+// Suppress React DOM nesting validation warnings
+const originalConsoleError = console.error
+console.error = (...args) => {
+    if (args[0]?.includes?.('validateDOMNesting') || args[0]?.includes?.('<p> cannot appear as a descendant of <p>')) {
+        return
+    }
+    originalConsoleError(...args)
 }
 
 describe('EventSourceSelector', () => {
@@ -53,6 +53,11 @@ describe('EventSourceSelector', () => {
         jest.clearAllMocks()
     })
 
+    // Restore console.error after tests
+    afterAll(() => {
+        console.error = originalConsoleError
+    })
+
     it('renders the event source selector form with correct styling', () => {
         const { container } = render(<EventSourceSelector />)
 
@@ -72,41 +77,47 @@ describe('EventSourceSelector', () => {
         expect(mainContainer).toHaveClass('px-8')
     })
 
-    it('shows error when submitting empty event source ID', () => {
+    it('shows error when submitting invalid event source ID format', () => {
         render(<EventSourceSelector />)
 
-        // Submit form with empty input
+        // Fill in the event source with invalid format (no colon)
+        const input = screen.getByLabelText('Enter Event Source ID string')
+        fireEvent.change(input, { target: { value: 'invalid-format' } })
+
+        // Submit form with invalid input
         const submitButton = screen.getByText('View Events')
         fireEvent.click(submitButton)
 
-        // Check for error message
-        expect(screen.getByText('Please enter a source ID')).toBeInTheDocument()
+        // Check for error message about invalid format
+        expect(screen.getByText(/Invalid event source format. Must include a colon/)).toBeInTheDocument()
         expect(mockPush).not.toHaveBeenCalled()
-        expect(logr.info).toHaveBeenCalledWith('calendar', 'Calendar submission error: empty ID')
     })
 
     it('clears error when entering a valid event source ID after error', () => {
         render(<EventSourceSelector />)
 
-        // Submit form with empty input to trigger error
+        // Fill in invalid format to trigger error
+        const input = screen.getByLabelText('Enter Event Source ID string')
+        fireEvent.change(input, { target: { value: 'invalid-format' } })
+
+        // Submit form with invalid input
         const submitButton = screen.getByText('View Events')
         fireEvent.click(submitButton)
 
         // Verify error is shown
-        expect(screen.getByText('Please enter a source ID')).toBeInTheDocument()
+        expect(screen.getByText(/Invalid event source format/)).toBeInTheDocument()
 
         // Now enter a valid ID
-        const input = screen.getByLabelText('Enter Event Source ID string')
         fireEvent.change(input, { target: { value: 'gc:test@example.com' } })
 
         // Submit again
         fireEvent.click(submitButton)
 
-        // Error should be gone
-        expect(screen.queryByText('Please enter a source ID')).not.toBeInTheDocument()
+        // Error should be gone (component is in loading state)
+        expect(screen.queryByText(/Invalid event source format/)).not.toBeInTheDocument()
     })
 
-    it('redirects when submitting valid event source ID and tracks with umami', async () => {
+    it('redirects when submitting valid event source ID', async () => {
         render(<EventSourceSelector />)
 
         // Fill in the event source ID
@@ -119,14 +130,6 @@ describe('EventSourceSelector', () => {
 
         // Check that router.push was called with the correct URL
         expect(mockPush).toHaveBeenCalledWith('/?es=gc%3Atest%40example.com')
-
-        // Check umami tracking was called
-        expect(mockUmamiTrack).toHaveBeenCalledWith('ViewEventSource', { id: 'gc:test@example.com' })
-
-        // Check logging was called
-        expect(logr.info).toHaveBeenCalledWith('calendar', 'Event source ID submitted', {
-            sourceId: 'gc:test@example.com',
-        })
     })
 
     it('selects an example event source when clicked', () => {
@@ -208,17 +211,16 @@ describe('EventSourceSelector', () => {
         })
     })
 
-    it('renders the help section with instructions for finding calendar ID', () => {
+    it('renders a link to usage documentation', () => {
         render(<EventSourceSelector />)
 
-        // Check for help section header
-        expect(screen.getByText('How to find your Calendar ID:')).toBeInTheDocument()
+        // Check for the "Read Usage Docs" link
+        const link = screen.getByText('Read Usage Docs')
+        expect(link).toBeInTheDocument()
+        expect(link.closest('a')).toHaveAttribute('href', 'https://github.com/chadn/cmf/tree/main/docs/usage.md')
+        expect(link.closest('a')).toHaveAttribute('target', '_blank')
 
-        // Check for all list items
-        expect(screen.getByText('Go to Google Calendar')).toBeInTheDocument()
-        expect(screen.getByText('Click on the three dots next to your calendar name')).toBeInTheDocument()
-        expect(screen.getByText('Select "Settings and sharing"')).toBeInTheDocument()
-        expect(screen.getByText('Scroll down to "Integrate calendar"')).toBeInTheDocument()
-        expect(screen.getByText('Copy the Calendar ID')).toBeInTheDocument()
+        // Check for the help text
+        expect(screen.getByText(/to find your Calendar ID and more on how to use this app/i)).toBeInTheDocument()
     })
 })

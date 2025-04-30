@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import LoadingSpinner from '../common/LoadingSpinner'
+import ErrorMessage from '../common/ErrorMessage'
 import { logr } from '@/lib/utils/logr'
 // Basic debug log to verify DEBUG_LOGIC is enabled on the client
 // This will be filtered out by the debug utility if running on the server
@@ -39,26 +40,24 @@ const EventSourceSelector: React.FC = () => {
         // },
     ]
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-
-        if (!eventSourceId.trim()) {
-            logr.info('calendar', 'Calendar submission error: empty ID')
-            setError('Please enter a source ID')
-            return
-        }
-
-        logr.info('calendar', 'Event source ID submitted', { sourceId: eventSourceId })
-        if (typeof umami !== 'undefined') {
-            umami.track('ViewEventSource', { id: eventSourceId })
-        }
         setIsLoading(true)
         setError(null)
 
-        // Redirect to the main page with the event source
-        const redirectUrl = `/?es=${encodeURIComponent(eventSourceId)}`
-        logr.info('calendar', 'Redirecting to', { redirectUrl })
-        router.push(redirectUrl)
+        try {
+            // Validate event source ID format
+            if (!eventSourceId.includes(':')) {
+                throw new Error('Invalid event source format. Must include a colon (e.g., gc:example@gmail.com)')
+            }
+
+            // Construct the URL with the event source ID
+            const url = `/?es=${encodeURIComponent(eventSourceId)}`
+            router.push(url)
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'An error occurred')
+            setIsLoading(false)
+        }
     }
 
     const handleExampleSelect = (id: string) => {
@@ -91,8 +90,7 @@ const EventSourceSelector: React.FC = () => {
                         onChange={(e) => setEventSourceId(e.target.value)}
                         disabled={isLoading}
                     />
-                    {error && <p className="text-sm text-error mt-1">{error}</p>}
-                    <p className="text-xs text-gray-500 mt-1">More here on finding event source id</p>
+                    {error && <ErrorMessage message={error} className="mt-2" />}
                 </div>
 
                 <button type="submit" className="w-full btn btn-primary py-2" disabled={isLoading}>
@@ -122,16 +120,31 @@ const EventSourceSelector: React.FC = () => {
 
             {/* Help text */}
             <div className="mt-8 text-sm text-gray-500">
-                <p className="mb-2">
-                    <strong>How to find your Calendar ID:</strong>
+                <p className="text-md mt-1">
+                    <a
+                        href="https://github.com/chadn/cmf/tree/main/docs/usage.md"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium transition-colors"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-4 w-4 mr-1"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V7a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                            />
+                        </svg>
+                        Read Usage Docs
+                    </a>
+                    <p>to find your Calendar ID and more on how to use this app.</p>
                 </p>
-                <ol className="list-decimal pl-5 space-y-1">
-                    <li>Go to Google Calendar</li>
-                    <li>Click on the three dots next to your calendar name</li>
-                    <li>Select "Settings and sharing"</li>
-                    <li>Scroll down to "Integrate calendar"</li>
-                    <li>Copy the Calendar ID</li>
-                </ol>
             </div>
         </div>
     )

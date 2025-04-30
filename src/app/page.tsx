@@ -15,6 +15,8 @@ import ActiveFilters from '@/components/events/ActiveFilters'
 import { viewportUrlToViewport, parseAsEventSource, parseAsZoom, parseAsLatLon } from '@/lib/utils/location'
 import { parseAsCmfDate, parseAsDateQuickFilter } from '@/lib/utils/date'
 import { parseAsInteger, parseAsFloat, useQueryState, useQueryStates } from 'nuqs'
+import ErrorMessage from '@/components/common/ErrorMessage'
+import { useRouter } from 'next/navigation'
 
 // quiet window.cmf_events build error - https://stackoverflow.com/questions/56457935/typescript-error-property-x-does-not-exist-on-type-window
 declare const window: any
@@ -73,6 +75,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
 }
 
 function HomeContent() {
+    const router = useRouter()
     // URL query state parameters
     const [eventSourceId, setEventSourceId] = useQueryState('es', parseAsEventSource) // replaced gc calendarId
     const [selectedEventIdUrl, setSelectedEventIdUrl] = useQueryState('se', { defaultValue: '' })
@@ -115,7 +118,7 @@ function HomeContent() {
     const [dateSliderRange, setDateSliderRange] = useState<{ start: string; end: string } | undefined>(undefined)
 
     // Use our new EventsManager hook to get events and filter methods
-    const { eventsFn, evts, filters, eventSource, apiIsLoading } = useEventsManager({
+    const { eventsFn, evts, filters, eventSource, apiIsLoading, apiError } = useEventsManager({
         eventSourceId,
         sd: datesUrl.sd,
         ed: datesUrl.ed,
@@ -401,12 +404,21 @@ function HomeContent() {
                         ed={datesUrl.ed}
                     />
 
-                    <EventList
-                        evts={evts}
-                        selectedEventId={selectedEventIdUrl}
-                        onEventSelect={handleEventSelectCb}
-                        apiIsLoading={apiIsLoading}
-                    />
+                    {apiError ? (
+                        <div className="p-4">
+                            <ErrorMessage
+                                message={apiError.message}
+                                className="mb-4"
+                            />
+                        </div>
+                    ) : (
+                        <EventList
+                            evts={evts}
+                            selectedEventId={selectedEventIdUrl}
+                            onEventSelect={handleEventSelectCb}
+                            apiIsLoading={apiIsLoading}
+                        />
+                    )}
                 </div>
 
                 {/* Map */}
@@ -437,6 +449,7 @@ function HomeContent() {
 }
 
 export default function Home() {
+    const router = useRouter()
     return (
         <Suspense fallback={<div>Loading...</div>}>
             <HomeContent />

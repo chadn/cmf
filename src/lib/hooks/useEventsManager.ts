@@ -61,6 +61,8 @@ function eventsReducer(state: EventsState, action: EventsAction): EventsState {
             return { ...state, isLoading: action.payload }
         case 'SET_ERROR':
             return { ...state, error: action.payload }
+        case 'CLEAR_ERROR':
+            return { ...state, error: null }
         default:
             return state
     }
@@ -83,6 +85,8 @@ export function useEventsManager({
     // Reset FilterEventsManager when event source changes
     useEffect(() => {
         logr.info('use_evts_mgr', `uE: FilterEventsManager reset, new eventSourceId: "${eventSourceId}"`)
+        dispatch({ type: 'CLEAR_ERROR' })
+
         fltrEvtMgr.reset()
     }, [eventSourceId, fltrEvtMgr])
 
@@ -106,6 +110,26 @@ export function useEventsManager({
         }
     }, [apiUrl])
 
+    const dispatchNot200 = (msg: string) => {
+        logr.warn('use_evts_mgr', `❌ not HTTP 200, data:`, msg)
+        // Format user-friendly error message
+        let userMessage = 'Failed to fetch events'
+        if (msg.includes('HTTP 404')) {
+            if (eventSourceId?.startsWith('gc:')) {
+                userMessage = `Google Calendar not found - please try again`
+            } else {
+                userMessage = `Event source not found - please try again`
+            }
+        } else if (msg.includes('HTTP 403')) {
+            userMessage = 'Access denied - please check your permissions'
+        } else if (msg.includes('HTTP 401')) {
+            userMessage = 'Authentication failed - please check your credentials'
+        } else if (msg.includes('HTTP 429')) {
+            userMessage = 'Too many requests - please try again later'
+        }
+        dispatch({ type: 'SET_ERROR', payload: new Error(userMessage) })
+    }
+
     // understand this better: https://swr.vercel.app/docs/getting-started
     // Fetch events from API using SWR
     const {
@@ -115,7 +139,15 @@ export function useEventsManager({
     } = useSWR(apiUrl, fetcherLogr, {
         revalidateOnFocus: false,
         onSuccess: (data: EventSourceResponse) => {
-            if (!data) return
+            if (!(data && data.httpStatus)) {
+                dispatchNot200(`HTTP 500: onSuccess should have data.httpStatus`)
+                return
+            }
+            if (data.httpStatus !== 200) {
+                logr.info('use_evts_mgr', 'httpStatus !== 200', data)
+                dispatchNot200(`HTTP ${data.httpStatus}:`)
+                return
+            }
             logr.info('use_evts_mgr', `✅ Events data fetched: "${data.metadata.name || 'Unknown Source'}"`, {
                 sourceId: data.metadata.id || 'unknown',
                 sourceType: data.metadata.type || 'unknown',
@@ -129,11 +161,7 @@ export function useEventsManager({
             logr.debug('use_evts_mgr', `After fltrEvtMgr.cmf_events_all=${fltrEvtMgr.cmf_events_all.length}`)
         },
         onError: (err) => {
-            logr.info('use_evts_mgr', `❌ Error fetching events data for source: "${eventSourceId || 'unknown'}"`, {
-                error: err.message,
-                apiUrl,
-            })
-            dispatch({ type: 'SET_ERROR', payload: err })
+            dispatchNot200(err)
         },
     })
 

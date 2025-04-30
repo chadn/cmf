@@ -24,6 +24,7 @@ export interface EventSourceResponseMetadata {
 export interface EventSourceResponse {
     events: CmfEvent[]
     metadata: EventSourceResponseMetadata
+    httpStatus: number
 }
 
 /**

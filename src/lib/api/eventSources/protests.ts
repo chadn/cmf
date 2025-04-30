@@ -91,6 +91,7 @@ export class ProtestsEventSource extends BaseEventSourceHandler {
         })
 
         return {
+            httpStatus: 200,
             events,
             metadata: {
                 id: 'protests',

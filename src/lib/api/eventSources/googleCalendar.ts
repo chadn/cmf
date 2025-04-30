@@ -46,6 +46,7 @@ export class GoogleCalendarEventSource extends BaseEventSourceHandler {
         })
 
         return {
+            httpStatus: 200,
             events,
             metadata: {
                 id: params.id,
@@ -107,10 +108,13 @@ export class GoogleCalendarEventSource extends BaseEventSourceHandler {
             }
             return response.data
         } catch (error) {
+            if (axios.isAxiosError(error)) {
+                logr.info('api-es-gc', `fetchGoogleCalendarEvents axios error: ${error.response?.statusText}`)
+                throw new Error(`HTTP ${error.response?.status || 500}: ${error.response?.statusText}`)
+            }
             const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
-            logr.info('api-es-gc', `fetchGoogleCalendarEvents error: ${errorMessage}`)
-            console.error('Error fetching calendar events:', error)
-            throw error
+            logr.warn('api-es-gc', `fetchGoogleCalendarEvents error: ${errorMessage}`)
+            throw new Error(`HTTP 500: ${errorMessage}`)
         }
     }
 }

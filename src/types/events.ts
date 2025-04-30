@@ -46,6 +46,7 @@ export type EventsAction =
     | { type: 'SELECT_EVENT'; payload: string | null } // can be selected by map or list
     | { type: 'SET_LOADING'; payload: boolean }
     | { type: 'SET_ERROR'; payload: Error | null }
+    | { type: 'CLEAR_ERROR' }
 
 // Keep existing types for backward compatibility
 export interface GoogleCalendarEvent {

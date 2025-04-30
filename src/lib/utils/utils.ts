@@ -7,6 +7,7 @@ export const fetcherLogr = async (url: string) => {
         const response = await fetch(url)
         const data = await response.json()
         logr.info('browser', `Response from url: ${url} (${response.status})`, data)
+        data.httpStatus = response.status
         return data
     } catch (error) {
         logr.info('browser', `Error from url: ${url}`, error)
