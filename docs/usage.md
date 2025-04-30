@@ -80,6 +80,8 @@ It supports the following values:
 
 ## Example URLs
 
+https://cmf-chad.vercel.app/?es=gc:aabe6c219ee2af5b791ea6719e04a92990f9ccd1e68a3ff0d89bacd153a0b36d@group.calendar.google.com&lat=37.80722&lon=-122.29074&z=14
+
 -   View events from a specific calendar: `?es=google_calendar_123`
 -   View events in Portland: `?es=google_calendar_123&lat=45.5231&lon=-122.6765&z=12`
 -   View concerts in the next week: `?es=google_calendar_123&qf=next7days&sq=concert`

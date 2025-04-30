@@ -112,7 +112,7 @@ function HomeContent() {
     const eventsSidebarRef = useRef<HTMLDivElement>(null)
 
     // Local state for filters
-    const [dateRange, setLocalDateRange] = useState<{ start: string; end: string } | undefined>(undefined)
+    const [dateSliderRange, setDateSliderRange] = useState<{ start: string; end: string } | undefined>(undefined)
 
     // Use our new EventsManager hook to get events and filter methods
     const { eventsFn, evts, filters, eventSource, apiIsLoading } = useEventsManager({
@@ -207,7 +207,7 @@ function HomeContent() {
                 start: newDateRange?.start,
                 end: newDateRange?.end,
             })
-            setLocalDateRange(newDateRange)
+            setDateSliderRange(newDateRange)
             filters.setDateRange(newDateRange)
         },
         [filters]
@@ -252,7 +252,7 @@ function HomeContent() {
     const handleResetFilters = useCallback(() => {
         logr.info('app', 'Resetting all filters')
         setSearchQueryUrl('')
-        setLocalDateRange(undefined)
+        setDateSliderRange(undefined)
         filters.resetAll()
         resetMapToAllEvents()
     }, [filters, resetMapToAllEvents])
@@ -391,12 +391,14 @@ function HomeContent() {
                     <EventFilters
                         searchQuery={searchQueryUrl}
                         onSearchChange={handleSearchChange}
-                        dateRange={dateRange}
+                        dateSliderRange={dateSliderRange}
                         onDateRangeChange={handleDateRangeChange}
                         dateQuickFilterUrl={dateQuickFilterUrl}
                         onDateQuickFilterChange={setDateQuickFilterUrl}
                         onReset={handleResetFilters}
                         appState={appState}
+                        sd={datesUrl.sd}
+                        ed={datesUrl.ed}
                     />
 
                     <EventList

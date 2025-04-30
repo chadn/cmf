@@ -6,23 +6,27 @@ import DateRangeSelector from './DateRangeSelector'
 interface EventFiltersProps {
     searchQuery: string
     onSearchChange: (query: string) => void
-    dateRange?: { start: string; end: string }
+    dateSliderRange?: { start: string; end: string }
     onDateRangeChange: (range: { start: string; end: string } | undefined) => void
     onReset: () => void
     dateQuickFilterUrl?: string | null
     onDateQuickFilterChange?: (value: string) => void
     appState?: string
+    sd?: string // Start date from URL
+    ed?: string // End date from URL
 }
 
 export default function EventFilters({
     searchQuery,
     onSearchChange,
-    dateRange,
+    dateSliderRange,
     onDateRangeChange,
     onReset,
     dateQuickFilterUrl,
     onDateQuickFilterChange,
     appState,
+    sd,
+    ed,
 }: EventFiltersProps) {
     const [showDateSliders, setShowDateSliders] = useState(false)
 
@@ -34,13 +38,15 @@ export default function EventFilters({
     return (
         <div className="relative">
             <DateRangeSelector
-                dateRange={dateRange}
+                dateSliderRange={dateSliderRange}
                 onDateRangeChange={onDateRangeChange}
                 showDateSliders={showDateSliders}
                 setShowDateSliders={setShowDateSliders}
                 dateQuickFilterUrl={dateQuickFilterUrl}
                 onDateQuickFilterChange={onDateQuickFilterChange}
                 appState={appState}
+                sd={sd}
+                ed={ed}
             />
 
             <div className="mt-0.5">

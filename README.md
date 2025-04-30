@@ -130,6 +130,7 @@ For more detailed information, see the following documentation:
 -   [Implementation Details](docs/Implementation.md) includes directory structure and implementation decisions.
 -   [Test coverage](docs/tests.md) output of `npm test`.
 -   [Bugs and Features](docs/bugs.md)
+-   [Creating your own Event Source](src/lib/api/eventSources)
 
 ## History
 

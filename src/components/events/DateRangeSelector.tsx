@@ -3,44 +3,49 @@
 import { useState, useEffect } from 'react'
 import { format, addMonths, subMonths } from 'date-fns'
 import DateQuickButtons from './DateQuickButtons'
+import { getDateFromUrlDateString } from '@/lib/utils/date'
 
 interface DateRangeSelectorProps {
-    dateRange?: { start: string; end: string }
+    dateSliderRange?: { start: string; end: string }
     onDateRangeChange: (range: { start: string; end: string } | undefined) => void
     showDateSliders: boolean
     setShowDateSliders: (show: boolean) => void
     dateQuickFilterUrl?: string | null
     onDateQuickFilterChange?: (value: string) => void
     appState?: string
+    sd?: string // Start date from URL
+    ed?: string // End date from URL
 }
 
 export default function DateRangeSelector({
-    dateRange,
+    dateSliderRange,
     onDateRangeChange,
     showDateSliders,
     setShowDateSliders,
     dateQuickFilterUrl,
     onDateQuickFilterChange,
     appState,
+    sd,
+    ed,
 }: DateRangeSelectorProps) {
     // TODO: support passing in dates from datesUrl - see app/page.tsx
 
-    // Set up date boundaries to match the calendar API's default range
+    // Set up date boundaries from URL parameters or defaults
     const now = new Date()
-    const minDate = subMonths(now, 1)
-    const maxDate = addMonths(now, 3)
+    const minDate = getDateFromUrlDateString(sd || '-1m') || subMonths(now, 1)
+    const maxDate = getDateFromUrlDateString(ed || '3m') || addMonths(now, 3)
     const totalDays = Math.floor((maxDate.getTime() - minDate.getTime()) / (1000 * 60 * 60 * 24))
 
     const [startValue, setStartValue] = useState(0)
     const [endValue, setEndValue] = useState(totalDays)
 
-    // Reset UI state when dateRange becomes undefined (e.g. when clicking X button)
+    // Reset UI state when dateSliderRange becomes undefined (e.g. when clicking X button)
     useEffect(() => {
-        if (!dateRange) {
+        if (!dateSliderRange) {
             setStartValue(0)
             setEndValue(totalDays)
         }
-    }, [dateRange, totalDays])
+    }, [dateSliderRange, totalDays])
 
     // Convert slider value to date
     const getDateFromDays = (days: number) => {
