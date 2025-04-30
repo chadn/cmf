@@ -204,3 +204,10 @@ Filters can be combined, and the application maintains the filtered state in the
 ## Event Sources
 
 The code is written to make it easy to add different type of event sources, custom ones that do not have to be a calendar.
+Read more about the [Event Sources System](../src/lib/api/eventSources)
+
+## More
+
+Read more about this project and how it was built in the [README.md](../README.md)
+
+Found a bug or want a feature? Let me know by [Creating a new issue in github](https://github.com/chadn/cmf/issues/new)

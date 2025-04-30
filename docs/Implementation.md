@@ -23,8 +23,9 @@ The application follows a hybrid architecture with:
 /src
   /app                    # Next.js App Router structure
     /api                  # API routes
-      /calendar           # Calendar API endpoints
-        /route.ts         # API route handler for calendar data fetching and geocoding
+      /events             # Events API endpoint
+        /route.ts         # API route handler for events data fetching
+      /geocode            # Geocoding API endpoint
       /info               # Info API endpoints
     /home                 # Home page route
     /privacy              # Privacy policy page
@@ -32,9 +33,6 @@ The application follows a hybrid architecture with:
     /page.tsx             # Main application page
     /layout.tsx           # Root layout
     /globals.css          # Global styles
-    /error.tsx            # Global error boundary component
-    /not-found.tsx        # Custom 404 page
-    /loading.tsx          # Global loading state component
   /components             # React components (organized by domain)
     /map                  # Map-related components
       /MapContainer.tsx   # Main map component with MapLibre integration
@@ -51,16 +49,21 @@ The application follows a hybrid architecture with:
       /Header.tsx         # Application header with navigation
       /Footer.tsx         # Application footer with links
     /home                 # Home page components
-      /CalendarSelector.tsx  # Calendar selection component with examples
+      /EventSourceSelector.tsx  # Event source selection component with examples
     /common               # Reusable UI components
       /LoadingSpinner.tsx  # Loading indicator with customizable size
       /ErrorMessage.tsx   # Error display component with retry option
+    /router               # Router-related components
   /lib                    # Shared utilities and business logic
     /api                  # API client functions
-      /calendar.ts        # Calendar API client for Google Calendar integration
       /geocoding.ts       # Geocoding API client with caching support
+      /eventSources/      # Event source API integrations
+        /index.ts         # Export aggregator for event sources
+        /googleCalendar.ts # Google Calendar integration
+        /facebookEvents.ts # Facebook Events integration
+        /protests.ts      # Protests data source integration
+        /README.md        # Documentation for event sources
     /events               # Events
-      /FilterEventsManager.ts   # FilterEventsManager Class managing logic, state, and functions
     /hooks                # Custom React hooks
       /useEventsManager.ts # Hook for event data fetching and filtering
       /useMap.ts          # Hook for map interactions and state management
@@ -68,17 +71,14 @@ The application follows a hybrid architecture with:
       /date.ts            # Date formatting and calculation utilities
       /location.ts        # Location processing and filtering utilities
       /logr.ts            # Logging utility with rate limiting
+      /url.ts             # URL parsing and manipulation utilities
+      /utils.ts           # General utility functions and helpers
     /cache                # Cache abstraction layer
       /index.ts           # Cache interface and provider selection
       /upstash.ts         # Upstash Redis implementation for production
       /filesystem.ts      # Filesystem implementation for development
+    /components           # Common component logic
   /types                  # TypeScript type definitions
-    /events.ts            # Event-related types and interfaces
-    /map.ts               # Map-related types for viewport and markers
-    /api.ts               # API request and response types
-  /middleware.ts          # Next.js middleware for request handling
-  /styles
-    /variables.css        # Global CSS variables for theming
 /public                   # Static assets
   /images                 # Image assets
   /icons                  # Icon assets
@@ -86,6 +86,9 @@ The application follows a hybrid architecture with:
   /product.md             # Product specification with requirements
   /Implementation.md      # Implementation details and architecture decisions
   /tests.md               # Test coverage details
+  /usage.md               # User documentation and usage instructions
+  /todo.md                # ToDo list and future enhancements
+  /build_history.md       # Build history and changelog
 /next.config.js           # Next.js configuration
 /tsconfig.json            # TypeScript configuration
 /package.json             # Project dependencies
@@ -103,6 +106,8 @@ The application follows a hybrid architecture with:
 ```
 
 [View detailed test coverage](tests.md) of the codebase.
+
+Note: Test files (`__tests__` directories) are intentionally omitted from this directory structure for clarity, though they exist throughout the codebase. Additional utility files, type definitions, and specialized components may exist but are not listed to maintain a clear overview of the primary architecture.
 
 ## Key Architectural Decisions
 
@@ -137,96 +142,6 @@ The application follows a hybrid architecture with:
 -   Free tier (256MB) is sufficient for our expected cache size (~0.5MB for 1,000 locations)
 -   Filesystem cache provides simple development experience
 -   Abstraction layer enables easy switching between implementations
-
-### 4. Server-Side Handling of Recurring Events
-
-**Decision**: Expand recurring events server-side
-
-**Reasoning**:
-
--   Simplifies client-side logic
--   Ensures consistent filtering behavior
--   Calendar API abstraction handles the complexity
-
-## Event Filtering Implementation
-
-The event filtering system uses a class-based architecture with clearly defined responsibilities:
-
-### FilterEventsManager Class
-
-A central class that encapsulates all event filtering logic and state:
-
-**Event Collections**:
-
--   `events.all`: All events from the calendar (unfiltered)
--   `events.withLocations`: Events with successfully resolved locations
--   `events.withoutLocations`: Events with unresolved or unknown locations
--   `events.filtered`: Events that match all current filters (date, search, map bounds)
-
-**Filter Methods**:
-
--   `setDateRange`: Apply date filtering
--   `setSearchQuery`: Apply text-based search filtering
--   `setMapBounds`: Apply geographic bounds filtering
--   `setShowUnknownLocationsOnly`: Toggle filtering for events with unknown locations
--   `resetAllFilters`: Clear all filter criteria
-
-### useEventsManager Hook
-
-A custom React hook that:
-
--   Initializes the FilterEventsManager instance
--   Fetches calendar data from the API
--   Returns structured event collections and filter methods
--   Provides metadata about the calendar and events
-
-### Filter Types Implemented
-
-1. **Date Filtering**: Events within a selected date range
-2. **Text Search**: Case-insensitive search across event fields
-3. **Map Bounds**: Events within the visible map viewport
-4. **Unknown Locations**: Events with unresolved locations
-
-### UI Integration
-
--   **EventFilters Component**: Provides UI controls for search and dates
--   **MapContainer**: Controls geographic bounds filtering
--   **ActiveFilters**: Shows applied filters with removal options
-
-## Data Flow
-
-1. User requests the application with a calendar ID
-2. Server fetches calendar data and geocodes locations (using cache when available)
-3. Server renders initial HTML with preloaded data
-4. Client hydrates and initializes the map
-5. User interactions trigger client-side filtering
-6. Additional data fetched as needed via API routes
-
-## Testing Strategy
-
-Current test coverage: **27.04%** statements, **25.40%** branches, **29.25%** functions
-
-### Well-Tested Components (>90%)
-
--   **MapPopup**: 97.22% line coverage
--   **DateQuickButtons**: 93.33% line coverage
--   **MapMarker**: 94.44% line coverage
--   **Layout components**: 100% line coverage
--   **Common components**: 100% line coverage
-
-### Components Needing Coverage
-
--   **MapContainer**: 11.68% line coverage
--   **EventList**: 56% line coverage
--   **ActiveFilters**: 0% coverage
-
-### Testing Priorities
-
-1. Improve Map Component Testing (particularly MapContainer)
-2. Complete Hook Testing (useMap and useEventsManager)
-3. Add API and Cache Testing
-4. Improve Event Components Testing
-5. Add App Pages Testing
 
 ## Deployment Options
 

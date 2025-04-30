@@ -3,25 +3,25 @@
 This document makes it easy to see test coverage and compare against the [Directory Structure in Implementation.md](Implementation.md#directory-structure)
 
 ```
-npm test
+npm test && date
 > calendar-map-filter@0.2.0 test
-> jest
+> jest --coverage
 ...
 --------------------------|---------|----------|---------|---------|---------------------------------------------
 File                      | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
 --------------------------|---------|----------|---------|---------|---------------------------------------------
-All files                 |   79.65 |     63.7 |    80.5 |   80.45 |
+All files                 |   79.69 |    63.77 |    80.5 |    80.5 |
  components/common        |     100 |      100 |     100 |     100 |
   ErrorMessage.tsx        |     100 |      100 |     100 |     100 |
   LoadingSpinner.tsx      |     100 |      100 |     100 |     100 |
- components/events        |   70.94 |    41.66 |   70.58 |   71.03 |
+ components/events        |   71.14 |    44.23 |   70.58 |   71.23 |
   DateQuickButtons.tsx    |   74.46 |    36.36 |    87.5 |   76.08 | 69,83,86,102,147-161
-  DateRangeSelector.tsx   |   80.55 |    66.66 |   85.71 |   80.55 | 62,68-77
+  DateRangeSelector.tsx   |   81.08 |    70.58 |   85.71 |   81.08 | 67,73-82
   EventDetails.tsx        |     100 |      100 |     100 |     100 |
-  EventFilters.tsx        |      75 |      100 |   66.66 |      75 | 30-31
+  EventFilters.tsx        |      75 |      100 |   66.66 |      75 | 34-35
   EventList.tsx           |      56 |    33.89 |   46.15 |    55.1 | 50,55-64,69-73,93,101-148,198-199
- components/home          |     100 |      100 |     100 |     100 |
-  EventSourceSelector.tsx |     100 |      100 |     100 |     100 |
+ components/home          |     100 |    83.33 |     100 |     100 |
+  EventSourceSelector.tsx |     100 |    83.33 |     100 |     100 | 58
  components/layout        |     100 |      100 |     100 |     100 |
   Footer.tsx              |     100 |      100 |     100 |     100 |
   Header.tsx              |     100 |      100 |     100 |     100 |
@@ -29,11 +29,11 @@ All files                 |   79.65 |     63.7 |    80.5 |   80.45 |
   MapContainer.tsx        |   71.05 |    76.92 |   76.47 |   70.42 | 91-92,139-157,181,187-203
   MapMarker.tsx           |     100 |      100 |     100 |     100 |
   MapPopup.tsx            |   97.14 |    89.47 |     100 |   96.87 | 50
- lib/api                  |   88.37 |    74.35 |   88.88 |   89.65 |
-  geocoding.ts            |   88.37 |    74.35 |   88.88 |   89.65 | 32,45,83,117,171-172,215-217,246,261,278
+ lib/api                  |   88.46 |    74.35 |   88.88 |   89.74 |
+  geocoding.ts            |   88.46 |    74.35 |   88.88 |   89.74 | 32,45,83,117,171-172,215-217,246,261,279
  lib/hooks                |   80.32 |    33.33 |    90.9 |   85.41 |
   useMap.ts               |   80.32 |    33.33 |    90.9 |   85.41 | 20-27,93-96
- lib/utils                |   75.66 |    66.26 |   74.54 |   77.38 |
+ lib/utils                |   75.81 |    66.26 |   74.54 |   77.53 |
   date.ts                 |    71.6 |    85.71 |   44.44 |   74.35 | 19-20,54-55,72-73,135-142,148-169
   location.ts             |   68.31 |    44.89 |      50 |   73.62 | 165,191,217-225,236,249-261,267-273,279-287
   logr.ts                 |   70.58 |     64.7 |     100 |   69.38 | 38,60-85
@@ -44,8 +44,9 @@ All files                 |   79.65 |     63.7 |    80.5 |   80.45 |
 Test Suites: 20 passed, 20 total
 Tests:       160 passed, 160 total
 Snapshots:   0 total
-Time:        2.598 s
+Time:        1.871 s, estimated 2 s
 Ran all test suites.
+Wed Apr 30 13:28:23 PDT 2025
 ```
 
 ## Next Steps for Testing

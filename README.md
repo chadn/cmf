@@ -4,13 +4,13 @@
 
 If you love maps, and have many events in your Calendar, this is for you.
 
-A visualization tool that displays calendar events on both an interactive map and a filterable list, allowing users to spatially browse and filter events based on geographic location.
-A React + Next.js application that displays Google Calendar events on an interactive map with powerful filtering capabilities.
+A highly interactive visualization tool that displays calendar events on both an interactive map and a list, allowing users to spatially browse and filter events based on geographic location.
+Users can also filter events based on date and by searching name, description, and location.
 
 ## Status
 
 -   Work In Progress: https://cmf-chad.vercel.app/
--   See [How to Use](docs/usage.md) as well as [Bugs and Known Issues ](docs/bugs.md)
+-   See [How to Use](docs/usage.md) as well as [To Do - Features, Bugs and Known Issues](docs/todo.md)
 
 ## 🌟 Features
 
@@ -129,7 +129,7 @@ For more detailed information, see the following documentation:
 -   [Product Specification](docs/product.md)
 -   [Implementation Details](docs/Implementation.md) includes directory structure and implementation decisions.
 -   [Test coverage](docs/tests.md) output of `npm test`.
--   [Bugs and Features](docs/bugs.md)
+-   [To Do - Features, Bugs and Known Issues](docs/todo.md)
 -   [Creating your own Event Source](src/lib/api/eventSources)
 
 ## History
