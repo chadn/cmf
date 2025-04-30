@@ -272,6 +272,7 @@ export async function batchGeocodeLocations(locations: string[]): Promise<Locati
         // Wait for the current batch to complete
         const batchResults = await Promise.all(batchPromises)
         results.push(...batchResults)
+        logr.info('api-geo', `batchGeocodeLocations batch ${i} done, processed ${results.length}`)
 
         // Add a small delay between batches to avoid rate limits
         if (i + batchSize < uniqueLocations.length) {
