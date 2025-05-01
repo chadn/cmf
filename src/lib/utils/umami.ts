@@ -13,9 +13,11 @@ export const umamiTrack = (eventName: string, event_data?: { [key: string]: any 
 }
 
 // must match domains in https://umami-chad.vercel.app/settings/websites
-const umamiIds = {
+const sessionIds = {
     'cmf-chad.vercel.app': '5b4eb79f-b7a7-4bea-b03b-808126201cb0',
     'cmf-dev.vercel.app': '74a92658-839d-4055-9cea-4647fe94896c',
 }
 const domain = process.env.NEXT_PUBLIC_VERCEL_URL || 'cmf-chad.vercel.app'
-export const umamiWebsiteId = umamiIds[domain as keyof typeof umamiIds]
+export const umamiWebsiteId = sessionIds[domain as keyof typeof sessionIds]
+
+logr.info('umami', `init for ${domain} ${umamiWebsiteId}`)

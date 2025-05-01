@@ -143,7 +143,7 @@ const EventSourceSelector: React.FC = () => {
                         </svg>
                         Read Usage Docs
                     </a>
-                    <p>to find your Calendar ID and more on how to use this app.</p>
+                    <br/>to find your Calendar ID and more on using this app.
                 </p>
             </div>
         </div>
