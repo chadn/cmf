@@ -17,6 +17,7 @@ import { parseAsCmfDate, parseAsDateQuickFilter } from '@/lib/utils/date'
 import { parseAsInteger, parseAsFloat, useQueryState, useQueryStates } from 'nuqs'
 import ErrorMessage from '@/components/common/ErrorMessage'
 import { useRouter } from 'next/navigation'
+import { umamiTrack } from '@/lib/utils/umami'
 
 // quiet window.cmf_events build error - https://stackoverflow.com/questions/56457935/typescript-error-property-x-does-not-exist-on-type-window
 declare const window: any
@@ -146,9 +147,7 @@ function HomeContent() {
             setHeaderName('Loading Event Source...')
             dispatch({ type: 'EVENTS_LOADING' })
         }
-        if (typeof umami !== 'undefined') {
-            umami.track('LoadCalendar', { es: eventSourceId ?? 'null', numEvents: evts.allEvents.length })
-        }
+        umamiTrack('LoadCalendar', { es: eventSourceId ?? 'null', numEvents: evts.allEvents.length })
     }, [eventSourceId])
 
     // Handle transition from events-init via EVENTS_LOADED action to map-init

@@ -3,6 +3,7 @@
 import { format } from 'date-fns'
 import { useEffect, useRef } from 'react'
 import { logr } from '@/lib/utils/logr'
+import { umamiTrack } from '@/lib/utils/umami'
 
 interface DateQuickButtonsProps {
     now: Date
@@ -64,10 +65,13 @@ export default function DateQuickButtons({
             end: getDateFromDays(end),
         })
 
+        const filterId = filter.label.toLowerCase().replace(/\s+/g, '')
         // Update URL parameter if handler provided
         if (onDateQuickFilterChange) {
-            onDateQuickFilterChange(filter.label.toLowerCase().replace(/\s+/g, ''))
+            onDateQuickFilterChange(filterId)
         }
+        umamiTrack('dateQuickFilter', { clicked: filterId})
+        //umamiTrack('dateQuickFilter', filterId)
     }
 
     // Special handler for weekend selection

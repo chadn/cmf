@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import DateRangeSelector from './DateRangeSelector'
+import { umamiTrack } from '@/lib/utils/umami'
+import { useEffect } from 'react'
 
 interface EventFiltersProps {
     searchQuery: string
@@ -29,6 +31,13 @@ export default function EventFilters({
     ed,
 }: EventFiltersProps) {
     const [showDateSliders, setShowDateSliders] = useState(false)
+
+    // log if showDateSliders changes
+    useEffect(() => {
+        if (showDateSliders) {
+            umamiTrack('showDateSliders') // Track when the date sliders are shown
+        }
+    }, [showDateSliders])
 
     const handleReset = () => {
         setShowDateSliders(false)

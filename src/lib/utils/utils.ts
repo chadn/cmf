@@ -1,4 +1,5 @@
 import { logr } from '@/lib/utils/logr'
+import { umamiTrack } from '@/lib/utils/umami'
 
 // Custom fetcher function, basically a wrapper to log API requests and responses
 export const fetcherLogr = async (url: string) => {
@@ -14,9 +15,20 @@ export const fetcherLogr = async (url: string) => {
         logr.info('browser', `fetcherLogr Response ${response.status}, ${sizeOfResponse} bytes in ${ms}ms, url: ${url}`)
         logr.debug('browser', `fetcherLogr Response ${response.status} url: ${url}`, data)
         data.httpStatus = response.status
-        if (typeof umami !== 'undefined') {
-            umami.track('ClientFetch', { url, status: response.status, size: sizeOfResponse, ms: ms })
+
+        let esId = 'unknownEsId'
+        try {
+            // extract id=xxx from url
+            esId = url.split('id=')[1]?.split('&')[0]
+        }catch (error) {
         }
+        umamiTrack('ClientFetch',  { 
+            esId:esId, 
+            status: response.status, 
+            sizeKb: Math.round(sizeOfResponse / 1024), 
+            sec: Math.round(ms / 100)/10,
+            secId: Math.round(ms / 1000) + '-' + esId,
+        })
         return data
     } catch (error) {
         logr.info('browser', `Error from url: ${url}`, error)
