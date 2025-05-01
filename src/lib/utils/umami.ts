@@ -17,10 +17,19 @@ const sessionIds = {
     'cmf-chad.vercel.app': '5b4eb79f-b7a7-4bea-b03b-808126201cb0',
     'cmf-dev.vercel.app': '74a92658-839d-4055-9cea-4647fe94896c',
 }
-// ex: NEXT_PUBLIC_VERCEL_URL=cmf-h9udq7nfi-all-chads.vercel.app for cmf-dev.vercel.app
-const domain = process.env.VERCEL_PROJECT_PRODUCTION_URL
+let domain = 'unknownDomain'
+if (typeof window !== 'undefined') {
+    domain = window.location.hostname
+} else {
+    if (process.env.VERCEL_BRANCH_URL == 'cmf-git-dev-all-chads.vercel.app') {
+        domain = 'cmf-dev.vercel.app'
+    } else if (process.env.VERCEL_BRANCH_URL == 'cmf-git-main-all-chads.vercel.app') {
+        domain = 'cmf-chad.vercel.app'
+    }
+}
 export const umamiWebsiteId = sessionIds[domain as keyof typeof sessionIds] || sessionIds['cmf-chad.vercel.app']
 
 // just get the first 8 characters of the sha
-const sha = (process.env.VERCEL_GIT_COMMIT_SHA || 'xxxxxxxxxx').substring(0, 8)
-logr.info('umami', `init for ${domain} ${umamiWebsiteId} ${sha}`)
+//const sha = (process.env.VERCEL_GIT_COMMIT_SHA || 'xxxxxxxxxx').substring(0, 8)
+
+logr.info('umami', `init for ${domain} ${umamiWebsiteId}`)
