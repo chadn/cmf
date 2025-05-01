@@ -4,6 +4,7 @@ import { Location } from '@/types/events'
 import { getCachedLocation, cacheLocation } from '@/lib/cache'
 import { logr } from '@/lib/utils/logr'
 
+// 1500+ req/min https://console.cloud.google.com/google/maps-apis/quotas?project=cmf-2025&api=geocoding-backend.googleapis.com
 const GOOGLE_MAPS_GEOCODING_API = 'https://maps.googleapis.com/maps/api/geocode/json'
 
 // Cache unresolved locations, so we don't call the API repeatedly and can manually fix them
@@ -260,9 +261,11 @@ export async function batchGeocodeLocations(locations: string[]): Promise<Locati
     if (USE_FIXED_LOCATIONS) {
         logr.info('api-geo', `TEMPORARY: Using fixed address for ${uniqueLocations.length} locations`)
     }
-    // Process in batches of 10 with delayMs in between to avoid rate limits
-    const batchSize = 10
-    const delayMs = 20
+    // Process in batches with delayMs in between to avoid rate limits
+    // 1500+ req/min https://console.cloud.google.com/google/maps-apis/quotas?project=cmf-2025&api=geocoding-backend.googleapis.com
+    // Since this mostly affects redis cache lookups, reducing delayMs to 1
+    const batchSize = 100
+    const delayMs = 1
     const results: Location[] = []
 
     for (let i = 0; i < uniqueLocations.length; i += batchSize) {
