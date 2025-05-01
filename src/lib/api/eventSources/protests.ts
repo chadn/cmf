@@ -140,17 +140,29 @@ export class ProtestsEventSource extends BaseEventSourceHandler {
             endsOn,
         })
 
+        // Implement pagination as per TODO
+        // Start with page 1 and continue fetching until all events are retrieved
         try {
-            const response = await axios.post(
-                apiUrl,
-                {
-                    operationName: 'SearchEvents',
-                    variables: {
-                        limit: 999,
-                        beginsOn,
-                        endsOn,
-                    },
-                    query: `query SearchEvents($beginsOn: DateTime, $endsOn: DateTime, $eventPage: Int, $limit: Int) {
+            const limit = 999  // original from scraping web 
+            let currentPage = 1
+            let allEvents: any[] = []
+            let totalEvents = 0
+            let hasMorePages = true
+
+            while (hasMorePages) {
+                logr.info('api-es-pr', `Fetching protest events page ${currentPage}`)
+                
+                const response = await axios.post(
+                    apiUrl,
+                    {
+                        operationName: 'SearchEvents',
+                        variables: {
+                            limit,
+                            eventPage: currentPage,
+                            beginsOn,
+                            endsOn,
+                        },
+                        query: `query SearchEvents($beginsOn: DateTime, $endsOn: DateTime, $eventPage: Int, $limit: Int) {
   searchEvents(
     beginsOn: $beginsOn
     endsOn: $endsOn
@@ -209,29 +221,54 @@ export class ProtestsEventSource extends BaseEventSourceHandler {
     __typename
   }
 }`,
-                },
-                {
-                    headers: {
-                        accept: '*/*',
-                        'content-type': 'application/json',
-                        origin: 'https://events.pol-rev.com',
-                        referer: 'https://events.pol-rev.com/events/calendar',
-                        'user-agent':
-                            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
                     },
-                }
-            )
-
-            if (response.data?.data?.searchEvents?.elements) {
-                logr.info(
-                    'api-es-pr',
-                    `fetchProtestEvents response: ${response.data.data.searchEvents.elements.length} events`
+                    {
+                        headers: {
+                            accept: '*/*',
+                            'content-type': 'application/json',
+                            origin: 'https://events.pol-rev.com',
+                            referer: 'https://events.pol-rev.com/events/calendar',
+                            'user-agent':
+                                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
+                        },
+                    }
                 )
-            } else {
-                logr.info('api-es-pr', 'fetchProtestEvents unexpected response', response.data)
+
+                if (response.data?.data?.searchEvents?.elements) {
+                    const pageEvents = response.data.data.searchEvents.elements
+                    const pageCount = pageEvents.length
+                    totalEvents = response.data.data.searchEvents.total
+
+                    // Add this page's events to our collection
+                    allEvents = [...allEvents, ...pageEvents]
+
+                    logr.info(
+                        'api-es-pr',
+                        `Fetched page ${currentPage}: ${pageCount} events (${allEvents.length}/${totalEvents} total)`
+                    )
+
+                    // Check if we need to fetch more pages
+                    hasMorePages = allEvents.length < totalEvents
+                    currentPage++
+                } else {
+                    logr.info('api-es-pr', 'fetchProtestEvents unexpected response', response.data)
+                    hasMorePages = false
+                }
             }
 
-            return response.data
+            // Construct a complete response object with all events
+            const completeResponse = {
+                data: {
+                    searchEvents: {
+                        total: totalEvents,
+                        elements: allEvents,
+                        __typename: 'PaginatedEventList'
+                    }
+                }
+            }
+
+            logr.info('api-es-pr', `fetchProtestEvents complete: ${allEvents.length} total events`)
+            return completeResponse
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
             logr.error('api-es-pr', `fetchProtestEvents error: ${errorMessage}`)

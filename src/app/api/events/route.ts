@@ -33,15 +33,13 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Unsupported event source type' }, { status: 400 })
         }
 
-        logr.info('api-events', `Fetching events from source: ${eventSourceId}`)
-
         // Get optional date range parameters
         const timeMin = request.nextUrl.searchParams.get('timeMin') || undefined
         const timeMax = request.nextUrl.searchParams.get('timeMax') || undefined
 
-        if (timeMin && timeMax) {
-            logr.info('api-events', `Date range specified: ${timeMin} to ${timeMax}`)
-        }
+        const dateMsg = timeMin && timeMax ? `from ${timeMin} to ${timeMax}` : 'no date range'
+        logr.info('api-events', `Fetching events from source: ${eventSourceId} ${dateMsg}`)
+
 
         try {
             // Fetch events from the appropriate source
