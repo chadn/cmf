@@ -232,7 +232,7 @@ export async function geocodeLocation(locationString: string): Promise<Location>
     // Check cache first
     const cachedLocation = await getCachedLocation(locationString)
     if (cachedLocation) {
-        logr.info('api-geo', `Found in Cache ${cachedLocation.status}: "${locationString}"`)
+        logr.debug('api-geo', `Found in Cache ${cachedLocation.status}: "${locationString}"`)
         return cachedLocation
     }
 
@@ -241,10 +241,10 @@ export async function geocodeLocation(locationString: string): Promise<Location>
         // Cache the result
         await cacheLocation(locationString, result)
     } else if (CACHE_UNRESOLVED_LOCATIONS) {
-        logr.info('api-geo', `Caching Unresolved: "${locationString}"`)
+        logr.debug('api-geo', `Caching Unresolved: "${locationString}"`)
         await cacheLocation(locationString, result)
     } else {
-        logr.info('api-geo', `Not Caching Unresolved: "${locationString}"`)
+        logr.debug('api-geo', `Not Caching Unresolved: "${locationString}"`)
     }
     return result
 }

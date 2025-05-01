@@ -53,11 +53,8 @@ export async function GET(request: NextRequest) {
                 timeMax,
             })
             let ms = Math.round(performance.now() - startTime)
-            const sizeOfFetch = JSON.stringify({ events, metadata }).length
-            logr.info(
-                'api-events',
-                `${events.length} events fetched, "${metadata.name}" in ${ms}ms ${sizeOfFetch} bytes ${eventSourceId}`
-            )
+            const sz = JSON.stringify({ events, metadata }).length
+            logr.info('api-events', `API fetched ${events.length} events in ${ms}ms ${sz} bytes ${eventSourceId}`)
 
             // GEOCODE LOCATIONS
             const uniqueLocations = Array.from(
