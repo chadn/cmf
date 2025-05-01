@@ -19,21 +19,21 @@ export const dynamic = 'force-dynamic'
 export async function GET(request: NextRequest) {
     try {
         // Get event source from query parameters
-        const eventSource = request.nextUrl.searchParams.get('id')
+        const eventSourceId = request.nextUrl.searchParams.get('id')
 
-        if (!eventSource) {
+        if (!eventSourceId) {
             logr.info('api-events', 'Missing event source ID in request')
             return NextResponse.json({ error: 'Event source ID is required' }, { status: 400 })
         }
 
         // Check if we have a handler for this event source
-        const handler = getEventSourceHandler(eventSource)
+        const handler = getEventSourceHandler(eventSourceId)
         if (!handler) {
-            logr.info('api-events', `No handler found for event source: ${eventSource}`)
+            logr.info('api-events', `No handler found for event source: ${eventSourceId}`)
             return NextResponse.json({ error: 'Unsupported event source type' }, { status: 400 })
         }
 
-        logr.info('api-events', `Fetching events from source: ${eventSource}`)
+        logr.info('api-events', `Fetching events from source: ${eventSourceId}`)
 
         // Get optional date range parameters
         const timeMin = request.nextUrl.searchParams.get('timeMin') || undefined
@@ -46,12 +46,18 @@ export async function GET(request: NextRequest) {
         try {
             // Fetch events from the appropriate source
             // TODO: should searchParams be passed to fetchEvents? then each handler can decide what params it needs
-            const { events, metadata } = await fetchEvents(eventSource, {
+
+            const startTime = performance.now()
+            const { events, metadata } = await fetchEvents(eventSourceId, {
                 timeMin,
                 timeMax,
             })
-
-            logr.info('api-events', `✅ ${events.length} events successfully fetched from: "${metadata.name}"`)
+            let ms = Math.round(performance.now() - startTime)
+            const sizeOfFetch = JSON.stringify({ events, metadata }).length
+            logr.info(
+                'api-events',
+                `${events.length} events fetched, "${metadata.name}" in ${ms}ms ${sizeOfFetch} bytes ${eventSourceId}`
+            )
 
             // GEOCODE LOCATIONS
             const uniqueLocations = Array.from(
@@ -88,15 +94,17 @@ export async function GET(request: NextRequest) {
                 events: eventsWithLocationResolved,
                 metadata,
             }
+            const sizeOfResponse = JSON.stringify(response).length
+            ms = Math.round(performance.now() - startTime)
 
-            logr.info('api-events', 'API response prepared', {
+            logr.info('api-events', `API response ${sizeOfResponse} bytes, ${ms}ms for fetch + geocode`, {
                 totalCount: response.events.length,
                 metadata,
             })
 
             return NextResponse.json(response)
         } catch (error) {
-            logr.info('api-events', `❌ Failed to fetch events from source: ${eventSource}`)
+            logr.info('api-events', `❌ Failed to fetch events from source: ${eventSourceId}`)
             // Default error response
             let statusCode = 500
             let errorMessage = 'Internal server error'
