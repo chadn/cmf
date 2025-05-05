@@ -3,6 +3,8 @@ import * as upstashCache from './upstash'
 import * as filesystemCache from './filesystem'
 import { logr } from '../utils/logr'
 
+const LOCATION_KEY_PREFIX = 'location:'
+
 // Determine which cache implementation to use based on environment
 const isDevelopment = process.env.NODE_ENV === 'development'
 
@@ -22,13 +24,9 @@ logr.log(
  */
 export async function getCache<T>(key: string, prefix: string = ''): Promise<T | null> {
     if (isDevelopment) {
-        // In development, use filesystem cache with a key-value mechanism
-        const allData =
-            ((await filesystemCache.getLocation(prefix ? `${prefix}_all` : 'generic_cache')) as unknown as Record<
-                string,
-                T
-            >) || {}
-        return allData[key] || null
+        // In development, use filesystem cache
+        const cache = filesystemCache.loadCache()
+        return (cache[key] as unknown as T) || null
     } else {
         // In production, use Redis cache
         return upstashCache.redisGet<T>(key, prefix)
@@ -50,14 +48,10 @@ export async function setCache<T>(
     ttl: number = 60 * 60 * 24 * 30
 ): Promise<void> {
     if (isDevelopment) {
-        // In development, use filesystem cache with a key-value mechanism
-        const allData =
-            ((await filesystemCache.getLocation(prefix ? `${prefix}_all` : 'generic_cache')) as unknown as Record<
-                string,
-                T
-            >) || {}
-        allData[key] = value
-        await filesystemCache.setLocation(prefix ? `${prefix}_all` : 'generic_cache', allData as unknown as Location)
+        // In development, use filesystem cache
+        const cache = filesystemCache.loadCache()
+        cache[key] = value as unknown as Location
+        filesystemCache.saveCache(cache)
     } else {
         // In production, use Redis cache
         await upstashCache.redisSet<T>(key, value, prefix, ttl)
@@ -70,11 +64,7 @@ export async function setCache<T>(
  * @returns Promise with the cached location or null if not found
  */
 export async function getCachedLocation(locationKey: string): Promise<Location | null> {
-    if (isDevelopment) {
-        return filesystemCache.getLocation(locationKey)
-    } else {
-        return upstashCache.getLocation(locationKey)
-    }
+    return getCache<Location>(locationKey, LOCATION_KEY_PREFIX)
 }
 
 /**
@@ -84,9 +74,5 @@ export async function getCachedLocation(locationKey: string): Promise<Location |
  * @returns Promise that resolves when caching is complete
  */
 export async function cacheLocation(locationKey: string, location: Location): Promise<void> {
-    if (isDevelopment) {
-        return filesystemCache.setLocation(locationKey, location)
-    } else {
-        return upstashCache.setLocation(locationKey, location)
-    }
+    return setCache<Location>(locationKey, location, LOCATION_KEY_PREFIX)
 }

@@ -140,13 +140,18 @@ export async function GET(request: NextRequest) {
         // Fetch and process events
         const response = await fetchAndGeocode(eventSourceId, timeMin || undefined, timeMax || undefined)
 
-        // Save to cache in the background (don't await)
-        setCache<CachedEventResponse>(
-            fetchKey,
-            { response, savedTime: Math.round(performance.now()) },
-            EVENTS_CACHE_PREFIX
-        ).catch((error) => {
-            logr.warn('api-events', `Failed to cache events for ${fetchKey}`, error)
+        // Save to cache in the background (don't await) but log when successful or failed
+        process.nextTick(async () => {
+            try {
+                await setCache<CachedEventResponse>(
+                    fetchKey,
+                    { response, savedTime: Math.round(performance.now()) },
+                    EVENTS_CACHE_PREFIX
+                )
+                logr.info('api-events', `Cached events for ${fetchKey}`)
+            } catch (error) {
+                logr.warn('api-events', `Failed to cache events for ${fetchKey}`, error)
+            }
         })
 
         return NextResponse.json(response)
