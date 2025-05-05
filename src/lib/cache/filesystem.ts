@@ -25,6 +25,8 @@ function loadCache(): Record<string, Location> {
         return {}
     }
 
+    // todo: load file to memory, not read from disk each time
+
     try {
         const data = fs.readFileSync(LOCATIONS_CACHE_FILE, 'utf8')
         return JSON.parse(data)
@@ -64,14 +66,4 @@ export async function setLocation(locationKey: string, location: Location): Prom
     const cache = loadCache()
     cache[locationKey] = location
     saveCache(cache)
-}
-
-/**
- * Clears the location cache from the filesystem
- * @returns Promise that resolves when cache is cleared
- */
-export async function clearLocations(): Promise<void> {
-    if (fs.existsSync(LOCATIONS_CACHE_FILE)) {
-        fs.unlinkSync(LOCATIONS_CACHE_FILE)
-    }
 }

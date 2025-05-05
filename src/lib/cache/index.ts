@@ -11,6 +11,59 @@ logr.log(
     `NODE_ENV='${process.env.NODE_ENV}' Using cache:`,
     isDevelopment ? `filesystem (${filesystemCache.LOCATIONS_CACHE_FILE})` : 'upstash redis'
 )
+
+// TODO: create simple getCache and setCache that can call redisGet and redisSet
+
+/**
+ * Generic function to get a value from cache
+ * @param key - The key to retrieve
+ * @param prefix - Optional prefix to prepend to the key
+ * @returns Promise with the cached value or null if not found
+ */
+export async function getCache<T>(key: string, prefix: string = ''): Promise<T | null> {
+    if (isDevelopment) {
+        // In development, use filesystem cache with a key-value mechanism
+        const allData =
+            ((await filesystemCache.getLocation(prefix ? `${prefix}_all` : 'generic_cache')) as unknown as Record<
+                string,
+                T
+            >) || {}
+        return allData[key] || null
+    } else {
+        // In production, use Redis cache
+        return upstashCache.redisGet<T>(key, prefix)
+    }
+}
+
+/**
+ * Generic function to set a value in cache
+ * @param key - The key to store
+ * @param value - The value to store
+ * @param prefix - Optional prefix to prepend to the key
+ * @param ttl - Optional time-to-live in seconds (default: 30 days)
+ * @returns Promise that resolves when caching is complete
+ */
+export async function setCache<T>(
+    key: string,
+    value: T,
+    prefix: string = '',
+    ttl: number = 60 * 60 * 24 * 30
+): Promise<void> {
+    if (isDevelopment) {
+        // In development, use filesystem cache with a key-value mechanism
+        const allData =
+            ((await filesystemCache.getLocation(prefix ? `${prefix}_all` : 'generic_cache')) as unknown as Record<
+                string,
+                T
+            >) || {}
+        allData[key] = value
+        await filesystemCache.setLocation(prefix ? `${prefix}_all` : 'generic_cache', allData as unknown as Location)
+    } else {
+        // In production, use Redis cache
+        await upstashCache.redisSet<T>(key, value, prefix, ttl)
+    }
+}
+
 /**
  * Gets a location from cache
  * @param locationKey - The location string to use as a key
@@ -35,17 +88,5 @@ export async function cacheLocation(locationKey: string, location: Location): Pr
         return filesystemCache.setLocation(locationKey, location)
     } else {
         return upstashCache.setLocation(locationKey, location)
-    }
-}
-
-/**
- * Clears the location cache
- * @returns Promise that resolves when cache is cleared
- */
-export async function clearLocationCache(): Promise<void> {
-    if (isDevelopment) {
-        return filesystemCache.clearLocations()
-    } else {
-        return upstashCache.clearLocations()
     }
 }

@@ -4,14 +4,53 @@ import { Location } from '@/types/events'
 import { getCachedLocation, cacheLocation } from '@/lib/cache'
 import { logr } from '@/lib/utils/logr'
 
-// 1500+ req/min https://console.cloud.google.com/google/maps-apis/quotas?project=cmf-2025&api=geocoding-backend.googleapis.com
-const GOOGLE_MAPS_GEOCODING_API = 'https://maps.googleapis.com/maps/api/geocode/json'
+// Type definitions for consistent return values
+type GeocodingResult<T = Location | null> = {
+    result: T
+    source: 'sCache' | 'custom' | 'api' | 'other' | null
+    time: number
+    parserIndex?: number
+}
 
-// Cache unresolved locations, so we don't call the API repeatedly and can manually fix them
-const CACHE_UNRESOLVED_LOCATIONS = true
+// Configuration
+const CONFIG = {
+    GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY,
+    GOOGLE_MAPS_GEOCODING_API: 'https://maps.googleapis.com/maps/api/geocode/json',
+    CACHE_UNRESOLVED_LOCATIONS: true,
+    USE_FIXED_LOCATIONS: false,
+    // API limits: 25+ req/s, 1500+ req/min https://console.cloud.google.com/google/maps-apis/quotas?project=cmf-2025&api=geocoding-backend.googleapis.com
+    BATCH_SIZE: 100,
+    BATCH_DELAY_MS: 5,
+}
+
+/**
+ * Utility function to time an operation
+ * @param operation - Function to execute and time
+ * @returns [result, time in ms]
+ */
+async function withTiming<T>(operation: () => Promise<T>, start?: number): Promise<[T, number]> {
+    start = start || performance.now()
+    const result = await operation()
+    return [result, performance.now() - start]
+}
+
+/**
+ * Create a default unresolved location object
+ * @param locationString - The original location string
+ */
+function createUnresolvedLocation(locationString: string): Location {
+    return {
+        original_location: locationString || '',
+        status: 'unresolved',
+    }
+}
+
+// Log warning if API key is missing
+if (!CONFIG.GOOGLE_MAPS_API_KEY) {
+    logr.warn('api-geo', 'Google Maps API key is not configured')
+}
 
 // Fixed location for temporary development debugging use
-const USE_FIXED_LOCATIONS = false
 const FIXED_LOCATIONS = [
     {
         name_address: 'Pinewood Picnic Area, Joaquin Miller Park',
@@ -28,10 +67,6 @@ const FIXED_LOCATIONS = [
         status: 'resolved' as const,
     },
 ]
-
-if (!process.env.GOOGLE_MAPS_API_KEY) {
-    logr.warn('api-geo', 'Google Maps API key is not configured')
-}
 
 // See if location already has Lat and Lon in it. If so, extract and return ResolvedLocation, else return false
 export function customLocationParserLatLon(location: string): Location | false {
@@ -163,126 +198,257 @@ export function updateResolvedLocation(result: Location, apiData: GoogleGeocodeR
     }
 }
 
-async function resolveLocation(result: Location): Promise<Location> {
-    // check custom parser
-    for (let i = 0; i < customLocationParsers.length; i++) {
-        const parser = customLocationParsers[i]
-        const parsedResult = parser(result.original_location)
-        if (parsedResult) {
-            logr.info('api-geo', `customLocationParsers ${i} found:`, parsedResult)
-            return parsedResult
+/**
+ * Process a location string through custom parsers
+ * @param locationString - The location text to process
+ * @returns Promise with tuple of [result, success flag, time taken in ms]
+ */
+async function tryCustomParsers(locationString: string): Promise<GeocodingResult> {
+    const [result, time] = await withTiming(async () => {
+        for (let i = 0; i < customLocationParsers.length; i++) {
+            const parser = customLocationParsers[i]
+            const parsedResult = parser(locationString)
+            if (parsedResult) {
+                return {
+                    result: parsedResult,
+                    source: 'custom' as const,
+                    parserIndex: i,
+                }
+            }
         }
-    }
-    try {
-        // call the API
-        if (!process.env.GOOGLE_MAPS_API_KEY) {
-            logr.warn('api-geo', 'Google Maps API key is not configured')
-            throw new Error('Google Maps API key is not configured')
-        }
-        logr.info('api-geo', 'Fetching from API:', result.original_location)
-
-        const params = {
-            address: result.original_location,
-            key: process.env.GOOGLE_MAPS_API_KEY,
-        }
-        const response = await axios.get<GeocodeResponse>(GOOGLE_MAPS_GEOCODING_API, {
-            params,
-        })
-        logr.debug('api-geo', 'response result:', response.data.results[0])
-        return updateResolvedLocation(result, response.data.results[0])
-    } catch (error) {
-        logr.warn('api-geo', 'API Error: ', error)
         return {
-            original_location: result.original_location,
-            status: 'unresolved',
+            result: createUnresolvedLocation(locationString),
+            source: 'other' as const,
         }
+    })
+    return {
+        ...result,
+        time,
+    }
+}
+
+/**
+ * Check if a location is in the cache
+ * @param locationString - The location text to check
+ * @returns Promise with tuple of [result, success flag, time taken in ms]
+ */
+async function checkCache(locationString: string): Promise<GeocodingResult<Location | null>> {
+    const [cachedLocation, time] = await withTiming(() => getCachedLocation(locationString))
+
+    return {
+        result: cachedLocation,
+        source: cachedLocation ? 'sCache' : null,
+        time,
+    }
+}
+
+/**
+ * Cache a location result
+ * @param locationString - The original location string
+ * @param result - The location result to cache
+ * @returns Promise with time taken in ms
+ */
+async function saveToCacheWithTiming(locationString: string, result: Location): Promise<number> {
+    const [_, time] = await withTiming(async () => {
+        if (result.status === 'resolved' || CONFIG.CACHE_UNRESOLVED_LOCATIONS) {
+            logr.debug('api-geo', `Caching ${result.status}: "${locationString}"`)
+            await cacheLocation(locationString, result)
+        }
+    })
+    return time
+}
+
+/**
+ * Call the Google Maps API for geocoding
+ * @param locationString - The location text to geocode
+ * @returns Promise with tuple of [result, success flag, time taken in ms]
+ */
+async function callGeocodingAPI(locationString: string): Promise<GeocodingResult> {
+    const [result, time] = await withTiming(async () => {
+        const defaultResult = createUnresolvedLocation(locationString)
+
+        try {
+            logr.info('api-geo', 'Fetching from API:', locationString)
+
+            const params = {
+                address: locationString,
+                key: CONFIG.GOOGLE_MAPS_API_KEY,
+            }
+            const response = await axios.get<GeocodeResponse>(CONFIG.GOOGLE_MAPS_GEOCODING_API, { params })
+
+            logr.debug('api-geo', 'response result:', response.data.results[0])
+
+            if (response.data.results && response.data.results.length > 0) {
+                return updateResolvedLocation(defaultResult, response.data.results[0])
+            } else {
+                return defaultResult
+            }
+        } catch (error) {
+            logr.warn('api-geo', 'API Error: ', error)
+            return defaultResult
+        }
+    })
+    return {
+        result,
+        source: 'api',
+        time,
     }
 }
 
 /**
  * Geocodes a location string using Google Maps Geocoding API
  * @param locationString - The location text to geocode
- * @returns Promise with geocoded location data
+ * @returns Promise with tuple of [geocoded location data, cache source, timing information]
  */
-export async function geocodeLocation(locationString: string): Promise<Location> {
+export async function geocodeLocation(
+    locationString: string
+): Promise<[Location, 'sCache' | 'custom' | 'api' | 'other', Record<string, number>]> {
+    // Handle empty string case
     if (!locationString) {
-        return {
-            original_location: '',
-            status: 'unresolved',
-        }
+        return [createUnresolvedLocation(''), 'other', { total: 0 }]
     }
-
-    if (USE_FIXED_LOCATIONS) {
+    // Handle fixed locations if enabled (for development)
+    if (CONFIG.USE_FIXED_LOCATIONS) {
         const i = Math.floor(Math.random() * FIXED_LOCATIONS.length)
         logr.info('api-geo', `TEMPORARY: Using fixed address ${i} for "${locationString}"`)
-        return {
-            original_location: locationString,
-            formatted_address: FIXED_LOCATIONS[i].formatted_address,
-            lat: FIXED_LOCATIONS[i].lat,
-            lng: FIXED_LOCATIONS[i].lng,
-            status: FIXED_LOCATIONS[i].status,
+        return [
+            {
+                original_location: locationString,
+                formatted_address: FIXED_LOCATIONS[i].formatted_address,
+                lat: FIXED_LOCATIONS[i].lat,
+                lng: FIXED_LOCATIONS[i].lng,
+                status: FIXED_LOCATIONS[i].status,
+            },
+            'other',
+            { other: 0 },
+        ]
+    }
+    const timings: Record<string, number> = {}
+    const trimmedLocation = locationString.trim()
+    let result: Location = createUnresolvedLocation(trimmedLocation)
+    let source: 'sCache' | 'custom' | 'api' | 'other' | null = null
+
+    // Try custom parsers first
+    const customResult = await tryCustomParsers(trimmedLocation)
+    timings.custom = customResult.time
+    if (customResult.source === 'custom' && customResult.result) {
+        result = customResult.result
+        source = customResult.source
+    }
+    if (source === null) {
+        const cacheResult = await checkCache(trimmedLocation)
+        timings.sCache = cacheResult.time
+        if (cacheResult.source === 'sCache' && cacheResult.result) {
+            result = cacheResult.result
+            source = cacheResult.source
         }
     }
+    if (source === null) {
+        // Call API as last resort
+        const apiResult = await callGeocodingAPI(trimmedLocation)
+        timings.api = apiResult.time
+        if (apiResult.result) {
+            result = apiResult.result
+            source = apiResult.source
+            // Cache API result
+            timings.caching = await saveToCacheWithTiming(trimmedLocation, result)
+        }
+    }
+    if (source === null) {
+        source = 'other'
+    }
+    // Always log timing information
+    logr.debug('api-geo', `geocodeLocation() timings for "${trimmedLocation}": ${JSON.stringify(timings)}`)
 
-    let result: Location = {
-        original_location: locationString,
-        status: 'unresolved',
-    }
-    locationString = locationString.trim()
-    // Check cache first
-    const cachedLocation = await getCachedLocation(locationString)
-    if (cachedLocation) {
-        logr.debug('api-geo', `Found in Cache ${cachedLocation.status}: "${locationString}"`)
-        return cachedLocation
-    }
-
-    result = await resolveLocation(result)
-    if (result.status === 'resolved') {
-        // Cache the result
-        await cacheLocation(locationString, result)
-    } else if (CACHE_UNRESOLVED_LOCATIONS) {
-        logr.debug('api-geo', `Caching Unresolved: "${locationString}"`)
-        await cacheLocation(locationString, result)
-    } else {
-        logr.debug('api-geo', `Not Caching Unresolved: "${locationString}"`)
-    }
-    return result
+    return [result, source, timings]
 }
 
 /**
  * Batch geocodes multiple locations
  * @param locations - Array of location strings to geocode
  * @returns Promise with array of geocoded locations
+ *
+ * Following the refactored approach:
+ * 1. Check custom parsers, note time taken
+ * 2. Check cache, note time taken
+ * 3. Call API, note time taken
+ * 4. Cache API results, note time taken
+ * 5. Return result
  */
 export async function batchGeocodeLocations(locations: string[]): Promise<Location[]> {
     // Filter out duplicates to minimize API calls
     const uniqueLocations = Array.from(new Set(locations))
 
-    if (USE_FIXED_LOCATIONS) {
+    if (CONFIG.USE_FIXED_LOCATIONS) {
         logr.info('api-geo', `TEMPORARY: Using fixed address for ${uniqueLocations.length} locations`)
     }
-    // Process in batches with delayMs in between to avoid rate limits
-    // 1500+ req/min https://console.cloud.google.com/google/maps-apis/quotas?project=cmf-2025&api=geocoding-backend.googleapis.com
-    // Since this mostly affects redis cache lookups, reducing delayMs to 1
-    const batchSize = 100
-    const delayMs = 1
-    const results: Location[] = []
 
-    for (let i = 0; i < uniqueLocations.length; i += batchSize) {
-        const batch = uniqueLocations.slice(i, i + batchSize)
+    const results: Location[] = []
+    const sourceStats = {
+        sCache: { count: 0, time: 0 },
+        caching: { count: 0, time: 0 },
+        custom: { count: 0, time: 0 },
+        api: { count: 0, time: 0 },
+        other: { count: 0, time: 0 },
+    }
+
+    let totalCount = 0
+    const startTime = performance.now()
+
+    for (let i = 0; i < uniqueLocations.length; i += CONFIG.BATCH_SIZE) {
+        const batch = uniqueLocations.slice(i, i + CONFIG.BATCH_SIZE)
         const batchPromises = batch.map((location) => geocodeLocation(location))
 
         // Wait for the current batch to complete
         const batchResults = await Promise.all(batchPromises)
-        results.push(...batchResults)
+
+        // Extract locations and update stats
+        for (const [location, source, locationTimings] of batchResults) {
+            results.push(location)
+            sourceStats[source].count++
+
+            // Add timing directly if available for this source
+            if (locationTimings[source]) {
+                sourceStats[source].time += locationTimings[source]
+            }
+            if (locationTimings.caching) {
+                sourceStats.caching.count++
+                sourceStats.caching.time += locationTimings.caching
+            }
+        }
+
+        totalCount += batch.length
         logr.info('api-geo', `batchGeocodeLocations batch ${i} done, processed ${results.length}`)
 
         // Add a small delay between batches to avoid rate limits
-        if (i + batchSize < uniqueLocations.length) {
-            await new Promise((resolve) => setTimeout(resolve, delayMs))
+        if (i + CONFIG.BATCH_SIZE < uniqueLocations.length) {
+            await new Promise((resolve) => setTimeout(resolve, CONFIG.BATCH_DELAY_MS))
         }
     }
-    logr.info('api-geo', `batchGeocodeLocations returning ${results.length} for ${uniqueLocations.length} locations`)
+
+    const totalTime = performance.now() - startTime
+
+    /* Format timing statistics with aligned columns for better readability */
+    const formatTimingStats = (label: string, count: number, totalTime: number): string => {
+        const avgTime = count > 0 ? totalTime / count : 0
+        return `${label.padEnd(7)}: ${count.toString().padStart(3)} calls, ${totalTime
+            .toFixed(0)
+            .padStart(5)} ms, ${avgTime.toFixed(2).padStart(6)} ms per call`
+    }
+
+    const timingOutput = [
+        formatTimingStats('TOTAL', totalCount, totalTime),
+        formatTimingStats('api', sourceStats.api.count, sourceStats.api.time),
+        formatTimingStats('cache', sourceStats.sCache.count, sourceStats.sCache.time),
+        formatTimingStats('caching', sourceStats.caching.count, sourceStats.caching.time),
+        formatTimingStats('custom', sourceStats.custom.count, sourceStats.custom.time),
+        formatTimingStats('other', sourceStats.other.count, sourceStats.other.time),
+    ].join('\n')
+
+    logr.info(
+        'api-geo',
+        `batchGeocodeLocations returning ${results.length} for ${uniqueLocations.length} locations:\n${timingOutput}`
+    )
 
     return results
 }

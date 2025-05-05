@@ -169,3 +169,17 @@ export const parseAsDateQuickFilter = createParser({
         return value
     },
 })
+
+// given a date in string or date object, return a date rounded to the nearest hour in RFC3339 format
+export function roundTimeToNearestHour(date: Date | string): string {
+    if (!date) return ''
+    try {
+        const roundedDate = new Date(date)
+        if (isNaN(roundedDate.getTime())) return ''
+        roundedDate.setMinutes(0, 0, 0)
+        return roundedDate.toISOString()
+    } catch (error) {
+        logr.warn('date', 'Error rounding time:', error)
+        return ''
+    }
+}

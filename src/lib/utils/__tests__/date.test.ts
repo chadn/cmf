@@ -1,4 +1,10 @@
-import { formatEventDate, formatEventDuration, getRelativeTimeString, getDateFromUrlDateString } from '../date'
+import {
+    formatEventDate,
+    formatEventDuration,
+    getRelativeTimeString,
+    getDateFromUrlDateString,
+    roundTimeToNearestHour,
+} from '../date'
 import { format } from 'date-fns'
 
 describe('Date Utilities', () => {
@@ -51,11 +57,12 @@ describe('Date Utilities', () => {
             // Mock current date to ensure consistent test results
             const realDate = Date
             global.Date = class extends Date {
-                constructor(...args) {
-                    if (args.length === 0) {
-                        return new realDate('2025-03-15T14:00:00Z')
+                constructor(...args: ConstructorParameters<typeof Date>) {
+                    if (!args.length) {
+                        super('2025-03-15T14:00:00Z')
+                    } else {
+                        super(...args)
                     }
-                    return new realDate(...args)
                 }
             } as any
 
@@ -70,11 +77,12 @@ describe('Date Utilities', () => {
             // Mock current date to ensure consistent test results
             const realDate = Date
             global.Date = class extends Date {
-                constructor(...args) {
-                    if (args.length === 0) {
-                        return new realDate('2025-03-15T14:00:00Z')
+                constructor(...args: ConstructorParameters<typeof Date>) {
+                    if (!args.length) {
+                        super('2025-03-15T14:00:00Z')
+                    } else {
+                        super(...args)
                     }
-                    return new realDate(...args)
                 }
             } as any
 
@@ -150,6 +158,35 @@ describe('Date Utilities', () => {
             expect(getDateFromUrlDateString('invalid')).toBeNull()
             expect(getDateFromUrlDateString('2023-13-45')).toBeNull()
             expect(getDateFromUrlDateString('2x')).toBeNull()
+        })
+    })
+
+    describe('roundTimeToNearestHour', () => {
+        it('rounds a Date object to the nearest hour (minutes > 30 rounds up)', () => {
+            const date = new Date('2025-03-15T14:45:00Z')
+            const result = roundTimeToNearestHour(date)
+            expect(result).toBe('2025-03-15T14:00:00.000Z')
+        })
+
+        it('rounds a Date object to the nearest hour (minutes < 30 rounds down)', () => {
+            const date = new Date('2025-03-15T14:15:00Z')
+            const result = roundTimeToNearestHour(date)
+            expect(result).toBe('2025-03-15T14:00:00.000Z')
+        })
+
+        it('accepts a string date and rounds to the hour', () => {
+            const result = roundTimeToNearestHour('2025-03-15T14:59:59Z')
+            expect(result).toBe('2025-03-15T14:00:00.000Z')
+        })
+
+        it('returns the same hour if already rounded', () => {
+            const result = roundTimeToNearestHour('2025-03-15T14:00:00Z')
+            expect(result).toBe('2025-03-15T14:00:00.000Z')
+        })
+
+        it('handles midnight correctly', () => {
+            const result = roundTimeToNearestHour('2025-03-16T00:30:00Z')
+            expect(result).toBe('2025-03-16T00:00:00.000Z')
         })
     })
 })

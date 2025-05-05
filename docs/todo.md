@@ -57,5 +57,10 @@ https://cmf-dev.vercel.app/?es=protest:all
 [2025-05-01T15:32:51.527Z][INFO][BROWSER] fetcherLogr Response 200, 595397 bytes in 6344ms, url: /api/events?id=protest%3Aall&timeMin=2025-04-01T15%3A32%3A45.180Z&timeMax=2025-08-01T15%3A32%3A45.180Z
 08:32:51.528
 
-[2025-05-01T15:37:14.169Z][INFO][API-EVENTS] API response 595397 bytes, 4755ms for fetch + geocode {
+https://cmf-chad.vercel.app/?es=protest:all&se=2614
+[2025-05-05T16:20:30.718Z][INFO][API-EVENTS] API fetched 1569 events in 6087ms 568589 bytes protest:all
+[2025-05-05T16:20:32.809Z][INFO][API-EVENTS] API response 916508 bytes, 8184ms for fetch + geocode {
+[2025-05-05T16:20:33.154Z][INFO][BROWSER] fetcherLogr Response 200, 916508 bytes in 9518ms, url: /api/events?id=protest%3Aall&timeMin=2025-04-05T16%3A20%3A23.619Z&timeMax=2025-08-05T16%3A20%3A23.619Z
+
+Refactor
 ```

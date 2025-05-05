@@ -3,7 +3,7 @@ import { fetchEvents, getEventSourceHandler } from '@/lib/api/eventSources'
 import { batchGeocodeLocations } from '@/lib/api/geocoding'
 import { CmfEvent } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
-
+import { getCache, setCache } from '@/lib/cache'
 // Import event source handlers to ensure they're registered
 import '@/lib/api/eventSources/googleCalendar'
 import '@/lib/api/eventSources/protests'
@@ -12,6 +12,84 @@ import '@/lib/api/eventSources/protests'
 
 // Export config to make this a dynamic API route
 export const dynamic = 'force-dynamic'
+
+const API_CACHE_EXPIRE_MS = 1000 * 60 * 10 // 10 minutes
+const EVENTS_CACHE_PREFIX = 'events:'
+
+// Define the type for cached event responses
+interface CachedEventResponse {
+    response: {
+        events: CmfEvent[]
+        metadata: Record<string, any>
+    }
+    savedTime: number
+}
+
+// given a date in string or date object, return a date rounded to the nearest hour in RFC3339 format
+function roundTimeToNearestHour(date: Date | string): string {
+    if (!date) return ''
+    const roundedDate = new Date(date)
+    if (isNaN(roundedDate.getTime())) return ''
+    roundedDate.setMinutes(0, 0, 0)
+    return roundedDate.toISOString()
+}
+
+const fetchAndGeocode = async (eventSourceId: string, timeMin?: string, timeMax?: string) => {
+    const startTime = performance.now()
+    const { events, metadata } = await fetchEvents(eventSourceId, {
+        timeMin,
+        timeMax,
+    })
+    let ms = Math.round(performance.now() - startTime)
+    const sz = JSON.stringify({ events, metadata }).length
+    logr.info('api-events', `API fetched ${events.length} events in ${ms}ms ${sz} bytes ${eventSourceId}`)
+
+    // GEOCODE LOCATIONS
+    const uniqueLocations = Array.from(
+        new Set(events.map((event) => event.location).filter((location) => location && location.trim() !== ''))
+    )
+    const geocodedLocations = await batchGeocodeLocations(uniqueLocations)
+    logr.info('api-events', `Geocoded ${geocodedLocations.length} of ${uniqueLocations.length} locations`)
+
+    // Create a map for quick lookup
+    const locationMap = new Map()
+    geocodedLocations.forEach((location) => {
+        locationMap.set(location.original_location, location)
+    })
+
+    // Add resolved locations to events
+    const eventsWithLocationResolved = events.map((event) => {
+        if (event.location && locationMap.has(event.location)) {
+            return {
+                ...event,
+                resolved_location: locationMap.get(event.location),
+            }
+        }
+        return event
+    })
+
+    // Count events with unknown locations
+    const unknownLocationsCount = eventsWithLocationResolved.filter(
+        (event) => !event.resolved_location || event.resolved_location.status !== 'resolved'
+    ).length
+    logr.info('api-events', `Events with unknown locations: ${unknownLocationsCount}`)
+
+    // Construct the response
+    const response = {
+        events: eventsWithLocationResolved,
+        metadata,
+    }
+
+    const sizeOfResponse = JSON.stringify(response).length
+    ms = Math.round(performance.now() - startTime)
+
+    logr.info('api-events', `API response ${sizeOfResponse} bytes, ${ms}ms for fetch + geocode`, {
+        totalCount: response.events.length,
+        metadata,
+    })
+
+    return response
+}
 
 /**
  * API route handler for events from various sources
@@ -34,90 +112,62 @@ export async function GET(request: NextRequest) {
         }
 
         // Get optional date range parameters
-        const timeMin = request.nextUrl.searchParams.get('timeMin') || undefined
-        const timeMax = request.nextUrl.searchParams.get('timeMax') || undefined
+        const timeMin = request.nextUrl.searchParams.get('timeMin') || ''
+        const timeMax = request.nextUrl.searchParams.get('timeMax') || ''
 
-        const dateMsg = timeMin && timeMax ? `from ${timeMin} to ${timeMax}` : 'no date range'
-        logr.info('api-events', `Fetching events from source: ${eventSourceId} ${dateMsg}`)
+        // Fetch events from the appropriate source or cache
+        const fetchKey = `${eventSourceId}-${roundTimeToNearestHour(timeMin)}-${roundTimeToNearestHour(timeMax)}`
+        logr.info('api-events', `Fetching events from cache for: ${fetchKey}`)
+        const startTime = performance.now()
 
+        // Try to get response from cache
+        const cachedResponse = await getCache<CachedEventResponse>(fetchKey, EVENTS_CACHE_PREFIX)
+        let ms = Math.round(performance.now() - startTime)
 
-        try {
-            // Fetch events from the appropriate source
-            // TODO: should searchParams be passed to fetchEvents? then each handler can decide what params it needs
-
-            const startTime = performance.now()
-            const { events, metadata } = await fetchEvents(eventSourceId, {
-                timeMin,
-                timeMax,
-            })
-            let ms = Math.round(performance.now() - startTime)
-            const sz = JSON.stringify({ events, metadata }).length
-            logr.info('api-events', `API fetched ${events.length} events in ${ms}ms ${sz} bytes ${eventSourceId}`)
-
-            // GEOCODE LOCATIONS
-            const uniqueLocations = Array.from(
-                new Set(events.map((event) => event.location).filter((location) => location && location.trim() !== ''))
-            )
-            const geocodedLocations = await batchGeocodeLocations(uniqueLocations)
-            logr.info('api-events', `Geocoded ${geocodedLocations.length} of ${uniqueLocations.length} locations`)
-
-            // Create a map for quick lookup
-            const locationMap = new Map()
-            geocodedLocations.forEach((location) => {
-                locationMap.set(location.original_location, location)
-            })
-
-            // Add resolved locations to events
-            const eventsWithLocationResolved = events.map((event) => {
-                if (event.location && locationMap.has(event.location)) {
-                    return {
-                        ...event,
-                        resolved_location: locationMap.get(event.location),
-                    }
-                }
-                return event
-            })
-
-            // Count events with unknown locations
-            const unknownLocationsCount = eventsWithLocationResolved.filter(
-                (event) => !event.resolved_location || event.resolved_location.status !== 'resolved'
-            ).length
-            logr.info('api-events', `Events with unknown locations: ${unknownLocationsCount}`)
-
-            // Construct the response
-            const response = {
-                events: eventsWithLocationResolved,
-                metadata,
-            }
-            const sizeOfResponse = JSON.stringify(response).length
-            ms = Math.round(performance.now() - startTime)
-
-            logr.info('api-events', `API response ${sizeOfResponse} bytes, ${ms}ms for fetch + geocode`, {
-                totalCount: response.events.length,
-                metadata,
-            })
-
-            return NextResponse.json(response)
-        } catch (error) {
-            logr.info('api-events', `❌ Failed to fetch events from source: ${eventSourceId}`)
-            // Default error response
-            let statusCode = 500
-            let errorMessage = 'Internal server error'
-
-            if (error instanceof Error) {
-                // Try to extract status code from error message
-                const match = error.message.match(/^HTTP (\d+): (.+)$/)
-                if (match) {
-                    statusCode = parseInt(match[1], 10)
-                    errorMessage = match[2]
-                } else {
-                    errorMessage = error.message
-                }
-            }
-            return NextResponse.json({ error: errorMessage }, { status: statusCode })
+        // Check if we have a valid cached response
+        if (cachedResponse && cachedResponse.savedTime > startTime - API_CACHE_EXPIRE_MS) {
+            logr.info('api-events', `Cache hit ${ms}ms for ${fetchKey}, saved ${cachedResponse.savedTime}`)
+            return NextResponse.json(cachedResponse.response)
         }
+
+        // If cache miss or expired, fetch from source
+        if (cachedResponse) {
+            logr.info('api-events', `Cache hit ${ms}ms for ${fetchKey}, but too old, not using.`)
+        } else {
+            logr.info('api-events', `No Cache hit ${ms}ms, calling API for ${fetchKey}`)
+        }
+
+        // Fetch and process events
+        const response = await fetchAndGeocode(eventSourceId, timeMin || undefined, timeMax || undefined)
+
+        // Save to cache in the background (don't await)
+        setCache<CachedEventResponse>(
+            fetchKey,
+            { response, savedTime: Math.round(performance.now()) },
+            EVENTS_CACHE_PREFIX
+        ).catch((error) => {
+            logr.warn('api-events', `Failed to cache events for ${fetchKey}`, error)
+        })
+
+        return NextResponse.json(response)
     } catch (error) {
-        logr.warn('api-events', 'Unknown error fetching events', error)
-        return NextResponse.json({ error: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 })
+        logr.warn('api-events', 'Error fetching events', error)
+
+        // Default error response
+        let statusCode = 500
+        let errorMessage = 'Internal server error'
+
+        if (error instanceof Error) {
+            // Try to extract status code from error message
+            const match = error.message.match(/^HTTP (\d+): (.+)$/)
+            if (match) {
+                statusCode = parseInt(match[1], 10)
+                errorMessage = match[2]
+            } else {
+                errorMessage = error.message
+            }
+        }
+
+        return NextResponse.json({ error: errorMessage }, { status: statusCode })
     }
 }
