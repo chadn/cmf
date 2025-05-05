@@ -5,7 +5,13 @@ import { logr } from '../logr'
 jest.mock('../logr', () => ({
     logr: {
         info: jest.fn(),
+        debug: jest.fn(),
     },
+}))
+
+// Mock umami.ts
+jest.mock('../umami', () => ({
+    umamiTrack: jest.fn(),
 }))
 
 describe('utils', () => {
@@ -29,8 +35,13 @@ describe('utils', () => {
             const result = await fetcherLogr(url)
 
             expect(global.fetch).toHaveBeenCalledWith(url)
-            expect(logr.info).toHaveBeenCalledWith('browser', `Request to url: ${url}`)
-            expect(logr.info).toHaveBeenCalledWith('browser', `Response from url: ${url} (200)`, mockData)
+            expect(logr.info).toHaveBeenCalledWith('browser', `fetcherLogr request url: ${url}`)
+            expect(logr.info).toHaveBeenCalledWith(
+                'browser',
+                expect.stringMatching(
+                    /^fetcherLogr Response 200, \d+ bytes in \d+ms, url: https:\/\/api.example.com\/data$/
+                )
+            )
             expect(result).toEqual(mockData)
         })
 
@@ -41,7 +52,7 @@ describe('utils', () => {
             const url = 'https://api.example.com/data'
 
             await expect(fetcherLogr(url)).rejects.toThrow('Network error')
-            expect(logr.info).toHaveBeenCalledWith('browser', `Request to url: ${url}`)
+            expect(logr.info).toHaveBeenCalledWith('browser', `fetcherLogr request url: ${url}`)
             expect(logr.info).toHaveBeenCalledWith('browser', `Error from url: ${url}`, mockError)
         })
     })

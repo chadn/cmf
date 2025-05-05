@@ -14,6 +14,7 @@ import '@/lib/api/eventSources/protests'
 export const dynamic = 'force-dynamic'
 
 const API_CACHE_EXPIRE_MS = 1000 * 60 * 10 // 10 minutes
+const TTL = 60 * 12 // 12 minutes (in seconds)
 const EVENTS_CACHE_PREFIX = 'events:'
 
 // Define the type for cached event responses
@@ -22,7 +23,7 @@ interface CachedEventResponse {
         events: CmfEvent[]
         metadata: Record<string, any>
     }
-    savedTime: number
+    ms: number
 }
 
 // given a date in string or date object, return a date rounded to the nearest hour in RFC3339 format
@@ -125,8 +126,9 @@ export async function GET(request: NextRequest) {
         let ms = Math.round(performance.now() - startTime)
 
         // Check if we have a valid cached response
-        if (cachedResponse && cachedResponse.savedTime > startTime - API_CACHE_EXPIRE_MS) {
-            logr.info('api-events', `Cache hit ${ms}ms for ${fetchKey}, saved ${cachedResponse.savedTime}`)
+        if (cachedResponse && cachedResponse.ms > Date.now() - API_CACHE_EXPIRE_MS) {
+            const st = new Date(cachedResponse.ms)
+            logr.info('api-events', `Cache hit ${ms}ms on ${st.toISOString()} for ${fetchKey}`)
             return NextResponse.json(cachedResponse.response)
         }
 
@@ -143,11 +145,7 @@ export async function GET(request: NextRequest) {
         // Save to cache in the background (don't await) but log when successful or failed
         process.nextTick(async () => {
             try {
-                await setCache<CachedEventResponse>(
-                    fetchKey,
-                    { response, savedTime: Math.round(performance.now()) },
-                    EVENTS_CACHE_PREFIX
-                )
+                await setCache<CachedEventResponse>(fetchKey, { response, ms: Date.now() }, EVENTS_CACHE_PREFIX, TTL)
                 logr.info('api-events', `Cached events for ${fetchKey}`)
             } catch (error) {
                 logr.warn('api-events', `Failed to cache events for ${fetchKey}`, error)

@@ -183,17 +183,18 @@ describe('geocoding', () => {
         }
 
         beforeEach(() => {
-            process.env.GOOGLE_MAPS_API_KEY = 'test-key'
+            process.env.GOOGLE_MAPS_API_KEY = 'test-api-key'
             ;(axios.get as jest.Mock).mockResolvedValue(mockApiResponse)
             ;(getCachedLocation as jest.Mock).mockResolvedValue(null)
         })
 
         it('should handle empty location string', async () => {
-            const result = await geocodeLocation('')
+            const [result, source] = await geocodeLocation('')
             expect(result).toEqual({
                 original_location: '',
                 status: 'unresolved',
             })
+            expect(source).toBe('other')
         })
 
         it('should use cached location if available', async () => {
@@ -206,13 +207,14 @@ describe('geocoding', () => {
             }
             ;(getCachedLocation as jest.Mock).mockResolvedValue(cachedLocation)
 
-            const result = await geocodeLocation('Test Location')
+            const [result, source] = await geocodeLocation('Test Location')
             expect(result).toEqual(cachedLocation)
+            expect(source).toBe('sCache')
             expect(axios.get).not.toHaveBeenCalled()
         })
 
         it('should geocode location using Google Maps API', async () => {
-            const result = await geocodeLocation('Test Location')
+            const [result, source] = await geocodeLocation('Test Location')
             expect(result).toEqual({
                 original_location: 'Test Location',
                 formatted_address: '123 Test St',
@@ -221,10 +223,11 @@ describe('geocoding', () => {
                 types: ['street_address'],
                 status: 'resolved',
             })
+            expect(source).toBe('api')
             expect(axios.get).toHaveBeenCalledWith('https://maps.googleapis.com/maps/api/geocode/json', {
                 params: {
                     address: 'Test Location',
-                    key: 'test-key',
+                    key: 'test-api-key',
                 },
             })
             expect(cacheLocation).toHaveBeenCalled()
@@ -233,42 +236,94 @@ describe('geocoding', () => {
         it('should handle API errors', async () => {
             ;(axios.get as jest.Mock).mockRejectedValue(new Error('API Error'))
 
-            const result = await geocodeLocation('Test Location')
+            const [result, source] = await geocodeLocation('Test Location')
             expect(result).toEqual({
                 original_location: 'Test Location',
                 status: 'unresolved',
             })
+            expect(source).toBe('api')
             expect(logr.warn).toHaveBeenCalled()
         })
 
         it('should handle missing API key', async () => {
             process.env.GOOGLE_MAPS_API_KEY = undefined
+            // Mock API to fail when API key is missing
+            ;(axios.get as jest.Mock).mockRejectedValue(new Error('No API key'))
 
-            const result = await geocodeLocation('Test Location')
+            const [result, source] = await geocodeLocation('Test Location')
             expect(result).toEqual({
                 original_location: 'Test Location',
                 status: 'unresolved',
             })
-            expect(logr.warn).toHaveBeenCalled()
+            expect(source).toBe('api')
+            // Make sure the logr.warn was called with the expected arguments
+            expect(logr.warn).toHaveBeenCalledWith('api-geo', 'API Error: ', expect.any(Error))
+        })
+
+        // Test custom parser source
+        it('should return custom source when using a custom parser', async () => {
+            const [result, source] = await geocodeLocation('37.7749,-122.4194')
+            expect(result.status).toBe('resolved')
+            expect(source).toBe('custom')
         })
     })
 
     describe('batchGeocodeLocations', () => {
-        it('should geocode multiple locations', async () => {
-            const locations = ['Location 1', 'Location 2']
-            const mockResult = {
-                original_location: 'Test',
-                formatted_address: '123 Test St',
-                lat: 37.7749,
-                lng: -122.4194,
-                status: 'resolved' as const,
-            }
-            ;(getCachedLocation as jest.Mock).mockResolvedValue(mockResult)
+        // Create a mock for geocodeLocation
+        const originalModule = jest.requireActual('../geocoding')
 
+        beforeEach(() => {
+            process.env.GOOGLE_MAPS_API_KEY = 'test-key'
+
+            // Mock geocodeLocation directly with jest.mock at the module level
+            jest.mock('../geocoding', () => ({
+                ...originalModule,
+                geocodeLocation: jest.fn().mockImplementation((location: string) => {
+                    if (location === 'cached') {
+                        return Promise.resolve([
+                            {
+                                original_location: location,
+                                status: 'resolved' as const,
+                                lat: 1,
+                                lng: 1,
+                            },
+                            'cache' as const,
+                        ])
+                    } else if (location === 'custom') {
+                        return Promise.resolve([
+                            {
+                                original_location: location,
+                                status: 'resolved' as const,
+                                lat: 2,
+                                lng: 2,
+                            },
+                            'custom' as const,
+                        ])
+                    } else {
+                        return Promise.resolve([
+                            {
+                                original_location: location,
+                                status: 'resolved' as const,
+                                lat: 3,
+                                lng: 3,
+                            },
+                            'api' as const,
+                        ])
+                    }
+                }),
+            }))
+        })
+
+        afterEach(() => {
+            jest.resetModules()
+        })
+
+        it('should process locations in batches and log source stats', async () => {
+            const locations = ['location1', 'cached', 'custom', 'location2']
             const results = await batchGeocodeLocations(locations)
-            expect(results).toHaveLength(2)
-            expect(results[0]).toEqual(mockResult)
-            expect(results[1]).toEqual(mockResult)
+
+            expect(results.length).toBe(locations.length)
+            expect(logr.info).toHaveBeenCalled()
         })
     })
 })

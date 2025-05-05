@@ -221,6 +221,7 @@ describe('EventSourceSelector', () => {
         expect(link.closest('a')).toHaveAttribute('target', '_blank')
 
         // Check for the help text
-        expect(screen.getByText(/to find your Calendar ID and more on how to use this app/i)).toBeInTheDocument()
+        expect(screen.getByText(/to find your Calendar ID/i)).toBeInTheDocument()
+        expect(screen.getByText(/and more on using this app/i)).toBeInTheDocument()
     })
 })
