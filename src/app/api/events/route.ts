@@ -13,8 +13,10 @@ import '@/lib/api/eventSources/protests'
 // Export config to make this a dynamic API route
 export const dynamic = 'force-dynamic'
 
-const API_CACHE_EXPIRE_MS = 1000 * 60 * 10 // 10 minutes
-const TTL = 60 * 12 // 12 minutes (in seconds)
+const API_CACHE_EXPIRE_MS = process.env.EVENTSOURCE_API_CACHE_EXPIRE_SECS
+    ? parseInt(process.env.EVENTSOURCE_API_CACHE_EXPIRE_SECS)
+    : 1000 * 60 * 10 // 10 minutes
+const TTL = 60 * 20 // 20 minutes (in seconds)
 const EVENTS_CACHE_PREFIX = 'events:'
 
 // Define the type for cached event responses

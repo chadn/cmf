@@ -21,6 +21,7 @@ Working on fixing these:
 
 1. Bug or Feature Change: show events with unresolved locations on events list. Currently if a user is trying to find an event by name or date, and doesn't realize the location is missing or unresolvable, they will not be able to find it. They should.
    WORKAROUND: unMapped events can be seen in event list by clicking "Filtered by Map"
+1. Bug or Feature Change: for events without location info, when clicking on them it currently opens in new window the event details. This is too different of a behavior from clicking on events with a location. Instead, consider a small popup that says "no location info, View Original Event"
 
 ## Features
 
@@ -33,34 +34,45 @@ Found a bug or want a feature? Let me know by [Creating a new issue in github](h
 ## TEMP
 
 1. Server side API timing - log time to fetch events and time to geocode (redis vs maps api)
+   After refactor, eventSource api results are cached, and response time with cache hit is < 1 second.  
+   For example, below can see BROWSER fetch of protest:all went from 6506ms to 163ms
 
 ```
-http://localhost:3000/?es=gc:aabe6c219ee2af5b791ea6719e04a92990f9ccd1e68a3ff0d89bacd153a0b36d@group.calendar.google.com
-[2025-05-01T14:54:07.659Z][INFO][API-EVENTS] 229 events fetched, "ChadRock Facebook Events" in 1100ms 459001 bytes gc:aabe6c219ee2af5b791ea6719e04a92990f9ccd1e68a3ff0d89bacd153a0b36d@group.calendar.google.com
-[2025-05-01T14:54:08.044Z][INFO][API-EVENTS] API response 511920 bytes, 1486ms for fetch + geocode {
-[2025-05-01T14:54:08.060Z][INFO][BROWSER] fetcherLogr Response 200, 511920 bytes in 2127ms, url: /api/events?id=gc%3Aaabe6c219ee2af5b791ea6719e04a92990f9ccd1e68a3ff0d89bacd153a0b36d%40group.calendar.google.com&timeMin=2025-04-01T14%3A54%3A05.922Z&timeMax=2025-08-01T14%3A54%3A05.922Z
+[2025-05-05T23:12:41.209Z][INFO][API-EVENTS] No Cache hit 96ms, calling API for gc:geocachingspain@gmail.com-2025-04-05T23:00:00.000Z-2025-08-05T23:00:00.000Z
+[2025-05-05T23:12:41.651Z][INFO][API-EVENTS] API fetched 188 events in 440ms 91027 bytes gc:geocachingspain@gmail.com
+[2025-05-05T23:12:41.677Z][INFO][API-GEO] batchGeocodeLocations returning 188 for 188 locations:
+TOTAL  : 188 calls,    26 ms,   0.14 ms per call
+api    :   0 calls,     0 ms,   0.00 ms per call
+cache  :   0 calls,     0 ms,   0.00 ms per call
+caching:   0 calls,     0 ms,   0.00 ms per call
+custom : 188 calls,   234 ms,   1.25 ms per call
+other  :   0 calls,     0 ms,   0.00 ms per call
+[2025-05-05T23:12:41.678Z][INFO][API-EVENTS] API response 125596 bytes, 468ms for fetch + geocode {
+[2025-05-05T23:12:41.692Z][INFO][BROWSER] fetcherLogr Response 200, 125596 bytes in 1025ms, url: /api/events?id=gc%3Ageocachingspain%40gmail.com&timeMin=2025-04-05T23%3A12%3A40.664Z&timeMax=2025-08-05T23%3A12%3A40.665Z
+16:12:41.693
 
-http://localhost:3000/?es=gc:geocachingspain@gmail.com
-[2025-05-01T15:00:38.157Z][INFO][API-EVENTS] API fetched 198 events in 598ms 95901 bytes gc:geocachingspain@gmail.com
-[2025-05-01T15:00:38.524Z][INFO][API-EVENTS] API response 137810 bytes, 966ms for fetch + geocode {
-[2025-05-01T15:00:38.532Z][INFO][BROWSER] fetcherLogr Response 200, 137810 bytes in 1312ms, url: /api/events?id=gc%3Ageocachingspain%40gmail.com&timeMin=2025-04-01T15%3A00%3A37.216Z&timeMax=2025-08-01T15%3A00%3A37.216Z
+[2025-05-05T23:16:54.134Z][INFO][API-EVENTS] Cache hit 98ms on 2025-05-05T23:12:41.690Z for gc:geocachingspain@gmail.com-2025-04-05T23:00:00.000Z-2025-08-05T23:00:00.000Z
+[2025-05-05T23:16:54.156Z][INFO][BROWSER] fetcherLogr Response 200, 125596 bytes in 234ms, url: /api/events?id=gc%3Ageocachingspain%40gmail.com&timeMin=2025-04-05T23%3A16%3A53.919Z&timeMax=2025-08-05T23%3A16%3A53.919Z
+16:16:54.157
 
-https://cmf-dev.vercel.app/?es=gc:geocachingspain@gmail.com
-[2025-05-01T15:28:36.019Z][INFO][API-EVENTS] API fetched 198 events in 422ms 95901 bytes gc:geocachingspain@gmail.com
-[2025-05-01T15:28:36.437Z][INFO][API-EVENTS] API response 137636 bytes, 841ms for fetch + geocode {
-[2025-05-01T15:28:36.592Z][INFO][BROWSER] fetcherLogr Response 200, 137636 bytes in 2061ms, url: /api/events?id=gc%3Ageocachingspain%40gmail.com&timeMin=2025-04-01T15%3A28%3A34.526Z&timeMax=2025-08-01T15%3A28%3A34.526Z
-08:28:36.593
 
-https://cmf-dev.vercel.app/?es=protest:all
-[2025-05-01T15:32:49.263Z][INFO][API-EVENTS] API fetched 999 events in 3885ms 369671 bytes protest:all
-[2025-05-01T15:32:51.192Z][INFO][API-EVENTS] API response 595397 bytes, 5816ms for fetch + geocode {
-[2025-05-01T15:32:51.527Z][INFO][BROWSER] fetcherLogr Response 200, 595397 bytes in 6344ms, url: /api/events?id=protest%3Aall&timeMin=2025-04-01T15%3A32%3A45.180Z&timeMax=2025-08-01T15%3A32%3A45.180Z
-08:32:51.528
 
-https://cmf-chad.vercel.app/?es=protest:all&se=2614
-[2025-05-05T16:20:30.718Z][INFO][API-EVENTS] API fetched 1569 events in 6087ms 568589 bytes protest:all
-[2025-05-05T16:20:32.809Z][INFO][API-EVENTS] API response 916508 bytes, 8184ms for fetch + geocode {
-[2025-05-05T16:20:33.154Z][INFO][BROWSER] fetcherLogr Response 200, 916508 bytes in 9518ms, url: /api/events?id=protest%3Aall&timeMin=2025-04-05T16%3A20%3A23.619Z&timeMax=2025-08-05T16%3A20%3A23.619Z
+[2025-05-05T23:19:52.888Z][INFO][API-EVENTS] No Cache hit 31ms, calling API for protest:all-2025-04-05T23:00:00.000Z-2025-08-05T23:00:00.000Z
+[2025-05-05T23:19:58.634Z][INFO][API-EVENTS] API fetched 1347 events in 5739ms 494157 bytes protest:all
+[2025-05-05T23:19:59.224Z][INFO][API-GEO] batchGeocodeLocations returning 1040 for 1040 locations:
+TOTAL  : 1040 calls,   589 ms,   0.57 ms per call
+api    :   1 calls,   259 ms, 259.42 ms per call
+cache  : 1039 calls, 24529 ms,  23.61 ms per call
+caching:   1 calls,     4 ms,   4.25 ms per call
+custom :   0 calls,     0 ms,   0.00 ms per call
+other  :   0 calls,     0 ms,   0.00 ms per call
+[2025-05-05T23:19:59.224Z][INFO][API-EVENTS] Geocoded 1040 of 1040 locations
+[2025-05-05T23:19:59.225Z][INFO][API-EVENTS] Events with unknown locations: 160
+[2025-05-05T23:19:59.231Z][INFO][API-EVENTS] API response 792773 bytes, 6343ms for fetch + geocode {
+[2025-05-05T23:19:59.286Z][INFO][BROWSER] fetcherLogr Response 200, 792773 bytes in 6506ms, url: /api/events?id=protest%3Aall&timeMin=2025-04-05T23%3A19%3A52.775Z&timeMax=2025-08-05T23%3A19%3A52.775Z
+16:19:59.287
 
-Refactor
+[2025-05-05T23:22:52.197Z][INFO][API-EVENTS] Cache hit 77ms on 2025-05-05T23:19:59.241Z for protest:all-2025-04-05T23:00:00.000Z-2025-08-05T23:00:00.000Z
+[2025-05-05T23:22:52.216Z][INFO][BROWSER] fetcherLogr Response 200, 792773 bytes in 163ms, url: /api/events?id=protest%3Aall&timeMin=2025-04-05T23%3A22%3A52.047Z&timeMax=2025-08-05T23%3A22%3A52.047Z
+16:22:52.216
 ```
