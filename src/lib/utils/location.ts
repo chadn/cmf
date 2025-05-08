@@ -2,6 +2,7 @@ import { MapBounds, MapViewport, MapMarker } from '@/types/map'
 import { Location, CmfEvent } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
 import { createParser } from 'nuqs'
+import { exampleEventSources } from '@/lib/events/examples'
 
 /**
  * Truncates a location string to a maximum length
@@ -277,6 +278,11 @@ export const parseAsEventSource = createParser({
     // parse: a function that takes a string and returns the parsed value, or null if invalid.
     parse(queryValue) {
         if (typeof queryValue !== 'string') return null
+
+        // check for example event sources first
+        const example = exampleEventSources.find((es) => es.shortId === queryValue)
+        if (example) return example.id
+
         // match any string that starts with ascii chars or digits then a colon then any number of digits
         const regex = /^[a-zA-Z0-9]+:/
         if (regex.test(queryValue)) return queryValue
@@ -284,6 +290,9 @@ export const parseAsEventSource = createParser({
     },
     // serialize: a function that takes the parsed value and returns a string used in the URL.
     serialize(value) {
+        // check for example event sources first
+        const example = exampleEventSources.find((es) => es.id === value && es.shortId)
+        if (example) return example.shortId as string
         return value
     },
 })

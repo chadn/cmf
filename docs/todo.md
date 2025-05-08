@@ -2,13 +2,21 @@
 
 This is a high level list of things to do on the app. Not necessarily in prioritized order.
 
+1. Handle unresolved locations better - create a fake location that is the geographic center of all events, and use that for events with unresolved location.
+1. Add Hamburger menu in top left by CMF, which can open/close without resetting app state. When open, show
+    1. link to github usage,
+    1. link to local about page,
+    1. share button (copies to clipboard)
+    1. config: show/hide events with unresolved locations
+    1. config: change timezone (defaults to browser local)
+1. Make design better
+    1. USE Shadcn
+    1. On desktop, make map go to top (header should only be on left side panel). Panel should open and close
+    1. Make design more compact - Put search box and dates in same row. Click on either will expand.
+1. Favorite events, remember favs via cookies or browser local storage.
+1. Make list panel open all the way right, half way (normal) or close entirely except small CMF with count of events showing
 1. Add more protest event sources -
 1. Client side caching events - use local storage for events if less than CLIENT_EVENT_CACHE_SECS. For more than 5mb, use [dexie](https://github.com/dexie/Dexie.js/?tab=readme-ov-file#hello-world-react--typescript) and [indexedDB](https://www.geeksforgeeks.org/difference-between-localstorage-and-indexeddb-in-javascript/).
-1. Favorite events, remember favs via cookies or browser local storage.
-1. Make design better - colors. layout, sizing, UX, etc. --- USE Shadcn
-1. Make design more compact - Put search box and dates in same row. Click on either will expand.
-1. On desktop, make map go to top (header should only be on left side)
-1. Add Hamburger menu in top left by CMF, which can open/close without resetting app state. When open, show link to github usage, about, share button (copies to clipboard) plus config things like timezone
 1. Have a map search box - Add ability for user to type location in box, then map jumps to it. like https://thetide.guide/, Use https://maps.googleapis.com/maps/api/place/js/AutocompletionService.GetPredictionsJson
 1. Use CMF for multi day festivals - sliders can be hour instead of day, quick filters can be next 3 hrs, tonight, etc. Can support custom maps and custom event sources
 1. switch url params lat&lon to ll (or zll), like https://www.google.com/maps/d/u/0/viewer?mid=1NiJprGgrxLL6FBEV0Cg2NtkHlLhc-kA&ll=36.62469946088837%2C-119.44145496585381&z=6
@@ -33,7 +41,7 @@ Found a bug or want a feature? Let me know by [Creating a new issue in github](h
 
 ## TEMP
 
-1. Server side caching events - fetch in redis first, use if its less than EVENTSOURCE_API_CACHE_EXPIRE_SECS
+1. Server side caching events - fetch in redis first, use if its less than EVENTSOURCE_API_CACHE_TTL
 1. Server side API timing - log time to fetch events and time to geocode (redis vs maps api)
    After refactor, eventSource api results are cached, and response time with cache hit is < 1 second.  
    For example, below can see BROWSER fetch of protest:all went from 6506ms to 163ms

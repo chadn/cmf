@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { GeocodeResponse, GoogleGeocodeResult } from '@/types/api'
+import { GeocodeResponse, GoogleGeocodeResult } from '@/types/googleApi'
 import { Location } from '@/types/events'
 import { getCachedLocation, cacheLocation } from '@/lib/cache'
 import { logr } from '@/lib/utils/logr'
