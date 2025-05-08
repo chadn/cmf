@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useEffect, useState } from 'react'
+import { useRef, useEffect, useState, useCallback } from 'react'
 import Map, { Marker, Popup, NavigationControl, ViewState } from 'react-map-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { MapViewport, MapBounds, MapMarker } from '@/types/map'
@@ -9,7 +9,8 @@ import MapPopup from './MapPopup'
 import { logr } from '@/lib/utils/logr'
 // Import maplibre-gl as a type
 import type maplibregl from 'maplibre-gl'
-
+import { roundMapBounds, viewstate2Viewport } from '@/lib/utils/location'
+import { useDebounce } from '@/lib/utils/utils'
 /**
  * MapContainer handles the display and interaction with the map
  * It manages markers, popups, viewport changes, and user interactions
@@ -41,14 +42,79 @@ const MapContainer: React.FC<MapContainerProps> = ({
 }) => {
     const mapRef = useRef<any>(null) // TODO: Type this properly with MapRef from react-map-gl
     const [mapLoaded, setMapLoaded] = useState(false)
-    const boundsUpdateTimerRef = useRef<NodeJS.Timeout | null>(null)
 
     // Simplified state: Only track the current popup info
     const [popupMarker, setPopupMarker] = useState<MapMarker | null>(null)
 
+    const getMapBounds = useCallback(() => {
+        if (mapLoaded && mapRef.current) {
+            const bounds = mapRef.current.getMap().getBounds()
+            return roundMapBounds({
+                north: bounds.getNorth(),
+                south: bounds.getSouth(),
+                east: bounds.getEast(),
+                west: bounds.getWest(),
+            })
+        }
+        return {
+            north: 0,
+            south: 0,
+            east: 0,
+            west: 0,
+        }
+    }, [mapLoaded])
+
+    // Create debounced functions using our custom hook
+    const debouncedUpdateViewport = useDebounce((newViewport: MapViewport) => {
+        logr.info('mapc', 'Viewport updating after debounce', newViewport)
+        onViewportChange(newViewport)
+    }, 5) // This affects when the user drags map around
+
+    const debouncedUpdateBounds = useDebounce(() => {
+        const newBounds = getMapBounds()
+        logr.info('mapc', 'Bounds updating after debounce', newBounds)
+        onBoundsChange(newBounds)
+    }, 500)
+
+    // Handle viewport change
+    const handleViewportChange = useCallback(
+        (newViewstate: ViewState) => {
+            const vp = viewstate2Viewport(newViewstate)
+            logr.info('mapc', 'User moved map, applying debounce', vp)
+            debouncedUpdateViewport(vp) // May remove debounce.
+            debouncedUpdateBounds()
+        },
+        [debouncedUpdateViewport, debouncedUpdateBounds]
+    )
+
+    // Handle map load
+    const handleMapLoad2 = useCallback(() => {
+        setMapLoaded(true)
+
+        // Get initial bounds
+        if (mapRef.current) {
+            onBoundsChange(getMapBounds())
+        }
+    }, [])
+    // Handle map load
+    const handleMapLoad = useCallback(() => {
+        setMapLoaded(true)
+
+        const initialBounds = getMapBounds()
+        onBoundsChange(initialBounds)
+        logr.info('mapc', 'timeout=0,Initial bounds set', initialBounds)
+
+        // Get initial bounds after map loads
+        setTimeout(() => {
+            const initialBounds = getMapBounds()
+            onBoundsChange(initialBounds)
+            logr.info('mapc', 'timeout=100ms,Initial bounds set', initialBounds)
+        }, 100)
+    }, [getMapBounds, onBoundsChange])
+
     // Log when component mounts
     useEffect(() => {
-        logr.info('map', 'MapContainer component mounted', {
+        logr.info('mapc', 'MapContainer component mounted', {
             initialViewport: viewport,
             markerCount: markers.length,
         })
@@ -95,71 +161,6 @@ const MapContainer: React.FC<MapContainerProps> = ({
         }
     }, [selectedMarkerId, markers, selectedEventId, onEventSelect, popupMarker])
 
-    // Handle map load
-    const handleMapLoad = () => {
-        setMapLoaded(true)
-
-        // Get initial bounds
-        if (mapRef.current) {
-            const bounds = mapRef.current.getMap().getBounds()
-            const initialBounds = {
-                north: bounds.getNorth(),
-                south: bounds.getSouth(),
-                east: bounds.getEast(),
-                west: bounds.getWest(),
-            }
-            onBoundsChange(initialBounds)
-        }
-    }
-
-    // Handle viewport change
-    const handleViewportChange = (newViewport: ViewState) => {
-        // Pass the complete viewport state to the parent component
-        onViewportChange({
-            latitude: newViewport.latitude,
-            longitude: newViewport.longitude,
-            zoom: newViewport.zoom,
-            bearing: newViewport.bearing || 0,
-            pitch: newViewport.pitch || 0,
-        })
-
-        // Only update bounds when user stops interacting (through the debounce)
-        // This prevents constant updates during drag/zoom operations
-        updateBoundsWithDebounce()
-    }
-
-    /**
-     * Debounces bounds updates to improve performance
-     * Only updates bounds after user has stopped interacting with the map for a period
-     */
-    const updateBoundsWithDebounce = () => {
-        if (!mapRef.current || !mapLoaded) return
-
-        // Clear any existing timeout
-        if (boundsUpdateTimerRef.current) {
-            clearTimeout(boundsUpdateTimerRef.current)
-        }
-        const timeoutMs = 500 // Adjusted timeout for better performance
-        // Set new timeout - only update bounds after user stops interacting for a moment
-        boundsUpdateTimerRef.current = setTimeout(() => {
-            if (mapRef.current) {
-                try {
-                    const bounds = mapRef.current.getMap().getBounds()
-                    const newBounds = {
-                        north: bounds.getNorth(),
-                        south: bounds.getSouth(),
-                        east: bounds.getEast(),
-                        west: bounds.getWest(),
-                    }
-                    onBoundsChange(newBounds)
-                    logr.info('map', `Bounds updated after debounce timeout=${timeoutMs}ms`, newBounds)
-                } catch (error) {
-                    logr.info('map', 'Error updating bounds', error)
-                }
-            }
-        }, timeoutMs) // Increased to 500ms for more reliable updates
-    }
-
     /**
      * Handles marker click events
      * Selects the marker and shows its popup with events
@@ -190,18 +191,8 @@ const MapContainer: React.FC<MapContainerProps> = ({
 
         // Force a filter update to refresh the showing count
         // This ensures the showing count updates when the popup is closed
-        if (onBoundsChange) {
-            // Get current bounds from the map
-            if (mapRef.current) {
-                const bounds = mapRef.current.getMap().getBounds()
-                const currentBounds = {
-                    north: bounds.getNorth(),
-                    south: bounds.getSouth(),
-                    east: bounds.getEast(),
-                    west: bounds.getWest(),
-                }
-                onBoundsChange(currentBounds)
-            }
+        if (onBoundsChange && mapRef.current) {
+            onBoundsChange(getMapBounds())
         }
     }
 

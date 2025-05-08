@@ -7,9 +7,6 @@ import ErrorMessage from '../common/ErrorMessage'
 import { logr } from '@/lib/utils/logr'
 import { exampleEventSources } from '@/lib/events/examples'
 
-// Basic debug log to verify DEBUG_LOGIC is enabled on the client
-// This will be filtered out by the debug utility if running on the server
-
 const EventSourceSelector: React.FC = () => {
     const router = useRouter()
     const [eventSourceId, setEventSourceId] = useState('')

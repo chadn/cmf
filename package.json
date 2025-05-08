@@ -10,6 +10,7 @@
         "test": "jest --coverage"
     },
     "dependencies": {
+        "@math.gl/web-mercator": "^4.1.0",
         "@upstash/redis": "^1.25.1",
         "@vercel/functions": "^2.0.3",
         "@vercel/kv": "^0.2.4",

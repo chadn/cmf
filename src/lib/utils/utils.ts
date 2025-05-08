@@ -1,6 +1,6 @@
 import { logr } from '@/lib/utils/logr'
 import { umamiTrack } from '@/lib/utils/umami'
-
+import { useRef, useCallback } from 'react'
 // Custom fetcher function, basically a wrapper to log API requests and responses
 export const fetcherLogr = async (url: string) => {
     try {
@@ -20,13 +20,12 @@ export const fetcherLogr = async (url: string) => {
         try {
             // extract id=xxx from url
             esId = url.split('id=')[1]?.split('&')[0]
-        }catch (error) {
-        }
-        umamiTrack('ClientFetch',  { 
-            esId:esId, 
-            status: response.status, 
-            sizeKb: Math.round(sizeOfResponse / 1024), 
-            sec: Math.round(ms / 100)/10,
+        } catch (error) {}
+        umamiTrack('ClientFetch', {
+            esId: esId,
+            status: response.status,
+            sizeKb: Math.round(sizeOfResponse / 1024),
+            sec: Math.round(ms / 100) / 10,
             secId: Math.round(ms / 1000) + '-' + esId,
         })
         return data
@@ -34,4 +33,29 @@ export const fetcherLogr = async (url: string) => {
         logr.info('browser', `Error from url: ${url}`, error)
         throw error
     }
+}
+
+/**
+ * Creates a debounced function that delays invoking func until after wait milliseconds
+ * @param func - The function to debounce
+ * @param wait - The number of milliseconds to delay
+ */
+export function useDebounce<Fn extends (...args: any[]) => any>(
+    func: Fn,
+    wait: number
+): (...args: Parameters<Fn>) => void {
+    const timerRef = useRef<NodeJS.Timeout | null>(null)
+
+    return useCallback(
+        (...args: Parameters<Fn>) => {
+            if (timerRef.current) {
+                clearTimeout(timerRef.current)
+            }
+
+            timerRef.current = setTimeout(() => {
+                func(...args)
+            }, wait)
+        },
+        [func, wait]
+    )
 }

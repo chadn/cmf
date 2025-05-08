@@ -44,7 +44,3 @@ export interface MapState {
     markers: MapMarker[]
     selectedMarkerId: string | null
 }
-
-// NOTE: The MapViewportWithBounds interface has been removed as it was redundant.
-// If you need both viewport and bounds together, use:
-// { ...viewport, bounds: mapBounds } or type it as MapViewport & { bounds: MapBounds }

@@ -3,6 +3,9 @@ import { Location, CmfEvent } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
 import { createParser } from 'nuqs'
 import { exampleEventSources } from '@/lib/events/examples'
+import { ViewState as ViewStateType } from 'react-map-gl'
+import { Viewport } from 'maplibre-gl'
+import WebMercatorViewport from '@math.gl/web-mercator'
 
 /**
  * Truncates a location string to a maximum length
@@ -89,9 +92,15 @@ export function generateMapMarkers(events: CmfEvent[]): MapMarker[] {
 /**
  * Calculates both map bounds and viewport settings for a set of markers
  * @param markers - Array of map markers to calculate bounds and viewport for
+ * @param width - Width of the viewport
+ * @param height - Height of the viewport
  * @returns Object containing bounds and viewport settings
  */
-export function calculateMapBoundsAndViewport(markers: MapMarker[]): {
+export function calculateMapBoundsAndViewport(
+    markers: MapMarker[],
+    width: number,
+    height: number
+): {
     bounds: MapBounds | null
     viewport: MapViewport
 } {
@@ -112,12 +121,43 @@ export function calculateMapBoundsAndViewport(markers: MapMarker[]): {
     const bounds = calculateBoundsFromMarkers(markers)
 
     // Calculate viewport
-    const viewport = calculateViewportFromBounds(bounds)
+    const viewport2 = calculateViewportFromBounds2(bounds)
+    const viewport = calculateViewportFromBounds(bounds, width, height)
 
     logr.info('location', 'calculateMapBoundsAndViewport return:', { bounds, viewport })
     return {
         bounds,
         viewport,
+    }
+}
+
+/**
+ * Rounds all values in a MapBounds object to 6 decimal places, 10 cm or 4 inches accuracy.
+ * 6 decimal places is a common standard for applications like mapping, GIS, and navigation, where 10 cm accuracy is generally sufficient.
+ * @param bounds - The MapBounds object to round
+ * @returns A new MapBounds object with rounded values
+ */
+export function roundMapBounds(bounds: MapBounds): MapBounds {
+    return {
+        north: Number(bounds.north.toFixed(6)),
+        south: Number(bounds.south.toFixed(6)),
+        east: Number(bounds.east.toFixed(6)),
+        west: Number(bounds.west.toFixed(6)),
+    }
+}
+
+/**
+ * Converts a ViewState object to a MapViewport object, rounding latitude and longitude to 6 decimal places, 10 cm or 4 inches accuracy.
+ * @param viewport - The ViewState object to convert
+ * @returns A new MapViewport object with the converted values
+ */
+export function viewstate2Viewport(viewport: ViewStateType): MapViewport {
+    return {
+        latitude: Number(viewport.latitude.toFixed(6)),
+        longitude: Number(viewport.longitude.toFixed(6)),
+        zoom: Number(viewport.zoom.toFixed(1)),
+        bearing: viewport.bearing,
+        pitch: viewport.pitch,
     }
 }
 
@@ -135,27 +175,51 @@ export function calculateBoundsFromMarkers(markers: MapMarker[]): MapBounds {
             west: 0,
         }
     }
-
     // Initialize with the first marker's coordinates
-    let north = markers[0].latitude
-    let south = markers[0].latitude
-    let east = markers[0].longitude
-    let west = markers[0].longitude
-
+    let ret = {
+        north: markers[0].latitude,
+        south: markers[0].latitude,
+        east: markers[0].longitude,
+        west: markers[0].longitude,
+    }
     // Find the min/max coordinates
     markers.forEach((marker) => {
-        north = Math.max(north, marker.latitude)
-        south = Math.min(south, marker.latitude)
-        east = Math.max(east, marker.longitude)
-        west = Math.min(west, marker.longitude)
+        ret.north = Math.max(ret.north, marker.latitude)
+        ret.south = Math.min(ret.south, marker.latitude)
+        ret.east = Math.max(ret.east, marker.longitude)
+        ret.west = Math.min(ret.west, marker.longitude)
     })
 
-    return {
-        north,
-        south,
-        east,
-        west,
-    }
+    logr.info('location', 'calculateBoundsFromMarkers return:', ret)
+
+    return roundMapBounds(ret)
+}
+
+/**
+ * Calculates viewport settings from map bounds
+ * @param bounds - MapBounds object to calculate viewport from
+ * @param width - Width of the viewport
+ * @param height - Height of the viewport
+ * @returns MapViewport object with appropriate settings
+ */
+export function calculateViewportFromBounds(bounds: MapBounds, width: number, height: number): MapViewport {
+    // https://visgl.github.io/math.gl/docs/modules/web-mercator
+    // https://visgl.github.io/math.gl/docs/modules/web-mercator/api-reference/web-mercator-viewport#fitboundsbounds-options-object
+    // TODO: figure out the ideal width and height for the viewport
+    const viewport = new WebMercatorViewport({ width, height })
+    const bound = viewport.fitBounds(
+        [
+            [bounds.west, bounds.south],
+            [bounds.east, bounds.north],
+        ],
+        { padding: 20, offset: [0, -40] }
+    )
+    // => bounds: instance of WebMercatorViewport
+    // {longitude: -73.48760000000007, latitude: 41.268014439447484, zoom: 7.209231188444142}
+    const ret = viewportUrlToViewport(bound.latitude, bound.longitude, bound.zoom)
+
+    logr.info('location', `calculateViewportFromBounds() MapViewport:`, ret)
+    return ret
 }
 
 /**
@@ -163,7 +227,7 @@ export function calculateBoundsFromMarkers(markers: MapMarker[]): MapBounds {
  * @param bounds - MapBounds object to calculate viewport from
  * @returns MapViewport object with appropriate settings
  */
-export function calculateViewportFromBounds(bounds: MapBounds): MapViewport {
+export function calculateViewportFromBounds2(bounds: MapBounds): MapViewport {
     // Calculate center
     const latitude = (bounds.north + bounds.south) / 2
     const longitude = (bounds.east + bounds.west) / 2
@@ -196,15 +260,10 @@ export function calculateViewportFromBounds(bounds: MapBounds): MapViewport {
         zoom = Math.max(1, Math.min(zoom, 15))
     }
 
-    logr.info('location', `calculateViewportFromBounds: maxDiff=${maxDiff}, zoom=${zoom}`)
+    const ret = viewportUrlToViewport(latitude, longitude, zoom)
 
-    return {
-        latitude,
-        longitude,
-        zoom,
-        bearing: 0,
-        pitch: 0,
-    }
+    logr.info('location', `calculateViewportFromBounds2() MapViewport:`, ret)
+    return ret
 }
 
 /**
@@ -223,20 +282,20 @@ export function calculateBoundsFromViewport(viewport: MapViewport): MapBounds {
     const lonDelta = 360 / zoomFactor
 
     // Calculate bounds
-    return {
+    return roundMapBounds({
         north: viewport.latitude + latDelta / 2,
         south: viewport.latitude - latDelta / 2,
         east: viewport.longitude + lonDelta / 2,
         west: viewport.longitude - lonDelta / 2,
-    }
+    })
 }
 
 // Return a valid MapViewport, with default values if invalid
 // url params have a value of  null if they do not or should not exist.
 export const viewportUrlToViewport = (lat: number | null, lon: number | null, z: number | null): MapViewport => {
     return {
-        latitude: lat !== null && lat <= 180 && lat >= -180 ? lat : 0,
-        longitude: lon !== null && lon <= 180 && lon >= -180 ? lon : 0,
+        latitude: lat !== null && lat <= 180 && lat >= -180 ? Number(lat.toFixed(6)) : 0,
+        longitude: lon !== null && lon <= 180 && lon >= -180 ? Number(lon.toFixed(6)) : 0,
         zoom: z !== null && z <= 22 && z > 0 ? z : 0,
         bearing: 0,
         pitch: 0,
