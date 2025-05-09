@@ -13,6 +13,10 @@ const mockMapInstance = {
         getEast: () => -122.4194,
         getWest: () => -122.4194,
     }),
+    getContainer: () => ({
+        clientWidth: 1000,
+        clientHeight: 800,
+    }),
 }
 
 // Mock react-map-gl components
@@ -34,7 +38,17 @@ jest.mock('react-map-gl', () => {
                 <div
                     data-testid="map-container"
                     onClick={() => onLoad?.()}
-                    onMouseMove={() => onMove?.({ viewState: {} })}
+                    onMouseMove={() =>
+                        onMove?.({
+                            viewState: {
+                                latitude: 37.7749,
+                                longitude: -122.4194,
+                                zoom: 12,
+                                bearing: 0,
+                                pitch: 0,
+                            },
+                        })
+                    }
                     ref={ref}
                 >
                     {children}
@@ -94,6 +108,7 @@ describe('MapContainer', () => {
         selectedMarkerId: null,
         onMarkerSelect: jest.fn(),
         onBoundsChange: jest.fn(),
+        onWidthHeightChange: jest.fn(),
         onResetView: jest.fn(),
         selectedEventId: null,
         onEventSelect: jest.fn(),
@@ -137,9 +152,11 @@ describe('MapContainer', () => {
         render(<MapContainer {...defaultProps} />)
         const map = screen.getByTestId('map-container')
 
-        // Wait for ref to be set up
+        // Wait for ref to be set up and click to trigger onLoad
         await act(async () => {
             fireEvent.click(map) // Trigger onLoad
+            // Add a small delay to allow the setTimeout in handleMapLoad to complete
+            await new Promise((resolve) => setTimeout(resolve, 20))
         })
 
         expect(defaultProps.onBoundsChange).toHaveBeenCalledWith({

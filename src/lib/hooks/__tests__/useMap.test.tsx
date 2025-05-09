@@ -15,7 +15,7 @@ jest.mock('@/lib/utils/location', () => ({
                 position: [0, 0],
             }))
     ),
-    calculateMapBoundsAndViewport: jest.fn().mockReturnValue({
+    calculateMapBoundsAndViewport: jest.fn().mockImplementation((markers, width, height) => ({
         bounds: {
             north: 37.7749,
             south: 37.7749,
@@ -29,7 +29,7 @@ jest.mock('@/lib/utils/location', () => ({
             bearing: 0,
             pitch: 0,
         },
-    }),
+    })),
 }))
 
 // Mock the logr utility

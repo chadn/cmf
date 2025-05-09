@@ -22,6 +22,7 @@ interface MapContainerProps {
     selectedMarkerId: string | null
     onMarkerSelect: (markerId: string | null) => void
     onBoundsChange: (bounds: MapBounds) => void
+    onWidthHeightChange: (mapWidthHeight: { w: number; h: number }) => void
     onResetView: () => void
     selectedEventId: string | null
     onEventSelect: (eventId: string | null) => void
@@ -35,6 +36,7 @@ const MapContainer: React.FC<MapContainerProps> = ({
     selectedMarkerId,
     onMarkerSelect,
     onBoundsChange,
+    onWidthHeightChange,
     onResetView,
     selectedEventId,
     onEventSelect,
@@ -42,83 +44,96 @@ const MapContainer: React.FC<MapContainerProps> = ({
 }) => {
     const mapRef = useRef<any>(null) // TODO: Type this properly with MapRef from react-map-gl
     const [mapLoaded, setMapLoaded] = useState(false)
-
-    // Simplified state: Only track the current popup info
+    const [mapWidthHeight, setMapWidthHeight] = useState({ w: 1001, h: 1001 })
     const [popupMarker, setPopupMarker] = useState<MapMarker | null>(null)
 
+    // Get map dimensions from container.
+    const getMapWidthHeight = useCallback(() => {
+        // TODO: Is mapRef.current.getMap().getContainer() a good way to trigger from map resized?
+        // consider using mapRef.current.clientHeight and clientWidth in a useEffect (fires after layout)
+        // https://stackoverflow.com/questions/35153599/reactjs-get-height-of-an-element
+        let ret = {
+            w: 1000,
+            h: 1000,
+        }
+        if (mapRef.current) {
+            const container = mapRef.current.getMap().getContainer()
+            ret = {
+                w: container.clientWidth,
+                h: container.clientHeight,
+            }
+        }
+        logr.info('mapc', `getMapWidthHeight`, ret)
+        return ret
+    }, [mapRef])
+
     const getMapBounds = useCallback(() => {
-        if (mapLoaded && mapRef.current) {
+        let ret = {
+            north: 0,
+            south: 0,
+            east: 0,
+            west: 0,
+        }
+        if (mapRef.current) {
             const bounds = mapRef.current.getMap().getBounds()
-            return roundMapBounds({
+            ret = roundMapBounds({
                 north: bounds.getNorth(),
                 south: bounds.getSouth(),
                 east: bounds.getEast(),
                 west: bounds.getWest(),
             })
         }
-        return {
-            north: 0,
-            south: 0,
-            east: 0,
-            west: 0,
-        }
-    }, [mapLoaded])
-
-    // Create debounced functions using our custom hook
-    const debouncedUpdateViewport = useDebounce((newViewport: MapViewport) => {
-        logr.info('mapc', 'Viewport updating after debounce', newViewport)
-        onViewportChange(newViewport)
-    }, 5) // This affects when the user drags map around
+        logr.debug('mapc', `getMapBounds`, ret)
+        return ret
+    }, [mapRef])
 
     const debouncedUpdateBounds = useDebounce(() => {
         const newBounds = getMapBounds()
         logr.info('mapc', 'Bounds updating after debounce', newBounds)
-        onBoundsChange(newBounds)
-    }, 500)
+        onBoundsChange && onBoundsChange(newBounds)
+    }, 200)
 
-    // Handle viewport change
+    // Handle viewport change, Map onMove
     const handleViewportChange = useCallback(
         (newViewstate: ViewState) => {
             const vp = viewstate2Viewport(newViewstate)
-            logr.info('mapc', 'User moved map, applying debounce', vp)
-            debouncedUpdateViewport(vp) // May remove debounce.
+            logr.info(
+                'mapc',
+                'Map onMove: handleViewportChange: setMapWidthHeight, onViewportChange, debouncedUpdateBounds',
+                vp
+            )
+            setMapWidthHeight(getMapWidthHeight())
+            onViewportChange(vp)
             debouncedUpdateBounds()
         },
-        [debouncedUpdateViewport, debouncedUpdateBounds]
+        [onViewportChange, debouncedUpdateBounds]
     )
 
-    // Handle map load
-    const handleMapLoad2 = useCallback(() => {
-        setMapLoaded(true)
-
-        // Get initial bounds
-        if (mapRef.current) {
-            onBoundsChange(getMapBounds())
-        }
-    }, [])
-    // Handle map load
+    // Handle Map onLoad
     const handleMapLoad = useCallback(() => {
+        logr.info('mapc', 'Map onLoad: handleMapLoad')
         setMapLoaded(true)
-
-        const initialBounds = getMapBounds()
-        onBoundsChange(initialBounds)
-        logr.info('mapc', 'timeout=0,Initial bounds set', initialBounds)
-
-        // Get initial bounds after map loads
+        // setTimeout is needed since we must wait after render for mapLoaded state to be true
         setTimeout(() => {
+            setMapWidthHeight(getMapWidthHeight())
             const initialBounds = getMapBounds()
-            onBoundsChange(initialBounds)
-            logr.info('mapc', 'timeout=100ms,Initial bounds set', initialBounds)
-        }, 100)
-    }, [getMapBounds, onBoundsChange])
+            logr.info('mapc', 'timeout=100ms, setting initial bounds', initialBounds)
+            onBoundsChange && onBoundsChange(initialBounds)
+        }, 10)
+    }, [getMapWidthHeight, getMapBounds, onBoundsChange])
 
-    // Log when component mounts
+    // Log when component mounts  -
     useEffect(() => {
-        logr.info('mapc', 'MapContainer component mounted', {
+        logr.info('mapc', 'MapContainer component mounted DELME?', {
             initialViewport: viewport,
             markerCount: markers.length,
         })
     }, [])
+
+    useEffect(() => {
+        onWidthHeightChange(mapWidthHeight)
+        logr.info('mapc', 'uE: sending to onWidthHeightChange:', mapWidthHeight)
+    }, [mapWidthHeight, onWidthHeightChange])
 
     // Close popup when selected marker changes to null
     useEffect(() => {
@@ -191,9 +206,7 @@ const MapContainer: React.FC<MapContainerProps> = ({
 
         // Force a filter update to refresh the showing count
         // This ensures the showing count updates when the popup is closed
-        if (onBoundsChange && mapRef.current) {
-            onBoundsChange(getMapBounds())
-        }
+        onBoundsChange && onBoundsChange(getMapBounds())
     }
 
     return (

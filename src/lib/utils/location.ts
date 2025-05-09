@@ -4,7 +4,6 @@ import { logr } from '@/lib/utils/logr'
 import { createParser } from 'nuqs'
 import { exampleEventSources } from '@/lib/events/examples'
 import { ViewState as ViewStateType } from 'react-map-gl'
-import { Viewport } from 'maplibre-gl'
 import WebMercatorViewport from '@math.gl/web-mercator'
 
 /**
@@ -90,10 +89,10 @@ export function generateMapMarkers(events: CmfEvent[]): MapMarker[] {
 }
 
 /**
- * Calculates both map bounds and viewport settings for a set of markers
- * @param markers - Array of map markers to calculate bounds and viewport for
- * @param width - Width of the viewport
- * @param height - Height of the viewport
+ * Calculates map bounds and viewport settings from an array of markers
+ * @param markers - Array of map markers
+ * @param width - Width of the viewport in pixels
+ * @param height - Height of the viewport in pixels
  * @returns Object containing bounds and viewport settings
  */
 export function calculateMapBoundsAndViewport(
@@ -120,7 +119,7 @@ export function calculateMapBoundsAndViewport(
     // Calculate bounds
     const bounds = calculateBoundsFromMarkers(markers)
 
-    // Calculate viewport
+    // Calculate viewport - eventually delete calculateViewportFromBounds2 but keeping for now for comparison.
     const viewport2 = calculateViewportFromBounds2(bounds)
     const viewport = calculateViewportFromBounds(bounds, width, height)
 
@@ -205,20 +204,20 @@ export function calculateBoundsFromMarkers(markers: MapMarker[]): MapBounds {
 export function calculateViewportFromBounds(bounds: MapBounds, width: number, height: number): MapViewport {
     // https://visgl.github.io/math.gl/docs/modules/web-mercator
     // https://visgl.github.io/math.gl/docs/modules/web-mercator/api-reference/web-mercator-viewport#fitboundsbounds-options-object
-    // TODO: figure out the ideal width and height for the viewport
+    // TODO: figure out the ideal width and height - seems ok using mapRef.current.getMap().getContainer()
     const viewport = new WebMercatorViewport({ width, height })
     const bound = viewport.fitBounds(
         [
             [bounds.west, bounds.south],
             [bounds.east, bounds.north],
         ],
-        { padding: 20, offset: [0, -40] }
+        { padding: 30, offset: [0, -20] }
     )
     // => bounds: instance of WebMercatorViewport
     // {longitude: -73.48760000000007, latitude: 41.268014439447484, zoom: 7.209231188444142}
     const ret = viewportUrlToViewport(bound.latitude, bound.longitude, bound.zoom)
 
-    logr.info('location', `calculateViewportFromBounds() MapViewport:`, ret)
+    logr.info('location', `calculateViewportFromBounds(w=${width},h=${height}) MapViewport:`, ret)
     return ret
 }
 
@@ -312,7 +311,7 @@ export const parseAsZoom = createParser({
     },
     // serialize: a function that takes the parsed value and returns a string used in the URL.
     serialize(value) {
-        logr.info('location', `serialize zoom:${value}`)
+        logr.debug('location', `serialize zoom:${value}`)
         // if the value is an integer, return it as a string no decimal places
         if (value === parseInt(value.toString())) {
             return value.toString()

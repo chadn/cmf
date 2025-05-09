@@ -14,7 +14,7 @@ import { logr } from '@/lib/utils/logr'
 import ActiveFilters from '@/components/events/ActiveFilters'
 import { viewportUrlToViewport, parseAsEventSource, parseAsZoom, parseAsLatLon } from '@/lib/utils/location'
 import { parseAsCmfDate, parseAsDateQuickFilter } from '@/lib/utils/date'
-import { parseAsInteger, parseAsFloat, useQueryState, useQueryStates } from 'nuqs'
+import { useQueryState, useQueryStates } from 'nuqs'
 import ErrorMessage from '@/components/common/ErrorMessage'
 import { useRouter } from 'next/navigation'
 import { umamiTrack } from '@/lib/utils/umami'
@@ -111,6 +111,7 @@ function HomeContent() {
 
     const [appState, dispatch] = useReducer(appReducer, 'uninitialized')
     const [headerName, setHeaderName] = useState('Calendar Map Filter')
+    const [mapHookWidthHeight, setMapHookWidthHeight] = useState({ w: 999, h: 999 }) // in pixels
 
     // Ref for the events sidebar container
     const eventsSidebarRef = useRef<HTMLDivElement>(null)
@@ -125,7 +126,6 @@ function HomeContent() {
         ed: datesUrl.ed,
     })
 
-    // Map state - now uses events with locations instead of filtered events
     const {
         viewport,
         setViewport,
@@ -134,7 +134,7 @@ function HomeContent() {
         setSelectedMarkerId,
         resetMapToAllEvents,
         isMapOfAllEvents,
-    } = useMap(eventsFn())
+    } = useMap(eventsFn(), mapHookWidthHeight.w, mapHookWidthHeight.h)
 
     // Reset when we get new eventSourceId
     // Handle transition when eventSourceId changes,
@@ -190,7 +190,7 @@ function HomeContent() {
             logr.info('app', 'uE: main-state: applying search filter from URL', { searchQueryUrl })
             filters.setSearchQuery(searchQueryUrl)
         }
-    }, [appState])
+    }, [appState, filters, searchQueryUrl])
 
     // Handle search query changes
     const handleSearchChange = useCallback(
@@ -216,14 +216,14 @@ function HomeContent() {
     )
 
     // Handle map bounds change
-    const handleBoundsChange = useCallback(
+    const handleBoundsChangeForFilters = useCallback(
         (bounds: MapBounds) => {
             // Ignore bounds changes during initialization
             if (appState !== 'main-state') {
-                logr.info('app', 'Ignoring bounds change during initialization')
+                logr.info('app', 'handleBoundsChangeForFilters: Ignoring during initialization')
                 return
             }
-            logr.info('app', 'Map bounds changed', bounds)
+            logr.info('app', 'handleBoundsChangeForFilters', bounds)
             filters.setMapBounds(bounds)
         },
         [filters, appState]
@@ -232,10 +232,10 @@ function HomeContent() {
     // Handle map filter removal
     const handleClearMapFilter = () => {
         if (appState !== 'main-state') {
-            logr.info('app', 'Ignoring handleClearMapFilter during initialization')
+            logr.info('app', 'handleClearMapFilter: Ignoring when appState is not main-state')
             return
         }
-        logr.info('app', 'Map filter cleared')
+        logr.info('app', 'handleClearMapFilter - clearing filters, selected events and markers')
         filters.setMapBounds(undefined)
         setSelectedMarkerId(null)
         setSelectedEventIdUrl('') // match default value for param to clear from URL
@@ -286,7 +286,6 @@ function HomeContent() {
         const markerId = genMarkerId(event)
         if (!markerId) return
 
-        // Set marker and update viewport
         setSelectedMarkerId(markerId)
 
         // Calculate the offset based on the current zoom level
@@ -432,7 +431,8 @@ function HomeContent() {
                                 setSelectedEventIdUrl('')
                             }
                         }}
-                        onBoundsChange={handleBoundsChange}
+                        onBoundsChange={handleBoundsChangeForFilters}
+                        onWidthHeightChange={setMapHookWidthHeight}
                         onResetView={resetMapToAllEvents}
                         selectedEventId={selectedEventIdUrl}
                         onEventSelect={setSelectedEventIdUrl}

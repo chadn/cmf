@@ -143,6 +143,58 @@ Note: Test files (`__tests__` directories) are intentionally omitted from this d
 -   Filesystem cache provides simple development experience
 -   Abstraction layer enables easy switching between implementations
 
+## Key Data Structures and Data Flow
+
+### Core Data Structures
+
+1. **Events Pipeline**
+
+    - `CmfEvent[]` → `MapMarker[]` → Map Rendering
+    - Events at identical coordinates grouped into single markers with event lists
+
+2. **State Machine**
+
+    - `AppState`: Controls initialization sequence ('uninitialized' → 'events-init' → 'map-init' → 'main-state')
+    - Prevents race conditions between events loading and map initialization
+
+3. **Viewport & Bounds**
+    - `MapViewport`: Controls map center (lat & lon) and zoom level
+    - `MapBounds`: Represents visible map area for filtering events
+        - sometimes calculated from markers then used along with width + height to create proper viewport for markers.
+        - calculated from viewport (map moves) then used to filter markers
+    - Map dimensions (width/height) captured after load to calculate optimal zoom level
+
+### Data Flow
+
+1. **Initialization Flow**
+
+    - URL params loaded → Events fetched → Markers generated → Optimal bounds calculated → Map rendered
+
+2. **User Interaction Flow**
+
+    - Filter changes (date, search) → Update filtered events → Update markers/bounds → Update UI
+    - Map interactions (zoom, pan) → Update bounds → Filter visible events → Update event list
+    - Event selection via click → Find marker → Center map → Display popup
+
+3. **Filter System**
+
+    - Filter state managed by methods: `setSearchQuery()`, `setDateRange()`, `setMapBounds()`
+    - Filters applied independently then combined for final event list
+    - URL parameters maintain state for sharing and bookmarking
+
+4. **Component Synchronization**
+
+    - Event list updates when map bounds change
+    - Map updates when filters or selected events change
+    - URL updates reflect current application state
+    - Event selection in list or on map keeps components in sync
+
+5. **setViewport**
+
+    - hooks/useMap.tsx - authoritative source for viewport and setViewport, used by app/page.ts
+    - app/page.ts - handleEventSelect(), useEffect() when parsing url params on map-init, and passes to MapContainer.tsx
+    - MapContainer.tsx - can setViewport via onViewportChange when use drags map around, aka Map onMove
+
 ## Deployment Options
 
 ### Recommended: Vercel
