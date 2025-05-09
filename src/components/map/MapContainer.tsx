@@ -44,28 +44,29 @@ const MapContainer: React.FC<MapContainerProps> = ({
 }) => {
     const mapRef = useRef<any>(null) // TODO: Type this properly with MapRef from react-map-gl
     const [mapLoaded, setMapLoaded] = useState(false)
-    const [mapWidthHeight, setMapWidthHeight] = useState({ w: 1001, h: 1001 })
     const [popupMarker, setPopupMarker] = useState<MapMarker | null>(null)
+    const mapWidthHeightRef = useRef({ w: 1001, h: 1001 })
 
-    // Get map dimensions from container.
-    const getMapWidthHeight = useCallback(() => {
-        // TODO: Is mapRef.current.getMap().getContainer() a good way to trigger from map resized?
-        // consider using mapRef.current.clientHeight and clientWidth in a useEffect (fires after layout)
-        // https://stackoverflow.com/questions/35153599/reactjs-get-height-of-an-element
-        let ret = {
-            w: 1000,
-            h: 1000,
-        }
+    // Get map dimensions and update parent component if dimensions have changed
+    const updateMapWidthHeight = useCallback(() => {
+        let newDimensions = { w: 1000, h: 1000 }
         if (mapRef.current) {
             const container = mapRef.current.getMap().getContainer()
-            ret = {
+            newDimensions = {
                 w: container.clientWidth,
                 h: container.clientHeight,
             }
         }
-        logr.info('mapc', `getMapWidthHeight`, ret)
-        return ret
-    }, [mapRef])
+        // Only notify parent if dimensions actually changed
+        if (mapWidthHeightRef.current.w !== newDimensions.w || mapWidthHeightRef.current.h !== newDimensions.h) {
+            logr.info('mapc', 'updateMapWidthHeight changed:', newDimensions)
+            mapWidthHeightRef.current = newDimensions
+            onWidthHeightChange(newDimensions)
+        } else {
+            logr.info('mapc', 'updateMapWidthHeight unchanged:', newDimensions)
+        }
+        return newDimensions
+    }, [onWidthHeightChange])
 
     const getMapBounds = useCallback(() => {
         let ret = {
@@ -99,14 +100,14 @@ const MapContainer: React.FC<MapContainerProps> = ({
             const vp = viewstate2Viewport(newViewstate)
             logr.info(
                 'mapc',
-                'Map onMove: handleViewportChange: setMapWidthHeight, onViewportChange, debouncedUpdateBounds',
+                'Map onMove: handleViewportChange: updateMapWidthHeight, onViewportChange, debouncedUpdateBounds',
                 vp
             )
-            setMapWidthHeight(getMapWidthHeight())
+            updateMapWidthHeight() // Update dimensions and notify parent if changed
             onViewportChange(vp)
             debouncedUpdateBounds()
         },
-        [onViewportChange, debouncedUpdateBounds]
+        [onViewportChange, debouncedUpdateBounds, updateMapWidthHeight]
     )
 
     // Handle Map onLoad
@@ -115,12 +116,12 @@ const MapContainer: React.FC<MapContainerProps> = ({
         setMapLoaded(true)
         // setTimeout is needed since we must wait after render for mapLoaded state to be true
         setTimeout(() => {
-            setMapWidthHeight(getMapWidthHeight())
+            updateMapWidthHeight() // Update dimensions and notify parent if changed
             const initialBounds = getMapBounds()
-            logr.info('mapc', 'timeout=100ms, setting initial bounds', initialBounds)
+            logr.info('mapc', 'timeout=10ms, setting initial bounds', initialBounds)
             onBoundsChange && onBoundsChange(initialBounds)
         }, 10)
-    }, [getMapWidthHeight, getMapBounds, onBoundsChange])
+    }, [updateMapWidthHeight, getMapBounds, onBoundsChange])
 
     // Log when component mounts  -
     useEffect(() => {
@@ -129,11 +130,6 @@ const MapContainer: React.FC<MapContainerProps> = ({
             markerCount: markers.length,
         })
     }, [])
-
-    useEffect(() => {
-        onWidthHeightChange(mapWidthHeight)
-        logr.info('mapc', 'uE: sending to onWidthHeightChange:', mapWidthHeight)
-    }, [mapWidthHeight, onWidthHeightChange])
 
     // Close popup when selected marker changes to null
     useEffect(() => {
