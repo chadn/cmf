@@ -1,31 +1,5 @@
-import { CmfEvent } from '@/types/events'
+import { EventSourceParams, EventSourceResponse, EventSourceType } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
-
-export interface EventSourceType {
-    prefix: string // must be unique, eg 'gc' for 'gc:1234567890'
-    name: string
-}
-
-export interface EventSourceParams {
-    id: string
-    timeMin?: string
-    timeMax?: string
-    [key: string]: string | undefined
-}
-
-export interface EventSourceResponseMetadata {
-    id: string
-    name: string
-    totalCount: number
-    unknownLocationsCount: number
-    type: EventSourceType
-}
-
-export interface EventSourceResponse {
-    events: CmfEvent[]
-    metadata: EventSourceResponseMetadata
-    httpStatus: number
-}
 
 /**
  * Base class for event source handlers that provides common functionality

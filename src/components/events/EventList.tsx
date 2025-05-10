@@ -115,41 +115,109 @@ const EventList: React.FC<EventListProps> = ({ evts, selectedEventId, onEventSel
                                 scope="col"
                                 className="px-1 py-0.5 text-left text-xxs font-medium text-gray-500 uppercase tracking-wider cursor-pointer w-[50%] md:w-1/2"
                                 onClick={() => handleSort('name')}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault()
+                                        handleSort('name')
+                                    }
+                                }}
+                                tabIndex={0}
+                                role="button"
+                                aria-sort={
+                                    sortField === 'name'
+                                        ? sortDirection === 'asc'
+                                            ? 'ascending'
+                                            : 'descending'
+                                        : undefined
+                                }
                             >
                                 Event Name
                                 {sortField === 'name' && (
-                                    <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                                    <span className="ml-1" aria-hidden="true">
+                                        {sortDirection === 'asc' ? '↑' : '↓'}
+                                    </span>
                                 )}
                             </th>
                             <th
                                 scope="col"
                                 className="px-1 py-0.5 text-left text-xxs font-medium text-gray-500 uppercase tracking-wider cursor-pointer w-[18%] md:w-1/6"
                                 onClick={() => handleSort('startDate')}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault()
+                                        handleSort('startDate')
+                                    }
+                                }}
+                                tabIndex={0}
+                                role="button"
+                                aria-sort={
+                                    sortField === 'startDate'
+                                        ? sortDirection === 'asc'
+                                            ? 'ascending'
+                                            : 'descending'
+                                        : undefined
+                                }
                             >
                                 Start Date
                                 {sortField === 'startDate' && (
-                                    <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                                    <span className="ml-1" aria-hidden="true">
+                                        {sortDirection === 'asc' ? '↑' : '↓'}
+                                    </span>
                                 )}
                             </th>
                             <th
                                 scope="col"
                                 className="px-1 py-0.5 text-left text-xxs font-medium text-gray-500 uppercase tracking-wider cursor-pointer w-[10%] md:w-1/12"
                                 onClick={() => handleSort('duration')}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault()
+                                        handleSort('duration')
+                                    }
+                                }}
+                                tabIndex={0}
+                                role="button"
+                                aria-sort={
+                                    sortField === 'duration'
+                                        ? sortDirection === 'asc'
+                                            ? 'ascending'
+                                            : 'descending'
+                                        : undefined
+                                }
                             >
                                 <span className="2xl:hidden">Dur.</span>
                                 <span className="hidden 2xl:inline">Duration</span>
                                 {sortField === 'duration' && (
-                                    <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                                    <span className="ml-1" aria-hidden="true">
+                                        {sortDirection === 'asc' ? '↑' : '↓'}
+                                    </span>
                                 )}
                             </th>
                             <th
                                 scope="col"
                                 className="px-1 py-0.5 text-left text-xxs font-medium text-gray-500 uppercase tracking-wider cursor-pointer w-[22%] md:w-1/4"
                                 onClick={() => handleSort('location')}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault()
+                                        handleSort('location')
+                                    }
+                                }}
+                                tabIndex={0}
+                                role="button"
+                                aria-sort={
+                                    sortField === 'location'
+                                        ? sortDirection === 'asc'
+                                            ? 'ascending'
+                                            : 'descending'
+                                        : undefined
+                                }
                             >
                                 Location
                                 {sortField === 'location' && (
-                                    <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                                    <span className="ml-1" aria-hidden="true">
+                                        {sortDirection === 'asc' ? '↑' : '↓'}
+                                    </span>
                                 )}
                             </th>
                         </tr>
@@ -198,6 +266,21 @@ const EventList: React.FC<EventListProps> = ({ evts, selectedEventId, onEventSel
                                             e.stopPropagation()
                                             toggleLocationExpand(event.id)
                                         }}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' || e.key === ' ') {
+                                                e.preventDefault()
+                                                e.stopPropagation()
+                                                toggleLocationExpand(event.id)
+                                            }
+                                        }}
+                                        tabIndex={0}
+                                        role="button"
+                                        aria-expanded={expandedLocation === event.id}
+                                        aria-label={
+                                            expandedLocation === event.id
+                                                ? 'Show less location details'
+                                                : 'Show more location details'
+                                        }
                                     >
                                         {event.location ? (
                                             expandedLocation === event.id ? (

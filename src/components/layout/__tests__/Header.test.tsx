@@ -12,13 +12,24 @@ jest.mock('next/navigation', () => ({
 
 // Mock Next.js Link component
 jest.mock('next/link', () => {
-    return ({ children, href, className }: { children: React.ReactNode; href: string; className?: string }) => {
+    const MockLink = ({
+        children,
+        href,
+        className,
+    }: {
+        children: React.ReactNode
+        href: string
+        className?: string
+    }) => {
         return (
             <a href={href} className={className} data-testid="next-link">
                 {children}
             </a>
         )
     }
+
+    MockLink.displayName = 'MockLink'
+    return MockLink
 })
 
 describe('Header', () => {

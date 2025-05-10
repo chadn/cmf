@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { fetchEvents, getEventSourceHandler } from '@/lib/api/eventSources'
 import { batchGeocodeLocations } from '@/lib/api/geocoding'
-import { CmfEvent } from '@/types/events'
+import { EventSourceResponse } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
 import { getCache, setCache } from '@/lib/cache'
 import { waitUntil } from '@vercel/functions'
@@ -18,12 +18,6 @@ export const dynamic = 'force-dynamic'
 // Default cache TTL is 10 minutes (in seconds)
 const CACHE_TTL = process.env.EVENTSOURCE_API_CACHE_TTL ? parseInt(process.env.EVENTSOURCE_API_CACHE_TTL) : 60 * 10
 const EVENTS_CACHE_PREFIX = 'events:'
-
-// Define the type for cached event responses
-interface CachedEventResponse {
-    events: CmfEvent[]
-    metadata: Record<string, any>
-}
 
 // given a date in string or date object, return a date rounded to the nearest hour in RFC3339 format
 function roundTimeToNearestHour(date: Date | string): string {
@@ -81,6 +75,7 @@ const fetchAndGeocode = async (eventSourceId: string, timeMin?: string, timeMax?
             ...metadata,
             unknownLocationsCount,
         },
+        httpStatus: 200,
     }
 
     const sizeOfResponse = JSON.stringify(response).length
@@ -123,7 +118,7 @@ export async function GET(request: NextRequest) {
         const startTime = performance.now()
 
         // Try to get response from cache
-        const cachedResponse = await getCache<CachedEventResponse>(fetchKey, EVENTS_CACHE_PREFIX)
+        const cachedResponse = await getCache<EventSourceResponse>(fetchKey, EVENTS_CACHE_PREFIX)
         const fetchTime = Math.round(performance.now() - startTime)
 
         // Return cached response if available
@@ -140,9 +135,9 @@ export async function GET(request: NextRequest) {
         // Save to cache in the background (don't await) but log when successful or failed
         // 2024 https://vercel.com/changelog/waituntil-is-now-available-for-vercel-functions
         waitUntil(
-            new Promise(async (resolve, reject) => {
+            new Promise(async () => {
                 try {
-                    await setCache<CachedEventResponse>(fetchKey, response, EVENTS_CACHE_PREFIX, CACHE_TTL)
+                    await setCache<EventSourceResponse>(fetchKey, response, EVENTS_CACHE_PREFIX, CACHE_TTL)
                     logr.info('api-events', `Cached events TTL=${CACHE_TTL}s for ${fetchKey}`)
                 } catch (error) {
                     logr.warn('api-events', `Failed to cache events for ${fetchKey}`, error)

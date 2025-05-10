@@ -1,13 +1,7 @@
-import { renderHook, act } from '@testing-library/react'
-import { useEventsManager } from '../useEventsManager'
-import { FilterEventsManager } from '@/lib/events/FilterEventsManager'
-import { MapBounds } from '@/types/map'
-import { CmfEvent } from '@/types/events'
-
 // Mock the SWR hook with a more complete implementation
 jest.mock('swr', () => ({
     __esModule: true,
-    default: jest.fn().mockImplementation((key, fetcher) => {
+    default: jest.fn().mockImplementation(() => {
         // Return a stable object to prevent unnecessary re-renders
         return {
             data: undefined,

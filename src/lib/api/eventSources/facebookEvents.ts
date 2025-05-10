@@ -1,19 +1,14 @@
-import { CmfEvent } from '@/types/events'
+import { EventSourceParams, EventSourceResponse, EventSourceType } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
-import {
-    BaseEventSourceHandler,
-    EventSourceParams,
-    EventSourceResponse,
-    EventSourceType,
-    registerEventSource,
-} from './index'
+import { BaseEventSourceHandler } from './index'
 
 /**
  * Facebook Events source handler implementation
  * TODO: Implement this when ready to support Facebook events
  */
 export class FacebookEventsSource extends BaseEventSourceHandler {
-    // Event source format: 'fb:${facebookEventId}'
+    // Event source format: 'fb:${facebookUid}-${facebookKey}'
+    // https://www.facebook.com/events/ical/upcoming/?uid=677700808&key=3RlHDZnbeH2YJMpJ
     public readonly type: EventSourceType = {
         prefix: 'fb',
         name: 'Facebook Events',
@@ -23,8 +18,14 @@ export class FacebookEventsSource extends BaseEventSourceHandler {
         // Reference: https://github.com/derekantrican/GAS-ICS-Sync/blob/master/Helpers.gs
         // For parsing: https://github.com/kewisch/ical.js
 
-        logr.info('api-es-fb', 'Facebook events fetching not yet implemented')
+        logr.info('api-es-fb', 'Facebook events fetching not yet implemented', params)
         throw new Error('Facebook events fetching not yet implemented')
+
+        // TODO: Implement this when ready to support Facebook events
+        // ICS Feed URL https://www.facebook.com/events/ical/upcoming/?uid=677700808&key=3RlHDZnbeH2YJMpJ
+        // ICS Feed example file: data/facebook-calendar.ics
+
+        // TODO: create ics parsing in separate file so can be used by other event sources
 
         /* Implementation will look something like this:
         const fbData = await this.fetchFacebookEvents(params.id, params.timeMin, params.timeMax)

@@ -1,9 +1,8 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { MapMarker } from '@/types/map'
 import { formatEventDate, formatEventDuration } from '@/lib/utils/date'
-import { truncateLocation } from '@/lib/utils/location'
 import { logr } from '@/lib/utils/logr'
 
 interface MapPopupProps {
@@ -16,7 +15,7 @@ const MapPopup: React.FC<MapPopupProps> = ({ marker, selectedEventId, onEventSel
     const { events } = marker
 
     // Default to first event if no valid event is selected
-    const getInitialIndex = () => {
+    const getInitialIndex = useCallback(() => {
         if (!events || events.length === 0) return 0
 
         if (selectedEventId) {
@@ -25,7 +24,7 @@ const MapPopup: React.FC<MapPopupProps> = ({ marker, selectedEventId, onEventSel
         }
 
         return 0
-    }
+    }, [events, selectedEventId])
 
     const [currentIndex, setCurrentIndex] = useState(getInitialIndex)
 
@@ -38,7 +37,7 @@ const MapPopup: React.FC<MapPopupProps> = ({ marker, selectedEventId, onEventSel
             eventIndex: newIndex,
             totalEvents: events.length,
         })
-    }, [selectedEventId, events])
+    }, [selectedEventId, events, getInitialIndex])
 
     // Safety check - ensure we have events
     if (!events || events.length === 0) {
@@ -110,14 +109,22 @@ const MapPopup: React.FC<MapPopupProps> = ({ marker, selectedEventId, onEventSel
 
             {/* Pagination controls (if multiple events) */}
             {events.length > 1 && (
-                <div className="flex justify-between items-center text-xs mt-2 pt-2 border-t border-gray-200">
-                    <button onClick={goToPrev} className="text-blue-600 hover:underline">
+                <div
+                    className="flex justify-between items-center text-xs mt-2 pt-2 border-t border-gray-200"
+                    role="navigation"
+                    aria-label="Event navigation"
+                >
+                    <button
+                        onClick={goToPrev}
+                        className="text-blue-600 hover:underline"
+                        aria-label="Go to previous event"
+                    >
                         Previous
                     </button>
-                    <span className="text-gray-600">
+                    <span className="text-gray-600" aria-live="polite">
                         {currentIndex + 1} of {events.length}
                     </span>
-                    <button onClick={goToNext} className="text-blue-600 hover:underline">
+                    <button onClick={goToNext} className="text-blue-600 hover:underline" aria-label="Go to next event">
                         Next
                     </button>
                 </div>

@@ -13,7 +13,12 @@ export class FilterEventsManager {
 
     constructor(events: CmfEvent[] = []) {
         this.allEvents = events
-        this.filters = {}
+        this.filters = {
+            dateRange: undefined,
+            searchQuery: undefined,
+            mapBounds: undefined,
+            showUnknownLocationsOnly: undefined,
+        }
         logr.info('fltr_evts_mgr', 'FilterEventsManager initialized', {
             eventsCount: events.length,
         })
@@ -175,7 +180,7 @@ export class FilterEventsManager {
      * @param filterName Name of the filter being updated
      * @param value New filter value
      */
-    private setFilter(filterName: keyof EventsFilter, value: any) {
+    private setFilter<K extends keyof EventsFilter>(filterName: K, value: EventsFilter[K]) {
         this.filters[filterName] = value
         logr.info('fltr_evts_mgr', `Filter updated: ${filterName}`, value)
     }
@@ -202,14 +207,19 @@ export class FilterEventsManager {
 
     // Reset all filters
     resetAllFilters() {
-        this.filters = {}
+        this.filters = {
+            dateRange: undefined,
+            searchQuery: undefined,
+            mapBounds: undefined,
+            showUnknownLocationsOnly: undefined,
+        }
         logr.info('fltr_evts_mgr', 'All filters reset')
     }
 
     // Reset everything - both events and filters
     reset() {
         this.allEvents = []
-        this.filters = {}
+        this.resetAllFilters()
         logr.info('fltr_evts_mgr', 'FilterEventsManager fully reset (events and filters)')
     }
 

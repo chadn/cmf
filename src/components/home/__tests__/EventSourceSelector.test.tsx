@@ -1,5 +1,5 @@
 import React from 'react'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import EventSourceSelector from '../EventSourceSelector'
 import '@testing-library/jest-dom'
 import { useRouter } from 'next/navigation'
@@ -17,11 +17,24 @@ jest.mock('@/lib/utils/logr', () => ({
     },
 }))
 
-// Mock Umami global object
-global.umami = {
+// Define umami type
+interface UmamiTracker {
+    track: (event: string, data?: Record<string, unknown>) => void
+    identify: (id: string) => void
+}
+
+// Mock umami globally
+declare global {
+    interface Window {
+        umami?: UmamiTracker
+    }
+}
+
+// Set up mock umami
+window.umami = {
     track: jest.fn(),
     identify: jest.fn(),
-} as any
+}
 
 // Suppress React DOM nesting validation warnings
 const originalConsoleError = console.error
@@ -43,8 +56,8 @@ describe('EventSourceSelector', () => {
         })
 
         // Setup umami mock
-        if (global.umami) {
-            global.umami.track = mockUmamiTrack
+        if (window.umami) {
+            window.umami.track = mockUmamiTrack
         }
 
         // Clear mocks between tests
@@ -59,7 +72,7 @@ describe('EventSourceSelector', () => {
     })
 
     it('renders the event source selector form with correct styling', () => {
-        const { container } = render(<EventSourceSelector />)
+        render(<EventSourceSelector />)
 
         // Check for main elements
         expect(screen.getByText('Welcome to Calendar Map Filter')).toBeInTheDocument()
@@ -71,7 +84,7 @@ describe('EventSourceSelector', () => {
         expect(screen.getByText(/Or try an example - click below then click View Events/i)).toBeInTheDocument()
 
         // Check for the border-t and border-black classes
-        const mainContainer = container.firstChild as HTMLElement
+        const mainContainer = screen.getByRole('heading', { name: 'Welcome to Calendar Map Filter' }).closest('div')
         expect(mainContainer).toHaveClass('border-t')
         expect(mainContainer).toHaveClass('border-black')
         expect(mainContainer).toHaveClass('px-8')
@@ -183,7 +196,7 @@ describe('EventSourceSelector', () => {
     })
 
     it('renders all example event sources correctly with white text', () => {
-        const { container } = render(<EventSourceSelector />)
+        render(<EventSourceSelector />)
 
         // Check that both examples are rendered
         expect(screen.getByText('SF Bay Area Facebook Events (Google Calendar)')).toBeInTheDocument()

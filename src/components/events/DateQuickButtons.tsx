@@ -1,6 +1,5 @@
 'use client'
 
-import { format } from 'date-fns'
 import { useEffect, useRef } from 'react'
 import { logr } from '@/lib/utils/logr'
 import { umamiTrack } from '@/lib/utils/umami'
@@ -70,7 +69,7 @@ export default function DateQuickButtons({
         if (onDateQuickFilterChange) {
             onDateQuickFilterChange(filterId)
         }
-        umamiTrack('dateQuickFilter', { clicked: filterId})
+        umamiTrack('dateQuickFilter', { clicked: filterId })
         //umamiTrack('dateQuickFilter', filterId)
     }
 
@@ -142,10 +141,9 @@ export default function DateQuickButtons({
     // Ref to track if we've already processed the initial URL parameter
     const initialUrlProcessed = useRef(false)
 
-    // Effect to handle URL parameter changes - only runs once on mount
+    // Effect to handle URL parameter initialization - runs once when conditions are met
     useEffect(() => {
-        logr.info('date-qf-chad-rock', `***** dateQuickFilterUrl=${dateQuickFilterUrl}`)
-        // Only process if we have a URL parameter, haven't processed it yet, and appState is main-state
+        // Only process once when we have the right conditions
         if (dateQuickFilterUrl && !initialUrlProcessed.current && appState === 'main-state') {
             // Find the matching filter based on the URL parameter
             const matchingFilter = quickFilters.find(
@@ -161,10 +159,12 @@ export default function DateQuickButtons({
                 }
             }
 
-            // Mark that we've processed the initial URL parameter
+            // Mark that we've processed the URL parameter (only set to true once)
             initialUrlProcessed.current = true
         }
-    }, [dateQuickFilterUrl, appState]) // Add appState to the dependency array
+        // This effect depends on these values, but will only actually run its core logic once
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [dateQuickFilterUrl, appState])
 
     return (
         <div className="mt-3 flex flex-wrap gap-1 justify-between">

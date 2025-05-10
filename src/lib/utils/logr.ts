@@ -51,7 +51,7 @@ export const logr = {
         }
     },
     // Helper function to check if a message was recently logged
-    recentlyCalled: (area: string, message: string, data?: any): boolean => {
+    recentlyCalled: (area: string, message: string, data?: unknown): boolean => {
         // In test environment, we'll bypass the recent check to avoid timing issues
         if (process.env.NODE_ENV === 'test') {
             return false
@@ -95,7 +95,7 @@ export const logr = {
      * @param message - The debug message
      * @param data - Optional data to log
      */
-    logLevel: (level: string | number, area: string, message: string, data?: any) => {
+    logLevel: (level: string | number, area: string, message: string, data?: unknown) => {
         const logLevel = typeof level === 'string' ? logr.getLogLevelNumber(level) : level
 
         // Only log if the message's level is greater than or equal to the current log level
@@ -120,19 +120,19 @@ export const logr = {
      * @param message - The debug message
      * @param data - Optional data to log
      */
-    log: (area: string, message: string, data?: any) => {
+    log: (area: string, message: string, data?: unknown) => {
         return logr.logLevel('INFO', area, message, data)
     },
-    debug: (area: string, message: string, data?: any) => {
+    debug: (area: string, message: string, data?: unknown) => {
         return logr.logLevel('DEBUG', area, message, data)
     },
-    info: (area: string, message: string, data?: any) => {
+    info: (area: string, message: string, data?: unknown) => {
         return logr.logLevel('INFO', area, message, data)
     },
-    warn: (area: string, message: string, data?: any) => {
+    warn: (area: string, message: string, data?: unknown) => {
         return logr.logLevel('WARN', area, message, data)
     },
-    error: (area: string, message: string, data?: any) => {
+    error: (area: string, message: string, data?: unknown) => {
         return logr.logLevel('ERROR', area, message, data)
     },
 }

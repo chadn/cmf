@@ -70,12 +70,14 @@ export function useMap(evts: FilteredEvents, mapW: number, mapH: number): UseMap
             .filter((marker) => marker.events.length > 0)
     }, [evts.shownEvents, markersFromAllEvents])
 
-    // Log when the hook initializes
+    // Log when the hook initializes - only once
     useEffect(() => {
         logr.info('umap', 'uE: useMap hook initialized', {
             initialViewport: { ...mapState.viewport },
             eventsCount: evts.allEvents.length,
         })
+        // empty dependency array to run only once
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     // Update markers when filtered markers change
@@ -90,7 +92,7 @@ export function useMap(evts: FilteredEvents, mapW: number, mapH: number): UseMap
         }
 
         if (markersChanged) {
-            const el = evts.shownEvents ? evts.shownEvents.length : evts.allEvents.length
+            const el = evts.shownEvents.length
             const ol = mapState.markers.length
             logr.info('umap', `uE: markers changed, ${filteredMarkers.length} markers, was ${ol}, from ${el} events`)
             setMapState((prev) => ({
@@ -98,7 +100,7 @@ export function useMap(evts: FilteredEvents, mapW: number, mapH: number): UseMap
                 markers: filteredMarkers,
             }))
         }
-    }, [filteredMarkers, mapState.markers, setMapState, evts.shownEvents, evts.allEvents.length])
+    }, [filteredMarkers, mapState.markers, evts.shownEvents, setMapState])
 
     // Update viewport to show all events
     const resetMapToAllEvents = useCallback(() => {

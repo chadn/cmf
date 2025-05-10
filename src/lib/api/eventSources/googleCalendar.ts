@@ -1,15 +1,9 @@
 import axios from 'axios'
-import { parseISO, addMonths, subMonths, format } from 'date-fns'
+import { addMonths, subMonths, format } from 'date-fns'
 import { GoogleCalendarResponse, GoogleCalendarEvent } from '@/types/googleApi'
-import { CmfEvent } from '@/types/events'
+import { CmfEvent, EventSourceParams, EventSourceResponse, EventSourceType } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
-import {
-    BaseEventSourceHandler,
-    EventSourceParams,
-    EventSourceResponse,
-    EventSourceType,
-    registerEventSource,
-} from './index'
+import { BaseEventSourceHandler, registerEventSource } from './index'
 
 const GOOGLE_CALENDAR_API_BASE = 'https://www.googleapis.com/calendar/v3/calendars'
 if (!process.env.GOOGLE_CALENDAR_API_KEY) {

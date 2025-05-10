@@ -56,7 +56,8 @@ describe('Date Utilities', () => {
         it('returns a relative time string for a date in the past', () => {
             // Mock current date to ensure consistent test results
             const realDate = Date
-            global.Date = class extends Date {
+            // Create a properly typed mock Date class
+            class MockDate extends Date {
                 constructor(...args: ConstructorParameters<typeof Date>) {
                     if (!args.length) {
                         super('2025-03-15T14:00:00Z')
@@ -64,7 +65,8 @@ describe('Date Utilities', () => {
                         super(...args)
                     }
                 }
-            } as any
+            }
+            global.Date = MockDate as DateConstructor
 
             const result = getRelativeTimeString('2025-03-14T14:00:00Z')
             expect(result).toContain('ago')
@@ -76,7 +78,8 @@ describe('Date Utilities', () => {
         it('returns a relative time string for a date in the future', () => {
             // Mock current date to ensure consistent test results
             const realDate = Date
-            global.Date = class extends Date {
+            // Create a properly typed mock Date class
+            class MockDate extends Date {
                 constructor(...args: ConstructorParameters<typeof Date>) {
                     if (!args.length) {
                         super('2025-03-15T14:00:00Z')
@@ -84,7 +87,8 @@ describe('Date Utilities', () => {
                         super(...args)
                     }
                 }
-            } as any
+            }
+            global.Date = MockDate as DateConstructor
 
             const result = getRelativeTimeString('2025-03-16T14:00:00Z')
             expect(result).toContain('in')

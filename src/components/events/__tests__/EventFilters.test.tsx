@@ -2,7 +2,6 @@ import React from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
 import '@testing-library/jest-dom'
 import EventFilters from '../EventFilters'
-import { format, addMonths } from 'date-fns'
 
 describe('EventFilters Component', () => {
     const mockOnSearchChange = jest.fn()

@@ -1,5 +1,5 @@
 import { MapBounds, MapViewport, MapMarker } from '@/types/map'
-import { Location, CmfEvent } from '@/types/events'
+import { CmfEvent } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
 import { createParser } from 'nuqs'
 import { exampleEventSources } from '@/lib/events/examples'
@@ -103,24 +103,9 @@ export function calculateMapBoundsAndViewport(
     bounds: MapBounds | null
     viewport: MapViewport
 } {
-    if (markers.length === 0) {
-        return {
-            bounds: null,
-            viewport: {
-                latitude: 0,
-                longitude: 0,
-                zoom: 1,
-                bearing: 0,
-                pitch: 0,
-            },
-        }
-    }
-
-    // Calculate bounds
     const bounds = calculateBoundsFromMarkers(markers)
 
-    // Calculate viewport - eventually delete calculateViewportFromBounds2 but keeping for now for comparison.
-    const viewport2 = calculateViewportFromBounds2(bounds)
+    // Calculate viewport
     const viewport = calculateViewportFromBounds(bounds, width, height)
 
     logr.info('location', 'calculateMapBoundsAndViewport return:', { bounds, viewport })
@@ -175,7 +160,7 @@ export function calculateBoundsFromMarkers(markers: MapMarker[]): MapBounds {
         }
     }
     // Initialize with the first marker's coordinates
-    let ret = {
+    const ret = {
         north: markers[0].latitude,
         south: markers[0].latitude,
         east: markers[0].longitude,
@@ -222,50 +207,6 @@ export function calculateViewportFromBounds(bounds: MapBounds, width: number, he
 }
 
 /**
- * Calculates viewport settings from map bounds
- * @param bounds - MapBounds object to calculate viewport from
- * @returns MapViewport object with appropriate settings
- */
-export function calculateViewportFromBounds2(bounds: MapBounds): MapViewport {
-    // Calculate center
-    const latitude = (bounds.north + bounds.south) / 2
-    const longitude = (bounds.east + bounds.west) / 2
-
-    // Calculate appropriate zoom level based on bounds size
-    const latDiff = bounds.north - bounds.south
-    const lonDiff = bounds.east - bounds.west
-    const maxDiff = Math.max(latDiff, lonDiff)
-
-    // Determine zoom level based on the size of the bounds
-    let zoom = 1
-    if (maxDiff === 0) {
-        // For single marker or markers with same coordinates, use a fixed zoom level
-        zoom = 13
-    } else if (maxDiff > 0) {
-        // Logarithmic scale for zoom level
-        // Lower base value (12 instead of 14) will reduce zoom by 2 levels across the board
-        // Keeping multiplier at 5 for consistency
-        zoom = Math.floor(12 - Math.log2(maxDiff * 5))
-
-        // Further reduce all zoom levels by 1 to get desired effect
-        zoom -= 2
-
-        // Add additional zoom reduction for very small differences to prevent extreme zoom
-        if (maxDiff < 0.01) {
-            zoom -= 1
-        }
-
-        // Clamp zoom level to reasonable bounds
-        zoom = Math.max(1, Math.min(zoom, 15))
-    }
-
-    const ret = viewportUrlToViewport(latitude, longitude, zoom)
-
-    logr.info('location', `calculateViewportFromBounds2() MapViewport:`, ret)
-    return ret
-}
-
-/**
  * Calculates approximate map bounds from a viewport
  * This is a simplified calculation that creates a bounding box around the viewport center
  * based on the zoom level
@@ -275,10 +216,10 @@ export function calculateViewportFromBounds2(bounds: MapBounds): MapViewport {
  */
 export function calculateBoundsFromViewport(viewport: MapViewport): MapBounds {
     // Calculate the approximate degrees of latitude/longitude visible at this zoom level
-    // Higher zoom levels show less area
-    const zoomFactor = Math.pow(2, 20 - viewport.zoom) // 20 is max zoom
-    const latDelta = 180 / zoomFactor
-    const lonDelta = 360 / zoomFactor
+    // Higher zoom levels show less area (zoom 1 = whole world, zoom 20 = building level)
+    const zoomFactor = Math.pow(2, viewport.zoom) // Higher zoom = larger factor
+    const latDelta = 180 / zoomFactor // Smaller delta at higher zoom
+    const lonDelta = 360 / zoomFactor // Smaller delta at higher zoom
 
     // Calculate bounds
     return roundMapBounds({

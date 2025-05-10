@@ -15,7 +15,7 @@ jest.mock('@/lib/utils/location', () => ({
                 position: [0, 0],
             }))
     ),
-    calculateMapBoundsAndViewport: jest.fn().mockImplementation((markers, width, height) => ({
+    calculateMapBoundsAndViewport: jest.fn().mockImplementation(() => ({
         bounds: {
             north: 37.7749,
             south: 37.7749,
@@ -48,8 +48,8 @@ describe('useMap', () => {
         original_event_url: 'https://example.com/event',
         description: 'Test Description',
         description_urls: [],
-        start: '2024-04-01T10:00:00Z',
-        end: '2024-04-01T11:00:00Z',
+        start: '2024-01-01T10:00:00Z',
+        end: '2024-01-01T11:00:00Z',
         location: 'Test Location',
         resolved_location: {
             status: 'resolved',
@@ -58,14 +58,6 @@ describe('useMap', () => {
             formatted_address: 'Test Location',
             original_location: 'Test Location',
         },
-    }
-
-    const mockViewport: MapViewport = {
-        latitude: 37.7749,
-        longitude: -122.4194,
-        zoom: 12,
-        bearing: 0,
-        pitch: 0,
     }
 
     const mockFilteredEvents = {

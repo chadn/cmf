@@ -1,14 +1,8 @@
 import axios from 'axios'
-import { parseISO, format } from 'date-fns'
-import { CmfEvent } from '@/types/events'
+import { format } from 'date-fns'
+import { CmfEvent, EventSourceParams, EventSourceResponse, EventSourceType } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
-import {
-    BaseEventSourceHandler,
-    EventSourceParams,
-    EventSourceResponse,
-    EventSourceType,
-    registerEventSource,
-} from './index'
+import { BaseEventSourceHandler, registerEventSource } from './index'
 
 // Interface for the Protest API response
 interface ProtestEvent {
@@ -143,15 +137,15 @@ export class ProtestsEventSource extends BaseEventSourceHandler {
         // Implement pagination as per TODO
         // Start with page 1 and continue fetching until all events are retrieved
         try {
-            const limit = 999  // original from scraping web 
+            const limit = 999 // original from scraping web
             let currentPage = 1
-            let allEvents: any[] = []
+            let allEvents: ProtestEvent[] = []
             let totalEvents = 0
             let hasMorePages = true
 
             while (hasMorePages) {
                 logr.info('api-es-pr', `Fetching protest events page ${currentPage}`)
-                
+
                 const response = await axios.post(
                     apiUrl,
                     {
@@ -262,9 +256,9 @@ export class ProtestsEventSource extends BaseEventSourceHandler {
                     searchEvents: {
                         total: totalEvents,
                         elements: allEvents,
-                        __typename: 'PaginatedEventList'
-                    }
-                }
+                        __typename: 'PaginatedEventList',
+                    },
+                },
             }
 
             logr.info('api-es-pr', `fetchProtestEvents complete: ${allEvents.length} total events`)

@@ -10,7 +10,6 @@ interface EventFiltersProps {
     onSearchChange: (query: string) => void
     dateSliderRange?: { start: string; end: string }
     onDateRangeChange: (range: { start: string; end: string } | undefined) => void
-    onReset: () => void
     dateQuickFilterUrl?: string | null
     onDateQuickFilterChange?: (value: string) => void
     appState?: string
@@ -23,7 +22,6 @@ export default function EventFilters({
     onSearchChange,
     dateSliderRange,
     onDateRangeChange,
-    onReset,
     dateQuickFilterUrl,
     onDateQuickFilterChange,
     appState,
@@ -38,11 +36,6 @@ export default function EventFilters({
             umamiTrack('showDateSliders') // Track when the date sliders are shown
         }
     }, [showDateSliders])
-
-    const handleReset = () => {
-        setShowDateSliders(false)
-        onReset()
-    }
 
     return (
         <div className="relative">

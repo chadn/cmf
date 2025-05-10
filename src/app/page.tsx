@@ -10,17 +10,21 @@ import EventSourceSelector from '@/components/home/EventSourceSelector'
 import { useEventsManager } from '@/lib/hooks/useEventsManager'
 import { useMap, genMarkerId } from '@/lib/hooks/useMap'
 import { MapBounds } from '@/types/map'
+import { FilteredEvents } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
 import ActiveFilters from '@/components/events/ActiveFilters'
 import { viewportUrlToViewport, parseAsEventSource, parseAsZoom, parseAsLatLon } from '@/lib/utils/location'
 import { parseAsCmfDate, parseAsDateQuickFilter } from '@/lib/utils/date'
 import { useQueryState, useQueryStates } from 'nuqs'
 import ErrorMessage from '@/components/common/ErrorMessage'
-import { useRouter } from 'next/navigation'
 import { umamiTrack } from '@/lib/utils/umami'
 
-// quiet window.cmf_events build error - https://stackoverflow.com/questions/56457935/typescript-error-property-x-does-not-exist-on-type-window
-declare const window: any
+declare global {
+    interface Window {
+        cmf_evts: FilteredEvents
+        cmf_evts_source: { name: string }
+    }
+}
 
 // Application state machine types
 type AppState = 'uninitialized' | 'events-init' | 'map-init' | 'main-prep' | 'main-state' | 'menu-shown'
@@ -76,9 +80,8 @@ function appReducer(state: AppState, action: AppAction): AppState {
 }
 
 function HomeContent() {
-    const router = useRouter()
     // URL query state parameters
-    const [eventSourceId, setEventSourceId] = useQueryState('es', parseAsEventSource) // replaced gc calendarId
+    const [eventSourceId] = useQueryState('es', parseAsEventSource) // replaced gc calendarId
     const [selectedEventIdUrl, setSelectedEventIdUrl] = useQueryState('se', { defaultValue: '' })
     const [viewportUrl, setViewportUrl] = useQueryStates({
         z: parseAsZoom,
@@ -86,7 +89,7 @@ function HomeContent() {
         lon: parseAsLatLon,
     })
     const [searchQueryUrl, setSearchQueryUrl] = useQueryState('sq', { defaultValue: '' }) // search query
-    const [datesUrl, setDatesUrl] = useQueryStates({
+    const [datesUrl] = useQueryStates({
         sd: parseAsCmfDate.withDefault('-1m'), // app start date
         ed: parseAsCmfDate.withDefault('3m'), // app end date
         //fsd: parseAsCmfDate.withDefault('0d'), // filter start date  - not using, qf is good enough. leaving for future reference.
@@ -126,15 +129,14 @@ function HomeContent() {
         ed: datesUrl.ed,
     })
 
-    const {
-        viewport,
-        setViewport,
-        markers,
-        selectedMarkerId,
-        setSelectedMarkerId,
-        resetMapToAllEvents,
-        isMapOfAllEvents,
-    } = useMap(eventsFn(), mapHookWidthHeight.w, mapHookWidthHeight.h)
+    const { viewport, setViewport, markers, selectedMarkerId, setSelectedMarkerId, resetMapToAllEvents } = useMap(
+        eventsFn(),
+        mapHookWidthHeight.w,
+        mapHookWidthHeight.h
+    )
+
+    // Ref for tracking the last applied search query from URL
+    const searchQueryAppliedRef = useRef<string | null>(null)
 
     // Reset when we get new eventSourceId
     // Handle transition when eventSourceId changes,
@@ -148,7 +150,7 @@ function HomeContent() {
             dispatch({ type: 'EVENTS_LOADING' })
         }
         umamiTrack('LoadCalendar', { es: eventSourceId ?? 'null', numEvents: evts.allEvents.length })
-    }, [eventSourceId])
+    }, [eventSourceId, evts.allEvents.length])
 
     // Handle transition from events-init via EVENTS_LOADED action to map-init
     useEffect(() => {
@@ -165,30 +167,16 @@ function HomeContent() {
         }
     }, [apiIsLoading, appState, evts, eventSource])
 
-    // Handle transition from map-init via MAP_INITIALIZED action to main-state
-    useEffect(() => {
-        if (appState !== 'map-init') return
-
-        if (selectedEventIdUrl) {
-            logr.info('app', 'uE: map-init: selectedEventIdUrl is set, resetMapToAllEvents')
-            handleEventSelect(selectedEventIdUrl)
-        } else if (viewportUrl.z === null) {
-            logr.info('app', 'uE: map-init: zoom is null (not set), resetMapToAllEvents')
-            resetMapToAllEvents()
-        } else {
-            logr.info('app', `uE: map-init: zoom=${viewportUrl.z}, setViewport from URL`)
-            setViewport(viewportUrlToViewport(viewportUrl.lat, viewportUrl.lon, viewportUrl.z))
-        }
-        logr.info('app', 'uE: map-init done (url params)')
-        dispatch({ type: 'MAP_INITIALIZED' })
-    }, [appState, filters, selectedEventIdUrl, setViewport, resetMapToAllEvents])
-
     // Apply search filter when appState changes to main-state
     useEffect(() => {
         if (appState !== 'main-state') return
-        if (searchQueryUrl) {
+
+        // Only apply the search filter from URL if we haven't applied this value before
+        // This prevents infinite loops when searchQueryUrl changes through normal UI interaction
+        if (searchQueryUrl && searchQueryAppliedRef.current !== searchQueryUrl) {
             logr.info('app', 'uE: main-state: applying search filter from URL', { searchQueryUrl })
             filters.setSearchQuery(searchQueryUrl)
+            searchQueryAppliedRef.current = searchQueryUrl
         }
     }, [appState, filters, searchQueryUrl])
 
@@ -196,10 +184,13 @@ function HomeContent() {
     const handleSearchChange = useCallback(
         (query: string) => {
             logr.info('app', 'Search filter changed', { query })
+            // Update the ref to prevent the useEffect from re-applying the filter
+            searchQueryAppliedRef.current = query
+            // Update the URL parameter and apply the filter
             setSearchQueryUrl(query)
             filters.setSearchQuery(query)
         },
-        [filters]
+        [filters, setSearchQueryUrl, searchQueryAppliedRef]
     )
 
     // Handle date range changes
@@ -244,82 +235,87 @@ function HomeContent() {
         resetMapToAllEvents()
     }
 
-    // Handle unknown locations filter toggle
-    const handleUnknownLocationsToggle = useCallback(() => {
-        filters.setShowUnknownLocationsOnly(true)
-        logr.info('app', 'Unknown locations filter toggled')
-    }, [filters])
+    // Properly memoize to avoid recreating function on each render
+    const handleEventSelect = useCallback(
+        (eventId: string | null) => {
+            logr.info('app', `handleEventSelect() selectedEventIdUrl from ${selectedEventIdUrl} to ${eventId}`)
+            setSelectedEventIdUrl(eventId)
 
-    // Reset all filters
-    const handleResetFilters = useCallback(() => {
-        logr.info('app', 'Resetting all filters')
-        setSearchQueryUrl('')
-        setDateSliderRange(undefined)
-        filters.resetAll()
-        resetMapToAllEvents()
-    }, [filters, resetMapToAllEvents])
-
-    const handleEventSelect = (eventId: string | null) => {
-        logr.info('app', `handleEventSelect() selectedEventIdUrl from ${selectedEventIdUrl} to ${eventId}`)
-        setSelectedEventIdUrl(eventId)
-
-        // If event is null, clear marker selection
-        if (!eventId) {
-            setSelectedMarkerId(null)
-            return
-        }
-
-        // Find the event and its marker
-        const event = evts.allEvents.find((e) => e.id === eventId)
-        if (
-            !event ||
-            event.resolved_location?.status !== 'resolved' ||
-            !event.resolved_location.lat ||
-            !event.resolved_location.lng
-        ) {
-            if (event?.original_event_url) {
-                logr.info('app', `handleEventSelect() no resolved location, opening url=${event.original_event_url}`)
-                window.open(event.original_event_url, '_blank')
+            // If event is null, clear marker selection
+            if (!eventId) {
+                setSelectedMarkerId(null)
+                return
             }
-            return
+
+            // Find the event and its marker
+            const event = evts.allEvents.find((e) => e.id === eventId)
+            if (
+                !event ||
+                event.resolved_location?.status !== 'resolved' ||
+                !event.resolved_location.lat ||
+                !event.resolved_location.lng
+            ) {
+                if (event?.original_event_url) {
+                    logr.info(
+                        'app',
+                        `handleEventSelect() no resolved location, opening url=${event.original_event_url}`
+                    )
+                    window.open(event.original_event_url, '_blank')
+                }
+                return
+            }
+            const markerId = genMarkerId(event)
+            if (!markerId) return
+
+            setSelectedMarkerId(markerId)
+
+            // Calculate the offset based on the current zoom level
+            // Higher zoom levels need smaller offsets
+            const zoomFactor = Math.max(1, viewport.zoom / 10)
+            const latOffset = -0.003 / zoomFactor // Adjust this value as needed
+
+            // Update viewport with adjusted latitude to ensure popup is fully visible
+            setViewport({
+                ...viewport,
+                latitude: (event.resolved_location.lat || 0) - latOffset, // Move map down slightly
+                longitude: event.resolved_location.lng || 0,
+                zoom: 14,
+            })
+
+            logr.info('app', 'Adjusted viewport for popup visibility', {
+                originalLat: event.resolved_location.lat,
+                adjustedLat: (event.resolved_location.lat || 0) - latOffset,
+                offset: latOffset,
+                zoom: viewport.zoom,
+            })
+        },
+        [evts.allEvents, selectedEventIdUrl, setSelectedEventIdUrl, setSelectedMarkerId, setViewport, viewport]
+    )
+
+    // Handle transition from map-init via MAP_INITIALIZED action to main-state
+    // Basically apply url params to map
+    useEffect(() => {
+        if (appState !== 'map-init') return
+
+        if (selectedEventIdUrl) {
+            logr.info('app', 'uE: map-init: selectedEventIdUrl is set, resetMapToAllEvents')
+            handleEventSelect(selectedEventIdUrl)
+        } else if (viewportUrl.z === null) {
+            logr.info('app', 'uE: map-init: zoom is null (not set), resetMapToAllEvents')
+            resetMapToAllEvents()
+        } else {
+            logr.info('app', `uE: map-init: zoom=${viewportUrl.z}, setViewport from URL`)
+            setViewport(viewportUrlToViewport(viewportUrl.lat, viewportUrl.lon, viewportUrl.z))
         }
-        const markerId = genMarkerId(event)
-        if (!markerId) return
+        logr.info('app', 'uE: map-init done (url params)')
+        dispatch({ type: 'MAP_INITIALIZED' })
+    }, [appState, selectedEventIdUrl, handleEventSelect, viewportUrl, resetMapToAllEvents, setViewport])
 
-        setSelectedMarkerId(markerId)
-
-        // Calculate the offset based on the current zoom level
-        // Higher zoom levels need smaller offsets
-        const zoomFactor = Math.max(1, viewport.zoom / 10)
-        const latOffset = -0.003 / zoomFactor // Adjust this value as needed
-
-        // Update viewport with adjusted latitude to ensure popup is fully visible
-        setViewport({
-            ...viewport,
-            latitude: (event.resolved_location.lat || 0) - latOffset, // Move map down slightly
-            longitude: event.resolved_location.lng || 0,
-            zoom: 14,
-        })
-
-        logr.info('app', 'Adjusted viewport for popup visibility', {
-            originalLat: event.resolved_location.lat,
-            adjustedLat: (event.resolved_location.lat || 0) - latOffset,
-            offset: latOffset,
-            zoom: viewport.zoom,
-        })
-    }
-    // Handler for selecting an event from the list
-    const handleEventSelectCb = useCallback(handleEventSelect, [
-        evts.allEvents,
-        setSelectedMarkerId,
-        setViewport,
-        viewport,
-    ])
     // Expose events data to window for debugging
     useEffect(() => {
         if (typeof window !== 'undefined') {
-            // window.cmf_events is FilteredEvents + eventSource name
-            window.cmf_events = { ...evts, eventSource: eventSource }
+            window.cmf_evts = evts
+            window.cmf_evts_source = eventSource
         }
     }, [evts, eventSource])
 
@@ -380,7 +376,6 @@ function HomeContent() {
                 >
                     <ActiveFilters
                         evts={evts}
-                        isMapOfAllEvents={isMapOfAllEvents}
                         onClearMapFilter={handleClearMapFilter}
                         onClearSearchFilter={() => handleSearchChange('')}
                         onClearDateFilter={() => {
@@ -396,7 +391,6 @@ function HomeContent() {
                         onDateRangeChange={handleDateRangeChange}
                         dateQuickFilterUrl={dateQuickFilterUrl}
                         onDateQuickFilterChange={setDateQuickFilterUrl}
-                        onReset={handleResetFilters}
                         appState={appState}
                         sd={datesUrl.sd}
                         ed={datesUrl.ed}
@@ -410,7 +404,7 @@ function HomeContent() {
                         <EventList
                             evts={evts}
                             selectedEventId={selectedEventIdUrl}
-                            onEventSelect={handleEventSelectCb}
+                            onEventSelect={handleEventSelect}
                             apiIsLoading={apiIsLoading}
                         />
                     )}
@@ -433,10 +427,8 @@ function HomeContent() {
                         }}
                         onBoundsChange={handleBoundsChangeForFilters}
                         onWidthHeightChange={setMapHookWidthHeight}
-                        onResetView={resetMapToAllEvents}
                         selectedEventId={selectedEventIdUrl}
                         onEventSelect={setSelectedEventIdUrl}
-                        isMapOfAllEvents={isMapOfAllEvents}
                     />
                 </div>
             </main>
@@ -445,7 +437,6 @@ function HomeContent() {
 }
 
 export default function Home() {
-    const router = useRouter()
     return (
         <Suspense fallback={<div>Loading...</div>}>
             <HomeContent />

@@ -1,12 +1,11 @@
 'use client'
 import { useState, useEffect, useMemo, useReducer } from 'react'
 import useSWR from 'swr'
-import { EventsState, EventsAction, FilteredEvents } from '@/types/events'
+import { EventsState, EventsAction, FilteredEvents, EventSourceResponse } from '@/types/events'
 import { MapBounds } from '@/types/map'
 import { FilterEventsManager } from '@/lib/events/FilterEventsManager'
 import { logr } from '@/lib/utils/logr'
 import { fetcherLogr } from '@/lib/utils/utils'
-import { EventSourceResponse } from '@/lib/api/eventSources'
 import { getDateFromUrlDateString } from '@/lib/utils/date'
 
 interface UseEventsManagerProps {
@@ -200,34 +199,6 @@ export function useEventsManager({
         }
     }, [dateRange, searchQuery, mapBounds, showUnknownLocationsOnly, fltrEvtMgr, state.filters])
 
-    // Memoize derived data
-    const filteredEvents = useMemo(() => {
-        const filtered = fltrEvtMgr.getFilteredEvents()
-        return filtered.shownEvents
-    }, [fltrEvtMgr])
-
-    const eventsWithLocations = useMemo(() => {
-        return state.events.filter(
-            (event) =>
-                event.resolved_location?.status === 'resolved' &&
-                event.resolved_location.lat &&
-                event.resolved_location.lng
-        )
-    }, [state.events])
-
-    // Log when the return values change
-    /*
-    useEffect(() => {
-        if (apiData && !apiIsLoading && apiData.events) {
-            logr.info('use_evts_mgr', 'Events hook return values updated', {
-                totalEvents: apiData.events.length,
-                filteredEvents: filteredEvents.length,
-                sourceName: apiData.metadata.name || '',
-                sourceType: apiData.metadata.type || 'unknown',
-            })
-        }
-    }, [apiData, apiIsLoading, filteredEvents])
-    */
     return {
         eventsFn: () => fltrEvtMgr.getFilteredEvents(),
         evts: fltrEvtMgr.getFilteredEvents(),

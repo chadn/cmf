@@ -48,20 +48,30 @@ export type EventsAction =
     | { type: 'SET_ERROR'; payload: Error | null }
     | { type: 'CLEAR_ERROR' }
 
-// Keep existing types for backward compatibility
-export interface GoogleCalendarEvent {
+export interface EventSourceType {
+    prefix: string // must be unique, eg 'gc' for 'gc:1234567890'
+    name: string
+}
+
+export interface EventSourceParams {
     id: string
-    summary: string
-    description?: string
-    start: {
-        dateTime: string
-        timeZone: string
-    }
-    end: {
-        dateTime: string
-        timeZone: string
-    }
-    location?: string
+    timeMin?: string
+    timeMax?: string
+    [key: string]: string | undefined
+}
+
+export interface EventSourceResponseMetadata {
+    id: string
+    name: string
+    totalCount: number
+    unknownLocationsCount: number
+    type: EventSourceType
+}
+
+export interface EventSourceResponse {
+    events: CmfEvent[]
+    metadata: EventSourceResponseMetadata
+    httpStatus: number
 }
 
 export interface EventsFilter {

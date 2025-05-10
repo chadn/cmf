@@ -25,7 +25,11 @@ export async function GET(request: NextRequest) {
         // Use the existing geocodeLocation function from the geocoding module
         const [locationData, source, timings] = await geocodeLocation(location)
 
-        logr.info('api-geocode', `Location "${location}" geocoded with status: ${locationData.status} (${source})`)
+        logr.info(
+            'api-geocode',
+            `Location "${location}" geocoded with status: ${locationData.status} (${source})`,
+            timings
+        )
         return NextResponse.json({ resolved_location: locationData, source })
     } catch (error) {
         logr.info('api-geocode', 'Error processing geocoding request', error)

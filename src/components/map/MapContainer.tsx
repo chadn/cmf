@@ -1,14 +1,12 @@
 'use client'
 
 import { useRef, useEffect, useState, useCallback } from 'react'
-import Map, { Marker, Popup, NavigationControl, ViewState } from 'react-map-gl'
+import Map, { Marker, Popup, NavigationControl, ViewState, MapRef } from 'react-map-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { MapViewport, MapBounds, MapMarker } from '@/types/map'
 import MapMarkerComponent from './MapMarker'
 import MapPopup from './MapPopup'
 import { logr } from '@/lib/utils/logr'
-// Import maplibre-gl as a type
-import type maplibregl from 'maplibre-gl'
 import { roundMapBounds, viewstate2Viewport } from '@/lib/utils/location'
 import { useDebounce } from '@/lib/utils/utils'
 /**
@@ -23,10 +21,8 @@ interface MapContainerProps {
     onMarkerSelect: (markerId: string | null) => void
     onBoundsChange: (bounds: MapBounds) => void
     onWidthHeightChange: (mapWidthHeight: { w: number; h: number }) => void
-    onResetView: () => void
     selectedEventId: string | null
     onEventSelect: (eventId: string | null) => void
-    isMapOfAllEvents?: boolean
 }
 
 const MapContainer: React.FC<MapContainerProps> = ({
@@ -37,13 +33,10 @@ const MapContainer: React.FC<MapContainerProps> = ({
     onMarkerSelect,
     onBoundsChange,
     onWidthHeightChange,
-    onResetView,
     selectedEventId,
     onEventSelect,
-    isMapOfAllEvents = false,
 }) => {
-    const mapRef = useRef<any>(null) // TODO: Type this properly with MapRef from react-map-gl
-    const [mapLoaded, setMapLoaded] = useState(false)
+    const mapRef = useRef<MapRef>(null)
     const [popupMarker, setPopupMarker] = useState<MapMarker | null>(null)
     const mapWidthHeightRef = useRef({ w: 1001, h: 1001 })
 
@@ -76,13 +69,16 @@ const MapContainer: React.FC<MapContainerProps> = ({
             west: 0,
         }
         if (mapRef.current) {
-            const bounds = mapRef.current.getMap().getBounds()
-            ret = roundMapBounds({
-                north: bounds.getNorth(),
-                south: bounds.getSouth(),
-                east: bounds.getEast(),
-                west: bounds.getWest(),
-            })
+            const map = mapRef.current.getMap()
+            const bounds = map.getBounds()
+            if (bounds) {
+                ret = roundMapBounds({
+                    north: bounds.getNorth(),
+                    south: bounds.getSouth(),
+                    east: bounds.getEast(),
+                    west: bounds.getWest(),
+                })
+            }
         }
         logr.debug('mapc', `getMapBounds`, ret)
         return ret
@@ -91,7 +87,7 @@ const MapContainer: React.FC<MapContainerProps> = ({
     const debouncedUpdateBounds = useDebounce(() => {
         const newBounds = getMapBounds()
         logr.info('mapc', 'Bounds updating after debounce', newBounds)
-        onBoundsChange && onBoundsChange(newBounds)
+        onBoundsChange(newBounds)
     }, 200)
 
     // Handle viewport change, Map onMove
@@ -113,23 +109,21 @@ const MapContainer: React.FC<MapContainerProps> = ({
     // Handle Map onLoad
     const handleMapLoad = useCallback(() => {
         logr.info('mapc', 'Map onLoad: handleMapLoad')
-        setMapLoaded(true)
-        // setTimeout is needed since we must wait after render for mapLoaded state to be true
         setTimeout(() => {
             updateMapWidthHeight() // Update dimensions and notify parent if changed
             const initialBounds = getMapBounds()
             logr.info('mapc', 'timeout=10ms, setting initial bounds', initialBounds)
-            onBoundsChange && onBoundsChange(initialBounds)
+            onBoundsChange(initialBounds)
         }, 10)
     }, [updateMapWidthHeight, getMapBounds, onBoundsChange])
 
-    // Log when component mounts  -
+    // Log when component mounts
     useEffect(() => {
-        logr.info('mapc', 'MapContainer component mounted DELME?', {
+        logr.info('mapc', 'MapContainer component mounted', {
             initialViewport: viewport,
             markerCount: markers.length,
         })
-    }, [])
+    }, [viewport, markers.length])
 
     // Close popup when selected marker changes to null
     useEffect(() => {
@@ -163,11 +157,9 @@ const MapContainer: React.FC<MapContainerProps> = ({
                         onEventSelect(firstEventId)
                     }
                 }
-            } else {
+            } else if (popupMarker !== null) {
                 // Only set to null if it's not already null
-                if (popupMarker !== null) {
-                    setPopupMarker(null)
-                }
+                setPopupMarker(null)
             }
         }
     }, [selectedMarkerId, markers, selectedEventId, onEventSelect, popupMarker])
@@ -202,16 +194,13 @@ const MapContainer: React.FC<MapContainerProps> = ({
 
         // Force a filter update to refresh the showing count
         // This ensures the showing count updates when the popup is closed
-        onBoundsChange && onBoundsChange(getMapBounds())
+        onBoundsChange(getMapBounds())
     }
 
     return (
         <div className="relative w-full h-full" style={{ minHeight: '100%' }}>
             <Map
                 ref={mapRef}
-                // @ts-ignore - This works at runtime but has type issues
-                // TODO: Fix type issues with mapLib import
-                mapLib={import('maplibre-gl')}
                 mapStyle={{
                     version: 8,
                     sources: {
@@ -251,8 +240,7 @@ const MapContainer: React.FC<MapContainerProps> = ({
                 doubleClickZoom={true} // Enable double-click zoom
                 scrollZoom={true} // Ensure scroll zoom is enabled
                 dragPan={true} // Ensure drag pan is enabled
-                touchZoom={true} // Enable touch zoom for mobile
-                touchRotate={false} // Disable touch rotation for simpler interaction
+                touchPitch={false}
             >
                 {/* Navigation controls */}
                 <NavigationControl position="top-right" showCompass={true} showZoom={true} visualizePitch={true} />

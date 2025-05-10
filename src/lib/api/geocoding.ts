@@ -189,7 +189,7 @@ export function updateResolvedLocation(result: Location, apiData: GoogleGeocodeR
         logr.info(
             'api-geo',
             `updateResolvedLocation unexpected API data format, unresolved: ${result.original_location}`,
-            apiData
+            [error, apiData]
         )
         return {
             original_location: result.original_location,
@@ -249,10 +249,10 @@ async function checkCache(locationString: string): Promise<GeocodingResult<Locat
  * @returns Promise with time taken in ms
  */
 async function saveToCacheWithTiming(locationString: string, result: Location): Promise<number> {
-    const [_, time] = await withTiming(async () => {
+    const [, time] = await withTiming(async () => {
         if (result.status === 'resolved' || CONFIG.CACHE_UNRESOLVED_LOCATIONS) {
             logr.debug('api-geo', `Caching ${result.status}: "${locationString}"`)
-            await cacheLocation(locationString, result)
+            return await cacheLocation(locationString, result)
         }
     })
     return time

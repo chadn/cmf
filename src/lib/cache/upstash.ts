@@ -1,5 +1,4 @@
 import { Redis } from '@upstash/redis'
-import { Location } from '@/types/events'
 
 // Cache key prefix
 

@@ -32,24 +32,16 @@ export function formatEventDuration(startDateString: string, endDateString: stri
         const startDate = parseISO(startDateString)
         const endDate = parseISO(endDateString)
 
+        // Check if either date is invalid
         if (!isValid(startDate) || !isValid(endDate)) {
             return ''
         }
 
-        // Calculate duration in milliseconds
-        const durationMs = endDate.getTime() - startDate.getTime()
+        const durationHours = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60)
 
-        // Convert to hours
-        const durationHours = durationMs / (1000 * 60 * 60)
-
-        if (durationHours < 24) {
-            // Less than a day, show hours
-            return `${Math.round(durationHours)} hr${durationHours !== 1 ? 's' : ''}`
-        } else {
-            // More than a day, show days
-            const durationDays = durationHours / 24
-            return `${Math.round(durationDays)} day${durationDays !== 1 ? 's' : ''}`
-        }
+        return durationHours < 24
+            ? `${Math.round(durationHours)} hr${durationHours !== 1 ? 's' : ''}`
+            : `${Math.round(durationHours / 24)} day${durationHours / 24 !== 1 ? 's' : ''}`
     } catch (error) {
         logr.warn('date', 'Error calculating duration:', error)
         return ''
@@ -62,16 +54,12 @@ export function formatEventDuration(startDateString: string, endDateString: stri
  * @returns Relative time string
  */
 export function getRelativeTimeString(dateString: string): string {
-    try {
-        const date = parseISO(dateString)
-        if (!isValid(date)) {
-            return ''
-        }
-        return formatDistance(date, new Date(), { addSuffix: true })
-    } catch (error) {
-        logr.warn('date', 'Error getting relative time:', error)
+    const date = parseISO(dateString)
+    if (!isValid(date)) {
+        logr.warn('date', 'Invalid date for relative time', { dateString })
         return ''
     }
+    return formatDistance(date, new Date(), { addSuffix: true })
 }
 
 // Returns a date object from a string that can be a date in one of these formats
@@ -79,19 +67,17 @@ export function getRelativeTimeString(dateString: string): string {
 //  YYYY-MM-DD
 // or a relative time string like 1d, -7d, 2w, 3m
 export function getDateFromUrlDateString(dateString: string): Date | null {
+    // Early return for empty or invalid input
+    if (!dateString) return null
+
     // Try parsing as YYYY-MM-DD or YYYY-M-D first
     const dateRegex = /^(\d{4})-(\d{1,2})-(\d{1,2})$/
     const dateMatch = dateString.match(dateRegex)
     if (dateMatch) {
         const [, year, month, day] = dateMatch
-        // Pad month and day with zeros if needed
         const normalizedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
         const date = parseISO(normalizedDate)
-        // Check if the date is valid
-        if (isValid(date)) {
-            return date
-        }
-        return null
+        return isValid(date) ? date : null
     }
 
     // Try parsing as a standard date (RFC3339)

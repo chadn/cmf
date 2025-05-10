@@ -171,7 +171,7 @@ describe('MapPopup', () => {
     it('handles invalid current index gracefully', () => {
         // Create a wrapper component to test useState behavior
         const EventPopupWithIndexManipulation = () => {
-            const [forcedRender, setForcedRender] = React.useState(false)
+            const [, setForcedRender] = React.useState(false)
 
             React.useEffect(() => {
                 // Force a re-render after component mounts

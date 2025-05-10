@@ -2,7 +2,6 @@
 
 import React, { Suspense } from 'react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
 
 interface HeaderProps {
     headerName?: string
@@ -29,7 +28,16 @@ function HeaderContent({ headerName, eventCount, onInfoClick }: HeaderProps) {
                         <div
                             className="ml-4 flex flex-col sm:flex-row sm:items-center cursor-pointer hover:bg-gray-50 px-2 py-1 rounded transition-colors duration-150"
                             onClick={onInfoClick}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault()
+                                    onInfoClick?.()
+                                }
+                            }}
                             title="Click to scroll events to top"
+                            tabIndex={0}
+                            role="button"
+                            aria-label="Scroll events to top"
                         >
                             <span className="text-sm sm:text-lg md:text-2xl font-semibold text-gray-800">
                                 {headerName}

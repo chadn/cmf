@@ -165,6 +165,7 @@ describe('geocoding', () => {
                 original_location: 'Test Location',
                 status: 'unresolved' as const,
             }
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const apiData = {} as any
             const updated = updateResolvedLocation(result, apiData)
             expect(updated).toEqual({

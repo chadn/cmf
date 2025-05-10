@@ -24,7 +24,7 @@ declare global {
     /**
      * Global umami object that is injected by the Umami analytics script
      */
-    var umami: Umami | undefined
+    let umami: Umami | undefined
 }
 
 export {}

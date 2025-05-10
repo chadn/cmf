@@ -10,7 +10,7 @@ export const fetcherLogr = async (url: string) => {
         const response = await fetch(url)
 
         const data = await response.json()
-        let ms = Math.round(performance.now() - startTime)
+        const ms = Math.round(performance.now() - startTime)
         const sizeOfResponse = JSON.stringify(data).length
         logr.info('browser', `fetcherLogr Response ${response.status}, ${sizeOfResponse} bytes in ${ms}ms, url: ${url}`)
         logr.debug('browser', `fetcherLogr Response ${response.status} url: ${url}`, data)
@@ -20,7 +20,7 @@ export const fetcherLogr = async (url: string) => {
         try {
             // extract id=xxx from url
             esId = url.split('id=')[1]?.split('&')[0]
-        } catch (error) {}
+        } catch {} // ignore errors
         umamiTrack('ClientFetch', {
             esId: esId,
             status: response.status,
@@ -40,7 +40,7 @@ export const fetcherLogr = async (url: string) => {
  * @param func - The function to debounce
  * @param wait - The number of milliseconds to delay
  */
-export function useDebounce<Fn extends (...args: any[]) => any>(
+export function useDebounce<Fn extends (...args: unknown[]) => unknown>(
     func: Fn,
     wait: number
 ): (...args: Parameters<Fn>) => void {

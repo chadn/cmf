@@ -5,7 +5,6 @@ import { FilteredEvents } from '@/types/events'
 
 interface ActiveFiltersProps {
     evts: FilteredEvents
-    isMapOfAllEvents: boolean
     onClearMapFilter: () => void
     onClearSearchFilter: () => void
     onClearDateFilter: () => void
@@ -13,7 +12,6 @@ interface ActiveFiltersProps {
 
 export default function ActiveFilters({
     evts,
-    isMapOfAllEvents,
     onClearMapFilter,
     onClearSearchFilter,
     onClearDateFilter,
@@ -40,14 +38,21 @@ export default function ActiveFilters({
     ]
     const noFilters = filterButtons.every((filter) => filter.numEvents === 0)
     return noFilters ? null : (
-        <div className="mb-0.5 flex flex-wrap gap-1">
+        <div className="mb-0.5 flex flex-wrap gap-1" role="list" aria-label="Active filters">
             {filterButtons.map(
                 (filter) =>
                     filter.numEvents > 0 && (
-                        <div
+                        <button
                             key={filter.label}
                             className="inline-flex items-center bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded cursor-pointer hover:bg-blue-200 transition-colors duration-150"
                             onClick={filter.onClick}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault()
+                                    filter.onClick()
+                                }
+                            }}
+                            aria-label={`Clear ${filter.label} filter (${filter.numEvents} events filtered)`}
                             data-umami-event="ClearFilter"
                             data-umami-event-btn={filter.label}
                             title={`Click to clear ${filter.label} filter`}
@@ -58,12 +63,15 @@ export default function ActiveFilters({
                                 fill="none"
                                 viewBox="0 0 24 24"
                                 stroke="currentColor"
+                                aria-hidden="true"
                             >
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={filter.d} />
                             </svg>
                             {filter.numEvents} Filtered by {filter.label}
-                            <span className="ml-1 text-blue-700 hover:text-blue-900">×</span>
-                        </div>
+                            <span className="ml-1 text-blue-700 hover:text-blue-900" aria-hidden="true">
+                                ×
+                            </span>
+                        </button>
                     )
             )}
         </div>

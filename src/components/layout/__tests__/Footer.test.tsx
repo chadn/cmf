@@ -5,7 +5,7 @@ import Footer from '../Footer'
 
 // Mock Next.js Link component
 jest.mock('next/link', () => {
-    return ({
+    const MockLink = ({
         children,
         href,
         className,
@@ -20,6 +20,9 @@ jest.mock('next/link', () => {
             </a>
         )
     }
+
+    MockLink.displayName = 'MockLink'
+    return MockLink
 })
 
 describe('Footer', () => {
@@ -27,9 +30,7 @@ describe('Footer', () => {
         render(<Footer />)
 
         // Check for copyright notice
-        expect(
-            screen.getByText(/© \d{4} Calendar Map Filter/)
-        ).toBeInTheDocument()
+        expect(screen.getByText(/© \d{4} Calendar Map Filter/)).toBeInTheDocument()
 
         // Check for links
         expect(screen.getByText('Terms of Service')).toBeInTheDocument()
@@ -39,9 +40,7 @@ describe('Footer', () => {
     it('renders the current year in the copyright notice', () => {
         render(<Footer />)
         const currentYear = new Date().getFullYear().toString()
-        expect(
-            screen.getByText(new RegExp(`© ${currentYear}`))
-        ).toBeInTheDocument()
+        expect(screen.getByText(new RegExp(`© ${currentYear}`))).toBeInTheDocument()
     })
 
     it('has links to terms and privacy pages', () => {
@@ -59,27 +58,15 @@ describe('Footer', () => {
 
         const githubLink = screen.getByText('GitHub')
         expect(githubLink).toBeInTheDocument()
-        expect(githubLink.closest('a')).toHaveAttribute(
-            'href',
-            'https://github.com/chadn/cmf'
-        )
+        expect(githubLink.closest('a')).toHaveAttribute('href', 'https://github.com/chadn/cmf')
         expect(githubLink.closest('a')).toHaveAttribute('target', '_blank')
-        expect(githubLink.closest('a')).toHaveAttribute(
-            'rel',
-            'noopener noreferrer'
-        )
+        expect(githubLink.closest('a')).toHaveAttribute('rel', 'noopener noreferrer')
     })
 
     it('renders disclaimer text', () => {
         render(<Footer />)
 
-        expect(
-            screen.getByText(
-                /This application uses the Google Calendar API and MapLibre GL JS/
-            )
-        ).toBeInTheDocument()
-        expect(
-            screen.getByText(/not affiliated with or endorsed by Google/)
-        ).toBeInTheDocument()
+        expect(screen.getByText(/This application uses the Google Calendar API and MapLibre GL JS/)).toBeInTheDocument()
+        expect(screen.getByText(/not affiliated with or endorsed by Google/)).toBeInTheDocument()
     })
 })
