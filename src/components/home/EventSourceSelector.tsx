@@ -5,8 +5,7 @@ import { useRouter } from 'next/navigation'
 import LoadingSpinner from '../common/LoadingSpinner'
 import ErrorMessage from '../common/ErrorMessage'
 import { logr } from '@/lib/utils/logr'
-// Basic debug log to verify DEBUG_LOGIC is enabled on the client
-// This will be filtered out by the debug utility if running on the server
+import { exampleEventSources } from '@/lib/events/examples'
 
 const EventSourceSelector: React.FC = () => {
     const router = useRouter()
@@ -18,27 +17,6 @@ const EventSourceSelector: React.FC = () => {
     useEffect(() => {
         logr.info('component', 'EventSourceSelector component mounted')
     }, [])
-
-    // Example event sources for demonstration
-    const exampleEventSources = [
-        {
-            name: 'SF Bay Area Facebook Events (Google Calendar)',
-            id: 'gc:aabe6c219ee2af5b791ea6719e04a92990f9ccd1e68a3ff0d89bacd153a0b36d@group.calendar.google.com',
-        },
-        {
-            name: 'Geocaching in Spain (Google Calendar)',
-            id: 'gc:geocachingspain@gmail.com',
-        },
-        {
-            name: 'Protests from pol-rev.com',
-            id: 'protest:all',
-        },
-        // Facebook examples will be added when supported
-        // {
-        //     name: 'Sample Facebook Events',
-        //     id: 'sample-facebook-id',
-        // },
-    ]
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -143,7 +121,8 @@ const EventSourceSelector: React.FC = () => {
                         </svg>
                         Read Usage Docs
                     </a>
-                    <br/>to find your Calendar ID and more on using this app.
+                    <br />
+                    to find your Calendar ID and more on using this app.
                 </p>
             </div>
         </div>

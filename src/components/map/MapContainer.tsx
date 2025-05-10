@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useEffect, useState } from 'react'
+import { useRef, useEffect, useState, useCallback } from 'react'
 import Map, { Marker, Popup, NavigationControl, ViewState } from 'react-map-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { MapViewport, MapBounds, MapMarker } from '@/types/map'
@@ -9,7 +9,8 @@ import MapPopup from './MapPopup'
 import { logr } from '@/lib/utils/logr'
 // Import maplibre-gl as a type
 import type maplibregl from 'maplibre-gl'
-
+import { roundMapBounds, viewstate2Viewport } from '@/lib/utils/location'
+import { useDebounce } from '@/lib/utils/utils'
 /**
  * MapContainer handles the display and interaction with the map
  * It manages markers, popups, viewport changes, and user interactions
@@ -21,6 +22,7 @@ interface MapContainerProps {
     selectedMarkerId: string | null
     onMarkerSelect: (markerId: string | null) => void
     onBoundsChange: (bounds: MapBounds) => void
+    onWidthHeightChange: (mapWidthHeight: { w: number; h: number }) => void
     onResetView: () => void
     selectedEventId: string | null
     onEventSelect: (eventId: string | null) => void
@@ -34,6 +36,7 @@ const MapContainer: React.FC<MapContainerProps> = ({
     selectedMarkerId,
     onMarkerSelect,
     onBoundsChange,
+    onWidthHeightChange,
     onResetView,
     selectedEventId,
     onEventSelect,
@@ -41,14 +44,88 @@ const MapContainer: React.FC<MapContainerProps> = ({
 }) => {
     const mapRef = useRef<any>(null) // TODO: Type this properly with MapRef from react-map-gl
     const [mapLoaded, setMapLoaded] = useState(false)
-    const boundsUpdateTimerRef = useRef<NodeJS.Timeout | null>(null)
-
-    // Simplified state: Only track the current popup info
     const [popupMarker, setPopupMarker] = useState<MapMarker | null>(null)
+    const mapWidthHeightRef = useRef({ w: 1001, h: 1001 })
 
-    // Log when component mounts
+    // Get map dimensions and update parent component if dimensions have changed
+    const updateMapWidthHeight = useCallback(() => {
+        let newDimensions = { w: 1000, h: 1000 }
+        if (mapRef.current) {
+            const container = mapRef.current.getMap().getContainer()
+            newDimensions = {
+                w: container.clientWidth,
+                h: container.clientHeight,
+            }
+        }
+        // Only notify parent if dimensions actually changed
+        if (mapWidthHeightRef.current.w !== newDimensions.w || mapWidthHeightRef.current.h !== newDimensions.h) {
+            logr.info('mapc', 'updateMapWidthHeight changed:', newDimensions)
+            mapWidthHeightRef.current = newDimensions
+            onWidthHeightChange(newDimensions)
+        } else {
+            logr.info('mapc', 'updateMapWidthHeight unchanged:', newDimensions)
+        }
+        return newDimensions
+    }, [onWidthHeightChange])
+
+    const getMapBounds = useCallback(() => {
+        let ret = {
+            north: 0,
+            south: 0,
+            east: 0,
+            west: 0,
+        }
+        if (mapRef.current) {
+            const bounds = mapRef.current.getMap().getBounds()
+            ret = roundMapBounds({
+                north: bounds.getNorth(),
+                south: bounds.getSouth(),
+                east: bounds.getEast(),
+                west: bounds.getWest(),
+            })
+        }
+        logr.debug('mapc', `getMapBounds`, ret)
+        return ret
+    }, [mapRef])
+
+    const debouncedUpdateBounds = useDebounce(() => {
+        const newBounds = getMapBounds()
+        logr.info('mapc', 'Bounds updating after debounce', newBounds)
+        onBoundsChange && onBoundsChange(newBounds)
+    }, 200)
+
+    // Handle viewport change, Map onMove
+    const handleViewportChange = useCallback(
+        (newViewstate: ViewState) => {
+            const vp = viewstate2Viewport(newViewstate)
+            logr.info(
+                'mapc',
+                'Map onMove: handleViewportChange: updateMapWidthHeight, onViewportChange, debouncedUpdateBounds',
+                vp
+            )
+            updateMapWidthHeight() // Update dimensions and notify parent if changed
+            onViewportChange(vp)
+            debouncedUpdateBounds()
+        },
+        [onViewportChange, debouncedUpdateBounds, updateMapWidthHeight]
+    )
+
+    // Handle Map onLoad
+    const handleMapLoad = useCallback(() => {
+        logr.info('mapc', 'Map onLoad: handleMapLoad')
+        setMapLoaded(true)
+        // setTimeout is needed since we must wait after render for mapLoaded state to be true
+        setTimeout(() => {
+            updateMapWidthHeight() // Update dimensions and notify parent if changed
+            const initialBounds = getMapBounds()
+            logr.info('mapc', 'timeout=10ms, setting initial bounds', initialBounds)
+            onBoundsChange && onBoundsChange(initialBounds)
+        }, 10)
+    }, [updateMapWidthHeight, getMapBounds, onBoundsChange])
+
+    // Log when component mounts  -
     useEffect(() => {
-        logr.info('map', 'MapContainer component mounted', {
+        logr.info('mapc', 'MapContainer component mounted DELME?', {
             initialViewport: viewport,
             markerCount: markers.length,
         })
@@ -95,71 +172,6 @@ const MapContainer: React.FC<MapContainerProps> = ({
         }
     }, [selectedMarkerId, markers, selectedEventId, onEventSelect, popupMarker])
 
-    // Handle map load
-    const handleMapLoad = () => {
-        setMapLoaded(true)
-
-        // Get initial bounds
-        if (mapRef.current) {
-            const bounds = mapRef.current.getMap().getBounds()
-            const initialBounds = {
-                north: bounds.getNorth(),
-                south: bounds.getSouth(),
-                east: bounds.getEast(),
-                west: bounds.getWest(),
-            }
-            onBoundsChange(initialBounds)
-        }
-    }
-
-    // Handle viewport change
-    const handleViewportChange = (newViewport: ViewState) => {
-        // Pass the complete viewport state to the parent component
-        onViewportChange({
-            latitude: newViewport.latitude,
-            longitude: newViewport.longitude,
-            zoom: newViewport.zoom,
-            bearing: newViewport.bearing || 0,
-            pitch: newViewport.pitch || 0,
-        })
-
-        // Only update bounds when user stops interacting (through the debounce)
-        // This prevents constant updates during drag/zoom operations
-        updateBoundsWithDebounce()
-    }
-
-    /**
-     * Debounces bounds updates to improve performance
-     * Only updates bounds after user has stopped interacting with the map for a period
-     */
-    const updateBoundsWithDebounce = () => {
-        if (!mapRef.current || !mapLoaded) return
-
-        // Clear any existing timeout
-        if (boundsUpdateTimerRef.current) {
-            clearTimeout(boundsUpdateTimerRef.current)
-        }
-        const timeoutMs = 500 // Adjusted timeout for better performance
-        // Set new timeout - only update bounds after user stops interacting for a moment
-        boundsUpdateTimerRef.current = setTimeout(() => {
-            if (mapRef.current) {
-                try {
-                    const bounds = mapRef.current.getMap().getBounds()
-                    const newBounds = {
-                        north: bounds.getNorth(),
-                        south: bounds.getSouth(),
-                        east: bounds.getEast(),
-                        west: bounds.getWest(),
-                    }
-                    onBoundsChange(newBounds)
-                    logr.info('map', `Bounds updated after debounce timeout=${timeoutMs}ms`, newBounds)
-                } catch (error) {
-                    logr.info('map', 'Error updating bounds', error)
-                }
-            }
-        }, timeoutMs) // Increased to 500ms for more reliable updates
-    }
-
     /**
      * Handles marker click events
      * Selects the marker and shows its popup with events
@@ -190,19 +202,7 @@ const MapContainer: React.FC<MapContainerProps> = ({
 
         // Force a filter update to refresh the showing count
         // This ensures the showing count updates when the popup is closed
-        if (onBoundsChange) {
-            // Get current bounds from the map
-            if (mapRef.current) {
-                const bounds = mapRef.current.getMap().getBounds()
-                const currentBounds = {
-                    north: bounds.getNorth(),
-                    south: bounds.getSouth(),
-                    east: bounds.getEast(),
-                    west: bounds.getWest(),
-                }
-                onBoundsChange(currentBounds)
-            }
-        }
+        onBoundsChange && onBoundsChange(getMapBounds())
     }
 
     return (

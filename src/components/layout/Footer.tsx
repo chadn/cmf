@@ -4,12 +4,15 @@ import React from 'react'
 import Link from 'next/link'
 
 const Footer: React.FC = () => {
+    const sha = (process.env.GIT_COMMIT_SHA || '').substring(0, 7)
     return (
         <footer className="bg-white border-t border-gray-200 py-4">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex flex-col md:flex-row justify-between items-center">
                     <div className="mb-4 md:mb-0">
-                        <p className="text-sm text-gray-500">&copy; {new Date().getFullYear()} Calendar Map Filter</p>
+                        <p className="text-sm text-gray-500">
+                            &copy; {new Date().getFullYear()} Calendar Map Filter {sha}
+                        </p>
                     </div>
 
                     <div className="flex space-x-6">

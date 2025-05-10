@@ -29,12 +29,12 @@ export const genMarkerId = (event: CmfEvent): string => {
 
 /**
  * Custom hook for managing map state and interactions
- * @param {UseMapProps} props - Props for the hook
- * @param {CmfEvent[]} props.events - List of calendar events, usually filtered. Only events with locations are shown on the map.
- * @param {Partial<MapViewport>} [props.initialViewport] - Initial viewport settings
+ * @param {FilteredEvents} props.evts - List of calendar events, usually filtered. Only events with locations are shown on the map.
+ * @param {number} props.mapW - Width of the map in pixels, used for calculating map bounds
+ * @param {number} props.mapH - Height of the map in pixels
  * @returns {UseMapReturn} - Map state and functions
  */
-export function useMap(evts: FilteredEvents): UseMapReturn {
+export function useMap(evts: FilteredEvents, mapW: number, mapH: number): UseMapReturn {
     // Flag to track internal updates to prevent loops
     const isInternalUpdate = useRef(false)
 
@@ -43,8 +43,8 @@ export function useMap(evts: FilteredEvents): UseMapReturn {
 
     // Combine all map state into a single state object
     const [mapState, setMapState] = useState<MapState>(() => {
-        const { bounds, viewport } = calculateMapBoundsAndViewport(markersFromAllEvents)
-        logr.info('map', 'setMapState', viewport)
+        const { bounds, viewport } = calculateMapBoundsAndViewport(markersFromAllEvents, mapW, mapH)
+        logr.info('umap', 'setMapState', { viewport, bounds })
 
         return {
             viewport,
@@ -72,7 +72,7 @@ export function useMap(evts: FilteredEvents): UseMapReturn {
 
     // Log when the hook initializes
     useEffect(() => {
-        logr.info('map', 'uE: useMap hook initialized', {
+        logr.info('umap', 'uE: useMap hook initialized', {
             initialViewport: { ...mapState.viewport },
             eventsCount: evts.allEvents.length,
         })
@@ -92,7 +92,7 @@ export function useMap(evts: FilteredEvents): UseMapReturn {
         if (markersChanged) {
             const el = evts.shownEvents ? evts.shownEvents.length : evts.allEvents.length
             const ol = mapState.markers.length
-            logr.info('map', `uE: markers changed, ${filteredMarkers.length} markers, was ${ol}, from ${el} events`)
+            logr.info('umap', `uE: markers changed, ${filteredMarkers.length} markers, was ${ol}, from ${el} events`)
             setMapState((prev) => ({
                 ...prev,
                 markers: filteredMarkers,
@@ -105,26 +105,26 @@ export function useMap(evts: FilteredEvents): UseMapReturn {
         if (!evts.allEvents || evts.allEvents.length === 0) return
 
         logr.info(
-            'map',
+            'umap',
             `resetMapToAllEvents: showing all ${evts.allEvents.length} events and ${markersFromAllEvents.length} markers`
         )
 
-        const { bounds, viewport } = calculateMapBoundsAndViewport(markersFromAllEvents)
+        const { bounds, viewport } = calculateMapBoundsAndViewport(markersFromAllEvents, mapW, mapH)
         setMapState((prev) => ({
             ...prev,
             viewport,
             bounds,
             markers: markersFromAllEvents,
         }))
-        logr.info('map', `resetMapToAllEvents done.`)
-    }, [evts.allEvents, markersFromAllEvents])
+        logr.info('umap', `resetMapToAllEvents done.`)
+    }, [evts.allEvents, markersFromAllEvents, mapW, mapH])
 
     // Handle viewport changes from user interaction
     const setViewport = useCallback((newViewport: MapViewport) => {
         // Skip if this is an internal update
         if (isInternalUpdate.current) return
 
-        logr.info('map', 'setViewport from user interaction', newViewport)
+        // TODO: calculate bounds from new viewport?
         setMapState((prev) => ({
             ...prev,
             viewport: newViewport,
@@ -133,7 +133,7 @@ export function useMap(evts: FilteredEvents): UseMapReturn {
 
     // Log when selected marker changes
     useEffect(() => {
-        logr.info('map', `uE: selectedMarkerId now ${mapState.selectedMarkerId}`)
+        logr.info('umap', `uE: selectedMarkerId now ${mapState.selectedMarkerId}`)
     }, [mapState.selectedMarkerId])
 
     return {

@@ -32,4 +32,4 @@ export const umamiWebsiteId = sessionIds[domain as keyof typeof sessionIds] || s
 // just get the first 8 characters of the sha
 //const sha = (process.env.VERCEL_GIT_COMMIT_SHA || 'xxxxxxxxxx').substring(0, 8)
 
-logr.info('umami', `init for ${domain} ${umamiWebsiteId}`)
+//logr.info('umami', `init for ${domain} ${umamiWebsiteId}`)

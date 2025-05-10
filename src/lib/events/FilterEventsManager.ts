@@ -177,7 +177,7 @@ export class FilterEventsManager {
      */
     private setFilter(filterName: keyof EventsFilter, value: any) {
         this.filters[filterName] = value
-        logr.info('fltr_evts_mgr', `Filter updated: ${filterName}`, { [filterName]: value })
+        logr.info('fltr_evts_mgr', `Filter updated: ${filterName}`, value)
     }
 
     // Set date range filter

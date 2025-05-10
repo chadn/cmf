@@ -8,6 +8,7 @@ const nextConfig = {
     env: {
         MAPLIBRE_STYLE_URL: process.env.MAPLIBRE_STYLE_URL,
         DEBUG_LOGIC: process.env.DEBUG_LOGIC,
+        GIT_COMMIT_SHA: process.env.VERCEL_GIT_COMMIT_SHA,
     },
     // Add webpack configuration to alias mapbox-gl to maplibre-gl
     webpack: (config) => {

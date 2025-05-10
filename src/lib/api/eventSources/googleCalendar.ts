@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { parseISO, addMonths, subMonths, format } from 'date-fns'
-import { GoogleCalendarResponse, GoogleCalendarEvent } from '@/types/api'
+import { GoogleCalendarResponse, GoogleCalendarEvent } from '@/types/googleApi'
 import { CmfEvent } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
 import {

@@ -4,6 +4,8 @@ import { batchGeocodeLocations } from '@/lib/api/geocoding'
 import { CmfEvent } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
 import { getCache, setCache } from '@/lib/cache'
+import { waitUntil } from '@vercel/functions'
+
 // Import event source handlers to ensure they're registered
 import '@/lib/api/eventSources/googleCalendar'
 import '@/lib/api/eventSources/protests'
@@ -13,17 +15,14 @@ import '@/lib/api/eventSources/protests'
 // Export config to make this a dynamic API route
 export const dynamic = 'force-dynamic'
 
-const API_CACHE_EXPIRE_MS = 1000 * 60 * 10 // 10 minutes
-const TTL = 60 * 12 // 12 minutes (in seconds)
+// Default cache TTL is 10 minutes (in seconds)
+const CACHE_TTL = process.env.EVENTSOURCE_API_CACHE_TTL ? parseInt(process.env.EVENTSOURCE_API_CACHE_TTL) : 60 * 10
 const EVENTS_CACHE_PREFIX = 'events:'
 
 // Define the type for cached event responses
 interface CachedEventResponse {
-    response: {
-        events: CmfEvent[]
-        metadata: Record<string, any>
-    }
-    ms: number
+    events: CmfEvent[]
+    metadata: Record<string, any>
 }
 
 // given a date in string or date object, return a date rounded to the nearest hour in RFC3339 format
@@ -78,7 +77,10 @@ const fetchAndGeocode = async (eventSourceId: string, timeMin?: string, timeMax?
     // Construct the response
     const response = {
         events: eventsWithLocationResolved,
-        metadata,
+        metadata: {
+            ...metadata,
+            unknownLocationsCount,
+        },
     }
 
     const sizeOfResponse = JSON.stringify(response).length
@@ -86,7 +88,7 @@ const fetchAndGeocode = async (eventSourceId: string, timeMin?: string, timeMax?
 
     logr.info('api-events', `API response ${sizeOfResponse} bytes, ${ms}ms for fetch + geocode`, {
         totalCount: response.events.length,
-        metadata,
+        metadata: response.metadata,
     })
 
     return response
@@ -118,39 +120,35 @@ export async function GET(request: NextRequest) {
 
         // Fetch events from the appropriate source or cache
         const fetchKey = `${eventSourceId}-${roundTimeToNearestHour(timeMin)}-${roundTimeToNearestHour(timeMax)}`
-        logr.info('api-events', `Fetching events from cache for: ${fetchKey}`)
         const startTime = performance.now()
 
         // Try to get response from cache
         const cachedResponse = await getCache<CachedEventResponse>(fetchKey, EVENTS_CACHE_PREFIX)
-        let ms = Math.round(performance.now() - startTime)
+        const fetchTime = Math.round(performance.now() - startTime)
 
-        // Check if we have a valid cached response
-        if (cachedResponse && cachedResponse.ms > Date.now() - API_CACHE_EXPIRE_MS) {
-            const st = new Date(cachedResponse.ms)
-            logr.info('api-events', `Cache hit ${ms}ms on ${st.toISOString()} for ${fetchKey}`)
-            return NextResponse.json(cachedResponse.response)
-        }
-
-        // If cache miss or expired, fetch from source
+        // Return cached response if available
         if (cachedResponse) {
-            logr.info('api-events', `Cache hit ${ms}ms for ${fetchKey}, but too old, not using.`)
-        } else {
-            logr.info('api-events', `No Cache hit ${ms}ms, calling API for ${fetchKey}`)
+            logr.info('api-events', `Cache hit in ${fetchTime}ms for ${fetchKey}`)
+            return NextResponse.json(cachedResponse)
         }
+
+        logr.info('api-events', `Cache miss, ${fetchTime}ms. Calling API for ${fetchKey}`)
 
         // Fetch and process events
         const response = await fetchAndGeocode(eventSourceId, timeMin || undefined, timeMax || undefined)
 
         // Save to cache in the background (don't await) but log when successful or failed
-        process.nextTick(async () => {
-            try {
-                await setCache<CachedEventResponse>(fetchKey, { response, ms: Date.now() }, EVENTS_CACHE_PREFIX, TTL)
-                logr.info('api-events', `Cached events for ${fetchKey}`)
-            } catch (error) {
-                logr.warn('api-events', `Failed to cache events for ${fetchKey}`, error)
-            }
-        })
+        // 2024 https://vercel.com/changelog/waituntil-is-now-available-for-vercel-functions
+        waitUntil(
+            new Promise(async (resolve, reject) => {
+                try {
+                    await setCache<CachedEventResponse>(fetchKey, response, EVENTS_CACHE_PREFIX, CACHE_TTL)
+                    logr.info('api-events', `Cached events TTL=${CACHE_TTL}s for ${fetchKey}`)
+                } catch (error) {
+                    logr.warn('api-events', `Failed to cache events for ${fetchKey}`, error)
+                }
+            })
+        )
 
         return NextResponse.json(response)
     } catch (error) {

@@ -2,6 +2,43 @@ import { truncateLocation, calculateMapBoundsAndViewport, generateMapMarkers, ge
 import { MapBounds, MapMarker } from '@/types/map'
 import { CmfEvent } from '@/types/events'
 
+// Mock WebMercatorViewport
+jest.mock('@math.gl/web-mercator', () => {
+    return class WebMercatorViewport {
+        constructor(options: { width: number; height: number }) {
+            // Store dimensions for potential use
+            this.width = options.width || 800
+            this.height = options.height || 600
+        }
+
+        width: number
+        height: number
+
+        fitBounds(bounds: [[number, number], [number, number]], options?: any) {
+            // Simple mock implementation that returns the center of the bounds with a fixed zoom
+            const [[west, south], [east, north]] = bounds
+            const latitude = (north + south) / 2
+            const longitude = (east + west) / 2
+
+            // Calculate zoom based on the bounds size
+            const latDiff = Math.abs(north - south)
+            const lngDiff = Math.abs(east - west)
+            const maxDiff = Math.max(latDiff, lngDiff)
+
+            // Default zoom level or calculated based on bounds
+            let zoom = maxDiff === 0 ? 12 : Math.min(12, 12 - Math.log2(maxDiff * 5))
+
+            return {
+                latitude,
+                longitude,
+                zoom,
+                bearing: 0,
+                pitch: 0,
+            }
+        }
+    }
+})
+
 describe('Location and Map Utilities', () => {
     describe('truncateLocation', () => {
         it('truncates a location string that exceeds the max length', () => {
@@ -30,7 +67,7 @@ describe('Location and Map Utilities', () => {
 
     describe('calculateMapBoundsAndViewport', () => {
         it('should return default values for empty markers array', () => {
-            const result = calculateMapBoundsAndViewport([])
+            const result = calculateMapBoundsAndViewport([], 800, 600)
 
             expect(result.bounds).toBeNull()
             expect(result.viewport).toEqual({
@@ -50,7 +87,7 @@ describe('Location and Map Utilities', () => {
                 events: [],
             }
 
-            const result = calculateMapBoundsAndViewport([marker])
+            const result = calculateMapBoundsAndViewport([marker], 800, 600)
 
             expect(result.bounds).toEqual({
                 north: 37.7749,
@@ -91,7 +128,7 @@ describe('Location and Map Utilities', () => {
                 },
             ]
 
-            const result = calculateMapBoundsAndViewport(markers)
+            const result = calculateMapBoundsAndViewport(markers, 800, 600)
 
             // Check that bounds include all markers (without expecting padding)
             expect(result.bounds).toBeDefined()
@@ -133,7 +170,7 @@ describe('Location and Map Utilities', () => {
                 },
             ]
 
-            const result = calculateMapBoundsAndViewport(markers)
+            const result = calculateMapBoundsAndViewport(markers, 800, 600)
 
             expect(result.bounds).toEqual({
                 north: 37.7749,

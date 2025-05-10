@@ -7,7 +7,7 @@ Calendar Map Filter (CMF) is a web application that allows users to view and fil
 CMF combines calendar event data with geographic visualization, allowing users to:
 
 -   View events from multiple sources on a map
--   Filter events by date range, search terms, and geographic area
+-   Filter events by date range (date filter), search terms (search filter), and geographic area (map filter)
 -   Share filtered views via URL parameters - just copy paste the URL!
 -   Navigate between events with an integrated list view
 
@@ -17,10 +17,11 @@ and changes on the numbers of how many events are showing and filtered by date.
 
 ## Key Features
 
-### Real-Time Updates
+### Real-Time Data Updates
 
--   All changes (filters, map movement, searches) update instantly
--   The events list and map markers stay synchronized
+-   Instantly updates as you interact with map, search, or date changes. This encourages interactivity.
+-   Enable user to have some control in "too much" or "not enough" data type experiences.
+-   The events list and map markers stay synchronized, as well as the count of events showing on the map.
 -   Filter counts update in real-time as you interact
 
 ### Map and Event List Integration
@@ -50,6 +51,7 @@ and changes on the numbers of how many events are showing and filtered by date.
 
 -   Map and event list appear side by side
 -   Larger map view for better navigation
+-   Responsive Deisgn - Subtle optimizations for desktop >768px, >1024px, >1536px via [tailwind](https://tailwindcss.com/docs/responsive-design)
 
 ### Mobile Experience
 
@@ -181,25 +183,6 @@ Here are some example URLs showing different parameter combinations:
 -   View events up to 9 months from now: [?ed=9m&es=gc:geocachingspain@gmail.com](https://cmf-chad.vercel.app/?ed=9m&es=gc:geocachingspain@gmail.com)
 
 Note: Replace `geocachingspain@gmail.com` with your actual Google Calendar ID.
-
-## Application States
-
-The application goes through several states during initialization:
-
-1. **uninitialized**: Initial state, nothing is known
-2. **events-init**: Fetching events from event source based on initial URL params
-3. **map-init**: Updating map based on initial URL params and event source events
-4. **main-state**: Responding to user interactions, updating URL parameters
-
-## Filtering Mechanism
-
-CMF uses a `FilterEventsManager` class to apply multiple filters to events:
-
--   **Date filters**: Filter events by date range
--   **Search filters**: Filter events by text in name, location, or description
--   **Map filters**: Filter events by geographic bounds
-
-Filters can be combined, and the application maintains the filtered state in the URL for sharing.
 
 ## Event Sources
 
