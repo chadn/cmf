@@ -191,7 +191,7 @@ It supports the following values:
 
 Here are some example URLs showing different parameter combinations:
 
--   Basic calendar view: [?es=gc:geocachingspain@gmail.com](https://cmf-chad.vercel.app/?es=gc:geocachingspain@gmail.com)
+-   Basic Google Calendar view: [?es=gc:geocachingspain@gmail.com](https://cmf-chad.vercel.app/?es=gc:geocachingspain@gmail.com)
 -   View Facebook events: [?es=fb:123456789-ABCDEFGHIJK](https://cmf-chad.vercel.app/?es=fb:123456789-ABCDEFGHIJK)
 -   View events in a specific location: [?lat=41.38233&lon=2.15997&z=9&es=gc:geocachingspain@gmail.com](https://cmf-chad.vercel.app/?lat=41.38233&lon=2.15997&z=9&es=gc:geocachingspain@gmail.com)
 -   View events happening over the next week: [?qf=next7days&es=gc:geocachingspain@gmail.com](https://cmf-chad.vercel.app/?qf=next7days&es=gc:geocachingspain@gmail.com)
