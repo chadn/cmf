@@ -24,13 +24,28 @@ const EventSourceSelector: React.FC = () => {
         setError(null)
 
         try {
+            // handle special case for facebook events
+            // https://www.facebook.com/events/ical/upcoming/?uid=677700808&key=3RlHDZnbeH2YJMpJ
+            const fbRegex = /facebook\.com\/events\/ical\/upcoming\/\?uid=(\d+)&key=([A-Za-z0-9]+)/
+            const fbMatch = eventSourceId.match(fbRegex)
+
+            let sourceId = eventSourceId
+            if (fbMatch && fbMatch.length === 3) {
+                // Extract uid and key from the matched groups
+                const uid = fbMatch[1]
+                const key = fbMatch[2]
+                logr.info('component', 'Facebook URL detected, converting to fb format', { uid, key })
+                sourceId = `fb:${uid}-${key}`
+                setEventSourceId(sourceId)
+            }
+
             // Validate event source ID format
-            if (!eventSourceId.includes(':')) {
+            if (!sourceId.includes(':')) {
                 throw new Error('Invalid event source format. Must include a colon (e.g., gc:example@gmail.com)')
             }
 
             // Construct the URL with the event source ID
-            const url = `/?es=${encodeURIComponent(eventSourceId)}`
+            const url = `/?es=${encodeURIComponent(sourceId)}`
             router.push(url)
         } catch (err) {
             setError(err instanceof Error ? err.message : 'An error occurred')

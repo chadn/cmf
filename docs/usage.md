@@ -88,12 +88,26 @@ To use examples, click on the grey buttons then click the blue "View Events" but
 
 ### Find your Google Calendar Id
 
-1. Go to Google Calendar in your browser
+1. Go to Google Calendar in your browser, https://calendar.google.com/
 2. Find the calendar you want to use in the left sidebar
 3. Click the three dots next to the calendar name
 4. Select "Settings and sharing"
 5. Scroll down to "Integrate calendar" section
 6. Copy the "Calendar ID" - it will look like `example@gmail.com` or `example@group.calendar.google.com`
+
+### Find your Facebook Events iCal URL
+
+1. On Desktop, go to https://www.facebook.com/events/calendar in your browser, log in
+2. Find the "Add to calendar" button near the top right of the Events page
+3. Right Click the "Add to calendar" button, then select "Copy Link Address"
+   Ex: `https://www.facebook.com/events/ical/upcoming/?uid=123456789&key=ABCDEFGHIJK`
+4. Paste this URL directly in the event source field in CMF
+5. The app will automatically convert it to the proper format (`fb:123456789-ABCDEFGHIJK`)
+
+Note
+
+-   Facebook events only include your upcoming events that you've marked as "Going" or "Interested".
+-   Facebook events only include the past month and the next 3 months
 
 ## Viewing Events
 
@@ -118,6 +132,7 @@ CMF supports several URL parameters that allow for deep linking and sharing spec
 | Parameter | Description     | Example                           |
 | --------- | --------------- | --------------------------------- |
 | `es`      | Event source ID | `es=gc:geocachingspain@gmail.com` |
+|           |                 | `es=fb:123456789-ABCDEFGHIJK`     |
 
 ### Map Viewport Parameters
 
@@ -177,6 +192,7 @@ It supports the following values:
 Here are some example URLs showing different parameter combinations:
 
 -   Basic calendar view: [?es=gc:geocachingspain@gmail.com](https://cmf-chad.vercel.app/?es=gc:geocachingspain@gmail.com)
+-   View Facebook events: [?es=fb:123456789-ABCDEFGHIJK](https://cmf-chad.vercel.app/?es=fb:123456789-ABCDEFGHIJK)
 -   View events in a specific location: [?lat=41.38233&lon=2.15997&z=9&es=gc:geocachingspain@gmail.com](https://cmf-chad.vercel.app/?lat=41.38233&lon=2.15997&z=9&es=gc:geocachingspain@gmail.com)
 -   View events happening over the next week: [?qf=next7days&es=gc:geocachingspain@gmail.com](https://cmf-chad.vercel.app/?qf=next7days&es=gc:geocachingspain@gmail.com)
 -   Search for specific events: [?sq=meet&es=gc:geocachingspain@gmail.com](https://cmf-chad.vercel.app/?sq=meet&es=gc:geocachingspain@gmail.com)

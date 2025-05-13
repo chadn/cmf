@@ -13,9 +13,9 @@ export const exampleEventSources = [
         name: 'Protests from pol-rev.com',
         id: 'protest:all',
     },
-    // Facebook examples will be added when supported
-    // {
-    //     name: 'Sample Facebook Events',
-    //     id: 'sample-facebook-id',
-    // },
+    {
+        name: 'Sample Facebook Events',
+        // https://www.facebook.com/events/ical/upcoming/?uid=677700808&key=3RlHDZnbeH2YJMpJ
+        id: 'fb:677700808-3RlHDZnbeH2YJMpJ',
+    },
 ]

@@ -9,6 +9,7 @@ import { waitUntil } from '@vercel/functions'
 // Import event source handlers to ensure they're registered
 import '@/lib/api/eventSources/googleCalendar'
 import '@/lib/api/eventSources/protests'
+import '@/lib/api/eventSources/facebookEvents'
 // Add other event source imports here as they're implemented
 // import '@/lib/api/eventSources/facebookEvents'
 
