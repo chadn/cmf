@@ -238,7 +238,10 @@ const MapContainer: React.FC<MapContainerProps> = ({
                 interactive={true}
                 dragRotate={false} // Disable rotation for simplicity
                 doubleClickZoom={true} // Enable double-click zoom
-                scrollZoom={true} // Ensure scroll zoom is enabled
+                scrollZoom={{
+                    speed: 0.01, // Increase zoom speed (default is 0.002)
+                    smooth: true,
+                }} // Configure faster scroll zoom
                 dragPan={true} // Ensure drag pan is enabled
                 touchPitch={false}
             >
