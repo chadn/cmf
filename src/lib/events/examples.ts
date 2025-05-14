@@ -14,8 +14,8 @@ export const exampleEventSources = [
         id: 'protest:all',
     },
     {
-        name: 'Plura Community Events in SF+Oakland',
-        id: 'plura:Oakland,CA',
+        name: 'Plura Community Events',
+        id: 'plura:all',
     },
     {
         name: 'Sample Facebook Events',
