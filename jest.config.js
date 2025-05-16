@@ -15,7 +15,7 @@ const customJestConfig = {
     },
     testPathIgnorePatterns: ['<rootDir>/node_modules/', '<rootDir>/.next/'],
     resolver: `${__dirname}/jest-resolver.js`,
-    transformIgnorePatterns: ['/node_modules/(?!(nuqs)/)'],
+    transformIgnorePatterns: ['/node_modules/(?!(nuqs|cheerio)/)'],
     moduleFileExtensions: ['js', 'jsx', 'ts', 'tsx', 'json', 'node'],
     testMatch: ['**/__tests__/**/*.[jt]s?(x)', '**/?(*.)+(spec|test).[jt]s?(x)'],
 }

@@ -1,4 +1,4 @@
-import axios from 'axios'
+import { axiosGet } from '@/lib/utils/utils-server'
 import { addMonths, subMonths, format } from 'date-fns'
 import { GoogleCalendarResponse, GoogleCalendarEvent } from '@/types/googleApi'
 import { CmfEvent, EventSourceParams, EventSourceResponse, EventSourceType } from '@/types/events'
@@ -92,24 +92,15 @@ export class GoogleCalendarEventSource extends BaseEventSourceHandler {
             apiUrl: apiUrl,
         })
 
-        try {
-            const response = await axios.get(apiUrl, { params })
+        // will throw if error, 'HTTP 500: ...
+        const response = await axiosGet(apiUrl, params)
 
-            if (response.data && response.data.items) {
-                logr.info('api-es-gc', `fetchGoogleCalendarEvents response: ${response.data.items.length} events`)
-            } else {
-                logr.info('api-es-gc', 'fetchGoogleCalendarEvents unexpected', response)
-            }
-            return response.data
-        } catch (error) {
-            if (axios.isAxiosError(error)) {
-                logr.info('api-es-gc', `fetchGoogleCalendarEvents axios error: ${error.response?.statusText}`)
-                throw new Error(`HTTP ${error.response?.status || 500}: ${error.response?.statusText}`)
-            }
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
-            logr.warn('api-es-gc', `fetchGoogleCalendarEvents error: ${errorMessage}`)
-            throw new Error(`HTTP 500: ${errorMessage}`)
+        if (response.data && response.data.items) {
+            logr.info('api-es-gc', `fetchGoogleCalendarEvents response: ${response.data.items.length} events`)
+        } else {
+            logr.info('api-es-gc', 'fetchGoogleCalendarEvents unexpected', response)
         }
+        return response.data
     }
 }
 

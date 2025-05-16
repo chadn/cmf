@@ -2,7 +2,7 @@ import { MapBounds, MapViewport, MapMarker } from '@/types/map'
 import { CmfEvent } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
 import { createParser } from 'nuqs'
-import { exampleEventSources } from '@/lib/events/examples'
+import { ExampleEventSources } from '@/lib/events/examples'
 import { ViewState as ViewStateType } from 'react-map-gl'
 import WebMercatorViewport from '@math.gl/web-mercator'
 
@@ -279,7 +279,7 @@ export const parseAsEventSource = createParser({
         if (typeof queryValue !== 'string') return null
 
         // check for example event sources first
-        const example = exampleEventSources.find((es) => es.shortId === queryValue)
+        const example = ExampleEventSources.find((es) => es.shortId === queryValue)
         if (example) return example.id
 
         // match any string that starts with ascii chars or digits then a colon then any number of digits
@@ -289,9 +289,10 @@ export const parseAsEventSource = createParser({
     },
     // serialize: a function that takes the parsed value and returns a string used in the URL.
     serialize(value) {
-        // check for example event sources first
-        const example = exampleEventSources.find((es) => es.id === value && es.shortId)
+        // Check for example event sources first
+        const example = ExampleEventSources?.find?.((es) => es.id === value && es.shortId)
         if (example) return example.shortId as string
+
         return value
     },
 })

@@ -120,9 +120,6 @@ export const logr = {
      * @param message - The debug message
      * @param data - Optional data to log
      */
-    log: (area: string, message: string, data?: unknown) => {
-        return logr.logLevel('INFO', area, message, data)
-    },
     debug: (area: string, message: string, data?: unknown) => {
         return logr.logLevel('DEBUG', area, message, data)
     },

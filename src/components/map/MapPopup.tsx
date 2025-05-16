@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { MapMarker } from '@/types/map'
 import { formatEventDate, formatEventDuration } from '@/lib/utils/date'
 import { logr } from '@/lib/utils/logr'
+import { LOCATION_KEY_PREFIX } from '@/types/events'
 
 interface MapPopupProps {
     marker: MapMarker
@@ -33,7 +34,7 @@ const MapPopup: React.FC<MapPopupProps> = ({ marker, selectedEventId, onEventSel
         const newIndex = getInitialIndex()
         setCurrentIndex(newIndex)
 
-        logr.log('map-popup', `Event selection updated: ${events[newIndex]?.name}`, {
+        logr.info('map-popup', `Event selection updated: ${events[newIndex]?.name}`, {
             eventIndex: newIndex,
             totalEvents: events.length,
         })
@@ -103,6 +104,7 @@ const MapPopup: React.FC<MapPopupProps> = ({ marker, selectedEventId, onEventSel
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-xs text-blue-600 hover:underline block mb-2"
+                title={`${LOCATION_KEY_PREFIX}${currentEvent.resolved_location?.original_location}`}
             >
                 View Original Event
             </a>

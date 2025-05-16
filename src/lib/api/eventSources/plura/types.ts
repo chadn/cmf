@@ -9,8 +9,6 @@
  * These types provide consistent data structures across the different modules.
  */
 
-import { CmfEvent } from '@/types/events'
-
 /* Notes on plura domains, 2025-05-15
 
 https://heyplura.com/events/city/Oakland_CA still works and goes to events same domain

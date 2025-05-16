@@ -1,6 +1,6 @@
 {
     "name": "calendar-map-filter",
-    "version": "0.2.1",
+    "version": "0.2.2",
     "private": true,
     "scripts": {
         "dev": "next dev",
@@ -17,6 +17,7 @@
         "axios": "^1.6.2",
         "cheerio": "^1.0.0",
         "date-fns": "^4.1.0",
+        "dotenv": "^16.5.0",
         "ical.js": "^2.1.0",
         "mapbox-gl": "^3.10.0",
         "maplibre-gl": "^3.6.2",

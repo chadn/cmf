@@ -13,6 +13,7 @@ import {
 } from '../location'
 import { MapMarker } from '@/types/map'
 import { CmfEvent } from '@/types/events'
+import { ExampleEventSources } from '@/lib/events/examples'
 
 // Mock WebMercatorViewport
 jest.mock('@math.gl/web-mercator', () => {
@@ -53,7 +54,7 @@ jest.mock('@math.gl/web-mercator', () => {
 
 // Mock the exampleEventSources for parseAsEventSource tests
 jest.mock('@/lib/events/examples', () => ({
-    exampleEventSources: [
+    ExampleEventSources: [
         { id: 'example:123', shortId: 'ex123' },
         { id: 'example:456', shortId: 'ex456' },
         { id: 'example:789', shortId: null }, // One without shortId
@@ -761,15 +762,35 @@ describe('Location and Map Utilities', () => {
         })
 
         it('should serialize event source IDs correctly', () => {
-            // Regular IDs should remain unchanged
-            expect(parseAsEventSource.serialize('facebook:123')).toBe('facebook:123')
+            // Mock the behavior of ExampleEventSources.find
+            // Setup mock implementations for this test only
+            const originalFind = ExampleEventSources.find
+            ExampleEventSources.find = jest.fn((callback) => {
+                // Return mockEventSource for example:123 and example:456
+                if (callback({ id: 'example:123', shortId: 'ex123' })) {
+                    return { id: 'example:123', shortId: 'ex123' }
+                }
+                if (callback({ id: 'example:456', shortId: 'ex456' })) {
+                    return { id: 'example:456', shortId: 'ex456' }
+                }
+                // Return null for other cases like example:789
+                return null
+            }) as jest.Mock
 
-            // Example IDs should be converted to shortIds
-            expect(parseAsEventSource.serialize('example:123')).toBe('ex123')
-            expect(parseAsEventSource.serialize('example:456')).toBe('ex456')
+            try {
+                // Regular IDs should remain unchanged
+                expect(parseAsEventSource.serialize('facebook:123')).toBe('facebook:123')
 
-            // Example without shortId should return the original ID
-            expect(parseAsEventSource.serialize('example:789')).toBe('example:789')
+                // Example IDs with shortId should be converted to shortIds
+                expect(parseAsEventSource.serialize('example:123')).toBe('ex123')
+                expect(parseAsEventSource.serialize('example:456')).toBe('ex456')
+
+                // Example without shortId should return the original ID
+                expect(parseAsEventSource.serialize('example:789')).toBe('example:789')
+            } finally {
+                // Restore the original find method after the test
+                ExampleEventSources.find = originalFind
+            }
         })
     })
 })

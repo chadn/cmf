@@ -47,7 +47,7 @@ jest.mock('@/lib/utils/logr', () => ({
 }))
 
 // Mock the fetcherLogr utility
-jest.mock('@/lib/utils/utils', () => ({
+jest.mock('@/lib/utils/utils-client', () => ({
     fetcherLogr: jest.fn(),
 }))
 

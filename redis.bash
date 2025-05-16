@@ -1,4 +1,8 @@
 #!/bin/bash
+#
+#  NOT USED ANYMORE, use scripts/upstash-redis.ts instead
+#
+
 
 # FIRST make sure password is in env 
 # set -a && source .env.local && set +a; 

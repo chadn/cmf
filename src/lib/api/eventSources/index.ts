@@ -38,7 +38,7 @@ export function registerEventSource(handler: BaseEventSourceHandler): void {
         return
     }
     eventSourceHandlers.push(handler)
-    logr.info('api-es', `Registered event source handler: ${handler.type.prefix}: for "${handler.type.name}"`)
+    logr.info('api-es', `Registered event source handler: ${handler.type.prefix}: "${handler.type.name}"`)
 }
 
 /**

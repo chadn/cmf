@@ -1,5 +1,5 @@
 // Example event sources for demonstration
-export const exampleEventSources = [
+export const ExampleEventSources = [
     {
         name: 'SF Bay Area Facebook Events (Google Calendar)',
         id: 'gc:aabe6c219ee2af5b791ea6719e04a92990f9ccd1e68a3ff0d89bacd153a0b36d@group.calendar.google.com',

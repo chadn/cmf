@@ -5,7 +5,7 @@ import { EventsState, EventsAction, FilteredEvents, EventSourceResponse } from '
 import { MapBounds } from '@/types/map'
 import { FilterEventsManager } from '@/lib/events/FilterEventsManager'
 import { logr } from '@/lib/utils/logr'
-import { fetcherLogr } from '@/lib/utils/utils'
+import { fetcherLogr } from '@/lib/utils/utils-client'
 import { getDateFromUrlDateString } from '@/lib/utils/date'
 
 interface UseEventsManagerProps {

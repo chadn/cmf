@@ -24,7 +24,9 @@ import { convertCityNameToKey } from './utils'
 export const PLURA_CITY_LIST_CACHE_KEY = 'plura:citylist'
 export const PLURA_CITY_CACHE_PREFIX = 'plura:city:'
 export const PLURA_EVENT_CACHE_PREFIX = 'plura:event:'
-export const PLURA_CACHE_TTL = 60 * 60 * 24 // 24 hours in seconds
+export const CACHE_TTL_PLURA_SCRAPE = process.env.CACHE_TTL_PLURA_SCRAPE
+    ? parseInt(process.env.CACHE_TTL_PLURA_SCRAPE)
+    : 60 * 60 * 24 // 24 hours, 86400 seconds
 
 /**
  * Get city list from cache
@@ -37,7 +39,7 @@ export async function getCityListCache(): Promise<Record<string, string> | null>
         if (cachedCityList && Object.keys(cachedCityList.cityNames).length) {
             logr.info(
                 'api-es-plura',
-                `Using cached city list with ${Object.keys(cachedCityList.cityNames).length} cities`
+                `getCityListCache returning ${Object.keys(cachedCityList.cityNames).length} cities`
             )
             return cachedCityList.cityNames
         }
@@ -57,16 +59,16 @@ export async function getCityListCache(): Promise<Record<string, string> | null>
  */
 export async function setCityListCache(cityNames: Record<string, string>): Promise<void> {
     try {
-        if (!cityNames?.length) return
+        if (!Object.keys(cityNames).length) return
 
         await setCache(
             PLURA_CITY_LIST_CACHE_KEY,
             { cityNames, timestamp: Date.now() } as PluraCitiesListCache,
             '', // no prefix
-            PLURA_CACHE_TTL
+            CACHE_TTL_PLURA_SCRAPE
         )
 
-        logr.info('api-es-plura', `Cached ${cityNames.length} city URLs`)
+        logr.info('api-es-plura', `setCityListCache ${Object.keys(cityNames).length} cityNames`)
     } catch (error) {
         logr.warn(
             'api-es-plura',
@@ -91,7 +93,7 @@ export async function setCityEventsCache(cityName: string, events: CmfEvent[], n
             numPages,
             eventIds,
         }
-        await setCache(convertCityNameToKey(cityName), cityCache, PLURA_CITY_CACHE_PREFIX, PLURA_CACHE_TTL)
+        await setCache(convertCityNameToKey(cityName), cityCache, PLURA_CITY_CACHE_PREFIX, CACHE_TTL_PLURA_SCRAPE)
 
         // Make sure each individual event is cached, only cache if not already cached
         let idsToCache: string[] = []
@@ -106,7 +108,7 @@ export async function setCityEventsCache(cityName: string, events: CmfEvent[], n
         }
         for (const event of events) {
             if (idsToCache.includes(event.id)) {
-                await setCache(event.id, event, PLURA_EVENT_CACHE_PREFIX, PLURA_CACHE_TTL)
+                await setCache(event.id, event, PLURA_EVENT_CACHE_PREFIX, CACHE_TTL_PLURA_SCRAPE)
             }
         }
         logr.info('api-es-plura', `${idsToCache.length} of ${events.length} events needed to be cached for ${cityName}`)

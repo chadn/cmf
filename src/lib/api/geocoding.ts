@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { GeocodeResponse, GoogleGeocodeResult } from '@/types/googleApi'
 import { Location } from '@/types/events'
-import { getCachedLocation, cacheLocation } from '@/lib/cache'
+import { getCachedLocation, setCacheLocation } from '@/lib/cache'
 import { logr } from '@/lib/utils/logr'
 
 // Type definitions for consistent return values
@@ -252,7 +252,7 @@ async function saveToCacheWithTiming(locationString: string, result: Location): 
     const [, time] = await withTiming(async () => {
         if (result.status === 'resolved' || CONFIG.CACHE_UNRESOLVED_LOCATIONS) {
             logr.debug('api-geo', `Caching ${result.status}: "${locationString}"`)
-            return await cacheLocation(locationString, result)
+            return await setCacheLocation(locationString, result)
         }
     })
     return time

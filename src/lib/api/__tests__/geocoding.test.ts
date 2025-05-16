@@ -8,7 +8,7 @@ import {
 } from '../geocoding'
 import { logr } from '@/lib/utils/logr'
 import axios from 'axios'
-import { getCachedLocation, cacheLocation } from '@/lib/cache'
+import { getCachedLocation, setCacheLocation } from '@/lib/cache'
 
 // Mock dependencies
 jest.mock('axios')
@@ -21,7 +21,7 @@ jest.mock('@/lib/utils/logr', () => ({
 }))
 jest.mock('@/lib/cache', () => ({
     getCachedLocation: jest.fn(),
-    cacheLocation: jest.fn(),
+    setCacheLocation: jest.fn(),
 }))
 
 // Mock API response data
@@ -231,7 +231,7 @@ describe('geocoding', () => {
                     key: 'test-api-key',
                 },
             })
-            expect(cacheLocation).toHaveBeenCalled()
+            expect(setCacheLocation).toHaveBeenCalled()
         })
 
         it('should handle API errors', async () => {

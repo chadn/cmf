@@ -11,6 +11,8 @@ export const axiosConfig = {
 }
 
 // custom fetcher using axios.get
+// ignore warning about using 'any'
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const axiosGet = async (url: string, params?: any) => {
     try {
         const startTime = performance.now()

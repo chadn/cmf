@@ -20,7 +20,7 @@ This is a high level list of things to do on the app. Not necessarily in priorit
 1. Have a map search box - Add ability for user to type location in box, then map jumps to it. like https://thetide.guide/, Use https://maps.googleapis.com/maps/api/place/js/AutocompletionService.GetPredictionsJson
 1. Use CMF for multi day festivals - sliders can be hour instead of day, quick filters can be next 3 hrs, tonight, etc. Can support custom maps and custom event sources
 1. switch url params lat&lon to ll (or zll), like https://www.google.com/maps/d/u/0/viewer?mid=1NiJprGgrxLL6FBEV0Cg2NtkHlLhc-kA&ll=36.62469946088837%2C-119.44145496585381&z=6
-1. compress json before writing to / after reading from redis. Consider [MessagePack](https://msgpack.org/index.html), [Protobuf](https://developers.google.com/protocol-buffers), [Arvo](https://avro.apache.org/), [BSON](https://en.wikipedia.org/wiki/BSON) 
+1. compress json before writing to / after reading from redis. Consider [MessagePack](https://msgpack.org/index.html), [Protobuf](https://developers.google.com/protocol-buffers), [Arvo](https://avro.apache.org/), [BSON](https://en.wikipedia.org/wiki/BSON)
 
 (thanks https://euangoddard.github.io/clipboard2markdown/)
 
@@ -30,6 +30,7 @@ Consider features from original version https://chadnorwood.com/projects/gcm/
 
 Working on fixing these:
 
+1. Bug or Feature Change: When there is more than one event at a map marker, the count does not change when filtered by date. Count only changes when maker is removed and readded.
 1. Bug or Feature Change: show events with unresolved locations on events list. Currently if a user is trying to find an event by name or date, and doesn't realize the location is missing or unresolvable, they will not be able to find it. They should.
    WORKAROUND: unMapped events can be seen in event list by clicking "Filtered by Map"
 1. Bug or Feature Change: for events without location info, when clicking on them it currently opens in new window the event details. This is too different of a behavior from clicking on events with a location. Instead, consider a small popup that says "no location info, View Original Event"
@@ -44,7 +45,7 @@ Found a bug or want a feature? Let me know by [Creating a new issue in github](h
 
 ## TEMP
 
-1. Server side caching events - fetch in redis first, use if its less than EVENTSOURCE_API_CACHE_TTL
+1. Server side caching events - fetch in redis first, use if its less than CACHE_TTL_API_EVENTSOURCE
 1. Server side API timing - log time to fetch events and time to geocode (redis vs maps api)
    After refactor, eventSource api results are cached, and response time with cache hit is < 1 second.  
    For example, below can see BROWSER fetch of protest:all went from 6506ms to 163ms

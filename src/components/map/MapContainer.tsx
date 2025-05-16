@@ -8,7 +8,7 @@ import MapMarkerComponent from './MapMarker'
 import MapPopup from './MapPopup'
 import { logr } from '@/lib/utils/logr'
 import { roundMapBounds, viewstate2Viewport } from '@/lib/utils/location'
-import { useDebounce } from '@/lib/utils/utils'
+import { useDebounce } from '@/lib/utils/utils-client'
 /**
  * MapContainer handles the display and interaction with the map
  * It manages markers, popups, viewport changes, and user interactions

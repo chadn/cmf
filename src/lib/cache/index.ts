@@ -1,13 +1,15 @@
-import { Location } from '@/types/events'
+import { Location, LOCATION_KEY_PREFIX } from '@/types/events'
 import * as upstashCache from './upstash'
 import * as filesystemCache from './filesystem'
 import { logr } from '../utils/logr'
 import { getSizeOfAny } from '../utils/utils-shared'
-
-const LOCATION_KEY_PREFIX = 'location:'
+// import { waitUntil } from '@vercel/functions'
 
 // Determine which cache implementation to use based on environment
 const isDevelopment = process.env.NODE_ENV === 'development'
+const CACHE_TTL_API_GEOCODE = process.env.CACHE_TTL_API_GEOCODE
+    ? parseInt(process.env.CACHE_TTL_API_GEOCODE)
+    : 60 * 60 * 24 * 90 // 90 days
 
 logr.info(
     'setup',
@@ -25,7 +27,9 @@ export async function getCache<T>(key: string, prefix?: string): Promise<T | nul
 export async function getCache<T>(key: string[], prefix?: string): Promise<T[]>
 export async function getCache<T>(key: string | string[], prefix: string = ''): Promise<T | null | T[]> {
     const start = performance.now()
-    const keyForLogr = prefix + (Array.isArray(key) ? key.join(',').substring(0, 100) + '...' : key)
+    let keyForLogr = prefix + (Array.isArray(key) ? key.join(',').substring(0, 100) + '...' : key)
+    if (Array.isArray(key)) keyForLogr = key.length + ' keys: ' + keyForLogr
+
     let ret: T | null | T[] = null
 
     if (Array.isArray(key)) {
@@ -46,14 +50,10 @@ export async function getCache<T>(key: string | string[], prefix: string = ''): 
             ret = results
         } else {
             // In production, use Redis cache
-            const results: T[] = []
-            for (const k of key) {
-                const value = await upstashCache.redisGet<T>(k, prefix)
-                if (value !== null) {
-                    results.push(value)
-                }
+            const results = await upstashCache.redisMGet<T>(key, prefix)
+            if (results) {
+                ret = results
             }
-            ret = results
         }
     } else {
         // Handle single key case - return single value or null
@@ -103,7 +103,8 @@ export async function setCache<T>(
     ttl: number = 60 * 60 * 24 * 30
 ): Promise<void> {
     const start = performance.now()
-    const keyForLogr = prefix + (Array.isArray(key) ? key.join(',').substring(0, 100) + '...' : key)
+    let keyForLogr = prefix + (Array.isArray(key) ? key.join(',').substring(0, 100) + '...' : key)
+    if (Array.isArray(key)) keyForLogr = key.length + ' keys: ' + keyForLogr
     if (isDevelopment) {
         // In development, use filesystem cache - which only handles Location type
         const cache = filesystemCache.loadCache()
@@ -128,14 +129,47 @@ export async function setCache<T>(
             // TODO: update redisSet to use mset, then change this code.
             const valueArray = value as T[]
             for (let i = 0; i < key.length; i++) {
-                await upstashCache.redisSet<T>(key[i], valueArray[i], prefix, ttl)
+                if (ttl > 1) await upstashCache.redisSet<T>(key[i], valueArray[i], prefix, ttl)
             }
         } else {
-            await upstashCache.redisSet<T>(key as string, value as T, prefix, ttl)
+            if (ttl > 1) await upstashCache.redisSet<T>(key as string, value as T, prefix, ttl)
         }
     }
-    logr.info('cache', `setCache ${Math.round(performance.now() - start)}ms ${getSizeOfAny(value)} ${keyForLogr}`)
+    const runtime = Math.round(performance.now() - start)
+    if (ttl > 1) {
+        logr.info('cache', `setCache ${runtime}ms ${getSizeOfAny(value)} ${keyForLogr}`)
+    } else {
+        logr.info('cache', `setCache SKIPPED, ${runtime}ms ${getSizeOfAny(value)} ${keyForLogr}`)
+    }
 }
+/**
+ * Generic function to set a single value in cache
+ * @param key - The key to store
+ * @param value - The value to store
+ * @param prefix - Optional prefix to prepend to the key
+ * @param ttl - Optional time-to-live in seconds (default: 30 days)
+ * @returns Promise that resolves when caching is complete
+export async function setCacheBg<T>(key: string, value: T, prefix?: string, ttl?: number): Promise<void>
+export async function setCacheBg<T>(key: string[], value: T[], prefix?: string, ttl?: number): Promise<void>
+export async function setCacheBg<T>(
+    key: string | string[],
+    value: T | T[],
+    prefix: string = '',
+    ttl: number = 60 * 60 * 24 * 30
+): Promise<void> {
+    const keyForLogr = prefix + (Array.isArray(key) ? key.join(',').substring(0, 100) + '...' : key)
+    waitUntil(
+        new Promise(async () => {
+            try {
+                await setCache(key, value, prefix, ttl)
+                logr.info('cache', `setCacheBg success for ${keyForLogr}`)
+            } catch (error) {
+                logr.warn('cache', `setCacheBg failed for ${keyForLogr}`, error)
+            }
+        })
+    )
+}
+*/
 
 /**
  * Gets a location from cache
@@ -152,6 +186,6 @@ export async function getCachedLocation(locationKey: string): Promise<Location |
  * @param location - The resolved location data to cache
  * @returns Promise that resolves when caching is complete
  */
-export async function cacheLocation(locationKey: string, location: Location): Promise<void> {
-    return setCache<Location>(locationKey, location, LOCATION_KEY_PREFIX)
+export async function setCacheLocation(locationKey: string, location: Location): Promise<void> {
+    return setCache<Location>(locationKey, location, LOCATION_KEY_PREFIX, CACHE_TTL_API_GEOCODE)
 }

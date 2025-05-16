@@ -1,6 +1,9 @@
+'use client'
+
 import { logr } from '@/lib/utils/logr'
 import { umamiTrack } from '@/lib/utils/umami'
 import { useRef, useCallback } from 'react'
+
 // Custom fetcher function, basically a wrapper to log API requests and responses
 export const fetcherLogr = async (url: string) => {
     try {
@@ -21,6 +24,7 @@ export const fetcherLogr = async (url: string) => {
             // extract id=xxx from url
             esId = url.split('id=')[1]?.split('&')[0]
         } catch {} // ignore errors
+
         umamiTrack('ClientFetch', {
             esId: esId,
             status: response.status,

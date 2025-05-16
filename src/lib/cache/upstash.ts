@@ -1,6 +1,5 @@
 import { Redis } from '@upstash/redis'
-
-// Cache key prefix
+import { logr } from '@/lib/utils/logr'
 
 // Initialize Redis client
 let redis: Redis | null = null
@@ -19,9 +18,6 @@ function getRedisClient(): Redis {
     }
     return redis
 }
-
-// TODO: implement simple redisGet and redisSet functions that take a key and a value and return a promise
-// they should have optional key_prefix and ttl parameters
 
 /**
  * Generic function to get a value from Redis
@@ -46,7 +42,35 @@ export async function redisGet<T>(key: string, prefix: string = ''): Promise<T |
 
         return (cachedData as T) || null
     } catch (error) {
-        console.error('Error getting data from Redis cache:', error)
+        logr.warn('cache', 'redisGet error', error)
+        return null
+    }
+}
+
+/**
+ * Generic function to get multiple values from Redis
+ * @param keys - The keys to retrieve
+ * @param prefix - Optional prefix to prepend to the key
+ * @returns Promise with the cached value or null if not found
+ */
+export async function redisMGet<T>(keys: string[], prefix: string = ''): Promise<T[] | null> {
+    try {
+        // Skip if Upstash is not configured
+        if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) {
+            return null
+        }
+
+        if (!keys.length) {
+            return null
+        }
+
+        const client = getRedisClient()
+        const cacheKeys = keys.map((key) => (prefix ? `${prefix}${key}` : key))
+        const cachedData = await client.mget(cacheKeys)
+
+        return (cachedData as T[]) || null
+    } catch (error) {
+        logr.warn('cache', 'redisMGet error', error)
         return null
     }
 }
@@ -76,11 +100,11 @@ export async function redisSet<T>(
         }
 
         const client = getRedisClient()
-        const cacheKey = prefix ? `${prefix}${key}` : key
 
+        // TODO: update to support client.mset(cacheKeys, values)
         // Cache with the specified expiration time
-        await client.set(cacheKey, value, { ex: ttl })
+        await client.set(`${prefix}${key}`, value, { ex: ttl })
     } catch (error) {
-        console.error('Error setting data in Redis cache:', error)
+        logr.warn('cache', 'redisSet error', error)
     }
 }

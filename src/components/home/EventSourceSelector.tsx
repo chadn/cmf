@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import LoadingSpinner from '../common/LoadingSpinner'
 import ErrorMessage from '../common/ErrorMessage'
 import { logr } from '@/lib/utils/logr'
-import { exampleEventSources } from '@/lib/events/examples'
+import { ExampleEventSources } from '@/lib/events/examples'
 
 const EventSourceSelector: React.FC = () => {
     const router = useRouter()
@@ -54,7 +54,7 @@ const EventSourceSelector: React.FC = () => {
     }
 
     const handleExampleSelect = (id: string) => {
-        const example = exampleEventSources.find((es) => es.id === id)
+        const example = ExampleEventSources.find((es) => es.id === id)
         logr.info('calendar', 'Example event source selected', {
             id,
             name: example?.name,
@@ -97,7 +97,7 @@ const EventSourceSelector: React.FC = () => {
                     Or try an example - click below then click View Events:
                 </h3>
                 <div className="space-y-2">
-                    {exampleEventSources.map((source) => (
+                    {ExampleEventSources.map((source) => (
                         <button
                             key={`${source.id}`}
                             className="w-full text-left px-3 py-2 border rounded btn btn-secondary"

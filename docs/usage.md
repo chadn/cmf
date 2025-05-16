@@ -205,6 +205,18 @@ Note: Replace `geocachingspain@gmail.com` with your actual Google Calendar ID.
 The code is written to make it easy to add different type of event sources, custom ones that do not have to be a calendar.
 Read more about the [Event Sources System](../src/lib/api/eventSources)
 
+## Incorrect Locations
+
+If an event's location looks incorrect on the map, it probably got incorrectly geocoded, maybe due to lack of location details.
+
+How to fix - This is for admins only
+
+1.  On map, Click on it, in event popup, hover over "View Original Event" to get location key (k1) (or look at html and copy title). ex: `location:Asiento`
+1.  Figure out what location it should be, and store in geolocation cache, noting the key name (k2). ex:
+    `curl 'https://cmf-chad.vercel.app/api/geocode?a=Asiento,sf,ca'`
+1.  Update value for location key using [upstash-redis.ts](../src/scripts/upstash-redis.ts) `fix-location <k1> <k2>`
+    `node upstash-redis.ts fix-location 'location:Asiento' 'location:Asiento,sf,ca'`
+
 ## More
 
 Read more about this project and how it was built in the [README.md](../README.md)

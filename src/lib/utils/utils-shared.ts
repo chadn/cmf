@@ -10,6 +10,8 @@
  * @returns string saying the size of the data and type
  */
 export const getSizeOfAny = (
+    // ignore warning about using 'any'
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     data: any,
     outputType: string = 'string'
 ): string | number | { bytes: number; sizeString: string } => {

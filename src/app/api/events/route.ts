@@ -18,7 +18,9 @@ import '@/lib/api/eventSources/plura/index'
 export const dynamic = 'force-dynamic'
 
 // Default cache TTL is 10 minutes (in seconds)
-const CACHE_TTL = process.env.EVENTSOURCE_API_CACHE_TTL ? parseInt(process.env.EVENTSOURCE_API_CACHE_TTL) : 60 * 10
+const CACHE_TTL_API_EVENTSOURCE = process.env.CACHE_TTL_API_EVENTSOURCE
+    ? parseInt(process.env.CACHE_TTL_API_EVENTSOURCE)
+    : 60 * 10
 const EVENTS_CACHE_PREFIX = 'events:'
 
 // given a date in string or date object, return a date rounded to the nearest hour in RFC3339 format
@@ -83,7 +85,7 @@ const fetchAndGeocode = async (eventSourceId: string, timeMin?: string, timeMax?
     const sizeOfResponse = JSON.stringify(response).length
     ms = Math.round(performance.now() - startTime)
 
-    logr.info('api-events', `API response ${sizeOfResponse} bytes, ${ms}ms for fetch + geocode`, {
+    logr.info('api-events', `/api/events response ${sizeOfResponse} bytes, ${ms}ms for fetch + geocode`, {
         totalCount: response.events.length,
         metadata: response.metadata,
     })
@@ -125,11 +127,11 @@ export async function GET(request: NextRequest) {
 
         // Return cached response if available
         if (cachedResponse) {
-            logr.info('api-events', `Cache hit in ${fetchTime}ms for ${fetchKey}`)
+            logr.info('api-events', `Cache hit in ${fetchTime}ms, returning for ${fetchKey}`)
             return NextResponse.json(cachedResponse)
         }
 
-        logr.info('api-events', `Cache miss, ${fetchTime}ms. Calling API for ${fetchKey}`)
+        logr.info('api-events', `Cache miss, ${fetchTime}ms. Calling fetchAndGeocode for ${fetchKey}`)
 
         // Fetch and process events
         const response = await fetchAndGeocode(eventSourceId, timeMin || undefined, timeMax || undefined)
@@ -139,10 +141,15 @@ export async function GET(request: NextRequest) {
         waitUntil(
             new Promise(async () => {
                 try {
-                    await setCache<EventSourceResponse>(fetchKey, response, EVENTS_CACHE_PREFIX, CACHE_TTL)
-                    logr.info('api-events', `Cached events TTL=${CACHE_TTL}s for ${fetchKey}`)
+                    await setCache<EventSourceResponse>(
+                        fetchKey,
+                        response,
+                        EVENTS_CACHE_PREFIX,
+                        CACHE_TTL_API_EVENTSOURCE
+                    )
+                    logr.info('api-events', `waitUntil:Cached events TTL=${CACHE_TTL_API_EVENTSOURCE}s for ${fetchKey}`)
                 } catch (error) {
-                    logr.warn('api-events', `Failed to cache events for ${fetchKey}`, error)
+                    logr.warn('api-events', `waitUntil:Failed to cache events for ${fetchKey}`, error)
                 }
             })
         )
