@@ -133,7 +133,7 @@ describe('EventList', () => {
         expect(screen.getByText('Los Angeles, CA')).toBeInTheDocument()
 
         // Check that unresolved location message is displayed
-        expect(screen.getByText('⚠ Unmapped')).toBeInTheDocument()
+        expect(screen.getByText('⚠ Unresolved location')).toBeInTheDocument()
     })
 
     it('calls onEventSelect when an event is clicked', () => {

@@ -2,7 +2,6 @@
 
 This is a high level list of things to do on the app. Not necessarily in prioritized order.
 
-1. Handle unresolved locations better - create a fake location that is the geographic center of all events, and use that for events with unresolved location.
 1. Add Hamburger menu in top left by CMF, which can open/close without resetting app state. When open, show
     1. link to github usage,
     1. link to local about page,
@@ -31,8 +30,6 @@ Consider features from original version https://chadnorwood.com/projects/gcm/
 
 Working on fixing these:
 
-1. Bug or Feature Change: show events with unresolved locations on events list. Currently if a user is trying to find an event by name or date, and doesn't realize the location is missing or unresolvable, they will not be able to find it. They should.
-   WORKAROUND: unMapped events can be seen in event list by clicking "Filtered by Map"
 1. Bug or Feature Change: for events without location info, when clicking on them it currently opens in new window the event details. This is too different of a behavior from clicking on events with a location. Instead, consider a small popup that says "no location info, View Original Event"
 
 ## Features

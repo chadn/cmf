@@ -151,10 +151,11 @@ CMF supports several URL parameters that allow for deep linking and sharing spec
 
 ### Filter Parameters
 
-| Parameter | Description                   | Example        |
-| --------- | ----------------------------- | -------------- |
-| `sq`      | Search query to filter events | `sq=beat`      |
-| `qf`      | Quick filter for date ranges  | `qf=next7days` |
+| Parameter | Description                                       | Example         |
+| --------- | ------------------------------------------------- | --------------- |
+| `sq`      | Search query to filter events                     | `sq=beat`       |
+| `sq`      | &nbsp; Special query to list unresolved locations | `sq=unresolved` |
+| `qf`      | Quick filter for date ranges                      | `qf=next7days`  |
 
 ### Selection Parameters
 
@@ -197,6 +198,7 @@ Here are some example URLs showing different parameter combinations:
 -   View events happening over the next week: [?qf=next7days&es=gc:geocachingspain@gmail.com](https://cmf-chad.vercel.app/?qf=next7days&es=gc:geocachingspain@gmail.com)
 -   Search for specific events: [?sq=meet&es=gc:geocachingspain@gmail.com](https://cmf-chad.vercel.app/?sq=meet&es=gc:geocachingspain@gmail.com)
 -   View events up to 9 months from now: [?ed=9m&es=gc:geocachingspain@gmail.com](https://cmf-chad.vercel.app/?ed=9m&es=gc:geocachingspain@gmail.com)
+-   View events that have unresolved locations (then fix those locations!): [?sq=unresolved&es=sf](https://cmf-chad.vercel.app/?sq=unresolved&es=sf)
 
 Note: Replace `geocachingspain@gmail.com` with your actual Google Calendar ID.
 
@@ -205,11 +207,13 @@ Note: Replace `geocachingspain@gmail.com` with your actual Google Calendar ID.
 The code is written to make it easy to add different type of event sources, custom ones that do not have to be a calendar.
 Read more about the [Event Sources System](../src/lib/api/eventSources)
 
-## Incorrect Locations
+## Incorrect and Unresolved Locations
 
 If an event's location looks incorrect on the map, it probably got incorrectly geocoded, maybe due to lack of location details.
+Note this is different than unresolved locations, which are events with either blank location or unresolvable (online, zoom, etc).  
+All unresolved locations share a special marker. You can see them with special search term "unresolved". Ex: [?sq=unresolved&es=sf](https://cmf-chad.vercel.app/?sq=unresolved&es=sf)
 
-How to fix - This is for admins only
+How to fix incorrect locations - This is for admins only
 
 1.  On map, Click on it, in event popup, hover over "View Original Event" to get location key (k1) (or look at html and copy title). ex: `location:Asiento`
 1.  Figure out what location it should be, and store in geolocation cache, noting the key name (k2). ex:

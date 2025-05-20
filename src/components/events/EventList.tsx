@@ -238,7 +238,7 @@ const EventList: React.FC<EventListProps> = ({ evts, selectedEventId, onEventSel
                                         {event.name.length > 120 ? `${event.name.substring(0, 120)}...` : event.name}
                                     </div>
                                     {event.resolved_location?.status === 'unresolved' && (
-                                        <div className="text-xxs text-error">⚠ Unmapped</div>
+                                        <div className="text-xxs text-error">⚠ Unresolved location</div>
                                     )}
                                 </td>
                                 <td className="px-1 py-0.5 whitespace-nowrap">

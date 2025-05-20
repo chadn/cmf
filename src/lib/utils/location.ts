@@ -35,6 +35,29 @@ export function genMarkerId(event: CmfEvent): string {
 }
 
 /**
+ * Calculates the center point of a set of events with resolved locations
+ * @param events - Array of events to calculate center from
+ * @returns Object containing latitude and longitude of the center point
+ */
+export function calculateAggregateCenter(events: CmfEvent[]): { lat: number; lng: number } {
+    const resolvedEvents = events.filter(
+        (e) => e.resolved_location?.status === 'resolved' && e.resolved_location.lat && e.resolved_location.lng
+    )
+
+    if (resolvedEvents.length === 0) {
+        return { lat: 37.7749, lng: -122.4194 } // Default to San Francisco
+    }
+
+    const sumLat = resolvedEvents.reduce((sum, e) => sum + (e.resolved_location?.lat || 0), 0)
+    const sumLng = resolvedEvents.reduce((sum, e) => sum + (e.resolved_location?.lng || 0), 0)
+
+    return {
+        lat: sumLat / resolvedEvents.length,
+        lng: sumLng / resolvedEvents.length,
+    }
+}
+
+/**
  * Generate map markers from events
  * @param events - Array of calendar events to generate markers from
  * @returns Array of map markers, with events at the same location grouped together
@@ -42,7 +65,7 @@ export function genMarkerId(event: CmfEvent): string {
 export function generateMapMarkers(events: CmfEvent[]): MapMarker[] {
     const markersMap = new Map<string, MapMarker>()
     let eventsWithLocation = 0
-    let eventsWithoutLocation = 0
+    const unresolvedEvents: CmfEvent[] = []
 
     // Ensure events is an array before iterating
     if (!events || !Array.isArray(events)) {
@@ -73,16 +96,27 @@ export function generateMapMarkers(events: CmfEvent[]): MapMarker[] {
                 })
             }
         } else {
-            eventsWithoutLocation++
+            unresolvedEvents.push(event)
         }
     })
+
+    // If we have unresolved events, create a single marker at the aggregate center
+    if (unresolvedEvents.length > 0) {
+        const center = calculateAggregateCenter(events)
+        markersMap.set('unresolved', {
+            id: 'unresolved',
+            latitude: center.lat,
+            longitude: center.lng,
+            events: unresolvedEvents,
+        })
+    }
 
     const markers = Array.from(markersMap.values())
 
     logr.info(
         'location',
         `Generated ${markers.length} markers from ${eventsWithLocation} events with locations, ` +
-            `skipped ${eventsWithoutLocation} events without resolvable location`
+            `${unresolvedEvents.length} events without resolvable location`
     )
 
     return markers
@@ -241,6 +275,7 @@ export const viewportUrlToViewport = (lat: number | null, lon: number | null, z:
         pitch: 0,
     }
 }
+
 // Custom parsers to read and write values to the URL
 // url params have a value of  null if they do not or should not exist.
 export const parseAsZoom = createParser({

@@ -495,45 +495,32 @@ describe('Location and Map Utilities', () => {
         })
 
         it('should skip events without valid locations', () => {
-            const events: CmfEvent[] = [
+            const events = [
                 {
                     id: '1',
                     name: 'Event 1',
-                    original_event_url: 'https://example.com/1',
-                    description: 'Description 1',
-                    description_urls: [],
-                    start: '2023-01-01T10:00:00Z',
-                    end: '2023-01-01T11:00:00Z',
-                    location: 'Location 1',
                     resolved_location: {
                         status: 'resolved',
-                        original_location: 'Location 1',
-                        formatted_address: 'Location 1',
                         lat: 37.7749,
                         lng: -122.4194,
                     },
-                },
+                } as CmfEvent,
                 {
                     id: '2',
                     name: 'Event 2',
-                    original_event_url: 'https://example.com/2',
-                    description: 'Description 2',
-                    description_urls: [],
-                    start: '2023-01-01T12:00:00Z',
-                    end: '2023-01-01T13:00:00Z',
-                    location: 'Location 2',
                     resolved_location: {
                         status: 'unresolved',
-                        original_location: 'Location 2',
                     },
-                },
+                } as CmfEvent,
             ]
 
             const result = generateMapMarkers(events)
-
-            expect(result.length).toBe(1)
+            expect(result.length).toBe(2) // One for resolved event, one for unresolved events
             expect(result[0].events.length).toBe(1)
             expect(result[0].events[0].id).toBe('1')
+            expect(result[1].id).toBe('unresolved')
+            expect(result[1].events.length).toBe(1)
+            expect(result[1].events[0].id).toBe('2')
         })
 
         it('should handle null events array', () => {

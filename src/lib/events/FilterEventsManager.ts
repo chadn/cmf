@@ -3,6 +3,7 @@
 import { CmfEvent, EventsFilter, FilteredEvents, FilterStats } from '@/types/events'
 import { MapBounds } from '@/types/map'
 import { logr } from '@/lib/utils/logr'
+import { calculateAggregateCenter } from '@/lib/utils/location'
 
 /**
  * Class for managing calendar events and applying filters
@@ -10,6 +11,7 @@ import { logr } from '@/lib/utils/logr'
 export class FilterEventsManager {
     private allEvents: CmfEvent[]
     private filters: EventsFilter
+    private aggregateCenter: { lat: number; lng: number } | null = null
 
     constructor(events: CmfEvent[] = []) {
         this.allEvents = events
@@ -19,6 +21,7 @@ export class FilterEventsManager {
             mapBounds: undefined,
             showUnknownLocationsOnly: undefined,
         }
+        this.updateAggregateCenter()
         logr.info('fltr_evts_mgr', 'FilterEventsManager initialized', {
             eventsCount: events.length,
         })
@@ -30,7 +33,15 @@ export class FilterEventsManager {
      */
     setEvents(events: CmfEvent[]) {
         this.allEvents = events
+        this.updateAggregateCenter()
         logr.info('fltr_evts_mgr', `setEvents(${events.length}) set eventsManager.allEvents=${this.allEvents.length}`)
+    }
+
+    /**
+     * Update the aggregate center when events change
+     */
+    private updateAggregateCenter() {
+        this.aggregateCenter = calculateAggregateCenter(this.allEvents)
     }
 
     /**
@@ -86,6 +97,12 @@ export class FilterEventsManager {
         if (!this.filters.searchQuery || this.filters.searchQuery.trim() === '') return true
 
         const query = this.filters.searchQuery.toLowerCase()
+
+        // Special case for "unresolved" search term
+        if (query === 'unresolved') {
+            return event.resolved_location?.status !== 'resolved'
+        }
+
         return !!(
             event.name?.toLowerCase().includes(query) ||
             event.location?.toLowerCase().includes(query) ||
@@ -98,23 +115,34 @@ export class FilterEventsManager {
     /**
      * Apply map bounds filter to an event
      * This filter checks if the event's location falls within the specified map bounds.
+     * For unresolved events, checks if their marker's location is within bounds.
      */
     private applyMapFilter(event: CmfEvent): boolean {
         if (!this.filters.mapBounds) return true
-        if (!this.hasResolvedLocation(event)) return false
 
-        const { lat, lng } = event.resolved_location!
-
-        if (lat && lng) {
+        if (
+            event.resolved_location?.status === 'resolved' &&
+            event.resolved_location.lat &&
+            event.resolved_location.lng
+        ) {
             return (
-                lat >= this.filters.mapBounds.south &&
-                lat <= this.filters.mapBounds.north &&
-                lng >= this.filters.mapBounds.west &&
-                lng <= this.filters.mapBounds.east
+                event.resolved_location.lat >= this.filters.mapBounds.south &&
+                event.resolved_location.lat <= this.filters.mapBounds.north &&
+                event.resolved_location.lng >= this.filters.mapBounds.west &&
+                event.resolved_location.lng <= this.filters.mapBounds.east
             )
-        } else {
-            return false
         }
+
+        // For unresolved events, check if their marker (at aggregate center) is within bounds
+        if (!this.aggregateCenter) {
+            this.updateAggregateCenter()
+        }
+        return (
+            this.aggregateCenter!.lat >= this.filters.mapBounds.south &&
+            this.aggregateCenter!.lat <= this.filters.mapBounds.north &&
+            this.aggregateCenter!.lng >= this.filters.mapBounds.west &&
+            this.aggregateCenter!.lng <= this.filters.mapBounds.east
+        )
     }
 
     /**
@@ -219,6 +247,7 @@ export class FilterEventsManager {
     // Reset everything - both events and filters
     reset() {
         this.allEvents = []
+        this.aggregateCenter = null
         this.resetAllFilters()
         logr.info('fltr_evts_mgr', 'FilterEventsManager fully reset (events and filters)')
     }

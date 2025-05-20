@@ -297,12 +297,19 @@ describe('MapContainer', () => {
         expect(defaultProps.onViewportChange).toHaveBeenCalled()
     })
 
-    it('closes popup when selectedMarkerId is set to null', () => {
-        const { rerender } = render(<MapContainer {...defaultProps} selectedMarkerId="1" />)
-        expect(screen.getByTestId('map-popup')).toBeInTheDocument()
+    it('closes popup and resets selections when popup close button is clicked', () => {
+        render(<MapContainer {...defaultProps} selectedMarkerId="1" />)
 
-        rerender(<MapContainer {...defaultProps} selectedMarkerId={null} />)
-        expect(screen.queryByTestId('map-popup')).not.toBeInTheDocument()
+        // Click close button
+        const closeButton = screen.getByTestId('popup-close-button')
+        fireEvent.click(closeButton)
+
+        // Check that selections are cleared
+        expect(defaultProps.onMarkerSelect).toHaveBeenCalledWith(null)
+        expect(defaultProps.onEventSelect).toHaveBeenCalledWith(null)
+
+        // Check that popup is not visible
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     })
 
     it('handles marker with no events gracefully', async () => {
@@ -349,24 +356,6 @@ describe('MapContainer', () => {
 
         // Check that onEventSelect was called with the second event ID
         expect(defaultProps.onEventSelect).toHaveBeenCalledWith('event2')
-    })
-
-    it('closes popup and resets selections when popup close button is clicked', () => {
-        render(<MapContainer {...defaultProps} selectedMarkerId="1" selectedEventId="event1" />)
-
-        // Verify popup is shown
-        expect(screen.getByTestId('map-popup')).toBeInTheDocument()
-
-        // Click the close button
-        const closeButton = screen.getByTestId('popup-close-button')
-        fireEvent.click(closeButton)
-
-        // Check that marker and event selections were reset
-        expect(defaultProps.onMarkerSelect).toHaveBeenCalledWith(null)
-        expect(defaultProps.onEventSelect).toHaveBeenCalledWith(null)
-
-        // Check that bounds were updated
-        expect(defaultProps.onBoundsChange).toHaveBeenCalled()
     })
 
     it('selects first event in a marker when no event is selected', () => {

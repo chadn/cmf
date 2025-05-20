@@ -247,49 +247,48 @@ function HomeContent() {
                 return
             }
 
-            // Find the event and its marker
+            // Find the event
             const event = evts.allEvents.find((e) => e.id === eventId)
+            if (!event) return
+
+            // Handle resolved location events
             if (
-                !event ||
-                event.resolved_location?.status !== 'resolved' ||
-                !event.resolved_location.lat ||
-                !event.resolved_location.lng
+                event.resolved_location?.status === 'resolved' &&
+                event.resolved_location.lat &&
+                event.resolved_location.lng
             ) {
-                if (event?.original_event_url) {
-                    logr.info(
-                        'app',
-                        `handleEventSelect() no resolved location, opening url=${event.original_event_url}`
-                    )
-                    window.open(event.original_event_url, '_blank')
+                const markerId = genMarkerId(event)
+                if (!markerId) return
+
+                setSelectedMarkerId(markerId)
+                // Calculate the offset based on the current zoom level for proper UI positioning
+                const zoomFactor = Math.max(1, viewport.zoom / 10)
+                const latOffset = -0.003 / zoomFactor
+                setViewport({
+                    ...viewport,
+                    latitude: event.resolved_location.lat - latOffset,
+                    longitude: event.resolved_location.lng,
+                    zoom: 14,
+                })
+            } else {
+                // Handle unresolved location events
+                setSelectedMarkerId('unresolved')
+                const unresolvedMarker = markers.find((m) => m.id === 'unresolved')
+                if (unresolvedMarker) {
+                    // Calculate the offset based on the current zoom level for proper UI positioning
+                    const zoomFactor = Math.max(1, viewport.zoom / 10)
+                    const latOffset = -0.003 / zoomFactor
+                    setViewport({
+                        ...viewport,
+                        latitude: unresolvedMarker.latitude - latOffset,
+                        longitude: unresolvedMarker.longitude,
+                        zoom: 14,
+                    })
                 }
                 return
             }
-            const markerId = genMarkerId(event)
-            if (!markerId) return
-
-            setSelectedMarkerId(markerId)
-
-            // Calculate the offset based on the current zoom level
-            // Higher zoom levels need smaller offsets
-            const zoomFactor = Math.max(1, viewport.zoom / 10)
-            const latOffset = -0.003 / zoomFactor // Adjust this value as needed
-
-            // Update viewport with adjusted latitude to ensure popup is fully visible
-            setViewport({
-                ...viewport,
-                latitude: (event.resolved_location.lat || 0) - latOffset, // Move map down slightly
-                longitude: event.resolved_location.lng || 0,
-                zoom: 14,
-            })
-
-            logr.info('app', 'Adjusted viewport for popup visibility', {
-                originalLat: event.resolved_location.lat,
-                adjustedLat: (event.resolved_location.lat || 0) - latOffset,
-                offset: latOffset,
-                zoom: viewport.zoom,
-            })
         },
-        [evts.allEvents, selectedEventIdUrl, setSelectedEventIdUrl, setSelectedMarkerId, setViewport, viewport]
+        [evts.allEvents, markers, selectedEventIdUrl, setSelectedEventIdUrl, setSelectedMarkerId, setViewport, viewport]
     )
 
     // Handle transition from map-init via MAP_INITIALIZED action to main-state

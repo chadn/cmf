@@ -5,9 +5,10 @@ import React from 'react'
 interface MapMarkerProps {
     count: number
     isSelected: boolean
+    isUnresolved?: boolean
 }
 
-const MapMarker: React.FC<MapMarkerProps> = ({ count, isSelected }) => {
+const MapMarker: React.FC<MapMarkerProps> = ({ count, isSelected, isUnresolved }) => {
     // Determine marker size based on event count
     const getMarkerSize = () => {
         if (count === 1) return 'w-6 h-6'
@@ -31,7 +32,7 @@ const MapMarker: React.FC<MapMarkerProps> = ({ count, isSelected }) => {
         flex 
         items-center 
         justify-center 
-        ${isSelected ? 'bg-accent border-2 border-white' : 'bg-primary'} 
+        ${isSelected ? 'bg-accent border-2 border-white' : isUnresolved ? 'bg-orange-500' : 'bg-primary'} 
         text-white 
         font-bold 
         ${getTextSize()}

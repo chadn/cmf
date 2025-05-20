@@ -191,10 +191,6 @@ const MapContainer: React.FC<MapContainerProps> = ({
         onMarkerSelect(null)
         onEventSelect(null)
         setPopupMarker(null)
-
-        // Force a filter update to refresh the showing count
-        // This ensures the showing count updates when the popup is closed
-        onBoundsChange(getMapBounds())
     }
 
     return (
@@ -257,7 +253,11 @@ const MapContainer: React.FC<MapContainerProps> = ({
                         anchor="bottom"
                         onClick={() => handleMarkerClick(marker)}
                     >
-                        <MapMarkerComponent count={marker.events.length} isSelected={marker.id === selectedMarkerId} />
+                        <MapMarkerComponent
+                            count={marker.events.length}
+                            isSelected={marker.id === selectedMarkerId}
+                            isUnresolved={marker.id === 'unresolved'}
+                        />
                     </Marker>
                 ))}
 
