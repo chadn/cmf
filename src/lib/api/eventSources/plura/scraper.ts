@@ -17,22 +17,22 @@ import { CmfEvent } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
 import { axiosGet } from '@/lib/utils/utils-server'
 import { PluraDomain } from './types'
-import { convertCityNameToUrl, parseDateString, improveLocation } from './utils'
+import { convertCityNameToUrl, convertCityNameToKey, parseDateString, improveLocation } from './utils'
 import { getCachedEvent, getCityListCache, setCityListCache } from './cache'
-import { convertCityNameToKey } from './utils'
 
 /**
- * Scrape the city list page to get all city names
+ * If not cached, Scrape the city list page to get all city names, the cache it.
+ * If cached, return the cached city names.
  * @returns Array of original city names
  */
-export async function scrapeCityNames(): Promise<string[]> {
+export async function getCityNamesCacheOrWeb(): Promise<string[]> {
     try {
         // Check for cached city list
         const cachedCityNames = await getCityListCache()
         if (cachedCityNames) return Object.values(cachedCityNames)
 
         // Not in cache, fetch the city list
-        const cityNames: Record<string, string> = {}
+        const cityNamesRecord: Record<string, string> = {}
         const response = await axiosGet(`${PluraDomain}/events/city`)
         const $ = cheerio.load(response.data)
 
@@ -41,18 +41,18 @@ export async function scrapeCityNames(): Promise<string[]> {
             const cityName = $(el).text().trim()
             if ($(el).attr('href')?.includes('/events/city/')) {
                 logr.info('api-es-plura', `Found city: ${cityName}`)
-                cityNames[convertCityNameToKey(cityName)] = cityName
+                cityNamesRecord[convertCityNameToKey(cityName)] = cityName
             } else {
                 logr.info('api-es-plura', `Found non-city link ${cityName}, maybe html structure changed?`)
             }
         })
-        if (Object.keys(cityNames).length > 0) {
-            logr.info('api-es-plura', `Found ${Object.keys(cityNames).length} cities`)
-            await setCityListCache(cityNames)
+        if (Object.keys(cityNamesRecord).length > 0) {
+            logr.info('api-es-plura', `Found ${Object.keys(cityNamesRecord).length} cities`)
+            await setCityListCache(cityNamesRecord)
         } else {
             logr.warn('api-es-plura', `No city links found from ${PluraDomain}, maybe html structure changed?`)
         }
-        return Object.values(cityNames)
+        return Object.values(cityNamesRecord)
     } catch (error: unknown) {
         logr.error(
             'api-es-plura',
@@ -105,17 +105,17 @@ export async function processCityPageWithPagination(
 
         logr.info(
             'api-es-plura',
-            `processCityPageWithPagination(${cityName}) found ${
+            `processCityPageWithPagination(${cityName}) ${
                 Object.keys(deDupedEventsCity).length
-            } events in ${totalPages} pages ${cityUrl}`
+            } events found in ${totalPages} pages ${cityUrl}`
         )
         if (Object.keys(deDupedEventsCity).length === 0) {
             if (convertCityNameToUrl(cityName) === cityUrl) {
                 cityUrl = convertCityNameToUrl(cityName, '', 2)
-                logr.info('api-es-plura', `processCityPageWithPagination(${cityName}): trying different URL ${cityUrl}`)
+                logr.info('api-es-plura', `processCityPageWithPagination(${cityName}) trying different URL ${cityUrl}`)
                 return processCityPageWithPagination(cityName, cityUrl)
             } else {
-                logr.info('api-es-plura', `processCityPageWithPagination(${cityName}): already tried URL ${cityUrl}`)
+                logr.info('api-es-plura', `processCityPageWithPagination(${cityName}) already tried URL ${cityUrl}`)
             }
         }
         return { deDupedEventsCity, totalPages }

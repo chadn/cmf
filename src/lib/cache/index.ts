@@ -5,17 +5,10 @@ import { logr } from '../utils/logr'
 import { getSizeOfAny } from '../utils/utils-shared'
 // import { waitUntil } from '@vercel/functions'
 
-// Determine which cache implementation to use based on environment
-const isDevelopment = process.env.NODE_ENV === 'development'
+const useFilesystemCache = checkUseFilesystemCache()
 const CACHE_TTL_API_GEOCODE = process.env.CACHE_TTL_API_GEOCODE
     ? parseInt(process.env.CACHE_TTL_API_GEOCODE)
     : 60 * 60 * 24 * 90 // 90 days
-
-logr.info(
-    'setup',
-    `NODE_ENV='${process.env.NODE_ENV}' Using cache:`,
-    isDevelopment ? `filesystem (${filesystemCache.LOCATIONS_CACHE_FILE})` : 'upstash redis'
-)
 
 /**
  * Generic function to get a single or multiple values from cache
@@ -34,7 +27,7 @@ export async function getCache<T>(key: string | string[], prefix: string = ''): 
 
     if (Array.isArray(key)) {
         // Handle array case - return array of values
-        if (isDevelopment) {
+        if (useFilesystemCache) {
             // In development, use filesystem cache - which only handles Location type
             const cache = filesystemCache.loadCache()
             const results: T[] = []
@@ -57,7 +50,7 @@ export async function getCache<T>(key: string | string[], prefix: string = ''): 
         }
     } else {
         // Handle single key case - return single value or null
-        if (isDevelopment) {
+        if (useFilesystemCache) {
             // In development, use filesystem cache
             const cache = filesystemCache.loadCache()
             // We know the filesystem cache only works with Location type
@@ -105,7 +98,7 @@ export async function setCache<T>(
     const start = performance.now()
     let keyForLogr = prefix + (Array.isArray(key) ? key.join(',').substring(0, 100) + '...' : key)
     if (Array.isArray(key)) keyForLogr = key.length + ' keys: ' + keyForLogr
-    if (isDevelopment) {
+    if (useFilesystemCache) {
         // In development, use filesystem cache - which only handles Location type
         const cache = filesystemCache.loadCache()
         try {
@@ -126,11 +119,8 @@ export async function setCache<T>(
     } else {
         // In production, use Redis cache
         if (Array.isArray(key)) {
-            // TODO: update redisSet to use mset, then change this code.
             const valueArray = value as T[]
-            for (let i = 0; i < key.length; i++) {
-                if (ttl > 1) await upstashCache.redisSet<T>(key[i], valueArray[i], prefix, ttl)
-            }
+            if (ttl > 1) await upstashCache.redisMSet<T>(key, valueArray, prefix, ttl)
         } else {
             if (ttl > 1) await upstashCache.redisSet<T>(key as string, value as T, prefix, ttl)
         }
@@ -188,4 +178,23 @@ export async function getCachedLocation(locationKey: string): Promise<Location |
  */
 export async function setCacheLocation(locationKey: string, location: Location): Promise<void> {
     return setCache<Location>(locationKey, location, LOCATION_KEY_PREFIX, CACHE_TTL_API_GEOCODE)
+}
+
+function checkUseFilesystemCache(): boolean {
+    // Determine which cache implementation to use based on environment
+    let useFilesystemCache = true
+    let reason = 'DEFAULT'
+    if (process.env.FORCE_USE_REDIS === '1') {
+        reason = 'FORCE_USE_REDIS=1'
+        useFilesystemCache = false
+    } else if (process.env.NODE_ENV === 'development') {
+        reason = 'NODE_ENV=development'
+        useFilesystemCache = true
+    }
+    logr.info(
+        'setup',
+        `NODE_ENV='${process.env.NODE_ENV}' reason=${reason}, Using cache:`,
+        useFilesystemCache ? `filesystem (${filesystemCache.LOCATIONS_CACHE_FILE})` : 'upstash redis'
+    )
+    return useFilesystemCache
 }

@@ -19,6 +19,7 @@ import { getCache, setCache } from '@/lib/cache'
 import { logr } from '@/lib/utils/logr'
 import { PluraCitiesListCache, PluraCityEventsCache } from './types'
 import { convertCityNameToKey } from './utils'
+import { getSizeOfAny } from '@/lib/utils/utils-shared'
 
 // Cache configuration
 export const PLURA_CITY_LIST_CACHE_KEY = 'plura:citylist'
@@ -27,6 +28,9 @@ export const PLURA_EVENT_CACHE_PREFIX = 'plura:event:'
 export const CACHE_TTL_PLURA_SCRAPE = process.env.CACHE_TTL_PLURA_SCRAPE
     ? parseInt(process.env.CACHE_TTL_PLURA_SCRAPE)
     : 60 * 60 * 24 // 24 hours, 86400 seconds
+
+// https://upstash.com/docs/redis/troubleshooting/max_request_size_exceeded
+const UPSTASH_SIZE_LIMIT = 1024 * 1024 // 1MB in bytes for free plan
 
 /**
  * Get city list from cache
@@ -79,39 +83,18 @@ export async function setCityListCache(cityNames: Record<string, string>): Promi
 
 /**
  * Cache events for a specific city, intelligently splitting into city and event caches, avoiding duplicates.
- * @param cityName Name of the city
- * @param events Array of events to cache
  */
-export async function setCityEventsCache(cityName: string, events: CmfEvent[], numPages: number): Promise<void> {
+export async function setCityEventsCache(cityName: string, eventIds: string[], numPages: number): Promise<void> {
     try {
-        if (!events || events.length === 0) return
+        if (!eventIds || eventIds.length === 0) return
 
         // Cache the list of event IDs for this city
-        const eventIds = events.map((event) => event.id)
         const cityCache: PluraCityEventsCache = {
             timestamp: Date.now(),
             numPages,
             eventIds,
         }
         await setCache(convertCityNameToKey(cityName), cityCache, PLURA_CITY_CACHE_PREFIX, CACHE_TTL_PLURA_SCRAPE)
-
-        // Make sure each individual event is cached, only cache if not already cached
-        let idsToCache: string[] = []
-        const cached = await getCache<CmfEvent>(eventIds, PLURA_EVENT_CACHE_PREFIX)
-        if (!cached) {
-            // If nothing was cached, we need to cache all event IDs
-            idsToCache = eventIds
-        } else {
-            // Find which event IDs are not in the cached results
-            const cachedIds = cached.map((event) => event.id)
-            idsToCache = eventIds.filter((id) => !cachedIds.includes(id))
-        }
-        for (const event of events) {
-            if (idsToCache.includes(event.id)) {
-                await setCache(event.id, event, PLURA_EVENT_CACHE_PREFIX, CACHE_TTL_PLURA_SCRAPE)
-            }
-        }
-        logr.info('api-es-plura', `${idsToCache.length} of ${events.length} events needed to be cached for ${cityName}`)
     } catch (error) {
         logr.error(
             'api-es-plura',
@@ -121,39 +104,27 @@ export async function setCityEventsCache(cityName: string, events: CmfEvent[], n
 }
 
 /**
- * Get events from cache for a specific city
- * @param cityName Name of the city
- * @returns Object with events array and flag indicating if all events were found
+ * Get city events cache
+ * @param cityNames Array of city names
+ * @returns Array of city events cache or null if not found
  */
-export async function getCityEventsCache(
-    cityName: string
-): Promise<{ events: CmfEvent[]; numPages: number; allEventsFound: boolean }> {
+export async function getCityEventsCache(cityNames: string[]): Promise<PluraCityEventsCache[] | null> {
     try {
-        // Get the list of event IDs for this city
-        const cityCache = await getCache<PluraCityEventsCache>(convertCityNameToKey(cityName), PLURA_CITY_CACHE_PREFIX)
-
-        if (!cityCache || !Array.isArray(cityCache.eventIds) || cityCache.eventIds.length === 0) {
-            return { events: [], numPages: 0, allEventsFound: false }
-        }
-
-        const eventResults = await getCache<CmfEvent>(cityCache.eventIds, PLURA_EVENT_CACHE_PREFIX)
-        if (!eventResults || eventResults.length !== cityCache.eventIds.length) {
-            return { events: [], numPages: 0, allEventsFound: false }
-        }
-
+        const cityKeys = cityNames.map((cityName) => convertCityNameToKey(cityName))
+        const cityCache = await getCache<PluraCityEventsCache>(cityKeys, PLURA_CITY_CACHE_PREFIX)
         logr.info(
             'api-es-plura',
-            `Found all ${eventResults.length} cached events for ${cityCache.numPages} pages ${cityName}`
+            `getCityEventsCache(${cityNames.length}...${cityNames[0]}) returning ${cityCache.length}`
         )
-        return { events: eventResults, numPages: cityCache.numPages, allEventsFound: true }
+        return cityCache
     } catch (error) {
         logr.error(
             'api-es-plura',
-            `Error getting events from cache for city ${cityName}: ${
+            `Error getting event ids from cache for cities ${cityNames.join(', ')}: ${
                 error instanceof Error ? error.message : 'Unknown error'
             }`
         )
-        return { events: [], numPages: 0, allEventsFound: false }
+        return null
     }
 }
 
@@ -171,5 +142,94 @@ export async function getCachedEvent(eventId: string): Promise<CmfEvent | null> 
             `Error getting event from cache ${eventId}: ${error instanceof Error ? error.message : 'Unknown error'}`
         )
         return null
+    }
+}
+
+/**
+ * Fetch multiple events  from cache or return null
+ * @param eventIds Event IDs  to fetch
+ * @returns CmfEvents or null if not found / error
+ */
+export async function getCachedEvents(eventIds: string[]): Promise<CmfEvent[] | null> {
+    try {
+        // If request size is under limit, fetch all at once
+        const requestKeys = eventIds.map((id) => `${PLURA_EVENT_CACHE_PREFIX}${id}`)
+        const totalSize = getSizeOfAny(requestKeys, 'bytes') as number
+        if (totalSize < UPSTASH_SIZE_LIMIT * 0.9) {
+            return await getCache<CmfEvent>(eventIds, PLURA_EVENT_CACHE_PREFIX)
+        }
+
+        // Calculate number of batches needed based on size
+        const numBatches = Math.ceil(totalSize / UPSTASH_SIZE_LIMIT)
+        const batchSize = Math.floor(eventIds.length / numBatches)
+
+        // Split into batches and fetch in parallel
+        const batches = []
+        for (let i = 0; i < eventIds.length; i += batchSize) {
+            batches.push(eventIds.slice(i, i + batchSize))
+        }
+        logr.info(
+            'api-es-plura',
+            `getCachedEvents: split ${eventIds.length} into ${numBatches} batches of ${batchSize} events`
+        )
+
+        const fromCache = await Promise.all(batches.map((batch) => getCache<CmfEvent>(batch, PLURA_EVENT_CACHE_PREFIX)))
+        const results = fromCache.flat().filter(Boolean)
+        logr.info('api-es-plura', `getCachedEvents(${eventIds.length}): found ${results.length} events in cache`)
+        return results
+    } catch (error) {
+        logr.error(
+            'api-es-plura',
+            `Error getting values for ${eventIds.length} events from cache: ${
+                error instanceof Error ? error.message : 'Unknown error'
+            }`
+        )
+        return null
+    }
+}
+
+/**
+ * Cache multiple events
+ * @param events Array of events to cache
+ */
+export async function setCachedEvents(events: CmfEvent[]): Promise<void> {
+    try {
+        if (!events || events.length === 0) return
+
+        // Calculate total size of events
+        const totalSize = getSizeOfAny(events, 'bytes') as number
+        const logSize = `cached ${events.length} events (${totalSize} bytes)`
+        if (totalSize < UPSTASH_SIZE_LIMIT * 0.9) {
+            // If under size limit, cache all at once
+            await setCache(
+                events.map((e) => e.id),
+                events,
+                PLURA_EVENT_CACHE_PREFIX,
+                CACHE_TTL_PLURA_SCRAPE
+            )
+            logr.info('api-es-plura', `setCachedEvents: ${logSize} in single batch`)
+            return
+        }
+
+        // Split into batches based on size
+        const numBatches = Math.ceil(totalSize / UPSTASH_SIZE_LIMIT)
+        const batchSize = Math.floor(events.length / numBatches)
+
+        // Cache in batches
+        for (let i = 0; i < events.length; i += batchSize) {
+            const batch = events.slice(i, i + batchSize)
+            await setCache(
+                batch.map((e) => e.id),
+                batch,
+                PLURA_EVENT_CACHE_PREFIX,
+                CACHE_TTL_PLURA_SCRAPE
+            )
+        }
+        logr.info('api-es-plura', `setCachedEvents: ${logSize} in ${numBatches} batches`)
+    } catch (error) {
+        logr.error(
+            'api-es-plura',
+            `Error caching ${events.length} events: ${error instanceof Error ? error.message : 'Unknown error'}`
+        )
     }
 }

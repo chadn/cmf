@@ -62,13 +62,35 @@ export function useMap(evts: FilteredEvents, mapW: number, mapH: number): UseMap
         const shownEventIds = new Set(evts.shownEvents.map((event) => event.id))
 
         // Filter markers to only include those with events in the shown set
-        return markersFromAllEvents
-            .map((marker) => ({
-                ...marker,
-                events: marker.events.filter((event) => shownEventIds.has(event.id)),
-            }))
+        const filtered = markersFromAllEvents
+            .map((marker) => {
+                const filteredEvents = marker.events.filter((event) => shownEventIds.has(event.id))
+                logr.debug('umap', 'filteredMarkers:Marker filtering', {
+                    markerId: marker.id,
+                    originalEventCount: marker.events.length,
+                    filteredEventCount: filteredEvents.length,
+                    events: filteredEvents.map((e) => e.id),
+                })
+                return {
+                    ...marker,
+                    events: filteredEvents,
+                }
+            })
             .filter((marker) => marker.events.length > 0)
-    }, [evts.shownEvents, markersFromAllEvents])
+
+        // Log the filtering results for debugging
+        logr.info('umap', 'filteredMarkers updated', {
+            totalMarkers: markersFromAllEvents.length,
+            shownEvents: evts.shownEvents.length,
+            allEvents: evts.allEvents.length,
+            markersShowing: filtered.map((m) => ({
+                id: m.id,
+                eventCount: m.events.length,
+            })),
+        })
+
+        return filtered
+    }, [evts.allEvents.length, evts.shownEvents, markersFromAllEvents])
 
     // Log when the hook initializes - only once
     useEffect(() => {
@@ -94,11 +116,30 @@ export function useMap(evts: FilteredEvents, mapW: number, mapH: number): UseMap
         if (markersChanged) {
             const el = evts.shownEvents.length
             const ol = mapState.markers.length
-            logr.info('umap', `uE: markers changed, ${filteredMarkers.length} markers, was ${ol}, from ${el} events`)
+            logr.info('umap', `uE: markersChanged, ${filteredMarkers.length} markers, was ${ol}, from ${el} events`, {
+                oldMarkers: mapState.markers.map((m) => ({ id: m.id, count: m.events.length })),
+                newMarkers: filteredMarkers.map((m) => ({ id: m.id, count: m.events.length })),
+            })
             setMapState((prev) => ({
                 ...prev,
                 markers: filteredMarkers,
             }))
+        } else {
+            // Log when markers haven't changed but we should check event counts
+            const currentMarkerCounts = mapState.markers.map((m) => ({ id: m.id, count: m.events.length }))
+            const newMarkerCounts = filteredMarkers.map((m) => ({ id: m.id, count: m.events.length }))
+            const countsChanged = JSON.stringify(currentMarkerCounts) !== JSON.stringify(newMarkerCounts)
+
+            if (countsChanged) {
+                logr.info('umap', 'Marker counts changed without marker array change', {
+                    currentCounts: currentMarkerCounts,
+                    newCounts: newMarkerCounts,
+                })
+                setMapState((prev) => ({
+                    ...prev,
+                    markers: filteredMarkers,
+                }))
+            }
         }
     }, [filteredMarkers, mapState.markers, evts.shownEvents, setMapState])
 

@@ -74,8 +74,10 @@ export function convertUrlToCityName(url: string): string {
 
 export function improveLocation(locationText: string, cityName: string): string {
     if (!locationText) {
-        logr.debug('api-es-plura', `improveLocation no location, return(${cityName || ''})`)
-        return cityName || ''
+        //const ret = cityName || ''
+        const ret = 'zoom online'
+        logr.debug('api-es-plura', `improveLocation no location, return(${ret})`)
+        return ret
     }
 
     // first check if locationText is in our list of valid locations

@@ -13,8 +13,8 @@ import { CmfEvent, EventSourceParams, EventSourceResponse, EventSourceType } fro
 import { BaseEventSourceHandler, registerEventSource } from '../index'
 import { logr } from '@/lib/utils/logr'
 import { PluraEventScrapeStats } from './types'
-import { getCityEventsCache, setCityEventsCache } from './cache'
-import { processCityPageWithPagination, scrapeCityNames } from './scraper'
+import { getCachedEvents, getCityEventsCache, setCachedEvents, setCityEventsCache } from './cache'
+import { processCityPageWithPagination, getCityNamesCacheOrWeb } from './scraper'
 import { convertCityNameToKey } from './utils'
 
 /**
@@ -26,6 +26,7 @@ export class PluraEventsSource extends BaseEventSourceHandler {
     public deDupedCmfEvents: Record<string, CmfEvent> = {}
     public eventIdsToCityMap: Record<string, string[]> = {} // internal cache of CmfEvent.id -> city names
     public cityToEventIdsMap: Record<string, string[]> = {} // internal cache of city name -> CmfEvent.id's
+    public cityPagesCount: Record<string, number> = {} // internal cache of total pages per city
     // if fetchEventDetailstrue, fetch event details from the event page, otherwise just scrape the city page
     private fetchEventDetails: boolean = false
     public totalPages: number = 0
@@ -40,87 +41,170 @@ export class PluraEventsSource extends BaseEventSourceHandler {
 
     async fetchEvents(params: EventSourceParams): Promise<EventSourceResponse> {
         const cityToScrape = params.id || 'all'
-        logr.info('api-es-plura', `fetchEvents(city=${cityToScrape}), fetchEventDetails=${this.fetchEventDetails}`)
-
-        // Use the appropriate scraper function based on cityToScrape
-        const events = await (cityToScrape === 'all' ? this.fetchAllEvents() : this.fetchCityEvents(cityToScrape))
-        const stats = this.computeStats()
-        logr.info('api-es-plura', `fetchEvents Done. Overall (not request) stats: ${JSON.stringify(stats)}`)
-        return {
+        const returnEvents: Record<string, CmfEvent> = {} //  our key is eventId, val is CMF Event
+        const resp: EventSourceResponse = {
             httpStatus: 200,
-            events,
+            events: [],
             metadata: {
                 id: cityToScrape,
                 name: `Plura Events - ${cityToScrape !== 'all' ? cityToScrape : 'Global'}`,
                 type: this.type,
-                totalCount: events.length,
-                unknownLocationsCount: 0, // This will be computed after geocoding
+                totalCount: 0,
+                unknownLocationsCount: 0,
             },
         }
-    }
+        logr.info('api-es-plura', `fetchEvents(city=${cityToScrape}), fetchEventDetails=${this.fetchEventDetails}`)
 
-    /**
-     * fetches events for all cities with deduplication. this.deDupedCmfEvents is updated in fetchCityEvents
-     * @returns Object containing deduplicated events array and updated scraping statistics
-     */
-    async fetchAllEvents(): Promise<CmfEvent[]> {
+        // Architecture summary
+        // When fetching all events initially, there's no cache, we go city by city, page by page.  Each page has 30 events. Lots of duplicates.
+        // After initial, cache has eventids at city level, and event details at individual event cache value.
+        // Because initial is slow, it may not finish and only cache some data, need to be smart about our approach.
+        // The goal of the cache is to enable super fast response once everything is cached.  That means minimizing number of cache lookups.
+        // It should also be fast as possible for partial cache.
+        //
         try {
-            const cityNames = await scrapeCityNames()
-            logr.info('api-es-plura', `fetchAllEvents from ${cityNames.length} cities`)
+            const eventIdsToFetch: Record<string, boolean> = {}
+            const cityNames = cityToScrape === 'all' ? await getCityNamesCacheOrWeb() : [cityToScrape]
+            const retEventIds = await this.getEventIdsFromCities(cityNames)
+            logr.info('api-es-plura', `fetchEvents: got ${retEventIds.length} event IDs from cities`)
 
-            for (const cityName of cityNames) {
-                await this.fetchCityEvents(cityName)
+            // Now we just fetch events from cache that we don't have in this.deDupedCmfEvents, which will
+            // be the ones that were in city cache, not part of fetchCityEvents, which adds to deDupedCmfEvents.
+            for (const eventId of retEventIds) {
+                if (!(eventId in this.deDupedCmfEvents)) {
+                    eventIdsToFetch[eventId] = true
+                }
             }
-            logr.info('api-es-plura', `Found ${Object.keys(this.deDupedCmfEvents).length} unique events`)
-            return Object.values(this.deDupedCmfEvents)
-        } catch (error: unknown) {
-            logr.warn(
+            logr.info(
                 'api-es-plura',
-                `Error in fetchAllEvents: ${error instanceof Error ? error.message : 'Unknown error'}`
+                `fetchEvents: need to fetch ${Object.keys(eventIdsToFetch).length} events from cache`
             )
-            return Object.values(this.deDupedCmfEvents)
+
+            // Now for any event we need but is not in this.deDupedCmfEvents, go get it.
+            const cachedEvents = await getCachedEvents(Object.keys(eventIdsToFetch))
+            logr.info('api-es-plura', `fetchEvents: got ${cachedEvents?.length || 0} events from cache`)
+
+            for (const eventId of retEventIds) {
+                const cachedEvent = cachedEvents?.find((e) => e?.id === eventId)
+                if (cachedEvent) {
+                    returnEvents[eventId] = cachedEvent
+                    this.deDupedCmfEvents[eventId] = cachedEvent
+                    logr.debug('api-es-plura', `fetchEvents: found event ${eventId} in cache`)
+                } else if (eventId in this.deDupedCmfEvents) {
+                    returnEvents[eventId] = this.deDupedCmfEvents[eventId]
+                    logr.debug('api-es-plura', `fetchEvents: found event ${eventId} in deDupedCmfEvents`)
+                } else {
+                    const eventCities = this.eventIdsToCityMap[eventId] || []
+                    logr.warn(
+                        'api-es-plura',
+                        `BUG. not found in deDupedCmfEvents or cache, ${eventCities.length} cities: ${eventId} ${eventCities}`
+                    )
+                }
+            }
+            resp.metadata.totalCount = Object.keys(returnEvents).length
+        } catch (error) {
+            const err = error as { response?: { status?: number; statusText?: string } }
+            logr.error('api-es-plura', `Error in fetchEvents: ${error instanceof Error ? error.message : err}`, error)
+            throw new Error(`HTTP ${err.response?.status || 500}: ${err.response?.statusText || 'Unknown error'}`)
         }
+
+        const stats = this.computeStats()
+        logr.info('api-es-plura', `fetchEvents Done. Overall (not request) stats: ${JSON.stringify(stats)}`)
+
+        if (Object.keys(returnEvents).length === 0) {
+            throw new Error(`HTTP 503: No events found`)
+        }
+        resp.events = Object.values(returnEvents)
+        return resp
+    }
+
+    async getEventIdsFromCities(cityNames: string[]): Promise<string[]> {
+        const retEventIds: string[] = []
+        const citiesNotCached: string[] = []
+        const deDupedCmfEvents: Record<string, CmfEvent> = {}
+
+        const cityCache = await getCityEventsCache(cityNames)
+        if (!cityCache) {
+            logr.info('api-es-plura', `getEventIdsFromCities: cache not found for any cities`)
+            citiesNotCached.push(...cityNames)
+        } else {
+            for (let i = 0; i < cityCache.length; i++) {
+                if (cityCache[i] && 'eventIds' in cityCache[i]) {
+                    const cityEventIds = cityCache[i].eventIds
+                    retEventIds.push(...cityEventIds)
+                    logr.info(
+                        'api-es-plura',
+                        `getEventIdsFromCities: found ${cityEventIds.length} cached events for ${cityNames[i]}`
+                    )
+                } else {
+                    logr.info('api-es-plura', `getEventIdsFromCities: cache not found for ${cityNames[i]}`)
+                    citiesNotCached.push(cityNames[i])
+                }
+            }
+        }
+        logr.info(
+            'api-es-plura',
+            `getEventIdsFromCities: fetching ${citiesNotCached.length} cities using fetchCityEvents`
+        )
+        // hack to make sure oakland is last so events without location wll be oakland
+        if (citiesNotCached.includes('Oakland, CA')) {
+            citiesNotCached.push(citiesNotCached.splice(citiesNotCached.indexOf('Oakland, CA'), 1)[0])
+        }
+        for (const cityName of citiesNotCached) {
+            const cityCmfEvents = await this.fetchCityEvents(cityName)
+            for (const event of cityCmfEvents) {
+                deDupedCmfEvents[event.id] = event
+            }
+            const cityEventIds = cityCmfEvents.map((event) => event.id)
+            retEventIds.push(...cityEventIds)
+            logr.info('api-es-plura', `getEventIdsFromCities: fetched ${cityEventIds.length} events for ${cityName}`)
+        }
+        await setCachedEvents(Object.values(deDupedCmfEvents))
+
+        const uniqueSortedEventIds = [...new Set(retEventIds)].sort()
+        logr.info(
+            'api-es-plura',
+            `getEventIdsFromCities: have ${uniqueSortedEventIds.length} unique of ${retEventIds.length} eventIds`
+        )
+
+        return uniqueSortedEventIds
     }
 
     /**
-     * Scrape events for a specific city.  Updates stats and deDupedCmfEvents
+     * Scrape events for a specific city from the web (no get cache). Set to cache, update deDupedCmfEvents and stats.
      * @param cityName City to fetch events from (may include events outside this city)
+     * updates this.deDupedCmfEvents, this.cityPagesCount, this.eventIdsToCityMap, this.cityToEventIdsMap
      * @returns Array of events
      */
     async fetchCityEvents(cityName: string): Promise<CmfEvent[]> {
         logr.debug('api-es-plura', `fetchCityEvents(${cityName}) starting`)
         const origNumEvents = Object.keys(this.deDupedCmfEvents).length
         try {
-            let deDupedEventsCity: Record<string, CmfEvent> = {}
-            // Try to get from cache first
-            const { events, allEventsFound, numPages } = await getCityEventsCache(cityName)
-            if (allEventsFound) {
-                if (numPages && numPages > 0) this.totalPages += numPages
-                // convert events array to a record for faster lookup and stats
-                deDupedEventsCity = events.reduce((acc, event) => {
-                    acc[event.id] = event
-                    return acc
-                }, {} as Record<string, CmfEvent>)
-            } else {
-                const result = await processCityPageWithPagination(cityName)
-                deDupedEventsCity = result.deDupedEventsCity
-                this.totalPages += result.totalPages
-                await setCityEventsCache(cityName, Object.values(deDupedEventsCity), result.totalPages)
+            const fetched = await processCityPageWithPagination(cityName)
+            // for each event in fetched.deDupedEventsCity, add to this.deDupedCmfEvents
+            for (const eventId of Object.keys(fetched.deDupedEventsCity)) {
+                this.deDupedCmfEvents[eventId] = fetched.deDupedEventsCity[eventId] // write over existing if any
             }
-            // Update internal stats and deduplicated events
-            for (const eventId of Object.keys(deDupedEventsCity)) {
+            const numNewEvents = Object.keys(this.deDupedCmfEvents).length - origNumEvents
+            logr.info(
+                'api-es-plura',
+                `fetchCityEvents(${cityName}) found ${
+                    Object.keys(fetched.deDupedEventsCity).length
+                } events, ${numNewEvents} new, over ${fetched.totalPages} pages`
+            )
+
+            // NOTE we are just caching eventIds, not events, in setCityEventsCache
+            await setCityEventsCache(cityName, Object.keys(fetched.deDupedEventsCity), fetched.totalPages)
+
+            // Update internal stats
+            this.cityPagesCount[cityName] = fetched.totalPages
+            this.cityToEventIdsMap[convertCityNameToKey(cityName)] = Object.keys(fetched.deDupedEventsCity)
+            for (const eventId of Object.keys(fetched.deDupedEventsCity)) {
                 ;(this.eventIdsToCityMap[eventId] ??= []).push(cityName)
-                if (eventId in this.deDupedCmfEvents) {
-                    // debug because this is expected
-                    logr.debug('api-es-plura', `fetchCityEvents: duplicate ${eventId} in ${cityName}`)
-                } else {
-                    this.deDupedCmfEvents[eventId] = deDupedEventsCity[eventId]
-                }
+                const numCities = this.eventIdsToCityMap[eventId]?.length
+                logr.info('api-es-plura', `fetchCityEvents(${cityName}) now in ${numCities} cities: ${eventId}`)
             }
-            this.cityToEventIdsMap[convertCityNameToKey(cityName)] = Object.keys(deDupedEventsCity)
-            const newNumEvents = Object.keys(this.deDupedCmfEvents).length
-            logr.info('api-es-plura', `fetchCityEvents(${cityName}) added ${newNumEvents - origNumEvents} new events`)
-            return Object.values(deDupedEventsCity)
+            return Object.values(fetched.deDupedEventsCity)
         } catch (error: unknown) {
             logr.error(
                 'api-es-plura',
@@ -137,6 +221,9 @@ export class PluraEventsSource extends BaseEventSourceHandler {
             totalEventsIncludingDuplicates: 0,
             totalPages: this.totalPages,
         }
+        for (const cityName of Object.keys(this.cityPagesCount)) {
+            stats.totalPages += this.cityPagesCount[cityName]
+        }
         for (const cityEvents of Object.values(this.cityToEventIdsMap)) {
             stats.totalEventsIncludingDuplicates += cityEvents.length
         }
@@ -151,9 +238,9 @@ registerEventSource(pluraEventsSource)
 export { pluraEventsSource }
 
 export function knownCitiesAsKeys(cityName: string = ''): string[] {
-    const cities = Object.keys(pluraEventsSource.cityToEventIdsMap)
+    const cityKeys = Object.keys(pluraEventsSource.cityToEventIdsMap)
     if (cityName) {
-        return cities.filter((city) => city.includes(convertCityNameToKey(cityName)))
+        return cityKeys.filter((cityKey) => cityKey.includes(convertCityNameToKey(cityName)))
     }
-    return cities
+    return cityKeys
 }

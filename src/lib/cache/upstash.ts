@@ -101,9 +101,50 @@ export async function redisSet<T>(
 
         const client = getRedisClient()
 
-        // TODO: update to support client.mset(cacheKeys, values)
         // Cache with the specified expiration time
         await client.set(`${prefix}${key}`, value, { ex: ttl })
+    } catch (error) {
+        logr.warn('cache', 'redisSet error', error)
+    }
+}
+
+/**
+ * Generic function to set multiple values in Redis
+ * @param keys - The keys to store
+ * @param values - The values to store
+ * @param prefix - Optional prefix to prepend to the key
+ * @param ttl - Optional time-to-live in seconds (default: 30 days)
+ * @returns Promise that resolves when the operation is complete
+ */
+export async function redisMSet<T>(
+    keys: string[],
+    values: T[],
+    prefix: string = '',
+    ttl: number = 60 * 60 * 24 * 30
+): Promise<void> {
+    try {
+        // Skip if Upstash is not configured
+        if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) {
+            return
+        }
+        if (!keys.length || !values.length) {
+            return
+        }
+
+        // MSET does not support TTLs, so would need to do a bunch of expires after.
+        // With pipeline, its about the same as SET with TTL.
+        /* EXAMPLE FOR FUTURE USE
+        const msetArgs = keys.flatMap((key, i) => [`${prefix}${key}`, values[i]])
+        pipeline.mset(...msetArgs)
+        // Then set TTLs per key in for loop
+        pipeline.expire(`${prefix}${key}`, ttl)
+        */
+        const client = getRedisClient()
+        const pipeline = client.pipeline()
+        for (let i = 0; i < keys.length; i++) {
+            pipeline.set(`${prefix}${keys[i]}`, values[i], { ex: ttl })
+        }
+        await pipeline.exec()
     } catch (error) {
         logr.warn('cache', 'redisSet error', error)
     }

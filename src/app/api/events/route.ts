@@ -40,7 +40,7 @@ const fetchAndGeocode = async (eventSourceId: string, timeMin?: string, timeMax?
     })
     let ms = Math.round(performance.now() - startTime)
     const sz = JSON.stringify({ events, metadata }).length
-    logr.info('api-events', `API fetched ${events.length} events in ${ms}ms ${sz} bytes ${eventSourceId}`)
+    logr.info('api-events', `/api/events fetched ${events.length} events in ${ms}ms ${sz} bytes ${eventSourceId}`)
 
     // GEOCODE LOCATIONS
     const uniqueLocations = Array.from(
@@ -127,7 +127,10 @@ export async function GET(request: NextRequest) {
 
         // Return cached response if available
         if (cachedResponse) {
-            logr.info('api-events', `Cache hit in ${fetchTime}ms, returning for ${fetchKey}`)
+            logr.info(
+                'api-events',
+                `Cache hit in ${fetchTime}ms, returning ${cachedResponse.events.length} events for ${fetchKey}`
+            )
             return NextResponse.json(cachedResponse)
         }
 
@@ -153,7 +156,7 @@ export async function GET(request: NextRequest) {
                 }
             })
         )
-
+        // Anything besides HTTP 200 should be done like: throw new Error(`HTTP 503: No events found`)
         return NextResponse.json(response)
     } catch (error) {
         logr.warn('api-events', 'Error fetching events', error)

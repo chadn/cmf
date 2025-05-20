@@ -35,7 +35,7 @@ export interface PluraCityEventsCache {
 
 export interface PluraCitiesListCache {
     timestamp: number
-    cityNames: Record<string, string> //key is noramlized city name, value is original city name
+    cityNames: Record<string, string> //key is noramlized city name (aka cityKey), value is original city name
 }
 
 export interface PluraEventScrapeStats {
@@ -46,8 +46,11 @@ export interface PluraEventScrapeStats {
 }
 
 export const ValidLocations: Record<string, string> = {
-    'San Francisco': 'San Francisco, CA',
-    Seattle: 'Seattle, WA',
+    Berkeley: 'Berkeley, CA',
+    'La Jolla': 'La Jolla, CA',
+    'Los Angeles': 'Los Angeles, CA',
     Oakland: 'Oakland, CA',
     Portland: 'Portland, OR',
+    'San Francisco': 'San Francisco, CA',
+    Seattle: 'Seattle, WA',
 }

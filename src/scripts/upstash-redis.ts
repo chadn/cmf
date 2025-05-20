@@ -24,6 +24,7 @@ delete-keys <pattern>   - Delete keys matching pattern. Confirmation required.
 fix-location <k1> <k2>  - updates the value of k1 to be just like the k2's value while preseriving k1's original_location. Also sets k1's TTL to never expire.
 
   Examples:
+${ME} 
 ${ME} get-key-count 'plura:*'
 ${ME} get-keys 'plura:city:'
 ${ME} get-keys-all  > keys.txt
@@ -202,18 +203,12 @@ async function getValue(key: string): Promise<any> {
 // Delete keys matching pattern
 async function deleteKeys(pattern: string): Promise<number> {
     const client = getRedisClient()
-    const keys = await getKeys(pattern)
+    const { keys, info } = await getKeysWithInfo(pattern)
     if (keys.length === 0) {
         console.log('No keys found matching pattern:', pattern)
         return 0
     }
-
-    console.log(`Found ${keys.length} keys matching pattern:`, pattern)
-    if (keys.length > 10) {
-        console.log('First 10 keys to be deleted:', keys.slice(0, 10))
-    } else {
-        console.log('Keys to be deleted:', keys)
-    }
+    console.log(`Found ${keys.length} keys matching pattern: '${pattern}'\nFirst 10:`, info)
 
     if (await confirm('Are you sure you want to delete these keys?')) {
         const pipeline = client.pipeline()
@@ -285,20 +280,19 @@ async function getKeyInfo(key: string): Promise<{ ttl: number; size: number; ttl
 async function getKeysWithInfo(
     pattern: string,
     showAll: boolean = false
-): Promise<{ keys: string[]; keyCount: number; info?: Record<string, { ttl: number; size: number; ttlStr: string }> }> {
+): Promise<{
+    keys: string[]
+    info?: Record<string, { ttl: number; size: number; ttlStr: string }> // only on first 10 keys if showAll is false
+}> {
     const allKeys = await getKeys(pattern)
-    const keyCount = allKeys.length
-
     if (showAll) {
-        return { keys: allKeys, keyCount }
+        return { keys: allKeys }
     }
-
-    const keys = allKeys.slice(0, 10)
     const info: Record<string, { ttl: number; size: number; ttlStr: string }> = {}
-    for (const key of keys) {
+    for (const key of allKeys.slice(0, 10)) {
         info[key] = await getKeyInfo(key)
     }
-    return { keys, keyCount, info }
+    return { keys: allKeys, info }
 }
 
 // Fix location by copying k2's value to k1 while preserving k1's original_location
@@ -346,22 +340,13 @@ async function main() {
                 if (!pattern.includes('*')) {
                     pattern = `${pattern}*`
                 }
-                const { keys, keyCount, info } = await getKeysWithInfo(pattern, command === 'get-keys-all')
+                const { keys, info } = await getKeysWithInfo(pattern, command === 'get-keys-all')
                 if (command === 'get-keys-all') {
                     // support json option in the future: process.stdout.write(JSON.stringify(keys, null, 2))
                     process.stdout.write(keys.join('\n'))
                 } else {
-                    if (keyCount > 10) {
-                        console.log(`First 10 of ${keyCount} keys matching: '${pattern}'`)
-                    } else {
-                        console.log(`All ${keyCount} keys matching: '${pattern}'`)
-                    }
-                    if (info) {
-                        for (const key of keys) {
-                            const { size, ttlStr } = info[key]
-                            console.log(`  ${key}  Size: ${size} bytes, TTL: ${ttlStr}`)
-                        }
-                    }
+                    console.log(`Found ${keys.length} keys matching pattern: '${pattern}'\nFirst 10:`, info)
+                    console.log(`${ME} get-value '${keys[0]}'`)
                 }
                 break
             }
