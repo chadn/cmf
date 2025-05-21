@@ -25,7 +25,7 @@ export class PluraEventsSource extends BaseEventSourceHandler {
     // deDupedCmfEvents uses CmfEvent.id as key, using a Record for faster lookup. Note Record is POJO, and is JSON serializable unlike Map().
     public deDupedCmfEvents: Record<string, CmfEvent> = {}
     public eventIdsToCityMap: Record<string, string[]> = {} // internal cache of CmfEvent.id -> city names
-    public cityToEventIdsMap: Record<string, string[]> = {} // internal cache of city name -> CmfEvent.id's
+    public cityKeyToEventIdsMap: Record<string, string[]> = {} // internal cache of city name -> CmfEvent.id's
     public cityPagesCount: Record<string, number> = {} // internal cache of total pages per city
     // if fetchEventDetailstrue, fetch event details from the event page, otherwise just scrape the city page
     private fetchEventDetails: boolean = false
@@ -113,7 +113,7 @@ export class PluraEventsSource extends BaseEventSourceHandler {
         logr.info('api-es-plura', `fetchEvents Done. Overall (not request) stats: ${JSON.stringify(stats)}`)
 
         if (Object.keys(returnEvents).length === 0) {
-            throw new Error(`HTTP 503: No events found`)
+            throw new Error(`HTTP 404: No events found`)
         }
         resp.events = Object.values(returnEvents)
         return resp
@@ -175,7 +175,7 @@ export class PluraEventsSource extends BaseEventSourceHandler {
     /**
      * Scrape events for a specific city from the web (no get cache). Set to cache, update deDupedCmfEvents and stats.
      * @param cityName City to fetch events from (may include events outside this city)
-     * updates this.deDupedCmfEvents, this.cityPagesCount, this.eventIdsToCityMap, this.cityToEventIdsMap
+     * updates this.deDupedCmfEvents, this.cityPagesCount, this.eventIdsToCityMap, this.cityKeyToEventIdsMap
      * @returns Array of events
      */
     async fetchCityEvents(cityName: string): Promise<CmfEvent[]> {
@@ -200,11 +200,11 @@ export class PluraEventsSource extends BaseEventSourceHandler {
 
             // Update internal stats
             this.cityPagesCount[cityName] = fetched.totalPages
-            this.cityToEventIdsMap[convertCityNameToKey(cityName)] = Object.keys(fetched.deDupedEventsCity)
+            this.cityKeyToEventIdsMap[convertCityNameToKey(cityName)] = Object.keys(fetched.deDupedEventsCity)
             for (const eventId of Object.keys(fetched.deDupedEventsCity)) {
                 ;(this.eventIdsToCityMap[eventId] ??= []).push(cityName)
                 const numCities = this.eventIdsToCityMap[eventId]?.length
-                logr.info('api-es-plura', `fetchCityEvents(${cityName}) now in ${numCities} cities: ${eventId}`)
+                logr.debug('api-es-plura', `fetchCityEvents(${cityName}) now in ${numCities} cities: ${eventId}`)
             }
             return Object.values(fetched.deDupedEventsCity)
         } catch (error: unknown) {
@@ -218,7 +218,7 @@ export class PluraEventsSource extends BaseEventSourceHandler {
 
     computeStats() {
         const stats: PluraEventScrapeStats = {
-            totalCities: Object.keys(this.cityToEventIdsMap).length,
+            totalCities: Object.keys(this.cityKeyToEventIdsMap).length,
             totalUniqueEvents: Object.keys(this.deDupedCmfEvents).length,
             totalEventsIncludingDuplicates: 0,
             totalPages: this.totalPages,
@@ -226,7 +226,7 @@ export class PluraEventsSource extends BaseEventSourceHandler {
         for (const cityName of Object.keys(this.cityPagesCount)) {
             stats.totalPages += this.cityPagesCount[cityName]
         }
-        for (const cityEvents of Object.values(this.cityToEventIdsMap)) {
+        for (const cityEvents of Object.values(this.cityKeyToEventIdsMap)) {
             stats.totalEventsIncludingDuplicates += cityEvents.length
         }
         return stats
@@ -238,11 +238,3 @@ const pluraEventsSource = new PluraEventsSource()
 registerEventSource(pluraEventsSource)
 
 export { pluraEventsSource }
-
-export function knownCitiesAsKeys(cityName: string = ''): string[] {
-    const cityKeys = Object.keys(pluraEventsSource.cityToEventIdsMap)
-    if (cityName) {
-        return cityKeys.filter((cityKey) => cityKey.includes(convertCityNameToKey(cityName)))
-    }
-    return cityKeys
-}

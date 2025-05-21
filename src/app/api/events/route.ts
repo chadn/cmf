@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { fetchEvents, getEventSourceHandler } from '@/lib/api/eventSources'
 import { batchGeocodeLocations } from '@/lib/api/geocoding'
+import { getEventsCache, setEventsCache } from '@/lib/cache'
 import { EventSourceResponse } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
-import { getCache, setCache } from '@/lib/cache'
-import { waitUntil } from '@vercel/functions'
 
 // Import event source handlers to ensure they're registered
 import '@/lib/api/eventSources/googleCalendar'
@@ -17,22 +16,11 @@ import '@/lib/api/eventSources/plura/index'
 // Export config to make this a dynamic API route
 export const dynamic = 'force-dynamic'
 
-// Default cache TTL is 10 minutes (in seconds)
-const CACHE_TTL_API_EVENTSOURCE = process.env.CACHE_TTL_API_EVENTSOURCE
-    ? parseInt(process.env.CACHE_TTL_API_EVENTSOURCE)
-    : 60 * 10
-const EVENTS_CACHE_PREFIX = 'events:'
-
-// given a date in string or date object, return a date rounded to the nearest hour in RFC3339 format
-function roundTimeToNearestHour(date: Date | string): string {
-    if (!date) return ''
-    const roundedDate = new Date(date)
-    if (isNaN(roundedDate.getTime())) return ''
-    roundedDate.setMinutes(0, 0, 0)
-    return roundedDate.toISOString()
-}
-
-const fetchAndGeocode = async (eventSourceId: string, timeMin?: string, timeMax?: string) => {
+const fetchAndGeocode = async (
+    eventSourceId: string,
+    timeMin?: string,
+    timeMax?: string
+): Promise<EventSourceResponse> => {
     const startTime = performance.now()
     const { events, metadata } = await fetchEvents(eventSourceId, {
         timeMin,
@@ -73,7 +61,7 @@ const fetchAndGeocode = async (eventSourceId: string, timeMin?: string, timeMax?
     logr.info('api-events', `Events with unknown locations: ${unknownLocationsCount}`)
 
     // Construct the response
-    const response = {
+    const response: EventSourceResponse = {
         events: eventsWithLocationResolved,
         metadata: {
             ...metadata,
@@ -117,46 +105,24 @@ export async function GET(request: NextRequest) {
         const timeMin = request.nextUrl.searchParams.get('timeMin') || ''
         const timeMax = request.nextUrl.searchParams.get('timeMax') || ''
 
-        // Fetch events from the appropriate source or cache
-        const fetchKey = `${eventSourceId}-${roundTimeToNearestHour(timeMin)}-${roundTimeToNearestHour(timeMax)}`
+        // Fetch events from the cache if available
         const startTime = performance.now()
-
-        // Try to get response from cache
-        const cachedResponse = await getCache<EventSourceResponse>(fetchKey, EVENTS_CACHE_PREFIX)
+        const cachedResponse = await getEventsCache(eventSourceId, timeMin, timeMax)
         const fetchTime = Math.round(performance.now() - startTime)
-
-        // Return cached response if available
         if (cachedResponse) {
             logr.info(
                 'api-events',
-                `Cache hit in ${fetchTime}ms, returning ${cachedResponse.events.length} events for ${fetchKey}`
+                `Cache hit in ${fetchTime}ms, returning ${cachedResponse.events.length} events for ${eventSourceId}`
             )
             return NextResponse.json(cachedResponse)
         }
-
-        logr.info('api-events', `Cache miss, ${fetchTime}ms. Calling fetchAndGeocode for ${fetchKey}`)
+        logr.info('api-events', `Cache miss, ${fetchTime}ms. Calling fetchAndGeocode for ${eventSourceId}`)
 
         // Fetch and process events
-        const response = await fetchAndGeocode(eventSourceId, timeMin || undefined, timeMax || undefined)
+        const response = await fetchAndGeocode(eventSourceId, timeMin, timeMax)
+        setEventsCache(response, eventSourceId, timeMin, timeMax)
 
-        // Save to cache in the background (don't await) but log when successful or failed
-        // 2024 https://vercel.com/changelog/waituntil-is-now-available-for-vercel-functions
-        waitUntil(
-            new Promise(async () => {
-                try {
-                    await setCache<EventSourceResponse>(
-                        fetchKey,
-                        response,
-                        EVENTS_CACHE_PREFIX,
-                        CACHE_TTL_API_EVENTSOURCE
-                    )
-                    logr.info('api-events', `waitUntil:Cached events TTL=${CACHE_TTL_API_EVENTSOURCE}s for ${fetchKey}`)
-                } catch (error) {
-                    logr.warn('api-events', `waitUntil:Failed to cache events for ${fetchKey}`, error)
-                }
-            })
-        )
-        // Anything besides HTTP 200 should be done like: throw new Error(`HTTP 503: No events found`)
+        // Anything besides HTTP 200 should be done like: throw new Error(`HTTP 404: No events found`)
         return NextResponse.json(response)
     } catch (error) {
         logr.warn('api-events', 'Error fetching events', error)

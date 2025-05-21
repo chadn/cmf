@@ -1,8 +1,8 @@
 import { MapBounds } from './map'
 
 export type EventStatus = 'resolved' | 'unresolved'
-
 export const LOCATION_KEY_PREFIX = 'location:'
+export const EVENTS_CACHE_PREFIX = 'events:'
 
 export interface Location {
     status: EventStatus

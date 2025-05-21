@@ -1,15 +1,17 @@
-import { Location, LOCATION_KEY_PREFIX } from '@/types/events'
+import { Location, LOCATION_KEY_PREFIX, EVENTS_CACHE_PREFIX, EventSourceResponse } from '@/types/events'
 import * as upstashCache from './upstash'
 import * as filesystemCache from './filesystem'
 import { logr } from '../utils/logr'
-import { getSizeOfAny } from '../utils/utils-shared'
-// import { waitUntil } from '@vercel/functions'
+import { getSizeOfAny, roundTimeToNearestHour } from '../utils/utils-shared'
+import { waitUntil } from '@vercel/functions'
 
 const useFilesystemCache = checkUseFilesystemCache()
 const CACHE_TTL_API_GEOCODE = process.env.CACHE_TTL_API_GEOCODE
     ? parseInt(process.env.CACHE_TTL_API_GEOCODE)
     : 60 * 60 * 24 * 90 // 90 days
-
+const CACHE_TTL_API_EVENTSOURCE = process.env.CACHE_TTL_API_EVENTSOURCE
+    ? parseInt(process.env.CACHE_TTL_API_EVENTSOURCE)
+    : 60 * 10 // 10 minutes
 /**
  * Generic function to get a single or multiple values from cache
  * @param key - The key or keys to retrieve
@@ -178,6 +180,45 @@ export async function getCachedLocation(locationKey: string): Promise<Location |
  */
 export async function setCacheLocation(locationKey: string, location: Location): Promise<void> {
     return setCache<Location>(locationKey, location, LOCATION_KEY_PREFIX, CACHE_TTL_API_GEOCODE)
+}
+
+export const getEventsCache = async (
+    eventSourceId: string,
+    timeMin: string = '',
+    timeMax: string = ''
+): Promise<EventSourceResponse | null> => {
+    let fetchKey = `${eventSourceId}-${roundTimeToNearestHour(timeMin)}-${roundTimeToNearestHour(timeMax)}`
+    const cachedResponse = await getCache<EventSourceResponse>(fetchKey, EVENTS_CACHE_PREFIX)
+    if (cachedResponse) return cachedResponse
+
+    // try again for the previous hour (in case it is 1 minute into a new hour)
+    const timeMin2 = new Date(new Date(timeMin).getTime() - 59 * 60 * 1000).toISOString()
+    const timeMax2 = new Date(new Date(timeMax).getTime() - 59 * 60 * 1000).toISOString()
+    fetchKey = `${eventSourceId}-${roundTimeToNearestHour(timeMin2)}-${roundTimeToNearestHour(timeMax2)}`
+    const cachedResponse2 = await getCache<EventSourceResponse>(fetchKey, EVENTS_CACHE_PREFIX)
+    return cachedResponse2
+}
+
+export const setEventsCache = async (
+    response: EventSourceResponse,
+    eventSourceId: string,
+    timeMin?: string,
+    timeMax?: string
+) => {
+    const fetchKey = `${eventSourceId}-${roundTimeToNearestHour(timeMin)}-${roundTimeToNearestHour(timeMax)}`
+
+    // Save to cache in the background (don't await) but log when successful or failed
+    // 2024 https://vercel.com/changelog/waituntil-is-now-available-for-vercel-functions
+    waitUntil(
+        new Promise(async () => {
+            try {
+                await setCache<EventSourceResponse>(fetchKey, response, EVENTS_CACHE_PREFIX, CACHE_TTL_API_EVENTSOURCE)
+                logr.info('api-events', `waitUntil:Cached events TTL=${CACHE_TTL_API_EVENTSOURCE}s for ${fetchKey}`)
+            } catch (error) {
+                logr.warn('api-events', `waitUntil:Failed to cache events for ${fetchKey}`, error)
+            }
+        })
+    )
 }
 
 function checkUseFilesystemCache(): boolean {

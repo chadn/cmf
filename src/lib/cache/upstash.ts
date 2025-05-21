@@ -110,11 +110,12 @@ export async function redisSet<T>(
 
 /**
  * Generic function to set multiple values in Redis
+ * If it doesn't throw an error, it means everything was set.
  * @param keys - The keys to store
  * @param values - The values to store
  * @param prefix - Optional prefix to prepend to the key
  * @param ttl - Optional time-to-live in seconds (default: 30 days)
- * @returns Promise that resolves when the operation is complete
+ * @returns Promise that resolves when the operation is complete.
  */
 export async function redisMSet<T>(
     keys: string[],
@@ -132,7 +133,7 @@ export async function redisMSet<T>(
         }
 
         // MSET does not support TTLs, so would need to do a bunch of expires after.
-        // With pipeline, its about the same as SET with TTL.
+        // With pipeline, mset is about the same as set with TTL.
         /* EXAMPLE FOR FUTURE USE
         const msetArgs = keys.flatMap((key, i) => [`${prefix}${key}`, values[i]])
         pipeline.mset(...msetArgs)

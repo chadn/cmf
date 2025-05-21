@@ -228,7 +228,9 @@ async function getKeyCount(pattern: string): Promise<number> {
 // Get prefixes and their counts
 async function getPrefixes(): Promise<Record<string, number>> {
     const keys = await getKeys('*')
-    const prefixes: Record<string, number> = {}
+    const prefixes: Record<string, number> = {
+        '': keys.length,
+    }
 
     for (const key of keys) {
         // Split by : and build up prefixes
@@ -364,7 +366,7 @@ async function main() {
                 const prefixes = await getPrefixes()
                 console.log('Key prefixes and counts:')
                 Object.entries(prefixes)
-                    .sort(([, a], [, b]) => b - a)
+                    .sort(([a, countA], [b, countB]) => a.localeCompare(b) || countB - countA)
                     .forEach(([prefix, count]) => {
                         console.log(`  ${prefix} ${count} keys`)
                     })

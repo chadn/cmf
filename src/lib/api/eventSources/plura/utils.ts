@@ -13,8 +13,8 @@
 
 import { logr } from '@/lib/utils/logr'
 import { PluraDomain } from './types'
-import { knownCitiesAsKeys } from './index'
-import { ValidLocations } from './types'
+import { DateTime } from 'luxon'
+import { getCityStateFromCity } from '@/lib/utils/timezones'
 
 // Normalize URLs for comparison only - DO NOT use for requests
 export const normalizeUrl = (url: string): string => {
@@ -43,8 +43,8 @@ export function convertCityNameToUrl(cityName: string, domain: string = '', opti
 }
 /**
  * convert a city name to a key for a record
- * @param cityName City name (will be formatted)
- * @returns Full city URL
+ * @param cityName City name (spaces, commas) (will be formatted)
+ * @returns cityKey (no spaces, underscores)
  */
 export function convertCityNameToKey(cityName: string): string {
     return cityName.replace(/,\s*/g, '_').replace(/\s+/g, ' ').toLowerCase()
@@ -80,108 +80,80 @@ export function improveLocation(locationText: string, cityName: string): string 
         return ret
     }
 
-    // first check if locationText is in our list of valid locations
-    if (ValidLocations[locationText as keyof typeof ValidLocations]) {
-        logr.info(
-            'api-es-plura',
-            `improveLocation found ${locationText} in ValidLocations`,
-            ValidLocations[locationText]
-        )
-        return ValidLocations[locationText]
-    }
-
-    // then see if it's a city in the list of known cities
-    const locationTextKey = convertCityNameToKey(locationText)
-    const knownCities = knownCitiesAsKeys(locationTextKey)
-    if (knownCities.includes(locationTextKey)) {
-        logr.info('api-es-plura', `improveLocation found ${locationText} in knownCitiesAsKeys`, knownCities)
-        return locationText
+    // first check if locationText is in our list of known city locations
+    const knownCity = getCityStateFromCity(locationText)
+    if (knownCity) {
+        logr.debug('api-es-plura', `improveLocation(${locationText}) found ${knownCity} using getCityStateFromCity`)
+        return knownCity
     }
 
     if (!cityName) {
-        logr.debug('api-es-plura', `improveLocation no city, return unchanged "${locationText}"`)
+        logr.debug('api-es-plura', `improveLocation(${locationText}) no city, return locationText unchanged`)
         return locationText
     }
+
+    // TODO: rest of this function could be deleted, but we may use it in the future
 
     // Extract city suffix (could be state or state and country)
     const commaIndex = cityName.indexOf(',')
     if (commaIndex === -1) {
-        logr.debug('api-es-plura', `improveLocation city w/o suffix, return unchanged "${locationText}"`)
+        logr.info('api-es-plura', `improveLocation(${locationText}) city w/o suffix, return locationText unchanged`)
         return locationText // No suffix to add
     }
     const citySuffix = cityName.substring(commaIndex)
 
     // Check if locationText already has a similar suffix
     if (locationText.includes(citySuffix) || locationText.endsWith(citySuffix.trim())) {
-        logr.debug('api-es-plura', `improveLocation city and location same suffix, return unchanged "${locationText}"`)
+        logr.debug('api-es-plura', `improveLocation(${locationText}) has city suffix, return locationText unchanged`)
         return locationText
     }
 
     // Append the city suffix to the location
-    logr.debug('api-es-plura', `improveLocation adding ${citySuffix}, to end of "${locationText}"`)
+    logr.debug('api-es-plura', `improveLocation(${locationText}) adding citySuffix(${citySuffix}).`)
     return `${locationText}${citySuffix}`
 }
 
 /**
  * Parse a date string from Plura format
- * @param dateString Date string in format like "Wednesday, May 14th at 1:30am"
- * @param timezone Timezone string like "America/New_York"
- * @returns Object with startDate and endDate
+ * @param dateString Date string like "May 14th at 1:30pm" or "Aug 2nd at 8pm Europe/Lisbon"
+ * @returns Object with startDate and endDate (1 hour later)
  */
-export function parsePluraDateString(
-    dateString: string,
-    timezone: string
-): { startDate: Date | null; endDate: Date | null } {
+export function parsePluraDateString(dateString: string): { startDate: Date | null; endDate: Date | null } {
     try {
-        if (!dateString || typeof dateString !== 'string') {
-            return { startDate: null, endDate: null }
-        }
-
         const currentYear = new Date().getFullYear()
 
         // Create regex to extract date components
         // Handles formats like:
-        // - "Wednesday, May 14th at 1:30am"
-        // - "May 14th at 1:30am"
-        // - "May 14, 2023 at 1:30am"
-        const dateRegex =
-            /(?:([A-Za-z]+),\s+)?([A-Za-z]+)\s+(\d+)(?:st|nd|rd|th)(?:,\s+(\d{4}))?(?:\s+at\s+(\d+)(?::(\d+))?([ap]m))?/i
-        const match = dateString.match(dateRegex)
+        // - "Wednesday, May 14th at 7pm UTC"
+        // - "May 14th at 1:30am America/New_York"
+        // - "May 14, 2023 at 1:30am GMT"
+        const match = dateString.match(
+            /([A-Za-z]+)\s+(\d+)(?:st|nd|rd|th)?(?:,?\s*(\d{4}))?\s+at\s+(\d+)(?::(\d+))?\s*(am|pm)(?:\s+([\w/]+))?/i
+        )
 
-        if (!match) {
-            logr.warn('api-es-plura', `Failed to parse date string: ${dateString}`)
+        //console.log(`parsePluraDateString match for ${dateString}`, match)
+        if (!match) return { startDate: null, endDate: null }
+
+        const [, month, day, year, hour, minute, ampm, zone] = match
+
+        const zoneId = zone || 'UTC'
+        const date = DateTime.fromFormat(
+            `${month} ${day} ${year || currentYear} ${hour}:${minute || '00'} ${ampm}`,
+            'LLL d yyyy h:mm a',
+            { zone: zoneId }
+        )
+
+        if (!date.isValid) {
+            //console.log(`parsePluraDateString invalid date for ${dateString}`, date)
             return { startDate: null, endDate: null }
         }
 
-        // Extract the components we need
-        const [, , month, day, year, hour, minute, ampm] = match
-
-        // Create date string in format that JS Date can parse
-        let dateStr = `${month} ${day}, ${year || currentYear}`
-
-        // Handle time if available
-        let timeStr = ''
-        if (hour) {
-            timeStr = `${hour}:${minute || '00'} ${ampm || 'am'}`
-            dateStr += ` ${timeStr}`
-        }
-
-        // Create the date and convert to timezone
-        const tempDate = new Date(dateStr)
-        if (isNaN(tempDate.getTime())) {
-            logr.warn('api-es-plura', `Invalid date created from string: ${dateStr}`)
-            return { startDate: null, endDate: null }
-        }
-
-        const startDate = new Date(tempDate.toLocaleString('en-US', { timeZone: timezone }))
-
-        // Default duration is 1 hour if not specified
-        const endDate = new Date(startDate)
-        endDate.setHours(endDate.getHours() + 1)
+        const startDate = date.toUTC().toJSDate()
+        const endDate = date.plus({ hours: 1 }).toUTC().toJSDate()
 
         return { startDate, endDate }
-    } catch (error: unknown) {
-        logr.error('api-es-plura', `Error parsing date: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } catch {
+        //console.log(`parsePluraDateString error for ${dateString}`, error)
         return { startDate: null, endDate: null }
     }
 }

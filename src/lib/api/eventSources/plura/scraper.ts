@@ -15,7 +15,6 @@
 import * as cheerio from 'cheerio'
 import { CmfEvent } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
-import { getTimezoneFromCity } from '@/lib/utils/timezones'
 import { axiosGet } from '@/lib/utils/utils-server'
 import { PluraDomain } from './types'
 import { convertCityNameToUrl, convertCityNameToKey, parsePluraDateString, improveLocation } from './utils'
@@ -67,11 +66,13 @@ export async function getCityNamesCacheOrWeb(): Promise<string[]> {
  * Process a city page to extract events
  * @param cityName Name of the city
  * @param cityUrl Optional URL of the city page, if provided, it will be used instead of converting the city name to a URL
+ * @param attempt Current attempt number, used to prevent infinite loops
  * @returns Record with CmfEvent.id as key and CmfEvent as value
  */
 export async function processCityPageWithPagination(
     cityName: string,
-    cityUrlParam: string = ''
+    cityUrlParam: string = '',
+    attempt: number = 1
 ): Promise<{
     deDupedEventsCity: Record<string, CmfEvent>
     totalPages: number
@@ -110,11 +111,12 @@ export async function processCityPageWithPagination(
                 Object.keys(deDupedEventsCity).length
             } events found in ${totalPages} pages ${cityUrl}`
         )
-        if (Object.keys(deDupedEventsCity).length === 0) {
+        if (Object.keys(deDupedEventsCity).length === 0 && attempt <= 1) {
+            // Only try the second URL format once
             if (convertCityNameToUrl(cityName) === cityUrl) {
                 cityUrl = convertCityNameToUrl(cityName, '', 2)
                 logr.info('api-es-plura', `processCityPageWithPagination(${cityName}) trying different URL ${cityUrl}`)
-                return processCityPageWithPagination(cityName, cityUrl)
+                return processCityPageWithPagination(cityName, cityUrl, attempt + 1)
             } else {
                 logr.info('api-es-plura', `processCityPageWithPagination(${cityName}) already tried URL ${cityUrl}`)
             }
@@ -143,6 +145,7 @@ export async function processSingleCityPage(
         const response = await axiosGet(pageUrl)
         const $ = cheerio.load(response.data)
         const deDupedCmfEventsPage: Record<string, CmfEvent> = {}
+        logr.info('api-es-plura', `processSingleCityPage(${cityName}): ${pageUrl}`)
 
         // Process each section that might contain an event, add to deDupedCmfEvents
         $('section').each((_, section) => {
@@ -178,7 +181,7 @@ export async function processSingleCityPage(
         }
         logr.info(
             'api-es-plura',
-            `processSingleCityPage() ${Object.keys(deDupedCmfEventsPage).length} events (${nextPageUrl})`
+            `processSingleCityPage() ${Object.keys(deDupedCmfEventsPage).length} events, nextPage=${nextPageUrl}`
         )
         return { nextPageUrl, deDupedCmfEventsPage }
     } catch (error) {
@@ -191,7 +194,7 @@ export async function processSingleCityPage(
 }
 
 /**
- * Create an event from a card element
+ * Create an event from a card element from the city page
  * @param $section Cheerio element for the card
  * @param eventUrl URL of the event
  * @param cityName Name of the city
@@ -203,18 +206,23 @@ export function createEventFromCard($section: cheerio.Cheerio, eventUrl: string,
         const eventId = eventUrl.split('/').pop() || ''
         if (!eventId) return null
 
-        const timezone = getTimezoneFromCity(cityName)
+        /* Event pages have times with timezone.
+         * Ex: 5:30 PM - 8:30 PM BST https://heyplura.com/events/tantra-speed-dater-cambridge-debut-meet-sing
+         *
+         * City pages serves HTML with times in UTC, then browser changes time to local time.
+         * Ex: Saturday, Jun 14th at 4:30pm https://heyplura.com/events/city/Cambridge_England_GB
+         */
         const title = $section.find('h3, h2').first().text().trim()
         const locationText = $section.find('li[title="Address"] span').text().trim() || ''
         const dateText = $section.find('li[title="Date"] span').first().text().trim()
-        const { startDate, endDate } = parsePluraDateString(dateText, timezone)
+        const { startDate, endDate } = parsePluraDateString(dateText + ' UTC')
         if (!startDate || !endDate) {
             logr.warn('api-es-plura', `createEventFromCard: no date found in ${cityName} for ${eventUrl}`)
         }
         return {
             id: eventId,
             name: title || '',
-            description: '',
+            description: `End Time is Estimated,Original UTC: ${dateText}`,
             description_urls: [],
             start: startDate?.toISOString() || '',
             end: endDate?.toISOString() || '',
@@ -254,11 +262,9 @@ export async function fetchSingleEvent(eventId: string): Promise<CmfEvent | null
         // TODO: fix this - Extract city name - this is wrong,
         const cityName = $('h1').first().text().trim().split(' - ').slice(0, -1).join(' - ')
 
-        const timezone = getTimezoneFromCity(cityName)
-
-        // Extract date
-        const dateText = $('time').first().text().trim()
-        const { startDate, endDate } = parsePluraDateString(dateText, timezone)
+        // Extract date with timezone
+        const dateText = $('li[title="Date"] span').first().text().trim()
+        const { startDate, endDate } = parsePluraDateString(dateText)
         if (!startDate || !endDate) return null
 
         // Extract location

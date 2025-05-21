@@ -1,10 +1,5 @@
-import {
-    formatEventDate,
-    formatEventDuration,
-    getRelativeTimeString,
-    getDateFromUrlDateString,
-    roundTimeToNearestHour,
-} from '../date'
+import { formatEventDate, formatEventDuration, getRelativeTimeString, getDateFromUrlDateString } from '../date'
+import { roundTimeToNearestHour } from '../utils-shared'
 import { format } from 'date-fns'
 
 describe('Date Utilities', () => {

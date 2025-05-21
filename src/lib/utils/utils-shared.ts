@@ -59,3 +59,11 @@ export const getSizeOfAny = (
         return 'unknown size (catch)'
     }
 }
+
+// given a date in string or date object, return a string of the date rounded to the nearest hour in ISO 8601 format
+export function roundTimeToNearestHour(date: Date | string = ''): string {
+    let roundedDate = new Date(date)
+    if (isNaN(roundedDate.getTime())) roundedDate = new Date()
+    roundedDate.setMinutes(0, 0, 0)
+    return roundedDate.toISOString()
+}

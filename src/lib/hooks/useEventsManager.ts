@@ -115,9 +115,9 @@ export function useEventsManager({
         let userMessage = 'Failed to fetch events'
         if (msg.includes('HTTP 404')) {
             if (eventSourceId?.startsWith('gc:')) {
-                userMessage = `Google Calendar not found - please try again`
+                userMessage = `Google Calendar not found - confirm source and try again`
             } else {
-                userMessage = `Event source not found - please try again`
+                userMessage = `Event source not found - confirm source and try again`
             }
         } else if (msg.includes('HTTP 403')) {
             userMessage = 'Access denied - please check your permissions'

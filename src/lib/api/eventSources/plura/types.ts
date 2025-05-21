@@ -44,13 +44,3 @@ export interface PluraEventScrapeStats {
     totalEventsIncludingDuplicates: number
     totalPages: number
 }
-
-export const ValidLocations: Record<string, string> = {
-    Berkeley: 'Berkeley, CA',
-    'La Jolla': 'La Jolla, CA',
-    'Los Angeles': 'Los Angeles, CA',
-    Oakland: 'Oakland, CA',
-    Portland: 'Portland, OR',
-    'San Francisco': 'San Francisco, CA',
-    Seattle: 'Seattle, WA',
-}

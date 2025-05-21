@@ -28,7 +28,7 @@ export const PLURA_CITY_CACHE_PREFIX = 'plura:city:'
 export const PLURA_EVENT_CACHE_PREFIX = 'plura:event:'
 export const CACHE_TTL_PLURA_SCRAPE = process.env.CACHE_TTL_PLURA_SCRAPE
     ? parseInt(process.env.CACHE_TTL_PLURA_SCRAPE)
-    : 60 * 60 * 24 // 24 hours, 86400 seconds
+    : 60 * 60 * 48 // 48 hours, 172800 seconds
 
 // https://upstash.com/docs/redis/troubleshooting/max_request_size_exceeded
 const UPSTASH_SIZE_LIMIT = 1024 * 1024 // 1MB in bytes for free plan
