@@ -107,6 +107,7 @@ export default function DateQuickButtons({
     }
 
     // Define quick filter buttons configuration
+    // Must match the labels in dateQuickFilterLabels
     const quickFilters: QuickFilterButton[] = [
         {
             label: 'Past',

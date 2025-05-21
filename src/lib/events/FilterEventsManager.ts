@@ -96,7 +96,7 @@ export class FilterEventsManager {
     private applySearchFilter(event: CmfEvent): boolean {
         if (!this.filters.searchQuery || this.filters.searchQuery.trim() === '') return true
 
-        const query = this.filters.searchQuery.toLowerCase()
+        const query = this.filters.searchQuery.toLowerCase().trim()
 
         // Special case for "unresolved" search term
         if (query === 'unresolved') {

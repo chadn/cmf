@@ -4,7 +4,7 @@ import {
     convertCityNameToKey,
     convertUrlToCityName,
     improveLocation,
-    parseDateString,
+    parsePluraDateString,
 } from '../utils'
 import { logr } from '@/lib/utils/logr'
 import { ValidLocations, PluraDomain } from '../types'
@@ -149,7 +149,7 @@ describe.skip('Plura Utils', () => {
         })
     })
 
-    describe('parseDateString', () => {
+    describe('parsePluraDateString', () => {
         // Store original Date constructor
         const OriginalDate = global.Date
 
@@ -184,7 +184,7 @@ describe.skip('Plura Utils', () => {
                 return new OriginalDate(dateStr as string)
             } as jest.Mock)
 
-            const { startDate, endDate } = parseDateString('Wednesday, May 14th at 1:30pm')
+            const { startDate, endDate } = parsePluraDateString('Wednesday, May 14th at 1:30pm', 'America/Los_Angeles')
 
             expect(startDate).not.toBeNull()
             if (startDate) {
@@ -210,7 +210,7 @@ describe.skip('Plura Utils', () => {
                 return new OriginalDate(arg as string)
             })
 
-            const { startDate } = parseDateString('May 14th at 1:30pm')
+            const { startDate } = parsePluraDateString('May 14th at 1:30pm', 'America/Los_Angeles')
 
             expect(startDate).not.toBeNull()
             if (startDate) {
@@ -248,7 +248,7 @@ describe.skip('Plura Utils', () => {
                 return new OriginalDate(dateStr as string)
             } as jest.Mock)
 
-            const { startDate } = parseDateString(testDateString)
+            const { startDate } = parsePluraDateString(testDateString, 'America/Los_Angeles')
 
             expect(startDate).not.toBeNull()
             if (startDate) {
@@ -290,7 +290,7 @@ describe.skip('Plura Utils', () => {
                 return new OriginalDate(dateStr as string)
             } as jest.Mock)
 
-            const { startDate } = parseDateString('May 14th at 1:30pm')
+            const { startDate } = parsePluraDateString('May 14th at 1:30pm', 'America/Los_Angeles')
 
             expect(startDate).not.toBeNull()
             if (startDate) {
@@ -303,7 +303,7 @@ describe.skip('Plura Utils', () => {
         })
 
         it('should return null for invalid date string', () => {
-            const { startDate, endDate } = parseDateString('Invalid date string')
+            const { startDate, endDate } = parsePluraDateString('Invalid date string', 'America/Los_Angeles')
 
             expect(startDate).toBeNull()
             expect(endDate).toBeNull()
@@ -311,7 +311,7 @@ describe.skip('Plura Utils', () => {
         })
 
         it('should return null for empty input', () => {
-            const { startDate, endDate } = parseDateString('')
+            const { startDate, endDate } = parsePluraDateString('', 'America/Los_Angeles')
 
             expect(startDate).toBeNull()
             expect(endDate).toBeNull()

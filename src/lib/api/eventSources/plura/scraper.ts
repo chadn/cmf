@@ -15,9 +15,10 @@
 import * as cheerio from 'cheerio'
 import { CmfEvent } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
+import { getTimezoneFromCity } from '@/lib/utils/timezones'
 import { axiosGet } from '@/lib/utils/utils-server'
 import { PluraDomain } from './types'
-import { convertCityNameToUrl, convertCityNameToKey, parseDateString, improveLocation } from './utils'
+import { convertCityNameToUrl, convertCityNameToKey, parsePluraDateString, improveLocation } from './utils'
 import { getCachedEvent, getCityListCache, setCityListCache } from './cache'
 
 /**
@@ -202,28 +203,14 @@ export function createEventFromCard($section: cheerio.Cheerio, eventUrl: string,
         const eventId = eventUrl.split('/').pop() || ''
         if (!eventId) return null
 
-        // Extract title
+        const timezone = getTimezoneFromCity(cityName)
         const title = $section.find('h3, h2').first().text().trim()
-        if (!title) {
-            logr.warn('api-es-plura', `createEventFromCard: no title found in ${cityName} for ${eventUrl}`)
-        }
-
-        // Extract date
+        const locationText = $section.find('li[title="Address"] span').text().trim() || ''
         const dateText = $section.find('li[title="Date"] span').first().text().trim()
-        const { startDate, endDate } = parseDateString(dateText)
+        const { startDate, endDate } = parsePluraDateString(dateText, timezone)
         if (!startDate || !endDate) {
             logr.warn('api-es-plura', `createEventFromCard: no date found in ${cityName} for ${eventUrl}`)
         }
-
-        // Extract location - simpler approach without using filter
-        let locationText = cityName
-        // Find address in list item with title="Address"
-        const addressSpan = $section.find('li[title="Address"] span')
-        if (addressSpan.length > 0) {
-            locationText = addressSpan.text().trim()
-        }
-
-        // Create event object
         return {
             id: eventId,
             name: title || '',
@@ -264,9 +251,14 @@ export async function fetchSingleEvent(eventId: string): Promise<CmfEvent | null
         const title = $('h1').first().text().trim()
         const description = $('section p').first().text().trim()
 
+        // TODO: fix this - Extract city name - this is wrong,
+        const cityName = $('h1').first().text().trim().split(' - ').slice(0, -1).join(' - ')
+
+        const timezone = getTimezoneFromCity(cityName)
+
         // Extract date
         const dateText = $('time').first().text().trim()
-        const { startDate, endDate } = parseDateString(dateText)
+        const { startDate, endDate } = parsePluraDateString(dateText, timezone)
         if (!startDate || !endDate) return null
 
         // Extract location
@@ -289,7 +281,7 @@ export async function fetchSingleEvent(eventId: string): Promise<CmfEvent | null
             start: startDate.toISOString(),
             end: endDate.toISOString(),
             original_event_url: eventUrl,
-            location: locationText,
+            location: improveLocation(locationText, cityName),
         }
     } catch (error: unknown) {
         logr.error(

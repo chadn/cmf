@@ -5,6 +5,7 @@ export const logr = {
     // Cache to store recently logged messages with timestamps
     _recentLogs: {} as Record<string, number>,
     _logLevel: 20, // default to INFO
+    _debugArea: [] as string[], // default to no debug areas
     getLogLevelNumber: (level?: string) => {
         if (level) {
             switch (level) {
@@ -50,6 +51,9 @@ export const logr = {
             console.warn('Invalid LOG_LEVEL:', level)
         }
     },
+    setDebugArea: (area: string) => {
+        logr._debugArea = area.trim().toLowerCase().split(',')
+    },
     // Helper function to check if a message was recently logged
     recentlyCalled: (area: string, message: string, data?: unknown): boolean => {
         // In test environment, we'll bypass the recent check to avoid timing issues
@@ -89,6 +93,7 @@ export const logr = {
 
         return false // Was not recently called
     },
+
     /*  General client log
      *
      * @param area - The area of the application (e.g., 'calendar', 'map', 'geocoding')
@@ -97,13 +102,18 @@ export const logr = {
      */
     logLevel: (level: string | number, area: string, message: string, data?: unknown) => {
         const logLevel = typeof level === 'string' ? logr.getLogLevelNumber(level) : level
+        let alwaysLog = false
 
+        // If debug area is set, always log debug level for that area even if logr._logLevel is higher
+        if (logr._debugArea.length > 0 && logr._debugArea.includes(area.trim().toLowerCase())) {
+            alwaysLog = true
+        }
         // Only log if the message's level is greater than or equal to the current log level
-        if (logLevel < logr._logLevel) return
+        if (logLevel < logr._logLevel && !alwaysLog) return
 
         const currentLevel = logr.getLogLevelString(logLevel)
         if (!logr.recentlyCalled(area, message, data)) {
-            const timestamp = new Date().toISOString()
+            const timestamp = formatTimestamp(new Date(), 'America/Los_Angeles')
             const prefix = `[${timestamp}][${currentLevel.toUpperCase()}][${area.toUpperCase()}]`
 
             if (data) {
@@ -134,4 +144,26 @@ export const logr = {
     },
 }
 
+/**
+ * Formats a date in America/Los_Angeles timezone with format YYYY-MM-DD.HH:MM:SS
+ * @param date - Date to format (defaults to current date)
+ * @returns Formatted date string
+ */
+export function formatTimestamp(date: Date = new Date(), timezone: string = 'America/Los_Angeles'): string {
+    const msec = date.getMilliseconds().toString().padStart(3, '0')
+    return date
+        .toLocaleString('en-US', {
+            timeZone: timezone,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false,
+        })
+        .replace(/(\d+)\/(\d+)\/(\d+),\s(\d+):(\d+):(\d+)/, `$3-$1-$2.$4:$5:$6.${msec}`)
+}
+
 logr.setLogLevel(process.env.LOG_LEVEL || 'INFO') // WAS DEBUG_LOGIC
+logr.setDebugArea(process.env.LOG_DEBUG_AREA || '')

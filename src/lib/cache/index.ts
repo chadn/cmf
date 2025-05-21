@@ -187,9 +187,9 @@ function checkUseFilesystemCache(): boolean {
     if (process.env.FORCE_USE_REDIS === '1') {
         reason = 'FORCE_USE_REDIS=1'
         useFilesystemCache = false
-    } else if (process.env.NODE_ENV === 'development') {
-        reason = 'NODE_ENV=development'
-        useFilesystemCache = true
+    } else if (process.env.NODE_ENV != 'development') {
+        reason = 'NODE_ENV!=development'
+        useFilesystemCache = false
     }
     logr.info(
         'setup',

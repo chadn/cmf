@@ -125,9 +125,13 @@ export function improveLocation(locationText: string, cityName: string): string 
 /**
  * Parse a date string from Plura format
  * @param dateString Date string in format like "Wednesday, May 14th at 1:30am"
+ * @param timezone Timezone string like "America/New_York"
  * @returns Object with startDate and endDate
  */
-export function parseDateString(dateString: string): { startDate: Date | null; endDate: Date | null } {
+export function parsePluraDateString(
+    dateString: string,
+    timezone: string
+): { startDate: Date | null; endDate: Date | null } {
     try {
         if (!dateString || typeof dateString !== 'string') {
             return { startDate: null, endDate: null }
@@ -162,11 +166,14 @@ export function parseDateString(dateString: string): { startDate: Date | null; e
             dateStr += ` ${timeStr}`
         }
 
-        const startDate = new Date(dateStr)
-        if (isNaN(startDate.getTime())) {
+        // Create the date and convert to timezone
+        const tempDate = new Date(dateStr)
+        if (isNaN(tempDate.getTime())) {
             logr.warn('api-es-plura', `Invalid date created from string: ${dateStr}`)
             return { startDate: null, endDate: null }
         }
+
+        const startDate = new Date(tempDate.toLocaleString('en-US', { timeZone: timezone }))
 
         // Default duration is 1 hour if not specified
         const endDate = new Date(startDate)

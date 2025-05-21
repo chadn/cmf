@@ -98,6 +98,14 @@ const MapPopup: React.FC<MapPopupProps> = ({ marker, selectedEventId, onEventSel
                 </p>
             )}
 
+            {currentEvent.resolved_location?.status !== 'resolved' && (
+                <p
+                    className="text-xs mb-1 text-red-500"
+                    title={`Using fake location to aggregate all events with unresolved or unknown locations.\nOriginal event location:\n${currentEvent.location}`}
+                >
+                    ⚠ Unresolved location
+                </p>
+            )}
             {/* Original event link */}
             <a
                 href={currentEvent.original_event_url}

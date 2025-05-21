@@ -516,11 +516,11 @@ describe('Location and Map Utilities', () => {
 
             const result = generateMapMarkers(events)
             expect(result.length).toBe(2) // One for resolved event, one for unresolved events
+            expect(result[0].id).toBe('unresolved')
             expect(result[0].events.length).toBe(1)
-            expect(result[0].events[0].id).toBe('1')
-            expect(result[1].id).toBe('unresolved')
+            expect(result[0].events[0].id).toBe('2')
             expect(result[1].events.length).toBe(1)
-            expect(result[1].events[0].id).toBe('2')
+            expect(result[1].events[0].id).toBe('1')
         })
 
         it('should handle null events array', () => {

@@ -172,9 +172,9 @@ jest.mock('../cache', () => ({
     getCachedEvent: jest.fn(),
 }))
 
-// Mock the parseDateString and other utility functions
+// Mock the parsePluraDateString and other utility functions
 jest.mock('../utils', () => ({
-    parseDateString: jest.fn(() => ({
+    parsePluraDateString: jest.fn(() => ({
         startDate: new Date('2023-05-15T14:00:00'),
         endDate: new Date('2023-05-15T15:00:00'),
     })),

@@ -113,6 +113,13 @@ export function generateMapMarkers(events: CmfEvent[]): MapMarker[] {
 
     const markers = Array.from(markersMap.values())
 
+    // Sort markers so that unresolved location marker is first, making it appear beneath other markers
+    markers.sort((a, b) => {
+        if (a.id === 'unresolved') return -1
+        if (b.id === 'unresolved') return 1
+        return 0
+    })
+
     logr.info(
         'location',
         `Generated ${markers.length} markers from ${eventsWithLocation} events with locations, ` +

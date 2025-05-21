@@ -22,7 +22,8 @@ import { convertCityNameToKey } from './utils'
 import { getSizeOfAny } from '@/lib/utils/utils-shared'
 
 // Cache configuration
-export const PLURA_CITY_LIST_CACHE_KEY = 'plura:citylist'
+export const PLURA_CITY_LIST_CACHE_KEY = 'plura:other:citylist'
+export const PLURA_EVENT_IDS_TO_CITY_MAP_CACHE_KEY = 'plura:other:citymap'
 export const PLURA_CITY_CACHE_PREFIX = 'plura:city:'
 export const PLURA_EVENT_CACHE_PREFIX = 'plura:event:'
 export const CACHE_TTL_PLURA_SCRAPE = process.env.CACHE_TTL_PLURA_SCRAPE
@@ -232,4 +233,12 @@ export async function setCachedEvents(events: CmfEvent[]): Promise<void> {
             `Error caching ${events.length} events: ${error instanceof Error ? error.message : 'Unknown error'}`
         )
     }
+}
+
+/**
+ * Cache the event IDs to city map
+ * @param eventIdsToCityMap Event IDs to city map
+ */
+export async function setCachedCityMap(eventIdsToCityMap: Record<string, string[]>): Promise<void> {
+    await setCache(PLURA_EVENT_IDS_TO_CITY_MAP_CACHE_KEY, eventIdsToCityMap, '', CACHE_TTL_PLURA_SCRAPE)
 }

@@ -13,7 +13,7 @@ import { CmfEvent, EventSourceParams, EventSourceResponse, EventSourceType } fro
 import { BaseEventSourceHandler, registerEventSource } from '../index'
 import { logr } from '@/lib/utils/logr'
 import { PluraEventScrapeStats } from './types'
-import { getCachedEvents, getCityEventsCache, setCachedEvents, setCityEventsCache } from './cache'
+import { getCachedEvents, getCityEventsCache, setCachedCityMap, setCachedEvents, setCityEventsCache } from './cache'
 import { processCityPageWithPagination, getCityNamesCacheOrWeb } from './scraper'
 import { convertCityNameToKey } from './utils'
 
@@ -101,6 +101,7 @@ export class PluraEventsSource extends BaseEventSourceHandler {
                     )
                 }
             }
+            await setCachedCityMap(this.eventIdsToCityMap)
             resp.metadata.totalCount = Object.keys(returnEvents).length
         } catch (error) {
             const err = error as { response?: { status?: number; statusText?: string } }
@@ -147,6 +148,7 @@ export class PluraEventsSource extends BaseEventSourceHandler {
             `getEventIdsFromCities: fetching ${citiesNotCached.length} cities using fetchCityEvents`
         )
         // hack to make sure oakland is last so events without location wll be oakland
+        // TODO: remove once we figure out events without location
         if (citiesNotCached.includes('Oakland, CA')) {
             citiesNotCached.push(citiesNotCached.splice(citiesNotCached.indexOf('Oakland, CA'), 1)[0])
         }

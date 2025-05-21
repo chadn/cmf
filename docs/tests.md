@@ -10,7 +10,7 @@ npm test && date
 ----------------------------|---------|----------|---------|---------|---------------------------------------
 File                        | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
 ----------------------------|---------|----------|---------|---------|---------------------------------------
-All files                   |   78.13 |    74.38 |   84.12 |   78.63 |
+All files                   |   78.06 |    74.19 |   84.37 |    78.6 |
  components/common          |     100 |      100 |     100 |     100 |
   ErrorMessage.tsx          |     100 |      100 |     100 |     100 |
   LoadingSpinner.tsx        |     100 |      100 |     100 |     100 |
@@ -25,24 +25,24 @@ All files                   |   78.13 |    74.38 |   84.12 |   78.63 |
  components/layout          |   78.57 |       50 |      75 |      75 |
   Footer.tsx                |     100 |      100 |     100 |     100 |
   Header.tsx                |    62.5 |       25 |   66.66 |   57.14 | 32-34
- components/map             |    94.2 |     87.3 |   96.29 |    94.4 |
+ components/map             |    94.2 |     87.5 |   96.29 |    94.4 |
   MapContainer.tsx          |   92.85 |    87.87 |   94.44 |    92.5 | 88-90,134,160-162
   MapMarker.tsx             |   94.44 |    81.81 |     100 |     100 | 15,35
-  MapPopup.tsx              |   97.22 |    89.47 |     100 |   96.96 | 50
+  MapPopup.tsx              |   97.22 |       90 |     100 |   96.96 | 50
  lib/api                    |   91.76 |    83.33 |   94.73 |   92.94 |
   geocoding.ts              |   91.76 |    83.33 |   94.73 |   92.94 | 50,81,119,153,284,312-314,358,383,425
- lib/api/eventSources/plura |    6.45 |        0 |       0 |    6.81 |
+ lib/api/eventSources/plura |    6.38 |        0 |       0 |    6.74 |
   types.ts                  |      50 |      100 |     100 |     100 |
-  utils.ts                  |    4.49 |        0 |       0 |    4.65 | 21-212
+  utils.ts                  |    4.44 |        0 |       0 |    4.59 | 21-219
  lib/events                 |     100 |      100 |     100 |     100 |
   examples.ts               |     100 |      100 |     100 |     100 |
  lib/hooks                  |   77.92 |       40 |   82.75 |   81.66 |
   useMap.ts                 |   77.92 |       40 |   82.75 |   81.66 | 20-27,117-123,134-138
- lib/utils                  |   77.91 |    79.35 |   86.27 |   78.82 |
+ lib/utils                  |   77.93 |    78.31 |   87.03 |   78.99 |
   date.ts                   |   69.76 |       76 |      50 |      75 | 19-20,46-47,121-128,134-155,168-169
   icsParser.ts              |     100 |      100 |     100 |     100 |
-  location.ts               |   97.32 |    92.98 |     100 |   97.91 | 42,223
-  logr.ts                   |      70 |     64.7 |     100 |   68.75 | 38,60-85
+  location.ts               |   96.61 |    91.52 |     100 |      98 | 42,230
+  logr.ts                   |   70.68 |    65.11 |     100 |   69.64 | 39,64-89,109,152
   umami.ts                  |    64.7 |     37.5 |     100 |   66.66 | 12,27-30
   utils-client.ts           |   31.03 |        0 |      50 |   32.14 | 9-38,56,60
   utils-shared.ts           |   85.71 |       80 |     100 |   85.18 | 27,46,48,50
@@ -53,9 +53,8 @@ All files                   |   78.13 |    74.38 |   84.12 |   78.63 |
 Test Suites: 2 skipped, 21 passed, 21 of 23 total
 Tests:       26 skipped, 212 passed, 238 total
 Snapshots:   0 total
-Time:        1.869 s, estimated 2 s
-Ran all test suites.
-Tue May 20 13:33:52 PDT 2025
+Time:        2.122 s
+Tue May 20 19:20:40 PDT 2025
 ```
 
 ## Next Steps for Testing
