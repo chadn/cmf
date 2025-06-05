@@ -1,6 +1,7 @@
 import { logr } from '@/lib/utils/logr'
 import axios from 'axios'
 import { getSizeOfAny } from '@/lib/utils/utils-shared'
+import { HttpError } from '@/types/error'
 
 // Axios configuration for requests
 export const axiosConfig = {
@@ -47,11 +48,11 @@ export const axiosGet = async (url: string, params?: any) => {
         return response
     } catch (error) {
         if (axios.isAxiosError(error)) {
-            logr.warn('utils-server', `axiosGet isAxiosError ${url} ${error.response?.statusText}`)
-            throw new Error(`HTTP ${error.response?.status || 500}: ${error.response?.statusText}`)
+            logr.warn('utils-server', `axiosGet returning 503 isAxiosError ${error.response?.statusText} ${url}`)
+            throw new HttpError(503, error.response?.statusText || 'Service Unavailable')
         }
         const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
         logr.warn('utils-server', `axiosGet error  ${url} ${errorMessage.substring(0, 200)}`)
-        throw new Error(`HTTP 500: ${errorMessage}`)
+        throw new HttpError(500, errorMessage)
     }
 }

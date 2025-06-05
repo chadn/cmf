@@ -24,6 +24,7 @@ export interface CmfEvent {
     end: string
     location: string // always exists, may be empty, matches original_location
     resolved_location?: Location
+    note?: string // for internal use, eg 'plura'
     // Keep any other existing fields
 }
 

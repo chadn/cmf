@@ -115,7 +115,7 @@ const EventSourceSelector: React.FC = () => {
             <div className="mt-8 text-sm text-gray-500">
                 <p className="text-md mt-1">
                     <a
-                        href="https://github.com/chadn/cmf/tree/main/docs/usage.md"
+                        href="https://github.com/chadn/cmf/blob/main/docs/usage.md#how-to-use-cmf"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium transition-colors"

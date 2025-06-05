@@ -16,6 +16,7 @@ import { PluraEventScrapeStats } from './types'
 import { getCachedEvents, getCityEventsCache, setCachedCityMap, setCachedEvents, setCityEventsCache } from './cache'
 import { processCityPageWithPagination, getCityNamesCacheOrWeb } from './scraper'
 import { convertCityNameToKey } from './utils'
+import { HttpError } from '@/types/error'
 
 /**
  * Plura Events Source Handler
@@ -106,14 +107,14 @@ export class PluraEventsSource extends BaseEventSourceHandler {
         } catch (error) {
             const err = error as { response?: { status?: number; statusText?: string } }
             logr.error('api-es-plura', `Error in fetchEvents: ${error instanceof Error ? error.message : err}`, error)
-            throw new Error(`HTTP ${err.response?.status || 500}: ${err.response?.statusText || 'Unknown error'}`)
+            throw new HttpError(err.response?.status || 500, err.response?.statusText || 'Unknown error')
         }
 
         const stats = this.computeStats()
         logr.info('api-es-plura', `fetchEvents Done. Overall (not request) stats: ${JSON.stringify(stats)}`)
 
         if (Object.keys(returnEvents).length === 0) {
-            throw new Error(`HTTP 404: No events found`)
+            throw new HttpError(404, 'No events found')
         }
         resp.events = Object.values(returnEvents)
         return resp

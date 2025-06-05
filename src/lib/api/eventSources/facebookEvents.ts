@@ -3,6 +3,7 @@ import { logr } from '@/lib/utils/logr'
 import { BaseEventSourceHandler, registerEventSource } from './index'
 import { parseIcsContent } from '@/lib/utils/icsParser'
 import axios from 'axios'
+import { HttpError } from '@/types/error'
 
 /**
  * Facebook Events source handler implementation
@@ -32,7 +33,7 @@ export class FacebookEventsSource extends BaseEventSourceHandler {
 
             if (!response.data) {
                 logr.warn('api-es-fb', 'Empty response from Facebook Events')
-                throw new Error('Empty response from Facebook Events')
+                throw new HttpError(404, 'Empty response from Facebook Events')
             }
 
             const parsedEvents = parseIcsContent(response.data)
@@ -74,11 +75,11 @@ export class FacebookEventsSource extends BaseEventSourceHandler {
                     status: error.response?.status,
                     data: error.response?.data,
                 })
-                throw new Error(`HTTP ${error.response?.status || 500}: ${error.response?.statusText}`)
+                throw new HttpError(error.response?.status || 500, error.response?.statusText || 'Unknown error')
             }
             const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
             logr.error('api-es-fb', `Failed to fetch Facebook events: ${errorMessage}`, error)
-            throw new Error(`HTTP 500: ${errorMessage}`)
+            throw new HttpError(500, errorMessage)
         }
     }
 }

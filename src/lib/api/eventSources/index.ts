@@ -67,7 +67,7 @@ export async function fetchEvents(
     }
     logr.info('api-es', `Fetching events from "${handler.type.name}" with id: ${sourceId}`)
 
-    // Returning anything besides HTTP 200 should be done like: throw new Error(`HTTP 404: No events found`)
+    // Returning anything besides HTTP 200 should be done like: throw new HttpError(404, 'No events found')
 
     return handler.fetchEvents({ ...params, id: sourceId })
 }

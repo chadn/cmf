@@ -215,6 +215,7 @@ export function createEventFromCard($section: cheerio.Cheerio, eventUrl: string,
         const title = $section.find('h3, h2').first().text().trim()
         const locationText = $section.find('li[title="Address"] span').text().trim() || ''
         const dateText = $section.find('li[title="Date"] span').first().text().trim()
+        const note = `End Time is Estimated, Start Date UTC: ${dateText}`
         const { startDate, endDate } = parsePluraDateString(dateText + ' UTC')
         if (!startDate || !endDate) {
             logr.warn('api-es-plura', `createEventFromCard: no date found in ${cityName} for ${eventUrl}`)
@@ -222,12 +223,13 @@ export function createEventFromCard($section: cheerio.Cheerio, eventUrl: string,
         return {
             id: eventId,
             name: title || '',
-            description: `End Time is Estimated,Original UTC: ${dateText}`,
+            description: '',
             description_urls: [],
             start: startDate?.toISOString() || '',
             end: endDate?.toISOString() || '',
             original_event_url: eventUrl,
             location: improveLocation(locationText, cityName),
+            note: note,
         }
     } catch (error: unknown) {
         logr.error(

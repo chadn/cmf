@@ -6,7 +6,6 @@ import {
     improveLocation,
     parsePluraDateString,
 } from '../utils'
-import { logr } from '@/lib/utils/logr'
 import { PluraDomain } from '../types'
 
 // Mock the logr module

@@ -230,7 +230,10 @@ describe('EventSourceSelector', () => {
         // Check for the "Read Usage Docs" link
         const link = screen.getByText('Read Usage Docs')
         expect(link).toBeInTheDocument()
-        expect(link.closest('a')).toHaveAttribute('href', 'https://github.com/chadn/cmf/tree/main/docs/usage.md')
+        expect(link.closest('a')).toHaveAttribute(
+            'href',
+            'https://github.com/chadn/cmf/blob/main/docs/usage.md#how-to-use-cmf'
+        )
         expect(link.closest('a')).toHaveAttribute('target', '_blank')
 
         // Check for the help text

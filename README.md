@@ -20,7 +20,7 @@ Users can also filter events based on date and by searching name, description, a
 -   **Smart Filtering**: Filter events by date range, search terms, and map bounds
 -   **Location Geocoding**: Automatically converts event locations to map coordinates
 -   **Responsive Design**: Works on desktop and mobile devices
--   **Performance Optimized**: Caches geocoded locations to reduce API calls
+-   **Performance Optimized**: Caches info so often can respond in < 1 second and to reduce API calls.
 
 ## 🔗 Tech Stack
 
@@ -31,7 +31,7 @@ Users can also filter events based on date and by searching name, description, a
 -   **Data Fetching**:[SWR](https://swr.vercel.app/) - Data fetching and caching
 -   **Data Input**: [Google Calendar API](https://developers.google.com/calendar)
 -   **Location Lookup**: [Google Maps Geocoding API](https://developers.google.com/maps/documentation/geocoding/requests-geocoding)
--   **Caching**: [Upstash Redis](https://upstash.com/) - Serverless Redis for caching geocoding. filesystem for development.
+-   **Caching**: [Upstash Redis](https://upstash.com/) - Serverless Redis for caching responses, geocoding, and more.
 -   **Deployment**: Vercel (recommended)
 
 ## 📋 Requirements
@@ -41,85 +41,9 @@ Users can also filter events based on date and by searching name, description, a
 -   Google Maps Geocoding API key
 -   (Optional) Upstash Redis account for production caching
 
-## 🚀 Getting Started
+## 🔧 Development and Running Local
 
-### 🔑 Google Calendar API Key
-
-1. Go to the [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project if you don't already have one.
-3. Enable the Google Calendar API
-4. Create an API key with appropriate restrictions
-   `https://www.googleapis.com/auth/calendar.events.readonly`
-5. Add the API key to your `.env.local` file
-
-### 🔑 Google Maps Geocoding API Key
-
-1. In the same Google Cloud project, enable the Geocoding API
-2. Create a new API key to for Geocoding API
-   https://developers.google.com/maps/documentation/geocoding/requests-geocoding
-3. Add the API key to your `.env.local` file
-
-### 🔧 Installation
-
-Clone the repository, install dependencies, and create a `.env.local` file:
-
-    ```bash
-    git clone https://github.com/chadn/cmf.git
-    cd cmf
-    npm install
-    cp .env.example .env.local
-    ```
-
-Add your API keys to the `.env.local` file. For details, see [.env.example](.env.example)
-
-### 🔧 Development
-
-Run the development server:
-
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-### 🔧 Production Build
-
-Build the application for production:
-
-```bash
-npm run build
-```
-
-Note: Using Next.js's built-in SWC compiler exclusively, which is faster and simpler than using Babel
-
-Start the production server:
-
-```bash
-npm start
-```
-
-## 🚢 Deployment
-
-### 🚀 Vercel (Recommended)
-
-1. Push your code to GitHub
-2. Import the repository in Vercel
-3. Add your environment variables
-4. Deploy
-
-### Netlify (not tested)
-
-1. Push your code to GitHub
-2. Import the repository in Netlify
-3. Add your environment variables
-4. Deploy
-
-### AWS Amplify (not tested)
-
-1. Push your code to GitHub
-2. Import the repository in AWS Amplify
-3. Add your environment variables
-4. Deploy
+See [Development](docs/development.md)
 
 ## 📚 Documentation
 
@@ -142,16 +66,6 @@ Around 2015 it stopped working.
 Before 2015 Google Maps was totally free and abuse was rare. Once Google Maps started costing money I disabled GCM.
 
 Ever since then I considered rewriting to use free maps, and finally made it happen.
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
 
 ## 📄 License
 

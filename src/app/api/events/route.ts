@@ -4,12 +4,13 @@ import { batchGeocodeLocations } from '@/lib/api/geocoding'
 import { getEventsCache, setEventsCache } from '@/lib/cache'
 import { EventSourceResponse } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
+import { HttpError } from '@/types/error'
 
-// Import event source handlers to ensure they're registered
-import '@/lib/api/eventSources/googleCalendar'
-import '@/lib/api/eventSources/protests'
+// Import event source handlers to ensure they're registered (alphabetical order)
 import '@/lib/api/eventSources/facebookEvents'
+import '@/lib/api/eventSources/googleCalendar'
 import '@/lib/api/eventSources/plura/index'
+import '@/lib/api/eventSources/protests'
 // Add other event source imports here as they're implemented
 // import '@/lib/api/eventSources/facebookEvents'
 
@@ -127,11 +128,13 @@ export async function GET(request: NextRequest) {
     } catch (error) {
         logr.warn('api-events', 'Error fetching events', error)
 
-        // Default error response
         let statusCode = 500
         let errorMessage = 'Internal server error'
 
-        if (error instanceof Error) {
+        if (error instanceof HttpError) {
+            statusCode = error.statusCode
+            errorMessage = error.message
+        } else if (error instanceof Error) {
             // Try to extract status code from error message
             const match = error.message.match(/^HTTP (\d+): (.+)$/)
             if (match) {
