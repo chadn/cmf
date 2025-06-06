@@ -10,6 +10,10 @@ export const ExampleEventSources = [
         id: 'gc:geocachingspain@gmail.com',
     },
     {
+        name: 'Protests from WeThePeopleDissent.net',
+        id: 'dissent:june14protests',
+    },
+    {
         name: 'Protests from pol-rev.com',
         id: 'protest:all',
     },

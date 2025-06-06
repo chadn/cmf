@@ -15,7 +15,8 @@ This is a high level list of things to do on the app. Not necessarily in priorit
 1. Favorite events, remember favs via cookies or browser local storage.
 1. Make list panel open all the way right, half way (normal) or close entirely except small CMF with count of events showing
 1. Add more protest event sources
-    - https://www.wethepeopledissent.net/
+    - ✅ https://events.pol-rev.com/api
+    - ✅ https://www.wethepeopledissent.net/ Google Sheet
     - https://www.mobilize.us/nokings/, https://www.mobilize.us/?event_type=29 , https://www.mobilize.us/events/rally/
 1. Client side caching events - use local storage for events if less than CLIENT_EVENT_CACHE_SECS. For more than 5mb, use [dexie](https://github.com/dexie/Dexie.js/?tab=readme-ov-file#hello-world-react--typescript) and [indexedDB](https://www.geeksforgeeks.org/difference-between-localstorage-and-indexeddb-in-javascript/).
 1. Have a map search box - Add ability for user to type location in box, then map jumps to it. like https://thetide.guide/, Use https://maps.googleapis.com/maps/api/place/js/AutocompletionService.GetPredictionsJson

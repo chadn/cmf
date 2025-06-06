@@ -7,6 +7,7 @@ import { logr } from '@/lib/utils/logr'
 import { HttpError } from '@/types/error'
 
 // Import event source handlers to ensure they're registered (alphabetical order)
+import '@/lib/api/eventSources/dissent-google-sheets'
 import '@/lib/api/eventSources/facebookEvents'
 import '@/lib/api/eventSources/googleCalendar'
 import '@/lib/api/eventSources/plura/index'
