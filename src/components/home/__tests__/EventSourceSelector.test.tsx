@@ -75,7 +75,7 @@ describe('EventSourceSelector', () => {
         render(<EventSourceSelector />)
 
         // Check for main elements
-        expect(screen.getByText('Welcome to Calendar Map Filter')).toBeInTheDocument()
+        expect(screen.getByText('Welcome to CMF - Calendar Map Filter')).toBeInTheDocument()
         expect(screen.getByText('Enter Event Source ID string')).toBeInTheDocument()
         expect(screen.getByLabelText('Enter Event Source ID string')).toBeInTheDocument()
         expect(screen.getByText('View Events')).toBeInTheDocument()
@@ -84,7 +84,9 @@ describe('EventSourceSelector', () => {
         expect(screen.getByText(/Or try an example - click below then click View Events/i)).toBeInTheDocument()
 
         // Check for the border-t and border-black classes
-        const mainContainer = screen.getByRole('heading', { name: 'Welcome to Calendar Map Filter' }).closest('div')
+        const mainContainer = screen
+            .getByRole('heading', { name: 'Welcome to CMF - Calendar Map Filter' })
+            .closest('div')
         expect(mainContainer).toHaveClass('border-t')
         expect(mainContainer).toHaveClass('border-black')
         expect(mainContainer).toHaveClass('px-8')

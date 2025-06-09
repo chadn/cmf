@@ -4,30 +4,36 @@ This document makes it easy to see test coverage and compare against the [Direct
 
 ```
 npm test && date
-> calendar-map-filter@0.2.3 test
+> calendar-map-filter@0.2.4 test
 > jest --coverage
 ...
 ----------------------------|---------|----------|---------|---------|---------------------------------------
 File                        | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
 ----------------------------|---------|----------|---------|---------|---------------------------------------
-All files                   |   84.68 |    79.71 |   87.69 |   85.41 |
+All files                   |   84.56 |    77.28 |   87.08 |   85.54 |
  components/common          |     100 |      100 |     100 |     100 |
   ErrorMessage.tsx          |     100 |      100 |     100 |     100 |
   LoadingSpinner.tsx        |     100 |      100 |     100 |     100 |
- components/events          |   87.34 |    82.26 |   86.84 |   87.11 |
-  DateAndSearchFilters.tsx  |   86.04 |    80.95 |   88.88 |   86.04 | 77-85
+ components/events          |   82.87 |    74.28 |   80.95 |   83.33 |
+  DateAndSearchFilters.tsx  |   72.41 |    56.36 |   69.23 |   74.07 | 79-101,172-227
   DateQuickButtons.tsx      |      98 |    81.81 |     100 |   97.95 | 86
   EventDetails.tsx          |     100 |      100 |     100 |     100 |
   EventList.tsx             |   78.78 |    81.52 |   77.77 |   78.46 | 64,93,119-121,146-148,173-175,201-203
  components/home            |   88.37 |    66.66 |     100 |    87.8 |
   EventSourceSelector.tsx   |   88.37 |    66.66 |     100 |    87.8 | 35-39
- components/layout          |   78.57 |       50 |      75 |      75 |
+ components/layout          |     100 |      100 |     100 |     100 |
   Footer.tsx                |     100 |      100 |     100 |     100 |
-  Header.tsx                |    62.5 |       25 |   66.66 |   57.14 | 32-34
+  Header.tsx                |     100 |      100 |     100 |     100 |
  components/map             |    94.2 |     87.5 |   96.29 |    94.4 |
   MapContainer.tsx          |   92.85 |    87.87 |   94.44 |    92.5 | 88-90,134,160-162
   MapMarker.tsx             |   94.44 |    81.81 |     100 |     100 | 15,35
   MapPopup.tsx              |   97.22 |       90 |     100 |   96.96 | 50
+ components/ui              |   94.11 |    66.66 |      90 |     100 |
+  button.tsx                |     100 |    66.66 |     100 |     100 | 45
+  calendar.tsx              |    87.5 |       75 |   85.71 |     100 | 79,182-192
+  slider.tsx                |     100 |    33.33 |     100 |     100 | 13
+ lib                        |     100 |      100 |     100 |     100 |
+  utils.ts                  |     100 |      100 |     100 |     100 |
  lib/api                    |   91.76 |    83.33 |   94.73 |   92.94 |
   geocoding.ts              |   91.76 |    83.33 |   94.73 |   92.94 | 50,81,119,153,284,312-314,358,383,425
  lib/api/eventSources/plura |   75.64 |    76.92 |      60 |   75.34 |
@@ -38,7 +44,7 @@ All files                   |   84.68 |    79.71 |   87.69 |   85.41 |
  lib/hooks                  |   77.92 |       40 |   82.75 |   81.66 |
   useMap.ts                 |   77.92 |       40 |   82.75 |   81.66 | 20-27,117-123,134-138
  lib/utils                  |   79.28 |    78.48 |   87.93 |   80.06 |
-  date.ts                   |   70.66 |     82.6 |   44.44 |   74.64 | 19-20,46-47,121-128,134-155
+  date.ts                   |   70.66 |     82.6 |   44.44 |   74.64 | 20-21,47-48,122-129,135-156
   icsParser.ts              |     100 |      100 |     100 |     100 |
   location.ts               |   96.61 |    91.52 |     100 |      98 | 42,230
   logr.ts                   |   70.68 |    65.11 |     100 |   69.64 | 39,64-89,109,152
@@ -51,11 +57,11 @@ All files                   |   84.68 |    79.71 |   87.69 |   85.41 |
 ----------------------------|---------|----------|---------|---------|---------------------------------------
 
 Test Suites: 1 skipped, 23 passed, 23 of 24 total
-Tests:       2 skipped, 242 passed, 244 total
+Tests:       2 skipped, 241 passed, 243 total
 Snapshots:   0 total
-Time:        1.935 s, estimated 2 s
+Time:        2.823 s
 Ran all test suites.
-Mon Jun  9 13:28:38 PDT 2025
+Mon Jun  9 18:02:15 PDT 2025
 ```
 
 ## Next Steps for Testing

@@ -51,16 +51,6 @@ describe('Header', () => {
         expect(screen.queryByText(/Test Calendar/)).not.toBeInTheDocument()
     })
 
-    it('displays event count when provided', () => {
-        render(<Header headerName="Test Calendar" eventCount={{ shown: 5, total: 10 }} />)
-
-        expect(screen.getByText('5')).toBeInTheDocument()
-        expect(screen.getByText('10')).toBeInTheDocument()
-        expect(screen.getByText(/Showing/)).toBeInTheDocument()
-        expect(screen.getByText(/of/)).toBeInTheDocument()
-        expect(screen.getByText(/events/)).toBeInTheDocument()
-    })
-
     it('has a link to the home page', () => {
         render(<Header />)
 

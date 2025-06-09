@@ -351,10 +351,9 @@ function HomeContent() {
     if (!eventSourceId) {
         return (
             <div className="min-h-screen flex flex-col">
-                <Header headerName={headerName} />
-                    <main className="flex-grow flex items-center justify-center">
-                        <EventSourceSelector />
-                    </main>
+                <main className="flex-grow flex items-center justify-center">
+                    <EventSourceSelector />
+                </main>
                 <Footer />
             </div>
         )

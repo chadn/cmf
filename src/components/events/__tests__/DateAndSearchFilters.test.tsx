@@ -69,12 +69,12 @@ describe('DateAndSearchFilters Component', () => {
         const dateButton = screen.getByTestId('date-range-dropdown')
         fireEvent.click(dateButton)
 
-        // Find the start date slider
+        // Find the slider thumbs (role="slider")
         const sliders = screen.getAllByRole('slider')
         expect(sliders.length).toBe(2)
 
-        // Change the start date slider
-        fireEvent.change(sliders[0], { target: { value: '10' } })
+        // Simulate keyboard event to change value (ArrowRight)
+        fireEvent.keyDown(sliders[0], { key: 'ArrowRight', code: 'ArrowRight' })
 
         // Check that onDateRangeChange was called
         expect(mockOnDateRangeChange).toHaveBeenCalled()

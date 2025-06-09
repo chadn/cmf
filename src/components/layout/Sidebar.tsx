@@ -1,5 +1,6 @@
 import React, { forwardRef, ReactNode, KeyboardEvent } from 'react'
 import Link from 'next/link'
+import { Card, CardContent } from '@/components/ui/card'
 
 interface SidebarProps {
     headerName?: string
@@ -17,14 +18,16 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(({ headerName, eventCou
         }
     }
     return (
-        <div ref={ref} className="w-full md:w-1/2 lg:w-2/5 h-[40vh] md:h-full overflow-auto p-1 border-r bg-white">
+        <Card ref={ref} className="w-full md:w-1/2 lg:w-2/5 h-[40vh] md:h-full p-1 border-r bg-white">
             <div className="sticky top-0 z-10 bg-white pb-2 pt-2 border-b mb-2">
                 <div className="flex items-center justify-between px-2">
                     <Link href="/" className="flex items-center mr-3">
-                        <span className="text-lg md:text-xl font-bold text-primary">CMF</span>
+                        <span className="text-lg md:text-xl font-bold text-blue-600 hover:text-blue-800 hover:underline">
+                            CMF
+                        </span>
                     </Link>
                     <span
-                        className="text-md sm:text-lg md:text-2xl font-semibold text-gray-800 cursor-pointer mx-2"
+                        className="text-md sm:text-lg md:text-2xl font-semibold text-gray-800 mx-2 cursor-pointer"
                         onClick={onInfoClick}
                         onKeyDown={handleKeyDown}
                         tabIndex={0}
@@ -41,8 +44,10 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(({ headerName, eventCou
                     )}
                 </div>
             </div>
-            {children}
-        </div>
+            <div className="h-full overflow-auto">
+                <CardContent className="p-0">{children}</CardContent>
+            </div>
+        </Card>
     )
 })
 

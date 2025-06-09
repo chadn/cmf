@@ -86,8 +86,8 @@ describe('MapPopup', () => {
         render(<MapPopup marker={mockMarker} />)
 
         // The actual formatted date will depend on the formatEventDate implementation
-        // This is a simplified check for the format MM/dd EEE h:mm a
-        expect(screen.getByText(/\d{2}\/\d{2} \w{3} \d{1,2}:\d{2} [AP]M/)).toBeInTheDocument()
+        // This is a simplified check for the format MM/dd EEE h:mm am/pm
+        expect(screen.getByText(/\d{2}\/\d{2} \w{3} \d{1,2}:\d{2}(am|pm)/i)).toBeInTheDocument()
     })
 
     it('truncates long descriptions', () => {

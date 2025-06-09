@@ -6,7 +6,7 @@ import { dateQuickFilterLabels } from '@/components/events/DateQuickButtons'
 /**
  * Formats a date for display in the UI
  * @param dateString - ISO date string
- * @returns Formatted date string (MM/DD Day hh:mm am/pm)
+ * @returns Formatted date string: MM/DD Day hh:mm[am|pm]
  */
 export function formatEventDate(dateString: string): string {
     try {
@@ -14,7 +14,8 @@ export function formatEventDate(dateString: string): string {
         if (!isValid(date)) {
             return 'Invalid date'
         }
-        return format(date, 'MM/dd EEE h:mm a')
+        // aaa is 'am' or 'pm'
+        return format(date, 'MM/dd EEE h:mmaaa')
     } catch (error) {
         logr.warn('date', 'Error formatting date:', error)
         return 'Invalid date'
