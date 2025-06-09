@@ -48,6 +48,12 @@ Run the development server:
 npm run dev
 ```
 
+Make sure [tests](tests.md) pass
+
+```
+npm test
+```
+
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ### 🔧 Production Build

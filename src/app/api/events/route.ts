@@ -12,8 +12,6 @@ import '@/lib/api/eventSources/facebookEvents'
 import '@/lib/api/eventSources/googleCalendar'
 import '@/lib/api/eventSources/plura/index'
 import '@/lib/api/eventSources/protests'
-// Add other event source imports here as they're implemented
-// import '@/lib/api/eventSources/facebookEvents'
 
 // Export config to make this a dynamic API route
 export const dynamic = 'force-dynamic'

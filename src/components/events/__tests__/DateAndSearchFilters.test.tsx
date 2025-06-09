@@ -1,18 +1,23 @@
 import React from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
 import '@testing-library/jest-dom'
-import EventFilters from '../EventFilters'
+import DateAndSearchFilters from '../DateAndSearchFilters'
 
-describe('EventFilters Component', () => {
+describe('DateAndSearchFilters Component', () => {
     const mockOnSearchChange = jest.fn()
     const mockOnDateRangeChange = jest.fn()
-    const mockOnResetFilters = jest.fn()
+    const mockOnDateQuickFilterChange = jest.fn()
 
     const defaultProps = {
         searchQuery: '',
         onSearchChange: mockOnSearchChange,
+        dateSliderRange: undefined,
         onDateRangeChange: mockOnDateRangeChange,
-        onReset: mockOnResetFilters,
+        dateQuickFilterUrl: '',
+        onDateQuickFilterChange: mockOnDateQuickFilterChange,
+        appState: 'main-state',
+        sd: undefined,
+        ed: undefined,
     }
 
     beforeEach(() => {
@@ -20,14 +25,14 @@ describe('EventFilters Component', () => {
     })
 
     test('renders search input correctly', () => {
-        render(<EventFilters {...defaultProps} />)
+        render(<DateAndSearchFilters {...defaultProps} />)
 
         const searchInput = screen.getByPlaceholderText('Search name, location, or description')
         expect(searchInput).toBeInTheDocument()
     })
 
     test('calls onSearchChange when search input changes', () => {
-        render(<EventFilters {...defaultProps} />)
+        render(<DateAndSearchFilters {...defaultProps} />)
 
         const searchInput = screen.getByPlaceholderText('Search name, location, or description')
         fireEvent.change(searchInput, { target: { value: 'test search' } })
@@ -36,19 +41,18 @@ describe('EventFilters Component', () => {
     })
 
     test('renders date range button with proper format', () => {
-        render(<EventFilters {...defaultProps} />)
+        render(<DateAndSearchFilters {...defaultProps} />)
 
         // Get the button by its test ID
         const dateButton = screen.getByTestId('date-range-dropdown')
         expect(dateButton).toBeInTheDocument()
 
-        // Check that the button contains the expected format
-        expect(dateButton).toHaveTextContent(/Showing:/)
-        expect(dateButton).toHaveTextContent(/\[CHANGE\]/)
+        // Check that the button contains a date range (e.g., 'May 9 Fri - Sep 9 Tue')
+        expect(dateButton.textContent).toMatch(/\w+ \d+ \w+ - \w+ \d+ \w+/)
     })
 
     test('shows date sliders when button is clicked', () => {
-        render(<EventFilters {...defaultProps} />)
+        render(<DateAndSearchFilters {...defaultProps} />)
 
         // Get the button by its test ID instead of text
         const dateButton = screen.getByTestId('date-range-dropdown')
@@ -59,7 +63,7 @@ describe('EventFilters Component', () => {
     })
 
     test('call onDateRangeChange when sliders change', () => {
-        render(<EventFilters {...defaultProps} />)
+        render(<DateAndSearchFilters {...defaultProps} />)
 
         // First show the sliders using the test ID
         const dateButton = screen.getByTestId('date-range-dropdown')
@@ -77,7 +81,7 @@ describe('EventFilters Component', () => {
     })
 
     test('adds data-testid attributes to key elements', () => {
-        render(<EventFilters {...defaultProps} />)
+        render(<DateAndSearchFilters {...defaultProps} />)
 
         // Check if the search input has a data-testid attribute
         const searchInput = screen.getByTestId('search-input')
@@ -89,7 +93,7 @@ describe('EventFilters Component', () => {
     })
 
     test('displays quick selection buttons when expanded', () => {
-        render(<EventFilters {...defaultProps} />)
+        render(<DateAndSearchFilters {...defaultProps} />)
 
         // Open the date selector
         const dateButton = screen.getByTestId('date-range-dropdown')

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, Suspense, useRef, useReducer } from 'react'
 import MapContainer from '@/components/map/MapContainer'
 import EventList from '@/components/events/EventList'
-import EventFilters from '@/components/events/EventFilters'
+import DateAndSearchFilters from '@/components/events/DateAndSearchFilters'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import EventSourceSelector from '@/components/home/EventSourceSelector'
@@ -18,6 +18,7 @@ import { parseAsCmfDate, parseAsDateQuickFilter } from '@/lib/utils/date'
 import { useQueryState, useQueryStates } from 'nuqs'
 import ErrorMessage from '@/components/common/ErrorMessage'
 import { umamiTrack } from '@/lib/utils/umami'
+import Sidebar from '@/components/layout/Sidebar'
 
 declare global {
     interface Window {
@@ -351,27 +352,23 @@ function HomeContent() {
         return (
             <div className="min-h-screen flex flex-col">
                 <Header headerName={headerName} />
-                <main className="flex-grow flex items-center justify-center">
-                    <EventSourceSelector />
-                </main>
+                    <main className="flex-grow flex items-center justify-center">
+                        <EventSourceSelector />
+                    </main>
                 <Footer />
             </div>
         )
     }
 
     return (
-        <div className="min-h-screen flex flex-col h-screen">
-            <Header
-                headerName={headerName}
-                eventCount={{ shown: evts.shownEvents.length, total: evts.allEvents.length }}
-                onInfoClick={scrollEventsToTop}
-            />
-
-            <main className="flex-grow flex flex-col md:flex-row h-[calc(100vh-64px)]">
-                {/* Sidebar with filters and event list */}
-                <div
+        <div className="min-h-screen flex flex-col md:h-screen">
+            <main className="flex-grow flex flex-col md:flex-row md:h-[calc(100vh)]">
+                {/* Sidebar with header and filters/event list */}
+                <Sidebar
+                    headerName={headerName}
+                    eventCount={{ shown: evts.shownEvents.length, total: evts.allEvents.length }}
+                    onInfoClick={scrollEventsToTop}
                     ref={eventsSidebarRef}
-                    className="w-full md:w-1/2 lg:w-2/5 h-[40vh] md:h-full overflow-auto p-1 border-r"
                 >
                     <ActiveFilters
                         evts={evts}
@@ -383,7 +380,7 @@ function HomeContent() {
                         }}
                     />
 
-                    <EventFilters
+                    <DateAndSearchFilters
                         searchQuery={searchQueryUrl}
                         onSearchChange={handleSearchChange}
                         dateSliderRange={dateSliderRange}
@@ -407,7 +404,7 @@ function HomeContent() {
                             apiIsLoading={apiIsLoading}
                         />
                     )}
-                </div>
+                </Sidebar>
 
                 {/* Map */}
                 <div className="w-full md:w-1/2 lg:w-3/5 h-[60vh] md:h-full">

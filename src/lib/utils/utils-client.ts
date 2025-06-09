@@ -28,8 +28,8 @@ export const fetcherLogr = async (url: string) => {
         umamiTrack('ClientFetch', {
             esId: esId,
             status: response.status,
-            sizeKb: Math.round(sizeOfResponse / 1024),
-            sec: Math.round(ms / 100) / 10,
+            sizeKb: Math.round(sizeOfResponse / 10240) * 10,
+            sec: Math.round(ms / 1000),
             secId: Math.round(ms / 1000) + '-' + esId,
         })
         return data

@@ -72,7 +72,7 @@ and changes on the numbers of how many events are showing and filtered by date.
 
 1. Event Source - this could be a google calendar or non calendar event sources like pol-rev.com
 1. Event – contains name, location, date, and description. More than one event can be at same location or same time. Can be repeating.
-1. Map canvas – the area of the map you can see on the browser. If an event location is not on the map canvas, it will not be shown on the events list. See Map Filter
+1. Map canvas – the area of the map you can see on the browser. If an event location is not on the map canvas, it will not be shown on the events list. See Map Filter.
 1. Location – 'where' the event is. This should be an address, coordinates, or something unique enough for geolocation. Otherwise it can't put it on a map. Example of a location that are not addresses: "Mom's house"
 1. Marker – an icon at a location on the map canvas. When clicked, reveals details on events at that address (may be more than one event at same location)
 1. Event list – above the map (mobile) or next to the map (desktop), list (in table format) of matching events that are on map. The events listed are filtered and sortable by name, date, duration, location. Click on header to sort. When filtered, it may be a subset of all the events.
@@ -112,16 +112,66 @@ Note
 ## Viewing Events
 
 After you select "View Events" with a valid event source like google calendar,
-The app will take a few seconds to fetch all the events and put them on the map.
+The app may take a few seconds to fetch all the events and put them on the map.
 
 When it is ready, you will see
 
--   a map with markers, where each marker has one or more events.
--   the event list with names, dates, and location info of current events
--   search box to find events
--   date ranges that you can CHANGE to limit events to a smaller window
+-   A map with markers, where each marker has one or more events.
+-   The event list with names, dates, and location info of current events
+-   Search box to find events
+-   Date ranges that you can CHANGE to limit events to a smaller window
 
-Feel free to play around !
+It is meant for you to play around!
+
+## Map
+
+The map will have markers for each location where there are one or more events.  
+Click on a marker to see the events at that location, including a link back to original event.
+
+The map canvas shows where events are AND acts as a filter. When you zoom in so that markers go off the map, the events
+at that location will be filtered out and not appear on the events list.
+
+## Event List
+
+The event list is basically a table listing the events that are currently shown on the map.
+It has the following sortable columns - click on column name to sort or reverse sort by that column:
+
+-   Event Name - Name as appears in original event.
+-   Start Date - Date and time the event starts. Time is based on your browser's timezone, which may differ from local time of event.
+-   Duration - number of hours or days
+-   Location - address as listed in event. If address is online or otherwise unresolvable by google maps api, it will say "Unresolved location" as well.
+
+## Search Box
+
+The search box is primarily used to find specific events. When you start typing part of a word, the events will be filtered
+out so that the only ones shown are ones matching the letters you type. Matching includes partial matches against name, description and location (via [applySearchFilter](https://github.com/search?q=repo%3Achadn%2Fcmf%20applySearchFilter&type=code)).
+
+Search box also allows for special searching.
+
+-   **unresolved** - typing `unresolved` will show all events with [Incorrect and Unresolved Locations](#incorrect-and-unresolved-locations)
+-   **zip codes** - typing a zip code (5 numbers) and hitting enter will update map to go to that zip code (NOT IMPLEMENTED YET, COMING SOON)
+
+### Incorrect and Unresolved Locations
+
+If an event's location looks incorrect on the map, it probably got incorrectly geocoded, maybe due to lack of location details.
+Note this is different than unresolved locations, which are events with either blank location or unresolvable (online, zoom, etc).  
+All unresolved locations share a special marker. You can see them with special search term "unresolved". Ex: [?sq=unresolved&es=sf](https://cmf-chad.vercel.app/?sq=unresolved&es=sf)
+
+## Date Ranges
+
+Similar to search box, you can filter events based on date ranges. Use the sliders, quick filters, or calendar to select start and end days you would like. Only events that occur in that window will show up on the map and event list.
+
+### Quick Filter Options
+
+The `qf` parameter is set when user clicks the corresponding button under the Date sliders.
+It supports the following values:
+
+-   `past`: Events from the past up to today
+-   `future`: Events from today into the future
+-   `today`: Events happening today
+-   `next3days`: Events in the next 3 days
+-   `next7days`: Events in the next 7 days
+-   `weekend`: Events happening this weekend (Friday to Sunday)
 
 ## URL Parameters
 
@@ -176,18 +226,6 @@ The application supports various date formats for the `sd` and `ed` parameters:
     -   `-2w`: 2 weeks ago
     -   `1y`: 1 year from now
 
-## Quick Filter Options
-
-The `qf` parameter is set when user clicks the corresponding button under the Date sliders.
-It supports the following values:
-
--   `past`: Events from the past up to today
--   `future`: Events from today into the future
--   `today`: Events happening today
--   `next3days`: Events in the next 3 days
--   `next7days`: Events in the next 7 days
--   `weekend`: Events happening this weekend (Friday to Sunday)
-
 ## Example URLs
 
 Here are some example URLs showing different parameter combinations:
@@ -206,12 +244,6 @@ Note: Replace `geocachingspain@gmail.com` with your actual Google Calendar ID.
 
 The code is written to make it easy to add different type of event sources, custom ones that do not have to be a calendar.
 Read more about the [Event Sources System](../src/lib/api/eventSources)
-
-## Incorrect and Unresolved Locations
-
-If an event's location looks incorrect on the map, it probably got incorrectly geocoded, maybe due to lack of location details.
-Note this is different than unresolved locations, which are events with either blank location or unresolvable (online, zoom, etc).  
-All unresolved locations share a special marker. You can see them with special search term "unresolved". Ex: [?sq=unresolved&es=sf](https://cmf-chad.vercel.app/?sq=unresolved&es=sf)
 
 How to fix incorrect locations - This is for admins only
 

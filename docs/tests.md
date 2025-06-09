@@ -4,21 +4,20 @@ This document makes it easy to see test coverage and compare against the [Direct
 
 ```
 npm test && date
-> calendar-map-filter@0.2.2 test
+> calendar-map-filter@0.2.3 test
 > jest --coverage
 ...
 ----------------------------|---------|----------|---------|---------|---------------------------------------
 File                        | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
 ----------------------------|---------|----------|---------|---------|---------------------------------------
-All files                   |   84.61 |    79.39 |   87.75 |   85.34 |
+All files                   |   84.68 |    79.71 |   87.69 |   85.41 |
  components/common          |     100 |      100 |     100 |     100 |
   ErrorMessage.tsx          |     100 |      100 |     100 |     100 |
   LoadingSpinner.tsx        |     100 |      100 |     100 |     100 |
- components/events          |    86.9 |    81.15 |   87.17 |   86.66 |
+ components/events          |   87.34 |    82.26 |   86.84 |   87.11 |
+  DateAndSearchFilters.tsx  |   86.04 |    80.95 |   88.88 |   86.04 | 77-85
   DateQuickButtons.tsx      |      98 |    81.81 |     100 |   97.95 | 86
-  DateRangeSelector.tsx     |   81.08 |    70.58 |   85.71 |   81.08 | 67,73-82
   EventDetails.tsx          |     100 |      100 |     100 |     100 |
-  EventFilters.tsx          |     100 |      100 |     100 |     100 |
   EventList.tsx             |   78.78 |    81.52 |   77.77 |   78.46 | 64,93,119-121,146-148,173-175,201-203
  components/home            |   88.37 |    66.66 |     100 |    87.8 |
   EventSourceSelector.tsx   |   88.37 |    66.66 |     100 |    87.8 | 35-39
@@ -43,7 +42,7 @@ All files                   |   84.61 |    79.39 |   87.75 |   85.34 |
   icsParser.ts              |     100 |      100 |     100 |     100 |
   location.ts               |   96.61 |    91.52 |     100 |      98 | 42,230
   logr.ts                   |   70.68 |    65.11 |     100 |   69.64 | 39,64-89,109,152
-  timezones.ts              |   94.44 |    83.33 |     100 |     100 | 112
+  timezones.ts              |   94.44 |    83.33 |     100 |     100 | 116
   umami.ts                  |    64.7 |     37.5 |     100 |   66.66 | 12,27-30
   utils-client.ts           |   31.03 |        0 |      50 |   32.14 | 9-38,56,60
   utils-shared.ts           |   85.29 |    72.72 |     100 |    87.5 | 27,46,48,50
@@ -54,9 +53,9 @@ All files                   |   84.61 |    79.39 |   87.75 |   85.34 |
 Test Suites: 1 skipped, 23 passed, 23 of 24 total
 Tests:       2 skipped, 242 passed, 244 total
 Snapshots:   0 total
-Time:        1.944 s, estimated 2 s
+Time:        1.935 s, estimated 2 s
 Ran all test suites.
-Wed May 21 10:07:07 PDT 2025
+Mon Jun  9 13:28:38 PDT 2025
 ```
 
 ## Next Steps for Testing
@@ -155,7 +154,7 @@ For API:
 -   Fixed MapPopup component to handle optional onEventSelect prop gracefully
 -   Updated Footer tests to match the actual text content ("Terms of Service" and "Privacy Policy")
 -   Fixed EventList test to look for the correct "⚠ Unmapped" message instead of "Location could not be mapped"
--   Enhanced EventFilters component with proper data-testid attributes for more robust testing
+-   Enhanced DateAndSearchFilters component with proper data-testid attributes for more robust testing
 -   Updated CalendarSelector test to use the actual example calendar name "Geocaching in Spain"
 -   Added proper null checks in the MapPopup component to prevent errors when selectedEventId is undefined
 -   Improved the handling of optional props throughout components for better error resilience

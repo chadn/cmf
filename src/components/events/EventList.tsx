@@ -237,9 +237,6 @@ const EventList: React.FC<EventListProps> = ({ evts, selectedEventId, onEventSel
                                     <div className="text-xs font-medium text-primary break-words md:break-normal w-48 sm:w-56 md:w-auto">
                                         {event.name.length > 120 ? `${event.name.substring(0, 120)}...` : event.name}
                                     </div>
-                                    {event.resolved_location?.status === 'unresolved' && (
-                                        <div className="text-xxs text-error">⚠ Unresolved location</div>
-                                    )}
                                 </td>
                                 <td className="px-1 py-0.5 whitespace-nowrap">
                                     <div className="2xl:hidden flex flex-col">
@@ -297,6 +294,9 @@ const EventList: React.FC<EventListProps> = ({ evts, selectedEventId, onEventSel
                                             <span className="ml-1 text-blue-500 text-xxs">
                                                 {expandedLocation === event.id ? '(less)' : '(more)'}
                                             </span>
+                                        )}
+                                        {event.resolved_location?.status === 'unresolved' && (
+                                            <div className="text-xxs text-error">⚠ Unresolved location</div>
                                         )}
                                     </div>
                                 </td>

@@ -41,10 +41,9 @@ The application follows a hybrid architecture with:
     /events               # Event list and filtering components
       /EventList.tsx      # List of events with filtering
       /EventDetails.tsx   # Detailed view of an event
-      /EventFilters.tsx   # Filtering controls
+      /DateAndSearchFilters.tsx   # Filtering controls
       /ActiveFilters.tsx  # Component to display active filters
       /DateQuickButtons.tsx  # Quick date selection buttons
-      /DateRangeSelector.tsx # Date range selection component
     /layout               # Layout components
       /Header.tsx         # Application header with navigation
       /Footer.tsx         # Application footer with links

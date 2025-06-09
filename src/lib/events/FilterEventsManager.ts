@@ -103,6 +103,10 @@ export class FilterEventsManager {
             return event.resolved_location?.status !== 'resolved'
         }
 
+        if (query.match(/^\d{5}$/)) {
+            // zoom map to zip code
+        }
+
         return !!(
             event.name?.toLowerCase().includes(query) ||
             event.location?.toLowerCase().includes(query) ||
