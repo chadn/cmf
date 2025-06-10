@@ -38,7 +38,7 @@ export default function ActiveFilters({
     ]
     const noFilters = filterButtons.every((filter) => filter.numEvents === 0)
     return noFilters ? null : (
-        <div className="mb-0.5 flex flex-wrap gap-1" role="list" aria-label="Active filters">
+        <div className="mb-0.5 md:mb-2 flex flex-wrap gap-1" role="list" aria-label="Active filters">
             {filterButtons.map(
                 (filter) =>
                     filter.numEvents > 0 && (

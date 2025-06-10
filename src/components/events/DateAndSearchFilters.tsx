@@ -109,7 +109,7 @@ export default function DateAndSearchFilters({
 
     return (
         <div className="relative">
-            <div className={showDateSliders ? 'w-full' : 'flex flex-col sm:flex-row sm:items-center gap-2 w-full'}>
+            <div className={showDateSliders ? 'w-full' : 'flex flex-row items-center gap-2 w-full'}>
                 <div
                     className={`transition-[max-height] duration-700 ease-in-out overflow-hidden min-w-0 ${
                         showDateSliders ? ' w-full max-h-[400px]' : 'flex-1 max-h-[56px] text-primary'
@@ -118,7 +118,7 @@ export default function DateAndSearchFilters({
                     <div className="bg-white rounded-md shadow-sm overflow-hidden min-w-0">
                         <button
                             onClick={() => setShowDateSliders(!showDateSliders)}
-                            className="w-full text-left text-sm md:text-xl p-1 text-gray-700 hover:bg-gray-50 transition-colors"
+                            className="w-full text-left text-sm md:text-lg xl:text-xl p-1 text-gray-700 hover:bg-gray-50 transition-colors"
                             data-testid="date-range-dropdown"
                         >
                             {startDateText} - {endDateText}
@@ -164,7 +164,7 @@ export default function DateAndSearchFilters({
                                     appState={appState}
                                 />
                                 {/* Calendar pickers for start and end date */}
-                                <div className="flex flex-row gap-4 justify-center mt-4">
+                                <div className="flex flex-row gap-0 2xl:gap-4 justify-center mt-0 md:mt-3">
                                     {isSameMonth ? (
                                         <Calendar
                                             mode="single"
@@ -190,7 +190,6 @@ export default function DateAndSearchFilters({
                                     ) : (
                                         <>
                                             <div>
-                                                <div className="text-xs text-gray-600 mb-1 text-center">Start Date</div>
                                                 <Calendar
                                                     mode="single"
                                                     selected={startDate}
@@ -219,7 +218,6 @@ export default function DateAndSearchFilters({
                                                 />
                                             </div>
                                             <div>
-                                                <div className="text-xs text-gray-600 mb-1 text-center">End Date</div>
                                                 <Calendar
                                                     mode="single"
                                                     selected={endDate}
@@ -260,7 +258,7 @@ export default function DateAndSearchFilters({
                         placeholder="Search name, location, or description"
                         value={searchQuery}
                         onChange={(e) => onSearchChange(e.target.value)}
-                        className="p-2 border rounded flex-1  text-black min-w-0 ml-0 sm:ml-2"
+                        className="p-1 md:p-2 border rounded flex-1  text-black min-w-0 ml-0 sm:ml-2"
                         data-testid="search-input"
                     />
                 )}

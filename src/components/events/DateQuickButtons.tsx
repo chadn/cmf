@@ -47,7 +47,7 @@ export default function DateQuickButtons({
     const todayValue = getTodayValue()
 
     // Common button style
-    const buttonClass = 'text-xs bg-blue-100 hover:bg-blue-200 text-blue-800 py-1 px-2 rounded'
+    const buttonClass = 'text-xs bg-blue-100 hover:bg-blue-200 text-blue-800 py-1 px-1 sm:px-2rounded'
 
     // Handle date range selection based on the filter configuration
     const handleDateRange = (filter: QuickFilterButton) => {
@@ -168,7 +168,7 @@ export default function DateQuickButtons({
     }, [dateQuickFilterUrl, appState])
 
     return (
-        <div className="mt-3 flex flex-wrap gap-1 justify-between">
+        <div className="mt-3 flex flex-wrap gap-0.5 justify-between">
             {quickFilters.map((curQF) => (
                 <button
                     key={curQF.label.replace(/\s+/g, '')}

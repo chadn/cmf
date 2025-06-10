@@ -9,11 +9,11 @@ This is a high level list of things to do on the app. Not necessarily in priorit
     1. config: show/hide events with unresolved locations
     1. config: change timezone (defaults to browser local)
 1. Make design better
-    1. USE Shadcn
-    1. On desktop, make map go to top (header should only be on left side panel). Panel should open and close
-    1. Make design more compact - Put search box and dates in same row. Click on either will expand.
+    1. ✅ USE Shadcn
+    1. ✅ On desktop, make map go to top (header should only be on left side panel).
+    1. ✅ Make design more compact - Put search box and dates in same row. Click on either will expand.
 1. Favorite events, remember favs via cookies or browser local storage.
-1. Make list panel open all the way right, half way (normal) or close entirely except small CMF with count of events showing
+1. Make list panel open all the way, half way (normal) or close entirely except small CMF with count of events showing
 1. Add more protest event sources
     - ✅ https://events.pol-rev.com/api
     - ✅ https://www.wethepeopledissent.net/ Google Sheet
@@ -39,6 +39,7 @@ Working on fixing these:
 ## Features
 
 1. Not a bug: When clicking on event for marker popup, map changes, filters and event showing count do not change (correct). Clicking on x to close popup or zooming/moving map should change count.
+1. Not a bug: When changing start / end dates on calendar, you cannot change the calendar month by clicking on the arrows next to the month name. Must use the slider.
 
 Also see [How to Use](usage.md)
 

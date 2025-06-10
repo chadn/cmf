@@ -106,10 +106,10 @@ const EventList: React.FC<EventListProps> = ({ evts, selectedEventId, onEventSel
     }
 
     return (
-        <div className="mt-0.5">
+        <div className="mt-0.5 md:mt-4">
             <div className="overflow-x-auto">
                 <table className="w-full text-xs border-collapse table-fixed">
-                    <thead className="bg-gray-50">
+                    <thead className="bg-gray-200">
                         <tr>
                             <th
                                 scope="col"
