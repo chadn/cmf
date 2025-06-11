@@ -7,6 +7,7 @@ import { getDateFromUrlDateString } from '@/lib/utils/date'
 import { umamiTrack } from '@/lib/utils/umami'
 import { Calendar } from '@/components/ui/calendar'
 import { Slider } from '@/components/ui/slider'
+import * as Popover from '@radix-ui/react-popover'
 
 interface DateAndSearchFiltersProps {
     searchQuery: string
@@ -109,25 +110,22 @@ export default function DateAndSearchFilters({
 
     return (
         <div className="relative">
-            <div className={showDateSliders ? 'w-full' : 'flex flex-row items-center gap-2 w-full'}>
-                <div
-                    className={`transition-[max-height] duration-700 ease-in-out overflow-hidden min-w-0 ${
-                        showDateSliders ? ' w-full max-h-[400px]' : 'flex-1 max-h-[56px] text-primary'
-                    }`}
-                >
-                    <div className="bg-white rounded-md shadow-sm overflow-hidden min-w-0">
-                        <button
-                            onClick={() => setShowDateSliders(!showDateSliders)}
-                            className="w-full text-left text-sm md:text-lg xl:text-xl p-1 text-gray-700 hover:bg-gray-50 transition-colors"
-                            data-testid="date-range-dropdown"
-                        >
-                            {startDateText} - {endDateText}
-                        </button>
-                        <div
-                            className={`overflow-hidden transition-[max-height] duration-700 ease-in-out ${
-                                showDateSliders ? 'max-h-[700px]' : 'max-h-0'
-                            }`}
-                        >
+            <div className="flex flex-row items-center gap-2 w-full">
+                <Popover.Root open={showDateSliders} onOpenChange={setShowDateSliders}>
+                    <Popover.Trigger asChild>
+                        <div className="min-w-0 flex-1 text-primary">
+                            <div className="bg-white rounded-md shadow-sm overflow-hidden min-w-0">
+                                <button
+                                    className="w-full text-left text-sm md:text-md p-1 transition-colors bg-blue-100 text-blue-800 rounded cursor-pointer hover:bg-blue-200  duration-150"
+                                    data-testid="date-range-dropdown"
+                                >
+                                    {startDateText} - {endDateText} {showDateSliders ? '↑' : '↓'}
+                                </button>
+                            </div>
+                        </div>
+                    </Popover.Trigger>
+                    <Popover.Portal>
+                        <Popover.Content className="z-50 w-[95vw] max-w-[480px] sm:w-[480px] p-0 bg-white rounded-md shadow-lg border mt-2 overflow-x-auto popover-content">
                             <div className="p-2 border-t border-gray-100 bg-white shadow-md">
                                 {/* Single range slider for start and end */}
                                 <div className="mb-4">
@@ -164,104 +162,106 @@ export default function DateAndSearchFilters({
                                     appState={appState}
                                 />
                                 {/* Calendar pickers for start and end date */}
-                                <div className="flex flex-row gap-0 2xl:gap-4 justify-center mt-0 md:mt-3">
-                                    {isSameMonth ? (
-                                        <Calendar
-                                            mode="single"
-                                            selected={startDate}
-                                            onSelect={(date: Date | undefined) => handleCalendarSelect(date, 'start')}
-                                            modifiers={{
-                                                range_start: startDate,
-                                                range_end: endDate,
-                                                range_middle:
-                                                    startDate && endDate && startDate < endDate
-                                                        ? { from: addDays(startDate, 1), to: addDays(endDate, -1) }
-                                                        : undefined,
-                                            }}
-                                            modifiersClassNames={{
-                                                range_start: 'bg-blue-200 !text-black',
-                                                range_end: 'bg-blue-200 !text-black',
-                                                range_middle: 'bg-blue-100',
-                                            }}
-                                            fromDate={minDate}
-                                            toDate={endDate}
-                                            month={startDate ?? minDate}
-                                        />
-                                    ) : (
-                                        <>
-                                            <div>
-                                                <Calendar
-                                                    mode="single"
-                                                    selected={startDate}
-                                                    onSelect={(date: Date | undefined) =>
-                                                        handleCalendarSelect(date, 'start')
-                                                    }
-                                                    modifiers={{
-                                                        range_start: startDate,
-                                                        range_end: endDate,
-                                                        range_middle:
-                                                            startDate && endDate && startDate < endDate
-                                                                ? {
-                                                                      from: addDays(startDate, 1),
-                                                                      to: addDays(endDate, -1),
-                                                                  }
-                                                                : undefined,
-                                                    }}
-                                                    modifiersClassNames={{
-                                                        range_start: 'bg-blue-200 !text-black',
-                                                        range_end: 'bg-blue-200 !text-black',
-                                                        range_middle: 'bg-blue-100',
-                                                    }}
-                                                    fromDate={minDate}
-                                                    toDate={endDate}
-                                                    month={startDate ?? minDate}
-                                                />
-                                            </div>
-                                            <div>
-                                                <Calendar
-                                                    mode="single"
-                                                    selected={endDate}
-                                                    onSelect={(date: Date | undefined) =>
-                                                        handleCalendarSelect(date, 'end')
-                                                    }
-                                                    modifiers={{
-                                                        range_start: startDate,
-                                                        range_end: endDate,
-                                                        range_middle:
-                                                            startDate && endDate && startDate < endDate
-                                                                ? {
-                                                                      from: addDays(startDate, 1),
-                                                                      to: addDays(endDate, -1),
-                                                                  }
-                                                                : undefined,
-                                                    }}
-                                                    modifiersClassNames={{
-                                                        range_start: 'bg-blue-200 !text-black',
-                                                        range_end: 'bg-blue-200 !text-black',
-                                                        range_middle: 'bg-blue-100',
-                                                    }}
-                                                    fromDate={startDate}
-                                                    toDate={maxDate}
-                                                    month={endDate ?? maxDate}
-                                                />
-                                            </div>
-                                        </>
-                                    )}
+                                <div className="flex flex-col sm:flex-row gap-0 2xl:gap-4 justify-center mt-0 sm:mt-4">
+                                    <div className="scale-90 sm:scale-100 origin-top">
+                                        {isSameMonth ? (
+                                            <Calendar
+                                                mode="single"
+                                                selected={startDate}
+                                                onSelect={(date: Date | undefined) =>
+                                                    handleCalendarSelect(date, 'start')
+                                                }
+                                                modifiers={{
+                                                    range_start: startDate,
+                                                    range_end: endDate,
+                                                    range_middle:
+                                                        startDate && endDate && startDate < endDate
+                                                            ? { from: addDays(startDate, 1), to: addDays(endDate, -1) }
+                                                            : undefined,
+                                                }}
+                                                modifiersClassNames={{
+                                                    range_start: 'bg-blue-200 !text-black',
+                                                    range_end: 'bg-blue-200 !text-black',
+                                                    range_middle: 'bg-blue-100',
+                                                }}
+                                                fromDate={minDate}
+                                                toDate={endDate}
+                                                month={startDate ?? minDate}
+                                            />
+                                        ) : (
+                                            <>
+                                                <div>
+                                                    <Calendar
+                                                        mode="single"
+                                                        selected={startDate}
+                                                        onSelect={(date: Date | undefined) =>
+                                                            handleCalendarSelect(date, 'start')
+                                                        }
+                                                        modifiers={{
+                                                            range_start: startDate,
+                                                            range_end: endDate,
+                                                            range_middle:
+                                                                startDate && endDate && startDate < endDate
+                                                                    ? {
+                                                                          from: addDays(startDate, 1),
+                                                                          to: addDays(endDate, -1),
+                                                                      }
+                                                                    : undefined,
+                                                        }}
+                                                        modifiersClassNames={{
+                                                            range_start: 'bg-blue-200 !text-black',
+                                                            range_end: 'bg-blue-200 !text-black',
+                                                            range_middle: 'bg-blue-100',
+                                                        }}
+                                                        fromDate={minDate}
+                                                        toDate={endDate}
+                                                        month={startDate ?? minDate}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Calendar
+                                                        mode="single"
+                                                        selected={endDate}
+                                                        onSelect={(date: Date | undefined) =>
+                                                            handleCalendarSelect(date, 'end')
+                                                        }
+                                                        modifiers={{
+                                                            range_start: startDate,
+                                                            range_end: endDate,
+                                                            range_middle:
+                                                                startDate && endDate && startDate < endDate
+                                                                    ? {
+                                                                          from: addDays(startDate, 1),
+                                                                          to: addDays(endDate, -1),
+                                                                      }
+                                                                    : undefined,
+                                                        }}
+                                                        modifiersClassNames={{
+                                                            range_start: 'bg-blue-200 !text-black',
+                                                            range_end: 'bg-blue-200 !text-black',
+                                                            range_middle: 'bg-blue-100',
+                                                        }}
+                                                        fromDate={startDate}
+                                                        toDate={maxDate}
+                                                        month={endDate ?? maxDate}
+                                                    />
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                </div>
-                {!showDateSliders && (
-                    <input
-                        type="text"
-                        placeholder="Search name, location, or description"
-                        value={searchQuery}
-                        onChange={(e) => onSearchChange(e.target.value)}
-                        className="p-1 md:p-2 border rounded flex-1  text-black min-w-0 ml-0 sm:ml-2"
-                        data-testid="search-input"
-                    />
-                )}
+                        </Popover.Content>
+                    </Popover.Portal>
+                </Popover.Root>
+                <input
+                    type="text"
+                    placeholder="Search name, location, or description"
+                    value={searchQuery}
+                    onChange={(e) => onSearchChange(e.target.value)}
+                    className="p-1.5 border rounded flex-1  text-black min-w-0 ml-0 sm:ml-2"
+                    data-testid="search-input"
+                />
             </div>
         </div>
     )

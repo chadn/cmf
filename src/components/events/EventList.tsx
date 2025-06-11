@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { FilteredEvents } from '@/types/events'
 import { formatEventDate, formatEventDuration } from '@/lib/utils/date'
 import { truncateLocation } from '@/lib/utils/location'
@@ -20,6 +20,32 @@ const EventList: React.FC<EventListProps> = ({ evts, selectedEventId, onEventSel
     const [sortField, setSortField] = useState<SortField>('startDate')
     const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
     const [expandedLocation, setExpandedLocation] = useState<string | null>(null)
+    // Ref map for event rows
+    const rowRefs = useRef<{ [key: string]: HTMLTableRowElement | null }>({})
+    const tbodyContainerRef = useRef<HTMLDivElement | null>(null)
+
+    useEffect(() => {
+        if (selectedEventId && rowRefs.current[selectedEventId] && tbodyContainerRef.current) {
+            const row = rowRefs.current[selectedEventId]
+            const container = tbodyContainerRef.current
+            if (row && container) {
+                const rowRect = row.getBoundingClientRect()
+                const containerRect = container.getBoundingClientRect()
+                if (rowRect.top < containerRect.top || rowRect.bottom > containerRect.bottom) {
+                    // Detect if sidebar is on top (mobile)
+                    const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024
+                    let offset = row.offsetTop - container.offsetTop - container.clientHeight / 2 + row.clientHeight / 2
+                    offset += container.clientHeight / 3
+                    if (isMobile) {
+                        // Add extra offset so row is not hidden under the map
+                        offset += container.clientHeight / 4
+                    }
+                    offset = Math.max(0, offset)
+                    container.scrollTo({ top: offset, behavior: 'smooth' })
+                }
+            }
+        }
+    }, [selectedEventId])
 
     if (apiIsLoading) {
         return (
@@ -104,142 +130,157 @@ const EventList: React.FC<EventListProps> = ({ evts, selectedEventId, onEventSel
             setExpandedLocation(eventId)
         }
     }
+    const wdth = {
+        name: 'w-[50%] md:w-1/2',
+        start: 'w-[18%] md:w-1/6',
+        dur: 'w-[10%] md:w-1/12',
+        loc: 'w-[22%] md:w-1/4',
+    }
 
     return (
-        <div className="mt-0.5 md:mt-4">
-            <div className="overflow-x-auto">
+        <div className="flex flex-col flex-1 min-h-0 mt-0.5 md:mt-2">
+            {/* Fixed header table */}
+            <table className="w-full text-xs border-collapse table-fixed">
+                <thead className="bg-blue-100 hover:bg-blue-200 text-left text-xxs font-medium text-blue-800 uppercase tracking-wider cursor-pointer">
+                    <tr>
+                        <th
+                            scope="col"
+                            className={`px-1 py-0.5 ${wdth.name}`}
+                            onClick={() => handleSort('name')}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault()
+                                    handleSort('name')
+                                }
+                            }}
+                            tabIndex={0}
+                            role="button"
+                            aria-sort={
+                                sortField === 'name'
+                                    ? sortDirection === 'asc'
+                                        ? 'ascending'
+                                        : 'descending'
+                                    : undefined
+                            }
+                        >
+                            Event Name
+                            {sortField === 'name' && (
+                                <span className="ml-1" aria-hidden="true">
+                                    {sortDirection === 'asc' ? '↑' : '↓'}
+                                </span>
+                            )}
+                        </th>
+                        <th
+                            scope="col"
+                            className={`px-1 py-0.5 ${wdth.start}`}
+                            onClick={() => handleSort('startDate')}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault()
+                                    handleSort('startDate')
+                                }
+                            }}
+                            tabIndex={0}
+                            role="button"
+                            aria-sort={
+                                sortField === 'startDate'
+                                    ? sortDirection === 'asc'
+                                        ? 'ascending'
+                                        : 'descending'
+                                    : undefined
+                            }
+                        >
+                            Start Date
+                            {sortField === 'startDate' && (
+                                <span className="ml-1" aria-hidden="true">
+                                    {sortDirection === 'asc' ? '↑' : '↓'}
+                                </span>
+                            )}
+                        </th>
+                        <th
+                            scope="col"
+                            className={`px-1 py-0.5 ${wdth.dur}`}
+                            onClick={() => handleSort('duration')}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault()
+                                    handleSort('duration')
+                                }
+                            }}
+                            tabIndex={0}
+                            role="button"
+                            aria-sort={
+                                sortField === 'duration'
+                                    ? sortDirection === 'asc'
+                                        ? 'ascending'
+                                        : 'descending'
+                                    : undefined
+                            }
+                        >
+                            {/* Note sidebar is on top up to lg, has extra width from md to lg, so use Duration for md to lg*/}
+                            <span className="inline md:hidden lg:inline 2xl:hidden">Dur.</span>
+                            <span className="hidden md:inline lg:hidden 2xl:inline">Duration</span>
+                            {sortField === 'duration' && (
+                                <span className="ml-1" aria-hidden="true">
+                                    {sortDirection === 'asc' ? '↑' : '↓'}
+                                </span>
+                            )}
+                        </th>
+                        <th
+                            scope="col"
+                            className={`px-1 py-0.5 ${wdth.loc}`}
+                            onClick={() => handleSort('location')}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault()
+                                    handleSort('location')
+                                }
+                            }}
+                            tabIndex={0}
+                            role="button"
+                            aria-sort={
+                                sortField === 'location'
+                                    ? sortDirection === 'asc'
+                                        ? 'ascending'
+                                        : 'descending'
+                                    : undefined
+                            }
+                        >
+                            Location
+                            {sortField === 'location' && (
+                                <span className="ml-1" aria-hidden="true">
+                                    {sortDirection === 'asc' ? '↑' : '↓'}
+                                </span>
+                            )}
+                        </th>
+                    </tr>
+                </thead>
+            </table>
+            {/* Scrollable tbody */}
+            <div className="flex-1 min-h-0 overflow-y-auto" ref={tbodyContainerRef}>
                 <table className="w-full text-xs border-collapse table-fixed">
-                    <thead className="bg-gray-200">
-                        <tr>
-                            <th
-                                scope="col"
-                                className="px-1 py-0.5 text-left text-xxs font-medium text-gray-500 uppercase tracking-wider cursor-pointer w-[50%] md:w-1/2"
-                                onClick={() => handleSort('name')}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' || e.key === ' ') {
-                                        e.preventDefault()
-                                        handleSort('name')
-                                    }
-                                }}
-                                tabIndex={0}
-                                role="button"
-                                aria-sort={
-                                    sortField === 'name'
-                                        ? sortDirection === 'asc'
-                                            ? 'ascending'
-                                            : 'descending'
-                                        : undefined
-                                }
-                            >
-                                Event Name
-                                {sortField === 'name' && (
-                                    <span className="ml-1" aria-hidden="true">
-                                        {sortDirection === 'asc' ? '↑' : '↓'}
-                                    </span>
-                                )}
-                            </th>
-                            <th
-                                scope="col"
-                                className="px-1 py-0.5 text-left text-xxs font-medium text-gray-500 uppercase tracking-wider cursor-pointer w-[18%] md:w-1/6"
-                                onClick={() => handleSort('startDate')}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' || e.key === ' ') {
-                                        e.preventDefault()
-                                        handleSort('startDate')
-                                    }
-                                }}
-                                tabIndex={0}
-                                role="button"
-                                aria-sort={
-                                    sortField === 'startDate'
-                                        ? sortDirection === 'asc'
-                                            ? 'ascending'
-                                            : 'descending'
-                                        : undefined
-                                }
-                            >
-                                Start Date
-                                {sortField === 'startDate' && (
-                                    <span className="ml-1" aria-hidden="true">
-                                        {sortDirection === 'asc' ? '↑' : '↓'}
-                                    </span>
-                                )}
-                            </th>
-                            <th
-                                scope="col"
-                                className="px-1 py-0.5 text-left text-xxs font-medium text-gray-500 uppercase tracking-wider cursor-pointer w-[10%] md:w-1/12"
-                                onClick={() => handleSort('duration')}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' || e.key === ' ') {
-                                        e.preventDefault()
-                                        handleSort('duration')
-                                    }
-                                }}
-                                tabIndex={0}
-                                role="button"
-                                aria-sort={
-                                    sortField === 'duration'
-                                        ? sortDirection === 'asc'
-                                            ? 'ascending'
-                                            : 'descending'
-                                        : undefined
-                                }
-                            >
-                                <span className="2xl:hidden">Dur.</span>
-                                <span className="hidden 2xl:inline">Duration</span>
-                                {sortField === 'duration' && (
-                                    <span className="ml-1" aria-hidden="true">
-                                        {sortDirection === 'asc' ? '↑' : '↓'}
-                                    </span>
-                                )}
-                            </th>
-                            <th
-                                scope="col"
-                                className="px-1 py-0.5 text-left text-xxs font-medium text-gray-500 uppercase tracking-wider cursor-pointer w-[22%] md:w-1/4"
-                                onClick={() => handleSort('location')}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' || e.key === ' ') {
-                                        e.preventDefault()
-                                        handleSort('location')
-                                    }
-                                }}
-                                tabIndex={0}
-                                role="button"
-                                aria-sort={
-                                    sortField === 'location'
-                                        ? sortDirection === 'asc'
-                                            ? 'ascending'
-                                            : 'descending'
-                                        : undefined
-                                }
-                            >
-                                Location
-                                {sortField === 'location' && (
-                                    <span className="ml-1" aria-hidden="true">
-                                        {sortDirection === 'asc' ? '↑' : '↓'}
-                                    </span>
-                                )}
-                            </th>
-                        </tr>
-                    </thead>
                     <tbody className="bg-white divide-y divide-gray-100">
                         {sortedEvents.map((event) => (
                             <tr
                                 key={event.id}
+                                ref={(el) => {
+                                    rowRefs.current[event.id] = el
+                                }}
                                 className={`cursor-pointer border-b border-gray-100 ${
                                     event.id === selectedEventId
-                                        ? 'bg-blue-100 border-l-4 border-l-accent'
-                                        : 'hover:bg-gray-50'
+                                        ? 'bg-green-200 border-l-4 border-l-green-500'
+                                        : 'hover:bg-blue-100'
                                 }`}
                                 onClick={() => onEventSelect(event.id)}
                             >
-                                <td className="px-1 py-0.5 w-1/2">
+                                <td className={`px-1 py-0.5 ${wdth.name}`}>
                                     <div className="text-xs font-medium text-primary break-words md:break-normal w-48 sm:w-56 md:w-auto">
                                         {event.name.length > 120 ? `${event.name.substring(0, 120)}...` : event.name}
                                     </div>
                                 </td>
-                                <td className="px-1 py-0.5 whitespace-nowrap">
-                                    <div className="2xl:hidden flex flex-col">
+                                <td className={`px-1 py-0.5 whitespace-nowrap ${wdth.start}`}>
+                                    {/* Note sidebar is skinny below md, has extra width from md to lg, skinny till xl*/}
+                                    <div className="md:hidden lg:block 2xl:hidden flex flex-col">
                                         <div className="text-xs text-gray-600">
                                             {extractDateParts(event.start).dateDay}
                                         </div>
@@ -247,16 +288,16 @@ const EventList: React.FC<EventListProps> = ({ evts, selectedEventId, onEventSel
                                             {extractDateParts(event.start).time}
                                         </div>
                                     </div>
-                                    <div className="hidden 2xl:block text-xs text-gray-600">
+                                    <div className="hidden md:block lg:hidden 2xl:block text-xs text-gray-600">
                                         {formatStartDate(event.start)}
                                     </div>
                                 </td>
-                                <td className="px-1 py-0.5 whitespace-nowrap">
+                                <td className={`px-1 py-0.5 whitespace-nowrap ${wdth.dur}`}>
                                     <div className="text-xs text-gray-600">
                                         {formatEventDuration(event.start, event.end)}
                                     </div>
                                 </td>
-                                <td className="px-1 py-0.5">
+                                <td className={`px-1 py-0.5 ${wdth.loc}`}>
                                     <div
                                         className="text-xs text-gray-500 cursor-pointer break-words"
                                         onClick={(e) => {

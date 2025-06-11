@@ -35,6 +35,7 @@ Consider features from original version https://chadnorwood.com/projects/gcm/
 Working on fixing these:
 
 1. Bug or Feature Change: for events without location info, when clicking on them it currently opens in new window the event details. This is too different of a behavior from clicking on events with a location. Instead, consider a small popup that says "no location info, View Original Event"
+1. Feature: if start and end time are same, assume timing is not accurate, and say "See event for time" instead of showing time
 
 ## Features
 

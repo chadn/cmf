@@ -32,7 +32,7 @@ const MapMarker: React.FC<MapMarkerProps> = ({ count, isSelected, isUnresolved }
         flex 
         items-center 
         justify-center 
-        ${isSelected ? 'bg-accent border-2 border-white' : isUnresolved ? 'bg-orange-500' : 'bg-primary'} 
+        ${isSelected ? 'bg-green-500 border-2 border-green-700' : isUnresolved ? 'bg-orange-500' : 'bg-blue-600'} 
         text-white 
         font-bold 
         ${getTextSize()}
@@ -43,6 +43,8 @@ const MapMarker: React.FC<MapMarkerProps> = ({ count, isSelected, isUnresolved }
         duration-200
         cursor-pointer
       `}
+            data-testid="map-marker-component"
+            data-selected={isSelected}
         >
             {count}
         </div>

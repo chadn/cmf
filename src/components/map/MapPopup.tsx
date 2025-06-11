@@ -75,6 +75,14 @@ const MapPopup: React.FC<MapPopupProps> = ({ marker, selectedEventId, onEventSel
         }
     }
 
+    // Helper: check if start and end times are the same
+    const isTimeUnknown = (start: string, end: string) => {
+        if (!end) return true
+        const startDate = new Date(start)
+        const endDate = new Date(end)
+        return startDate.getTime() === endDate.getTime()
+    }
+
     return (
         <div className="max-w-xs bg-white text-gray-800 p-3 rounded-lg shadow">
             <div className="flex flex-col gap-2">
@@ -83,7 +91,12 @@ const MapPopup: React.FC<MapPopupProps> = ({ marker, selectedEventId, onEventSel
 
             {/* Event date and duration */}
             <p className="text-sm mb-1 text-gray-700">
-                {formatEventDate(currentEvent.start)} ({formatEventDuration(currentEvent.start, currentEvent.end)})
+                {formatEventDate(currentEvent.start, !isTimeUnknown(currentEvent.start, currentEvent.end))}
+                {isTimeUnknown(currentEvent.start, currentEvent.end) ? (
+                    <span className="ml-2 italic text-gray-500">See event for time</span>
+                ) : (
+                    <> ({formatEventDuration(currentEvent.start, currentEvent.end)})</>
+                )}
             </p>
 
             {/* Event location skipping for now */}

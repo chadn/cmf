@@ -8,14 +8,14 @@ import { dateQuickFilterLabels } from '@/components/events/DateQuickButtons'
  * @param dateString - ISO date string
  * @returns Formatted date string: MM/DD Day hh:mm[am|pm]
  */
-export function formatEventDate(dateString: string): string {
+export function formatEventDate(dateString: string, includeTime: boolean = true): string {
     try {
         const date = parseISO(dateString)
         if (!isValid(date)) {
             return 'Invalid date'
         }
         // aaa is 'am' or 'pm'
-        return format(date, 'MM/dd EEE h:mmaaa')
+        return includeTime ? format(date, 'MM/dd EEE h:mmaaa') : format(date, 'MM/dd EEE')
     } catch (error) {
         logr.warn('date', 'Error formatting date:', error)
         return 'Invalid date'

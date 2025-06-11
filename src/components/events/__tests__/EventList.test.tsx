@@ -366,8 +366,8 @@ describe('EventList', () => {
         const selectedRow = rows.find((row) => row.textContent?.includes('Test Event 2'))
 
         // Check that it has the selected class
-        expect(selectedRow).toHaveClass('bg-blue-100')
-        expect(selectedRow).toHaveClass('border-l-accent')
+        expect(selectedRow).toHaveClass('bg-green-200')
+        expect(selectedRow).toHaveClass('border-l-green-500')
     })
 
     it('displays "No location" for events without a location', () => {

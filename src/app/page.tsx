@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback, Suspense, useRef, useReducer } from '
 import MapContainer from '@/components/map/MapContainer'
 import EventList from '@/components/events/EventList'
 import DateAndSearchFilters from '@/components/events/DateAndSearchFilters'
-import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import EventSourceSelector from '@/components/home/EventSourceSelector'
 import { useEventsManager } from '@/lib/hooks/useEventsManager'
@@ -319,13 +318,6 @@ function HomeContent() {
         }
     }, [evts, eventSource])
 
-    // Function to scroll the events list to the top
-    const scrollEventsToTop = useCallback(() => {
-        if (eventsSidebarRef.current) {
-            eventsSidebarRef.current.scrollTop = 0
-        }
-    }, [])
-
     // Update URL parameters when viewport changes
     useEffect(() => {
         // Skip during initialization
@@ -360,14 +352,14 @@ function HomeContent() {
     }
 
     return (
-        <div className="min-h-screen flex flex-col md:h-screen">
-            <main className="flex-grow flex flex-col md:flex-row md:h-[calc(100vh)]">
-                {/* Sidebar with header and filters/event list */}
+        <div className="min-h-screen flex flex-col">
+            <main className="flex flex-col lg:flex-row h-screen">
+                {/* Sidebar on top for < lg(1024px width), and on left for bigger screens */}
                 <Sidebar
                     headerName={headerName}
                     eventCount={{ shown: evts.shownEvents.length, total: evts.allEvents.length }}
-                    onInfoClick={scrollEventsToTop}
                     ref={eventsSidebarRef}
+                    className="h-1/2 lg:h-full"
                 >
                     <ActiveFilters
                         evts={evts}
@@ -404,9 +396,8 @@ function HomeContent() {
                         />
                     )}
                 </Sidebar>
-
                 {/* Map */}
-                <div className="w-full md:w-1/2 lg:w-3/5 h-[60vh] md:h-full">
+                <div className="h-1/2 lg:h-full w-full lg:w-1/2 2xl:w-3/5">
                     <MapContainer
                         viewport={viewport}
                         onViewportChange={setViewport}

@@ -76,7 +76,7 @@ html {
 /* Map popup styles */
 .maplibregl-popup {
     max-width: 300px;
-    z-index: 100;
+    z-index: 45;
 }
 
 .maplibregl-popup-content {
@@ -99,7 +99,7 @@ html {
     background-color: rgba(255, 255, 255, 0.9);
     border: none;
     cursor: pointer;
-    z-index: 200;
+    z-index: 48;
     position: absolute;
     width: 30px;
     height: 30px;
@@ -269,4 +269,37 @@ html {
     body {
         @apply bg-background text-foreground;
     }
+}
+
+/* Radix Popover expand/collapse animation */
+@keyframes popoverExpandDown {
+    from {
+        opacity: 0;
+        transform: scaleY(0.8) translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: scaleY(1) translateY(0);
+    }
+}
+
+@keyframes popoverCollapseUp {
+    from {
+        opacity: 1;
+        transform: scaleY(1) translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: scaleY(0.8) translateY(-10px);
+    }
+}
+
+.popover-content[data-state='open'] {
+    animation: popoverExpandDown 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+    transform-origin: top center;
+}
+
+.popover-content[data-state='closed'] {
+    animation: popoverCollapseUp 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+    transform-origin: top center;
 }
