@@ -3,6 +3,7 @@ import { logr } from '@/lib/utils/logr'
 import { BaseEventSourceHandler, registerEventSource } from './index'
 import { axiosGet } from '@/lib/utils/utils-server'
 import { HttpError } from '@/types/error'
+import { parseDateString } from '@/lib/utils/timezones'
 
 const API_KEY = process.env.GOOGLE_CALENDAR_API_KEY
 const SHEET_BASE_URL = 'https://sheets.googleapis.com/v4/spreadsheets/'
@@ -44,20 +45,28 @@ export class DissentGoogleSheetsSource extends BaseEventSourceHandler {
                     .filter(Boolean)
                     .join(', ')
                 // Parse date
-                let start = ''
-                let end = ''
+                let startIso = ''
+                let endIso = ''
                 if (rowObj['Date']) {
-                    const date = new Date(rowObj['Date'])
-                    if (!isNaN(date.getTime())) {
-                        start = date.toISOString()
-                        end = start
+                    const startDate = parseDateString(rowObj['Date'] + ' ' + rowObj['Time'])
+                    if (startDate && !isNaN(startDate.getTime())) {
+                        startIso = startDate.toISOString()
+                        if ('Time' in rowObj && rowObj['Time']) {
+                            // Hack: Set end to be 1 minute after start for when end time is not known
+                            endIso = new Date(startDate.getTime() + 1000 * 60).toISOString()
+                        } else {
+                            // Hack: Set end to be same as start for when exact start time is not known
+                            endIso = startIso
+                        }
+                    } else {
+                        logr.info('api-es-gsheet', `NO DATE: "${rowObj['Date']} ${rowObj['Time']}"`)
                     }
                 }
                 // Extract URLs from Info
                 const description_urls = rowObj['Info']
                     ? Array.from(rowObj['Info'].matchAll(/https?:\/\/\S+/g)).map((m) => m[0])
                     : []
-                if (!(start && rowObj['Name'] && rowObj['Link'])) {
+                if (!(startIso && rowObj['Name'] && rowObj['Link'])) {
                     logr.debug('api-es-gsheet', `Skipping event: ${JSON.stringify(rowObj)}`)
                     continue
                 }
@@ -68,8 +77,9 @@ export class DissentGoogleSheetsSource extends BaseEventSourceHandler {
                     name: rowObj['Name'] || '',
                     description: rowObj['Info'] || '',
                     description_urls,
-                    start,
-                    end,
+                    start: startIso,
+                    end: endIso,
+                    tz: 'LOCAL', // TODO: get timezone from lat/lng
                     original_event_url: rowObj['Link'] || '',
                     location,
                     note: rowObj['ADA Accessible'] ? `ADA: ${rowObj['ADA Accessible']}` : undefined,

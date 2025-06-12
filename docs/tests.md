@@ -4,30 +4,31 @@ This document makes it easy to see test coverage and compare against the [Direct
 
 ```
 npm test && date
-> calendar-map-filter@0.2.5 test
+> calendar-map-filter@0.2.7 test
 > jest --coverage
 ...
+
 ----------------------------|---------|----------|---------|---------|----------------------------------------------
 File                        | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
 ----------------------------|---------|----------|---------|---------|----------------------------------------------
-All files                   |    84.2 |    76.89 |   87.14 |   85.13 |
+All files                   |    84.6 |    76.41 |   86.91 |    85.7 |
  components/common          |     100 |      100 |     100 |     100 |
   ErrorMessage.tsx          |     100 |      100 |     100 |     100 |
   LoadingSpinner.tsx        |     100 |      100 |     100 |     100 |
- components/events          |      81 |    73.22 |   81.39 |   81.34 |
+ components/events          |   82.98 |    74.44 |   81.39 |   83.42 |
   DateAndSearchFilters.tsx  |   72.41 |       52 |   66.66 |   74.07 | 80-102,172-226
   DateQuickButtons.tsx      |      98 |    81.81 |     100 |   97.95 | 86
   EventDetails.tsx          |     100 |      100 |     100 |     100 |
-  EventList.tsx             |   75.29 |       80 |      80 |      75 | 36-44,90,119,151-153,178-180,205-207,234-236
+  EventList.tsx             |   79.74 |    82.35 |      80 |   79.48 | 38-39,85,114,146-148,173-175,200-202,229-231
  components/home            |   88.37 |    66.66 |     100 |    87.8 |
   EventSourceSelector.tsx   |   88.37 |    66.66 |     100 |    87.8 | 35-39
  components/layout          |     100 |      100 |     100 |     100 |
   Footer.tsx                |     100 |      100 |     100 |     100 |
   Header.tsx                |     100 |      100 |     100 |     100 |
- components/map             |    94.2 |     87.5 |   96.29 |    94.4 |
+ components/map             |   93.75 |    84.84 |   96.42 |   94.61 |
   MapContainer.tsx          |   92.85 |    87.87 |   94.44 |    92.5 | 88-90,134,160-162
   MapMarker.tsx             |   94.44 |    81.81 |     100 |     100 | 15,35
-  MapPopup.tsx              |   97.22 |       90 |     100 |   96.96 | 50
+  MapPopup.tsx              |   95.23 |    81.81 |     100 |   97.36 | 50
  components/ui              |   94.11 |    66.66 |      90 |     100 |
   button.tsx                |     100 |    66.66 |     100 |     100 | 45
   calendar.tsx              |    87.5 |       75 |   85.71 |     100 | 71,138-148
@@ -43,12 +44,12 @@ All files                   |    84.2 |    76.89 |   87.14 |   85.13 |
   examples.ts               |     100 |      100 |     100 |     100 |
  lib/hooks                  |   77.92 |       40 |   82.75 |   81.66 |
   useMap.ts                 |   77.92 |       40 |   82.75 |   81.66 | 20-27,117-123,134-138
- lib/utils                  |   79.28 |    78.48 |   87.93 |   80.06 |
-  date.ts                   |   70.66 |     82.6 |   44.44 |   74.64 | 20-21,47-48,122-129,135-156
+ lib/utils                  |   79.89 |     76.5 |   86.88 |   80.88 |
+  date.ts                   |   70.12 |    77.77 |   44.44 |   73.97 | 20-21,47,54-55,129-136,142-163
   icsParser.ts              |     100 |      100 |     100 |     100 |
   location.ts               |   96.61 |    91.52 |     100 |      98 | 42,230
   logr.ts                   |   70.68 |    65.11 |     100 |   69.64 | 39,64-89,109,152
-  timezones.ts              |   94.44 |    83.33 |     100 |     100 | 116
+  timezones.ts              |   90.38 |    61.53 |   85.71 |   93.18 | 75,114-115
   umami.ts                  |    64.7 |     37.5 |     100 |   66.66 | 12,27-30
   utils-client.ts           |   31.03 |        0 |      50 |   32.14 | 9-38,56,60
   utils-shared.ts           |   85.29 |    72.72 |     100 |    87.5 | 27,46,48,50
@@ -57,11 +58,11 @@ All files                   |    84.2 |    76.89 |   87.14 |   85.13 |
 ----------------------------|---------|----------|---------|---------|----------------------------------------------
 
 Test Suites: 1 skipped, 23 passed, 23 of 24 total
-Tests:       2 skipped, 241 passed, 243 total
+Tests:       2 skipped, 255 passed, 257 total
 Snapshots:   0 total
-Time:        1.898 s, estimated 2 s
+Time:        2.124 s
 Ran all test suites.
-Wed Jun 11 15:06:17 PDT 2025
+Thu Jun 12 15:24:04 PDT 2025
 ```
 
 ## Next Steps for Testing

@@ -5,6 +5,7 @@ import { getEventsCache, setEventsCache } from '@/lib/cache'
 import { EventSourceResponse } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
 import { HttpError } from '@/types/error'
+import { convertWallTimeToZone, getTimezoneFromLatLng } from '@/lib/utils/timezones'
 
 // Import event source handlers to ensure they're registered (alphabetical order)
 import '@/lib/api/eventSources/dissent-google-sheets'
@@ -46,9 +47,17 @@ const fetchAndGeocode = async (
     // Add resolved locations to events
     const eventsWithLocationResolved = events.map((event) => {
         if (event.location && locationMap.has(event.location)) {
+            const resolved_location = locationMap.get(event.location)
+            if (event.tz === 'LOCAL' && resolved_location) {
+                event.tz = getTimezoneFromLatLng(resolved_location.lat, resolved_location.lng)
+                if (event.tz != 'UNKNOWN') {
+                    event.start = convertWallTimeToZone(event.start, event.tz)
+                    event.end = convertWallTimeToZone(event.end, event.tz)
+                }
+            }
             return {
                 ...event,
-                resolved_location: locationMap.get(event.location),
+                resolved_location: resolved_location,
             }
         }
         return event

@@ -23,10 +23,13 @@ export function formatEventDate(dateString: string, includeTime: boolean = true)
 }
 
 /**
- * Calculates the duration between two dates
+ * Calculates the duration between two dates.
+ * Hack: if end == start, exact start time is not known. If 1 minute after start, end time is not known.
  * @param startDateString - ISO start date string
  * @param endDateString - ISO end date string
  * @returns Formatted duration string (e.g., "2 hrs" or "3 days")
+ *         or "??" if duration is less than 6 minutes, hack for when end time is not known.
+ *         or "0"  when end is same as start, hack for when exact start time not known
  */
 export function formatEventDuration(startDateString: string, endDateString: string): string {
     try {
@@ -39,6 +42,10 @@ export function formatEventDuration(startDateString: string, endDateString: stri
         }
 
         const durationHours = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60)
+
+        if (durationHours < 0.1) {
+            return '??'
+        }
 
         return durationHours < 24
             ? `${Math.round(durationHours)} hr${durationHours !== 1 ? 's' : ''}`

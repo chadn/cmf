@@ -1,3 +1,121 @@
+import tzlookup from 'tz-lookup'
+import { DateTime } from 'luxon'
+
+/**
+ * Converts a UTC ISO 8601 wall time string to an ISO 8601 string
+ * in a specified target timezone, preserving the wall time components.
+ *
+ * This means if the input is '2024-06-10T17:00:00Z' and the target is 'America/Los_Angeles' (PDT, UTC-07:00),
+ * the output will be '2024-06-10T17:00:00-07:00'.
+ *
+ * @param utcTime A date-time string in ISO 8601 format (e.g., 'YYYY-MM-DDTHH:mm:ssZ').
+ * The 'Z' indicates UTC, but its components (year, month, day, hour, minute, second)
+ * are interpreted as the desired wall time to be preserved.
+ * @param targetTimeZone The IANA timezone identifier (e.g., 'America/Los_Angeles', 'Europe/London').
+ * @returns An ISO 8601 string in the format 'YYYY-MM-DDTHH:mm:ss+/-HH:mm'
+ * with the original wall time components and the calculated offset for the target timezone.
+ */
+export function convertWallTimeToZone(utcTime: string, targetTimeZone: string): string {
+    // 1. Extract the wall time components (year, month, day, hour, minute, second)
+    // from the input string. We parse it as UTC to ensure correct extraction of these parts
+    // without interference from the system's local timezone.
+    const dt = DateTime.fromISO(utcTime, { zone: 'utc' })
+
+    const year = dt.year
+    const month = dt.month
+    const day = dt.day
+    const hour = dt.hour
+    const minute = dt.minute
+    const second = dt.second
+
+    // 2. Create a new Luxon DateTime object by interpreting these extracted components
+    // directly in the *target timezone*. This is the crucial step that "preserves"
+    // the wall time and allows Luxon to correctly determine the offset for that
+    // specific wall time in the target zone (e.g., accounting for DST).
+    const wallTimeInTargetZone = DateTime.fromObject(
+        {
+            year,
+            month,
+            day,
+            hour,
+            minute,
+            second,
+        },
+        { zone: targetTimeZone }
+    )
+
+    // 3. Get the offset in minutes from UTC for this specific wall time in the target zone.
+    const offsetMinutes = wallTimeInTargetZone.offset // e.g., -420 for -07:00, or -480 for -08:00
+
+    // 4. Format the offset into the desired +/-HH:mm string.
+    const sign = offsetMinutes < 0 ? '-' : '+'
+    const absOffsetMinutes = Math.abs(offsetMinutes)
+    const offsetHours = Math.floor(absOffsetMinutes / 60)
+    const offsetRemainingMinutes = absOffsetMinutes % 60
+
+    const formattedOffset = `${sign}${String(offsetHours).padStart(2, '0')}:${String(offsetRemainingMinutes).padStart(
+        2,
+        '0'
+    )}`
+
+    // 5. Reconstruct the final ISO 8601 string.
+    // Ensure all components are padded with leading zeros as per ISO 8601.
+    const formattedDate = `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(
+        2,
+        '0'
+    )}`
+    const formattedTime = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:${String(
+        second
+    ).padStart(2, '0')}`
+
+    return `${formattedDate}T${formattedTime}${formattedOffset}`
+}
+
+export const getTimezoneFromLatLng = (lat: number, lng: number): string => {
+    return tzlookup(lat, lng) || 'UNKNOWN'
+}
+
+/**
+ * Parses a date string in various formats into a JavaScript Date object.
+ * Supports formats like:
+ * - "6/14/2025 1:30 PM"
+ * - "6/14/2025 1 PM"
+ * - "6/14/2025" (defaults to midnight)
+ * - "6/14/2025 1:30PM" (no space before AM/PM)
+ * - "6/14/25 1:30 PM" (2-digit year)
+ */
+export function parseDateString(dateStr: string): Date | null {
+    try {
+        // Try formats in order of probable occurrence
+        const formats = [
+            'M/d/yyyy h:mm a', // 6/14/2025 1:30 PM
+            'M/d/yyyy h a', // 6/14/2025 1 PM
+            'M/d/yyyy', // 6/14/2025 (no time, defaults to midnight)
+            'M/d/yyyy h:mma', // 6/14/2025 1:30PM (no space before AM/PM)
+            'M/d/yyyy ha', // 6/14/2025 1PM (no space before AM/PM)
+            'M/d/yy h:mm a', // 6/14/25 1:30 PM
+            'M/d/yy h a', // 6/14/25 1 PM
+            'M/d/yy h:mma', // 6/14/25 1:30PM
+            'M/d/yy ha', // 6/14/25 1PM
+            'M/d/yy', // 6/14/25 (no time)
+        ]
+
+        for (const format of formats) {
+            const date = DateTime.fromFormat(dateStr, format, { zone: 'UTC' })
+            if (date.isValid) {
+                return date.toJSDate()
+            }
+        }
+
+        // If strict parsing fails, try lenient parsing
+        const lenientDate = DateTime.fromString(dateStr, 'M/d/yyyy h:mm a', { zone: 'UTC' })
+        return lenientDate.isValid ? lenientDate.toJSDate() : null
+    } catch (error) {
+        console.error('Failed to parse date:', error)
+        return null
+    }
+}
+
 export const cityToTimezone: Record<string, string> = {
     'Amsterdam, NL': 'Europe/Amsterdam',
     'Arcadia, CA': 'America/Los_Angeles',
