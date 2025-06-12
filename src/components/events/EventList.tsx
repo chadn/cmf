@@ -20,28 +20,23 @@ const EventList: React.FC<EventListProps> = ({ evts, selectedEventId, onEventSel
     const [sortField, setSortField] = useState<SortField>('startDate')
     const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
     const [expandedLocation, setExpandedLocation] = useState<string | null>(null)
-    // Ref map for event rows
+
+    // Support scolling event list to the selected event
     const rowRefs = useRef<{ [key: string]: HTMLTableRowElement | null }>({})
     const tbodyContainerRef = useRef<HTMLDivElement | null>(null)
-
     useEffect(() => {
         if (selectedEventId && rowRefs.current[selectedEventId] && tbodyContainerRef.current) {
             const row = rowRefs.current[selectedEventId]
             const container = tbodyContainerRef.current
             if (row && container) {
                 const rowRect = row.getBoundingClientRect()
-                const containerRect = container.getBoundingClientRect()
-                if (rowRect.top < containerRect.top || rowRect.bottom > containerRect.bottom) {
-                    // Detect if sidebar is on top (mobile)
-                    const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024
-                    let offset = row.offsetTop - container.offsetTop - container.clientHeight / 2 + row.clientHeight / 2
-                    offset += container.clientHeight / 3
-                    if (isMobile) {
-                        // Add extra offset so row is not hidden under the map
-                        offset += container.clientHeight / 4
-                    }
-                    offset = Math.max(0, offset)
-                    container.scrollTo({ top: offset, behavior: 'smooth' })
+                // Only scroll if the row is not already fully visible: top of row is above container, or bottom of row is below container
+                if (
+                    rowRect.top < container.offsetTop ||
+                    rowRect.bottom > container.offsetTop + container.clientHeight
+                ) {
+                    const offset = row.offsetTop - 12 // 12px padding from top of container
+                    container.scrollTo({ top: Math.max(0, offset), behavior: 'smooth' })
                 }
             }
         }

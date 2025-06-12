@@ -18,6 +18,7 @@ import { useQueryState, useQueryStates } from 'nuqs'
 import ErrorMessage from '@/components/common/ErrorMessage'
 import { umamiTrack } from '@/lib/utils/umami'
 import Sidebar from '@/components/layout/Sidebar'
+import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels'
 
 declare global {
     interface Window {
@@ -79,6 +80,19 @@ function appReducer(state: AppState, action: AppAction): AppState {
     return newState
 }
 
+// Custom hook to detect if screen is desktop (lg: 1024px and up)
+function useBreakpoint(query = '(min-width: 1024px)') {
+    const [matches, setMatches] = useState(false)
+    useEffect(() => {
+        const media = window.matchMedia(query)
+        if (media.matches !== matches) setMatches(media.matches)
+        const listener = () => setMatches(media.matches)
+        media.addEventListener('change', listener)
+        return () => media.removeEventListener('change', listener)
+    }, [matches, query])
+    return matches
+}
+
 function HomeContent() {
     // URL query state parameters
     const [eventSourceId] = useQueryState('es', parseAsEventSource) // replaced gc calendarId
@@ -137,6 +151,10 @@ function HomeContent() {
 
     // Ref for tracking the last applied search query from URL
     const searchQueryAppliedRef = useRef<string | null>(null)
+
+    // Shared state for split position (percent)
+    const [split, setSplit] = useState<number[]>([50, 50])
+    const isDesktop = useBreakpoint('(min-width: 1024px)')
 
     // Reset when we get new eventSourceId
     // Handle transition when eventSourceId changes,
@@ -353,70 +371,79 @@ function HomeContent() {
 
     return (
         <div className="min-h-screen flex flex-col">
-            <main className="flex flex-col lg:flex-row h-screen">
-                {/* Sidebar on top for < lg(1024px width), and on left for bigger screens */}
-                <Sidebar
-                    headerName={headerName}
-                    eventCount={{ shown: evts.shownEvents.length, total: evts.allEvents.length }}
-                    ref={eventsSidebarRef}
-                    className="h-1/2 lg:h-full"
+            <main className="h-screen">
+                <PanelGroup
+                    direction={isDesktop ? 'horizontal' : 'vertical'}
+                    className="h-full w-full"
+                    onLayout={setSplit}
                 >
-                    <ActiveFilters
-                        evts={evts}
-                        onClearMapFilter={handleClearMapFilter}
-                        onClearSearchFilter={() => handleSearchChange('')}
-                        onClearDateFilter={() => {
-                            handleDateRangeChange(undefined)
-                            setDateQuickFilterUrl('')
-                        }}
+                    <Panel minSize={20} maxSize={80} defaultSize={split[0]}>
+                        <Sidebar
+                            headerName={headerName}
+                            eventCount={{ shown: evts.shownEvents.length, total: evts.allEvents.length }}
+                            ref={eventsSidebarRef}
+                            className="h-full"
+                        >
+                            <ActiveFilters
+                                evts={evts}
+                                onClearMapFilter={handleClearMapFilter}
+                                onClearSearchFilter={() => handleSearchChange('')}
+                                onClearDateFilter={() => {
+                                    handleDateRangeChange(undefined)
+                                    setDateQuickFilterUrl('')
+                                }}
+                            />
+                            <DateAndSearchFilters
+                                searchQuery={searchQueryUrl}
+                                onSearchChange={handleSearchChange}
+                                dateSliderRange={dateSliderRange}
+                                onDateRangeChange={handleDateRangeChange}
+                                dateQuickFilterUrl={dateQuickFilterUrl}
+                                onDateQuickFilterChange={setDateQuickFilterUrl}
+                                appState={appState}
+                                sd={datesUrl.sd}
+                                ed={datesUrl.ed}
+                            />
+                            {apiError ? (
+                                <div className="p-4">
+                                    <ErrorMessage message={apiError.message} className="mb-4" />
+                                </div>
+                            ) : (
+                                <EventList
+                                    evts={evts}
+                                    selectedEventId={selectedEventIdUrl}
+                                    onEventSelect={handleEventSelect}
+                                    apiIsLoading={apiIsLoading}
+                                />
+                            )}
+                        </Sidebar>
+                    </Panel>
+                    <PanelResizeHandle
+                        className={
+                            isDesktop ? 'bg-gray-200 w-2 cursor-col-resize' : 'bg-gray-200 h-2 cursor-row-resize'
+                        }
                     />
-
-                    <DateAndSearchFilters
-                        searchQuery={searchQueryUrl}
-                        onSearchChange={handleSearchChange}
-                        dateSliderRange={dateSliderRange}
-                        onDateRangeChange={handleDateRangeChange}
-                        dateQuickFilterUrl={dateQuickFilterUrl}
-                        onDateQuickFilterChange={setDateQuickFilterUrl}
-                        appState={appState}
-                        sd={datesUrl.sd}
-                        ed={datesUrl.ed}
-                    />
-
-                    {apiError ? (
-                        <div className="p-4">
-                            <ErrorMessage message={apiError.message} className="mb-4" />
+                    <Panel minSize={20} maxSize={80} defaultSize={split[1]}>
+                        <div className="h-full w-full">
+                            <MapContainer
+                                viewport={viewport}
+                                onViewportChange={setViewport}
+                                markers={markers}
+                                selectedMarkerId={selectedMarkerId}
+                                onMarkerSelect={(markerId) => {
+                                    setSelectedMarkerId(markerId)
+                                    if (!markerId) {
+                                        setSelectedEventIdUrl('')
+                                    }
+                                }}
+                                onBoundsChange={handleBoundsChangeForFilters}
+                                onWidthHeightChange={setMapHookWidthHeight}
+                                selectedEventId={selectedEventIdUrl}
+                                onEventSelect={setSelectedEventIdUrl}
+                            />
                         </div>
-                    ) : (
-                        <EventList
-                            evts={evts}
-                            selectedEventId={selectedEventIdUrl}
-                            onEventSelect={handleEventSelect}
-                            apiIsLoading={apiIsLoading}
-                        />
-                    )}
-                </Sidebar>
-                {/* Map */}
-                <div className="h-1/2 lg:h-full w-full lg:w-1/2 2xl:w-3/5">
-                    <MapContainer
-                        viewport={viewport}
-                        onViewportChange={setViewport}
-                        markers={markers}
-                        selectedMarkerId={selectedMarkerId}
-                        onMarkerSelect={(markerId) => {
-                            setSelectedMarkerId(markerId)
-
-                            // If markerId is null, clear event selection too
-                            if (!markerId) {
-                                setSelectedEventIdUrl('')
-                            }
-                        }}
-                        onBoundsChange={handleBoundsChangeForFilters}
-                        onWidthHeightChange={setMapHookWidthHeight}
-                        selectedEventId={selectedEventIdUrl}
-                        onEventSelect={setSelectedEventIdUrl}
-                    />
-                </div>
+                    </Panel>
+                </PanelGroup>
             </main>
         </div>
     )

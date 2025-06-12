@@ -13,7 +13,8 @@ This is a high level list of things to do on the app. Not necessarily in priorit
     1. ✅ On desktop, make map go to top (header should only be on left side panel).
     1. ✅ Make design more compact - Put search box and dates in same row. Click on either will expand.
 1. Favorite events, remember favs via cookies or browser local storage.
-1. Make list panel open all the way, half way (normal) or close entirely except small CMF with count of events showing
+1. ✅ Make list panel open all the way, half way (normal) or close entirely except small CMF with count of events showing
+    - ✅ Added react-resizable-panels to allow user to control size of map by dragging line.
 1. Add more protest event sources
     - ✅ https://events.pol-rev.com/api
     - ✅ https://www.wethepeopledissent.net/ Google Sheet

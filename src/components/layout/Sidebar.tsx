@@ -11,7 +11,7 @@ interface SidebarProps {
 
 const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(({ headerName, eventCount, children }, ref) => {
     return (
-        <Card ref={ref} className="w-full lg:w-1/2 2xl:w-2/5 flex flex-col h-full min-h-0 p-1 border-r bg-white">
+        <Card ref={ref} className="w-full flex flex-col h-full min-h-0 p-1 border-r bg-white">
             <div className="sticky top-0 z-10 bg-white pb-2 pt-2 border-b mb-2">
                 <div className="flex items-center justify-between px-2">
                     <Link href="/" className="flex items-center mr-3">

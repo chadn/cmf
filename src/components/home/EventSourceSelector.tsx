@@ -69,7 +69,7 @@ const EventSourceSelector: React.FC = () => {
                 If you love maps, and have many events in your Calendar, this is for you.
             </p>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-3">
                 <div className="form-control">
                     <label htmlFor="event-source-id" className="form-label">
                         Enter Event Source ID string
@@ -96,7 +96,7 @@ const EventSourceSelector: React.FC = () => {
                 <h3 className="text-sm font-medium text-gray-500 mb-2">
                     Or try an example - click below then click View Events:
                 </h3>
-                <div className="space-y-2">
+                <div className="space-y-2 max-h-72 overflow-y-auto">
                     {ExampleEventSources.map((source) => (
                         <button
                             key={`${source.id}`}
