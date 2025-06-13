@@ -138,7 +138,7 @@ It has the following sortable columns - click on column name to sort or reverse 
 
 -   Event Name - Name as appears in original event.
 -   Start Date - Date and time the event starts. Time is based on your browser's timezone, which may differ from local time of event.
--   Duration - number of hours or days
+-   Duration - number of hours or days. If end time is unknown, `??` will be shown.
 -   Location - address as listed in event. If address is online or otherwise unresolvable by google maps api, it will say "Unresolved location" as well.
 
 ## Search Box
@@ -155,7 +155,7 @@ Search box also allows for special searching.
 
 If an event's location looks incorrect on the map, it probably got incorrectly geocoded, maybe due to lack of location details.
 Note this is different than unresolved locations, which are events with either blank location or unresolvable (online, zoom, etc).  
-All unresolved locations share a special marker. You can see them with special search term "unresolved". Ex: [?sq=unresolved&es=sf](https://cmf-chad.vercel.app/?sq=unresolved&es=sf)
+All unresolved locations share a special marker. You can see them with special search term "unresolved". Ex: [?sq=unresolved&es=sf](https://cmf.chadnorwood.com/?sq=unresolved&es=sf)
 
 ## Date Ranges
 
@@ -230,13 +230,13 @@ The application supports various date formats for the `sd` and `ed` parameters:
 
 Here are some example URLs showing different parameter combinations:
 
--   Basic Google Calendar view: [?es=gc:geocachingspain@gmail.com](https://cmf-chad.vercel.app/?es=gc:geocachingspain@gmail.com)
--   View Facebook events: [?es=fb:123456789-ABCDEFGHIJK](https://cmf-chad.vercel.app/?es=fb:123456789-ABCDEFGHIJK)
--   View events in a specific location: [?lat=41.38233&lon=2.15997&z=9&es=gc:geocachingspain@gmail.com](https://cmf-chad.vercel.app/?lat=41.38233&lon=2.15997&z=9&es=gc:geocachingspain@gmail.com)
--   View events happening over the next week: [?qf=next7days&es=gc:geocachingspain@gmail.com](https://cmf-chad.vercel.app/?qf=next7days&es=gc:geocachingspain@gmail.com)
--   Search for specific events: [?sq=meet&es=gc:geocachingspain@gmail.com](https://cmf-chad.vercel.app/?sq=meet&es=gc:geocachingspain@gmail.com)
--   View events up to 9 months from now: [?ed=9m&es=gc:geocachingspain@gmail.com](https://cmf-chad.vercel.app/?ed=9m&es=gc:geocachingspain@gmail.com)
--   View events that have unresolved locations (then fix those locations!): [?sq=unresolved&es=sf](https://cmf-chad.vercel.app/?sq=unresolved&es=sf)
+-   Basic Google Calendar view: [?es=gc:geocachingspain@gmail.com](https://cmf.chadnorwood.com/?es=gc:geocachingspain@gmail.com)
+-   View Facebook events: [?es=fb:123456789-ABCDEFGHIJK](https://cmf.chadnorwood.com/?es=fb:123456789-ABCDEFGHIJK)
+-   View events in a specific location: [?lat=41.38233&lon=2.15997&z=9&es=gc:geocachingspain@gmail.com](https://cmf.chadnorwood.com/?lat=41.38233&lon=2.15997&z=9&es=gc:geocachingspain@gmail.com)
+-   View events happening over the next week: [?qf=next7days&es=gc:geocachingspain@gmail.com](https://cmf.chadnorwood.com/?qf=next7days&es=gc:geocachingspain@gmail.com)
+-   Search for specific events: [?sq=meet&es=gc:geocachingspain@gmail.com](https://cmf.chadnorwood.com/?sq=meet&es=gc:geocachingspain@gmail.com)
+-   View events up to 9 months from now: [?ed=9m&es=gc:geocachingspain@gmail.com](https://cmf.chadnorwood.com/?ed=9m&es=gc:geocachingspain@gmail.com)
+-   View events that have unresolved locations (then fix those locations!): [?sq=unresolved&es=sf](https://cmf.chadnorwood.com/?sq=unresolved&es=sf)
 
 Note: Replace `geocachingspain@gmail.com` with your actual Google Calendar ID.
 
@@ -249,7 +249,7 @@ How to fix incorrect locations - This is for admins only
 
 1.  On map, Click on it, in event popup, hover over "View Original Event" to get location key (k1) (or look at html and copy title). ex: `location:Asiento`
 1.  Figure out what location it should be, and store in geolocation cache, noting the key name (k2). ex:
-    `curl 'https://cmf-chad.vercel.app/api/geocode?a=Asiento,sf,ca'`
+    `curl 'https://cmf.chadnorwood.com/api/geocode?a=Asiento,sf,ca'`
 1.  Update value for location key using [upstash-redis.ts](../src/scripts/upstash-redis.ts) `fix-location <k1> <k2>`
     `node upstash-redis.ts fix-location 'location:Asiento' 'location:Asiento,sf,ca'`
 

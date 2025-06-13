@@ -11,7 +11,7 @@ export const ExampleEventSources = [
     },
     {
         name: 'Protests from WeThePeopleDissent.net',
-        id: 'dissent:june14protests',
+        id: 'dissent:june14-no-kings',
     },
     {
         name: 'Protests from pol-rev.com',

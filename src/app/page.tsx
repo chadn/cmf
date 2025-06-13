@@ -153,7 +153,8 @@ function HomeContent() {
     const searchQueryAppliedRef = useRef<string | null>(null)
 
     // Shared state for split position (percent)
-    const [split, setSplit] = useState<number[]>([50, 50])
+    const mapPanelPercent = 60
+    const [split, setSplit] = useState<number[]>([100 - mapPanelPercent, mapPanelPercent])
     const isDesktop = useBreakpoint('(min-width: 1024px)')
 
     // Reset when we get new eventSourceId

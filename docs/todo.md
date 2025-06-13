@@ -26,6 +26,7 @@ This is a high level list of things to do on the app. Not necessarily in priorit
 1. compress json before writing to / after reading from redis. Consider [MessagePack](https://msgpack.org/index.html), [Protobuf](https://developers.google.com/protocol-buffers), [Arvo](https://avro.apache.org/), [BSON](https://en.wikipedia.org/wiki/BSON)
 1. batchGeocodeLocations() calls getCachedLocation() for each location. Instead, it should call a new function, getCachedLocations(), with many locations.
 1. Plura event end time is hardcoded to 1 hr after start, since only start time is shown on city pages. TODO: scrape event page itself for correct end time, and description (which is empty on city page)
+1. Support search box updating map when a 5-digit zipcode is entered
 
 (thanks https://euangoddard.github.io/clipboard2markdown/)
 
@@ -37,6 +38,8 @@ Working on fixing these:
 
 1. Bug or Feature Change: for events without location info, when clicking on them it currently opens in new window the event details. This is too different of a behavior from clicking on events with a location. Instead, consider a small popup that says "no location info, View Original Event"
 1. Feature: if start and end time are same, assume timing is not accurate, and say "See event for time" instead of showing time
+1. chrome on android - top of app (CMF, title) goes up off screen when using map to select events, triggering scrollTo, which may trigger browser to scroll up.
+1. qf on links are broken. When clicking link with `qf=next3days`, the dates will be the 4 month window, not 3 days as you expect. Numbers are not filtered yet. As soon as you click on days it fixes itself. https://cmf-dev.vercel.app/?es=plura:all&qf=next3days
 
 ## Features
 

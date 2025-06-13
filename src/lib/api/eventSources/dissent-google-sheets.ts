@@ -11,6 +11,7 @@ const SHEET_ID = '1f-30Rsg6N_ONQAulO-yVXTKpZxXchRRB2kD3Zhkpe_A'
 // https://sheets.googleapis.com/v4/spreadsheets/<SHEET_ID>?fields=sheets.properties.title&key=API_KEY
 const sheetTabs = {
     june14protests: 'June 14 Protests ',
+    'june14-no-kings': 'June 14 Protests ',
     june6protests: 'June 6 Protests ',
 }
 
@@ -23,6 +24,7 @@ export class DissentGoogleSheetsSource extends BaseEventSourceHandler {
         const sheetTab =
             params.id in sheetTabs ? sheetTabs[params.id as keyof typeof sheetTabs] : sheetTabs.june14protests
         const sheetUrl = `${SHEET_BASE_URL}${SHEET_ID}/values/${encodeURIComponent(sheetTab)}`
+        const sheetName = sheetTab.startsWith('June 14') ? 'June 14 No Kings' : sheetTab
 
         logr.info('api-es-gsheet', `Fetching events from Google Sheets: ${sheetUrl}`)
         try {
@@ -91,7 +93,7 @@ export class DissentGoogleSheetsSource extends BaseEventSourceHandler {
                 events,
                 metadata: {
                     id: params.id || '',
-                    name: this.type.name + ' ' + sheetTab,
+                    name: this.type.name + ' ' + sheetName,
                     type: this.type,
                     totalCount: events.length,
                     unknownLocationsCount: events.filter((e) => !e.location).length,
