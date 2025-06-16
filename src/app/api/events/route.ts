@@ -53,6 +53,7 @@ const fetchAndGeocode = async (
                 if (event.tz != 'UNKNOWN') {
                     event.start = convertWallTimeToZone(event.start, event.tz)
                     event.end = convertWallTimeToZone(event.end, event.tz)
+                    event.startSecs = Math.round(new Date(event.start).getTime() / 1000)
                 }
             }
             return {

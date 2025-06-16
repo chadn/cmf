@@ -153,9 +153,18 @@ Search box also allows for special searching.
 
 ### Incorrect and Unresolved Locations
 
-If an event's location looks incorrect on the map, it probably got incorrectly geocoded, maybe due to lack of location details.
-Note this is different than unresolved locations, which are events with either blank location or unresolvable (online, zoom, etc).  
+Unresolved locations are events with either blank location or unresolvable (online, zoom, etc). These cannot be fixed on the app side, must be fixed on event source side.
 All unresolved locations share a special marker. You can see them with special search term "unresolved". Ex: [?sq=unresolved&es=sf](https://cmf.chadnorwood.com/?sq=unresolved&es=sf)
+
+Incorrect locations are when an event has a location but it appears to be incorrect on the map. It probably got incorrectly geocoded, maybe due to lack of location details. These can be often be fixed on the app side, by updating the geolocation cache.
+
+How to fix incorrect locations - This is for admins only
+
+1.  On map, Click on it, in event popup, hover over "View Original Event" to get location key (k1) (or look at html and copy title). ex: `location:Asiento`
+1.  Figure out what location it should be, and store in geolocation cache, noting the key name (k2). ex:
+    `curl 'https://cmf.chadnorwood.com/api/geocode?a=Asiento,sf,ca'`
+1.  Update value for location key using [upstash-redis.ts](../src/scripts/upstash-redis.ts) `fix-location <k1> <k2>`
+    `node upstash-redis.ts fix-location 'location:Asiento' 'location:Asiento,sf,ca'`
 
 ## Date Ranges
 
@@ -244,14 +253,6 @@ Note: Replace `geocachingspain@gmail.com` with your actual Google Calendar ID.
 
 The code is written to make it easy to add different type of event sources, custom ones that do not have to be a calendar.
 Read more about the [Event Sources System](../src/lib/api/eventSources)
-
-How to fix incorrect locations - This is for admins only
-
-1.  On map, Click on it, in event popup, hover over "View Original Event" to get location key (k1) (or look at html and copy title). ex: `location:Asiento`
-1.  Figure out what location it should be, and store in geolocation cache, noting the key name (k2). ex:
-    `curl 'https://cmf.chadnorwood.com/api/geocode?a=Asiento,sf,ca'`
-1.  Update value for location key using [upstash-redis.ts](../src/scripts/upstash-redis.ts) `fix-location <k1> <k2>`
-    `node upstash-redis.ts fix-location 'location:Asiento' 'location:Asiento,sf,ca'`
 
 ## More
 

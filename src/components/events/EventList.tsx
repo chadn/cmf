@@ -1,10 +1,11 @@
 'use client'
 
 import React, { useState, useRef, useEffect } from 'react'
-import { FilteredEvents } from '@/types/events'
+import { FilteredEvents, SortField, SortDirection } from '@/types/events'
 import { formatEventDate, formatEventDuration } from '@/lib/utils/date'
 import { truncateLocation } from '@/lib/utils/location'
 import LoadingSpinner from '@/components/common/LoadingSpinner'
+import { getComparisonResult } from '@/lib/utils/utils-client'
 
 interface EventListProps {
     evts: FilteredEvents
@@ -13,12 +14,11 @@ interface EventListProps {
     apiIsLoading: boolean
 }
 
-type SortField = 'name' | 'startDate' | 'duration' | 'location'
-type SortDirection = 'asc' | 'desc'
-
 const EventList: React.FC<EventListProps> = ({ evts, selectedEventId, onEventSelect, apiIsLoading }) => {
     const [sortField, setSortField] = useState<SortField>('startDate')
+    const [prevSortField, setPrevSortField] = useState<SortField>('location')
     const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
+    const [prevSortDirection, setPrevSortDirection] = useState<SortDirection>('desc')
     const [expandedLocation, setExpandedLocation] = useState<string | null>(null)
 
     // Support scolling event list to the selected event
@@ -65,24 +65,12 @@ const EventList: React.FC<EventListProps> = ({ evts, selectedEventId, onEventSel
         )
     }
 
-    // Sort events based on the selected field and direction
     const sortedEvents = [...shownEvents].sort((a, b) => {
-        if (sortField === 'name') {
-            return sortDirection === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name)
-        } else if (sortField === 'startDate') {
-            return sortDirection === 'asc'
-                ? new Date(a.start).getTime() - new Date(b.start).getTime()
-                : new Date(b.start).getTime() - new Date(a.start).getTime()
-        } else if (sortField === 'duration') {
-            const aDuration = new Date(a.end).getTime() - new Date(a.start).getTime()
-            const bDuration = new Date(b.end).getTime() - new Date(b.start).getTime()
-            return sortDirection === 'asc' ? aDuration - bDuration : bDuration - aDuration
-        } else if (sortField === 'location') {
-            return sortDirection === 'asc'
-                ? (a.location || '').localeCompare(b.location || '')
-                : (b.location || '').localeCompare(a.location || '')
+        let result = getComparisonResult(a, b, sortField, sortDirection)
+        if (result === 0) {
+            result = getComparisonResult(a, b, prevSortField, prevSortDirection)
         }
-        return 0
+        return result
     })
 
     // Toggle sort when a column header is clicked
@@ -90,6 +78,8 @@ const EventList: React.FC<EventListProps> = ({ evts, selectedEventId, onEventSel
         if (field === sortField) {
             setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
         } else {
+            setPrevSortField(sortField)
+            setPrevSortDirection(sortDirection)
             setSortField(field)
             setSortDirection('asc')
         }

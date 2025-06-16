@@ -64,6 +64,7 @@ export class DissentGoogleSheetsSource extends BaseEventSourceHandler {
                         logr.info('api-es-gsheet', `NO DATE: "${rowObj['Date']} ${rowObj['Time']}"`)
                     }
                 }
+                const startSecs = startIso ? new Date(startIso).getTime() / 1000 : undefined
                 // Extract URLs from Info
                 const description_urls = rowObj['Info']
                     ? Array.from(rowObj['Info'].matchAll(/https?:\/\/\S+/g)).map((m) => m[0])
@@ -81,6 +82,7 @@ export class DissentGoogleSheetsSource extends BaseEventSourceHandler {
                     description_urls,
                     start: startIso,
                     end: endIso,
+                    startSecs,
                     tz: 'LOCAL', // TODO: get timezone from lat/lng
                     original_event_url: rowObj['Link'] || '',
                     location,

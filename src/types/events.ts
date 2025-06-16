@@ -3,6 +3,8 @@ import { MapBounds } from './map'
 export type EventStatus = 'resolved' | 'unresolved'
 export const LOCATION_KEY_PREFIX = 'location:'
 export const EVENTS_CACHE_PREFIX = 'events:'
+export type SortField = 'name' | 'startDate' | 'duration' | 'location'
+export type SortDirection = 'asc' | 'desc'
 
 export interface Location {
     status: EventStatus
@@ -24,7 +26,7 @@ export interface CmfEvent {
     end: string // ISO string. Hack: if same as start, exact start time is not known. If 1 minute after start, end time is not known.
     startSecs?: number // start time in seconds since epoch
     durationSecs?: number // duration in seconds (end - start)
-    tz?: string // ex: 'America/Los_Angeles'; 'UNKNOWN' if not found in lookup, 'LOCAL' if using UTC but time is actually local.
+    tz?: string // ex: 'America/Los_Angeles'; 'UNKNOWN' if location not found, 'LOCAL' if using UTC but time is actually local.
     location: string // always exists, may be empty, matches original_location
     resolved_location?: Location
     note?: string // for internal use, eg 'plura'

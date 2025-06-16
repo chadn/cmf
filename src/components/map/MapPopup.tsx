@@ -92,7 +92,7 @@ const MapPopup: React.FC<MapPopupProps> = ({ marker, selectedEventId, onEventSel
 
             {/* Event date and duration */}
             <p className="text-sm mb-1 text-gray-700">
-                {formatEventDate(currentEvent.start, !isTimeUnknown(currentEvent.start, currentEvent.end))}
+                {formatEventDate(currentEvent.start, !isTimeUnknown(currentEvent.start, currentEvent.end), true)}
                 {isTimeUnknown(currentEvent.start, currentEvent.end) ? (
                     <span className="ml-2 italic text-gray-500">See event for Time</span>
                 ) : (

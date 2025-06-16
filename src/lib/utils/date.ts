@@ -6,16 +6,24 @@ import { dateQuickFilterLabels } from '@/components/events/DateQuickButtons'
 /**
  * Formats a date for display in the UI
  * @param dateString - ISO date string
- * @returns Formatted date string: MM/DD Day hh:mm[am|pm]
+ * @returns Formatted date string: MM/DD Day hh:mm[am|pm] [UTC±HH]
  */
-export function formatEventDate(dateString: string, includeTime: boolean = true): string {
+export function formatEventDate(
+    dateString: string,
+    includeTime: boolean = true,
+    includeTimezone: boolean = false
+): string {
     try {
         const date = parseISO(dateString)
         if (!isValid(date)) {
             return 'Invalid date'
         }
         // aaa is 'am' or 'pm'
-        return includeTime ? format(date, 'MM/dd EEE h:mmaaa') : format(date, 'MM/dd EEE')
+        const offset = date.getTimezoneOffset()
+        const offsetHours = Math.abs(Math.floor(offset / 60))
+        const offsetSign = offset <= 0 ? '+' : '-'
+        const timezoneAbbr = includeTimezone ? ` UTC${offsetSign}${offsetHours}` : ''
+        return includeTime ? format(date, 'MM/dd EEE h:mmaaa') + timezoneAbbr : format(date, 'MM/dd EEE')
     } catch (error) {
         logr.warn('date', 'Error formatting date:', error)
         return 'Invalid date'
