@@ -5,6 +5,8 @@ import { createParser } from 'nuqs'
 import { ExampleEventSources } from '@/lib/events/examples'
 import { ViewState as ViewStateType } from 'react-map-gl'
 import WebMercatorViewport from '@math.gl/web-mercator'
+import { MutableRefObject } from 'react'
+import { fetcherLogr } from './utils-client'
 
 /**
  * Truncates a location string to a maximum length
@@ -338,3 +340,41 @@ export const parseAsEventSource = createParser({
         return value
     },
 })
+
+export const checkForZipCode = async (
+    query: string,
+    zipLatLonRef: MutableRefObject<{ [zip: string]: string } | null>
+): Promise<{ lat: number; lon: number } | null> => {
+    const loadZipLatLon = async () => {
+        try {
+            const jsonData = await fetcherLogr('/data/zip-codes-to-lat-long.json')
+            if (jsonData) {
+                zipLatLonRef.current = jsonData
+            } else {
+                logr.warn('app', 'Failed to fetch zip-codes-to-lat-long.json')
+            }
+        } catch (e) {
+            logr.warn('app', 'Error fetching zip-codes-to-lat-long.json', e)
+        }
+    }
+    // begin lazy loading on first digit
+    if (/^\d+$/.test(query)) {
+        // Lazy load mapping if not loaded
+        if (!zipLatLonRef.current) {
+            loadZipLatLon()
+        }
+    }
+    // If query is a 5-digit zip code
+    if (/^\d{5}$/.test(query)) {
+        // Lazy load mapping if not loaded
+        if (!zipLatLonRef.current) {
+            await loadZipLatLon()
+        }
+        const mapping = zipLatLonRef.current
+        if (mapping && mapping[query]) {
+            const [lat, lon] = mapping[query].split(',').map(Number)
+            return { lat, lon }
+        }
+    }
+    return null
+}

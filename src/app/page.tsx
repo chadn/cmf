@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, Suspense, useRef, useReducer } from 'react'
+import { useState, useEffect, useCallback, Suspense, useRef, useReducer, MutableRefObject } from 'react'
 import MapContainer from '@/components/map/MapContainer'
 import EventList from '@/components/events/EventList'
 import DateAndSearchFilters from '@/components/events/DateAndSearchFilters'
@@ -12,7 +12,13 @@ import { MapBounds } from '@/types/map'
 import { FilteredEvents } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
 import ActiveFilters from '@/components/events/ActiveFilters'
-import { viewportUrlToViewport, parseAsEventSource, parseAsZoom, parseAsLatLon } from '@/lib/utils/location'
+import {
+    viewportUrlToViewport,
+    parseAsEventSource,
+    parseAsZoom,
+    parseAsLatLon,
+    checkForZipCode,
+} from '@/lib/utils/location'
 import { parseAsCmfDate, parseAsDateQuickFilter } from '@/lib/utils/date'
 import { useQueryState, useQueryStates } from 'nuqs'
 import ErrorMessage from '@/components/common/ErrorMessage'
@@ -148,9 +154,13 @@ function HomeContent() {
         mapHookWidthHeight.w,
         mapHookWidthHeight.h
     )
-
     // Ref for tracking the last applied search query from URL
     const searchQueryAppliedRef = useRef<string | null>(null)
+
+    // Ref for zip code mapping (must be mutable)
+    const zipLatLonRef = useRef<{ [zip: string]: string } | null>(null) as MutableRefObject<{
+        [zip: string]: string
+    } | null>
 
     // Shared state for split position (percent)
     const mapPanelPercent = 60
@@ -201,15 +211,22 @@ function HomeContent() {
 
     // Handle search query changes
     const handleSearchChange = useCallback(
-        (query: string) => {
+        async (query: string) => {
             logr.info('app', 'Search filter changed', { query })
-            // Update the ref to prevent the useEffect from re-applying the filter
             searchQueryAppliedRef.current = query
-            // Update the URL parameter and apply the filter
             setSearchQueryUrl(query)
             filters.setSearchQuery(query)
+            const result = await checkForZipCode(query, zipLatLonRef)
+            if (result) {
+                setViewport({
+                    ...viewport,
+                    latitude: result.lat,
+                    longitude: result.lon,
+                    zoom: 12,
+                })
+            }
         },
-        [filters, setSearchQueryUrl, searchQueryAppliedRef]
+        [filters, setSearchQueryUrl, searchQueryAppliedRef, setViewport, viewport]
     )
 
     // Handle date range changes

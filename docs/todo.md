@@ -26,7 +26,7 @@ This is a high level list of things to do on the app. Not necessarily in priorit
 1. compress json before writing to / after reading from redis. Consider [MessagePack](https://msgpack.org/index.html), [Protobuf](https://developers.google.com/protocol-buffers), [Arvo](https://avro.apache.org/), [BSON](https://en.wikipedia.org/wiki/BSON)
 1. batchGeocodeLocations() calls getCachedLocation() for each location. Instead, it should call a new function, getCachedLocations(), with many locations.
 1. Plura event end time is hardcoded to 1 hr after start, since only start time is shown on city pages. TODO: scrape event page itself for correct end time, and description (which is empty on city page)
-1. Support search box updating map when a 5-digit zipcode is entered
+1. ✅ Support search box updating map when a 5-digit zipcode is entered
 
 (thanks https://euangoddard.github.io/clipboard2markdown/)
 

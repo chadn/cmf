@@ -149,7 +149,7 @@ out so that the only ones shown are ones matching the letters you type. Matching
 Search box also allows for special searching.
 
 -   **unresolved** - typing `unresolved` will show all events with [Incorrect and Unresolved Locations](#incorrect-and-unresolved-locations)
--   **zip codes** - typing a zip code (5 numbers) and hitting enter will update map to go to that zip code (NOT IMPLEMENTED YET, COMING SOON)
+-   **zip codes** - typing a zip code, and on the 5th number of a valid zip code the map will update to go to that zip code
 
 ### Incorrect and Unresolved Locations
 
