@@ -4,20 +4,21 @@
 
 If you love maps, and have many events in your Calendar, this is for you.
 
-A highly interactive visualization tool that displays calendar events on both an interactive map and a list, allowing users to spatially browse and filter events based on geographic location.
-Users can also filter events based on date and by searching name, description, and location.
+CMF is a fast, interactive tool for exploring events on a map and in a list.
+Designed for data lovers, it lets you filter by date, location, or search term—and instantly see counts, numbers, and visuals update as you adjust filters.
+Built for high responsiveness and clarity, CMF makes it easy to explore, analyze, and share event data.
 
 ## Status
 
--   Work In Progress: https://cmf-chad.vercel.app/
+-   Work In Progress: https://cmf.chadnorwood.com/
 -   See [How to Use](docs/usage.md) as well as [To Do - Features, Bugs and Known Issues](docs/todo.md)
 
 ## 🌟 Features
 
--   **Calendar Integration**: Connect to Google Calendar (with planned support for Facebook Events, Microsoft Outlook, and Apple Calendar)
--   **Event Sources System**: [Modular system](src/lib/api/eventSources/README.md) for fetching events, making it easy to add new event sources
--   **Interactive Map**: View all your calendar events on a MapLibre GL map
+-   **Event Sources System**: [Modular system](src/lib/api/eventSources/README.md) for fetching events, from Google Calendar, Facebook Events, or custom websites.
+-   **Interactive Map**: Use the map to **View** and **Filter** events on a MapLibre GL map
 -   **Smart Filtering**: Filter events by date range, search terms, and map bounds
+-   **Sortable Event List**: Organize events by name, date, duration, or location with both primary and secondary sorting.
 -   **Location Geocoding**: Automatically converts event locations to map coordinates
 -   **Responsive Design**: Works on desktop and mobile devices
 -   **Performance Optimized**: Caches info so often can respond in < 1 second and to reduce API calls.

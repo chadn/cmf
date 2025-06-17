@@ -2,13 +2,14 @@
 
 This is a high level list of things to do on the app. Not necessarily in prioritized order.
 
-1. Add Hamburger menu in top left by CMF, which can open/close without resetting app state. When open, show
-    1. link to github usage,
-    1. link to local about page,
-    1. share button (copies to clipboard)
-    1. config: show/hide events with unresolved locations
-    1. config: change timezone (defaults to browser local)
-1. Make design better
+1. ✅ When clicking on CMF in top left, open/close menu without resetting app state. When open, show
+    1. ✅ About Blurb
+    1. ✅ Enter new Source (homepage)
+    1. ✅ Usage Info on Github
+    1. ✅ Share button (copies to clipboard)
+    1. ✅ Show timezone (defaults to browser local)
+    1. change timezone
+1. ✅ Make design better
     1. ✅ USE Shadcn
     1. ✅ On desktop, make map go to top (header should only be on left side panel).
     1. ✅ Make design more compact - Put search box and dates in same row. Click on either will expand.
@@ -19,6 +20,14 @@ This is a high level list of things to do on the app. Not necessarily in priorit
     - ✅ https://events.pol-rev.com/api
     - ✅ https://www.wethepeopledissent.net/ Google Sheet
     - https://www.mobilize.us/nokings/, https://www.mobilize.us/?event_type=29 , https://www.mobilize.us/events/rally/
+1. Support events DB that is populated by independent scraping tasks
+    - Hosting Scarping:
+        - [Vercel Cron Jobs](https://vercel.com/docs/cron-jobs/quickstart) ([60sec max duration](https://vercel.com/docs/functions/configuring-functions/duration)),
+        - GCF
+    - Hosting DB: Supabase (open-source Firebase alternative built on PostgreSQL)
+    - Tech : Playwright to scrape, Prisma DB ORM client
+    - move plura scraping to this
+    - support scraping https://lu.ma/genai-sf
 1. Client side caching events - use local storage for events if less than CLIENT_EVENT_CACHE_SECS. For more than 5mb, use [dexie](https://github.com/dexie/Dexie.js/?tab=readme-ov-file#hello-world-react--typescript) and [indexedDB](https://www.geeksforgeeks.org/difference-between-localstorage-and-indexeddb-in-javascript/).
 1. Have a map search box - Add ability for user to type location in box, then map jumps to it. like https://thetide.guide/, Use https://maps.googleapis.com/maps/api/place/js/AutocompletionService.GetPredictionsJson
 1. Use CMF for multi day festivals - sliders can be hour instead of day, quick filters can be next 3 hrs, tonight, etc. Can support custom maps and custom event sources
