@@ -63,6 +63,11 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(({ headerName, eventCou
                                     <div className="flex flex-col gap-2 text-blue-700  text-sm">
                                         <ul className="list-disc pl-5 space-y-1">
                                             <li>
+                                                <a href="/" className="hover:underline">
+                                                    Enter New Source
+                                                </a>
+                                            </li>
+                                            <li>
                                                 <a
                                                     href="https://github.com/chadn/cmf?tab=readme-ov-file#calendar-map-filter-cmf"
                                                     target="_blank"
@@ -73,18 +78,13 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(({ headerName, eventCou
                                                 </a>
                                             </li>
                                             <li>
-                                                <a href="/" className="hover:underline">
-                                                    Enter New Source
-                                                </a>
-                                            </li>
-                                            <li>
                                                 <button
                                                     type="button"
                                                     onClick={handleShare}
                                                     className="hover:underline cursor-pointer p-0 m-0 bg-transparent border-none text-inherit font-inherit text-blue-700 text-sm"
                                                     style={{ textAlign: 'left' }}
                                                 >
-                                                    Share (copies URL to clipboard)
+                                                    Copy URL to clipboard
                                                 </button>
                                             </li>
                                         </ul>

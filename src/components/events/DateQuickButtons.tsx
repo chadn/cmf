@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react'
 import { logr } from '@/lib/utils/logr'
 import { umamiTrack } from '@/lib/utils/umami'
+import { calculateTodayValue } from '@/lib/utils/date'
 
 interface DateQuickButtonsProps {
     now: Date
@@ -24,7 +25,7 @@ interface QuickFilterButton {
     start?: number
     end?: number | null // null = same as start (for "Today")
 }
-export const dateQuickFilterLabels = ['Today', 'Past', 'Future', 'Next 3 days', 'Next 7 days', 'Weekend']
+// Note: dateQuickFilterLabels is now imported from @/lib/utils/date-constants
 
 export default function DateQuickButtons({
     now,
@@ -38,13 +39,8 @@ export default function DateQuickButtons({
     onDateQuickFilterChange,
     appState,
 }: DateQuickButtonsProps) {
-    // Get today's value in slider units
-    const getTodayValue = () => {
-        return Math.floor((now.getTime() - minDate.getTime()) / (1000 * 60 * 60 * 24))
-    }
-
     // Calculate today's value once to avoid repetition
-    const todayValue = getTodayValue()
+    const todayValue = calculateTodayValue(now, minDate)
 
     // Common button style
     const buttonClass = 'text-sm bg-blue-100 hover:bg-blue-200 text-blue-800 py-2 px-2 sm:px-2rounded'

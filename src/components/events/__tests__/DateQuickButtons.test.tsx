@@ -2,7 +2,7 @@ import React from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
 import '@testing-library/jest-dom'
 import DateQuickButtons from '../DateQuickButtons'
-import { dateQuickFilterLabels } from '../DateQuickButtons'
+import { dateQuickFilterLabels } from '@/lib/utils/date-constants'
 
 // Mock the DateQuickButtons component's date-dependent behavior
 jest.mock('../DateQuickButtons', () => {
@@ -19,7 +19,6 @@ jest.mock('../DateQuickButtons', () => {
     return {
         __esModule: true,
         default: MockDateQuickButtons,
-        dateQuickFilterLabels: originalModule.dateQuickFilterLabels,
     }
 })
 

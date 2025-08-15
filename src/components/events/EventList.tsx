@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react'
 import { FilteredEvents, SortField, SortDirection } from '@/types/events'
-import { formatEventDate, formatEventDuration } from '@/lib/utils/date'
+import { formatEventDate, formatEventDuration, extractDateParts } from '@/lib/utils/date'
 import { truncateLocation } from '@/lib/utils/location'
 import LoadingSpinner from '@/components/common/LoadingSpinner'
 import { getComparisonResult } from '@/lib/utils/utils-client'
@@ -90,22 +90,7 @@ const EventList: React.FC<EventListProps> = ({ evts, selectedEventId, onEventSel
         return formatEventDate(dateString)
     }
 
-    // Extract date, day and time separately for the two-line display
-    const extractDateParts = (dateString: string) => {
-        const fullDate = formatEventDate(dateString)
-        // Split the date into parts (MM/DD Day and Time)
-        const parts = fullDate.match(/^([\d/]+\s[A-Za-z]+)\s(.+)$/)
-        if (parts && parts.length >= 3) {
-            return {
-                dateDay: parts[1], // MM/DD Day
-                time: parts[2], // hh:mm am/pm
-            }
-        }
-        return {
-            dateDay: fullDate,
-            time: '',
-        }
-    }
+    // Note: extractDateParts is now imported from @/lib/utils/date as a pure function
 
     // Toggle expanded location
     const toggleLocationExpand = (eventId: string) => {

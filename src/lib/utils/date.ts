@@ -1,7 +1,7 @@
 import { logr } from '@/lib/utils/logr'
 import { format, formatDistance, parseISO, isValid } from 'date-fns'
 import { createParser } from 'nuqs'
-import { dateQuickFilterLabels } from '@/components/events/DateQuickButtons'
+import { dateQuickFilterLabels } from '@/lib/utils/date-constants'
 
 /**
  * Formats a date for display in the UI
@@ -163,3 +163,34 @@ export const parseAsDateQuickFilter = createParser({
         return value
     },
 })
+
+/**
+ * Calculates today's value in slider units (days from minDate)
+ * @param now - Current date
+ * @param minDate - Minimum date for the slider
+ * @returns Number of days from minDate to now
+ */
+export function calculateTodayValue(now: Date, minDate: Date): number {
+    return Math.floor((now.getTime() - minDate.getTime()) / (1000 * 60 * 60 * 24))
+}
+
+/**
+ * Extracts date and time parts from a formatted date string
+ * @param dateString - ISO date string
+ * @returns Object with dateDay (MM/DD Day) and time (hh:mm am/pm) parts
+ */
+export function extractDateParts(dateString: string): { dateDay: string; time: string } {
+    const fullDate = formatEventDate(dateString)
+    // Split the date into parts (MM/DD Day and Time)
+    const parts = fullDate.match(/^([\d/]+\s[A-Za-z]+)\s(.+)$/)
+    if (parts && parts.length >= 3) {
+        return {
+            dateDay: parts[1], // MM/DD Day
+            time: parts[2], // hh:mm am/pm
+        }
+    }
+    return {
+        dateDay: fullDate,
+        time: '',
+    }
+}

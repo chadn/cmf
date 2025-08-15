@@ -36,6 +36,7 @@ This is a high level list of things to do on the app. Not necessarily in priorit
 1. batchGeocodeLocations() calls getCachedLocation() for each location. Instead, it should call a new function, getCachedLocations(), with many locations.
 1. Plura event end time is hardcoded to 1 hr after start, since only start time is shown on city pages. TODO: scrape event page itself for correct end time, and description (which is empty on city page)
 1. ✅ Support search box updating map when a 5-digit zipcode is entered
+1. Review changes to AGENT.md, ask AI to help with CI and other stuff
 
 (thanks https://euangoddard.github.io/clipboard2markdown/)
 
@@ -62,7 +63,7 @@ Found a bug or want a feature? Let me know by [Creating a new issue in github](h
 
 1. Server side caching events - fetch in redis first, use if its less than CACHE_TTL_API_EVENTSOURCE
 1. Server side API timing - log time to fetch events and time to geocode (redis vs maps api)
-   After refactor, eventSource api results are cached, and response time with cache hit is < 1 second.  
+   After refactor, eventSource api results are cached, and response time with cache hit is < 1 second.
    For example, below can see BROWSER fetch of protest:all went from 6506ms to 163ms
 
 ```

@@ -28,12 +28,13 @@ Built for high responsiveness and clarity, CMF makes it easy to explore, analyze
 -   **Frontend**: [React](https://reactjs.org/) - React framework with SSR (Server Side Rendering)
 -   **Fullstack, Hosting**: [Next.js](https://nextjs.org/) and [Vercel](https://vercel.com/docs/frameworks/nextjs)
 -   **Language**: [TypeScript](https://www.typescriptlang.org/) - Type-safe JavaScript
--   **Map**:[MapLibre GL JS](https://maplibre.org/) - Open-source maps
+-   **Map**:[MapLibre GL JS](https://maplibre.org/) - Open-source maps SDKs using OpenStreetMap Data
 -   **Data Fetching**:[SWR](https://swr.vercel.app/) - Data fetching and caching
--   **Data Input**: [Google Calendar API](https://developers.google.com/calendar)
+-   **Data Input**: [Google Calendar API](https://developers.google.com/calendar) among others
 -   **Location Lookup**: [Google Maps Geocoding API](https://developers.google.com/maps/documentation/geocoding/requests-geocoding)
 -   **Caching**: [Upstash Redis](https://upstash.com/) - Serverless Redis for caching responses, geocoding, and more.
--   **Deployment**: Vercel (recommended)
+-   **Deployment**: Vercel
+-   **Analytics**: Umami on Vercel with analytics data stored on private Supabase PostgreSQL 17.4
 
 ## 📋 Requirements
 

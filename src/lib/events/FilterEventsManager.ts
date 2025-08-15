@@ -4,6 +4,13 @@ import { CmfEvent, EventsFilter, FilteredEvents, FilterStats } from '@/types/eve
 import { MapBounds } from '@/types/map'
 import { logr } from '@/lib/utils/logr'
 import { calculateAggregateCenter } from '@/lib/utils/location'
+import {
+    hasResolvedLocation,
+    applyDateFilter,
+    applySearchFilter,
+    applyMapFilter,
+    applyUnknownLocationsFilter,
+} from './filters'
 
 /**
  * Class for managing calendar events and applying filters
@@ -51,112 +58,23 @@ export class FilterEventsManager {
         return this.allEvents
     }
 
-    /**
-     * Check if an event has a resolved location
-     */
-    private hasResolvedLocation(event: CmfEvent): boolean {
-        return !!(
-            event.resolved_location?.status === 'resolved' &&
-            event.resolved_location.lat &&
-            event.resolved_location.lng
-        )
-    }
+    // Note: hasResolvedLocation is now imported from ./filters as a pure function
 
     /**
      * Get events with resolved locations
      */
     get cmf_events_locations(): CmfEvent[] {
-        return this.allEvents.filter(this.hasResolvedLocation)
+        return this.allEvents.filter(hasResolvedLocation)
     }
 
     /**
      * Get events with unknown or unresolved locations
      */
     get cmf_events_unknown_locations(): CmfEvent[] {
-        return this.allEvents.filter((event) => !this.hasResolvedLocation(event))
+        return this.allEvents.filter((event) => !hasResolvedLocation(event))
     }
 
-    /**
-     * Apply date range filter to an event
-     */
-    private applyDateFilter(event: CmfEvent): boolean {
-        if (!this.filters.dateRange) return true
-
-        const eventStart = new Date(event.start)
-        const eventEnd = new Date(event.end)
-        const rangeStart = new Date(this.filters.dateRange.start)
-        const rangeEnd = new Date(this.filters.dateRange.end)
-
-        return !(eventEnd < rangeStart || eventStart > rangeEnd)
-    }
-
-    /**
-     * Apply search query filter to an event
-     */
-    private applySearchFilter(event: CmfEvent): boolean {
-        if (!this.filters.searchQuery || this.filters.searchQuery.trim() === '') return true
-
-        const query = this.filters.searchQuery.toLowerCase().trim()
-
-        // Special case for "unresolved" search term
-        if (query === 'unresolved') {
-            return event.resolved_location?.status !== 'resolved'
-        }
-
-        if (query.match(/^\d{5}$/)) {
-            // zoom map to zip code
-        }
-
-        return !!(
-            event.name?.toLowerCase().includes(query) ||
-            event.location?.toLowerCase().includes(query) ||
-            event.resolved_location?.formatted_address?.toLowerCase().includes(query) ||
-            event.resolved_location?.types?.some((type) => type.toLowerCase().includes(query)) || // bars, night_club, point_of_interest, restaurant, etc.
-            event.description?.toLowerCase().includes(query)
-        )
-    }
-
-    /**
-     * Apply map bounds filter to an event
-     * This filter checks if the event's location falls within the specified map bounds.
-     * For unresolved events, checks if their marker's location is within bounds.
-     */
-    private applyMapFilter(event: CmfEvent): boolean {
-        if (!this.filters.mapBounds) return true
-
-        if (
-            event.resolved_location?.status === 'resolved' &&
-            event.resolved_location.lat &&
-            event.resolved_location.lng
-        ) {
-            return (
-                event.resolved_location.lat >= this.filters.mapBounds.south &&
-                event.resolved_location.lat <= this.filters.mapBounds.north &&
-                event.resolved_location.lng >= this.filters.mapBounds.west &&
-                event.resolved_location.lng <= this.filters.mapBounds.east
-            )
-        }
-
-        // For unresolved events, check if their marker (at aggregate center) is within bounds
-        if (!this.aggregateCenter) {
-            this.updateAggregateCenter()
-        }
-        return (
-            this.aggregateCenter!.lat >= this.filters.mapBounds.south &&
-            this.aggregateCenter!.lat <= this.filters.mapBounds.north &&
-            this.aggregateCenter!.lng >= this.filters.mapBounds.west &&
-            this.aggregateCenter!.lng <= this.filters.mapBounds.east
-        )
-    }
-
-    /**
-     * Apply unknown locations filter to an event
-     */
-    private applyUnknownLocationsFilter(event: CmfEvent): boolean {
-        if (!this.filters.showUnknownLocationsOnly) return true
-
-        return !this.hasResolvedLocation(event)
-    }
+    // Note: Filter methods are now imported from ./filters as pure functions
 
     /**
      * Get filtered events
@@ -178,21 +96,32 @@ export class FilterEventsManager {
             return filteredEvents
         }
 
+        // Ensure aggregate center is available for map filtering
+        if (!this.aggregateCenter) {
+            this.updateAggregateCenter()
+        }
+
         this.allEvents.forEach((event) => {
             let filtered = false
-            if (!this.applyMapFilter(event) && this.filters.mapBounds) {
+            if (
+                !applyMapFilter(event, this.filters.mapBounds, this.aggregateCenter || undefined) &&
+                this.filters.mapBounds
+            ) {
                 filteredEvents.mapFilteredEvents.push(event)
                 filtered = true
             }
-            if (!this.applySearchFilter(event) && this.filters.searchQuery) {
+            if (!applySearchFilter(event, this.filters.searchQuery) && this.filters.searchQuery) {
                 filteredEvents.searchFilteredEvents.push(event)
                 filtered = true
             }
-            if (!this.applyDateFilter(event) && this.filters.dateRange) {
+            if (!applyDateFilter(event, this.filters.dateRange) && this.filters.dateRange) {
                 filteredEvents.dateFilteredEvents.push(event)
                 filtered = true
             }
-            if (!this.applyUnknownLocationsFilter(event) && this.filters.showUnknownLocationsOnly) {
+            if (
+                !applyUnknownLocationsFilter(event, this.filters.showUnknownLocationsOnly) &&
+                this.filters.showUnknownLocationsOnly
+            ) {
                 filteredEvents.unknownLocationsFilteredEvents.push(event)
                 filtered = true
             }

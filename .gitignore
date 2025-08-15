@@ -44,3 +44,8 @@ sitemap-*.xml
 
 # local cache of locations.json for geocoding
 .cache/
+
+# symlinks to AGENT.md
+CLAUDE.md
+.github/instructions/
+.cursorrules
