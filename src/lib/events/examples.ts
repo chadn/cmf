@@ -1,7 +1,11 @@
 // Example event sources for demonstration
 export const ExampleEventSources = [
     {
-        name: 'SF Bay Area Facebook Events (Google Calendar)',
+        name: 'SF Bay Area Music Events (19hz.info)',
+        id: '19hz:bayarea',
+    },
+    {
+        name: 'SF Bay Facebook Events (Google Calendar)',
         id: 'gc:aabe6c219ee2af5b791ea6719e04a92990f9ccd1e68a3ff0d89bacd153a0b36d@group.calendar.google.com',
         shortId: 'sf', // can just do es=sf in the url
     },

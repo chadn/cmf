@@ -8,11 +8,12 @@ import { HttpError } from '@/types/error'
 import { convertWallTimeToZone, getTimezoneFromLatLng } from '@/lib/utils/timezones'
 
 // Import event source handlers to ensure they're registered (alphabetical order)
-import '@/lib/api/eventSources/dissent-google-sheets'
 import '@/lib/api/eventSources/facebookEvents'
+import '@/lib/api/eventSources/19hz'
 import '@/lib/api/eventSources/googleCalendar'
 import '@/lib/api/eventSources/plura/index'
 import '@/lib/api/eventSources/protests'
+import '@/lib/api/eventSources/dissent-google-sheets'
 
 // Export config to make this a dynamic API route
 export const dynamic = 'force-dynamic'
