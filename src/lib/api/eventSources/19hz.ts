@@ -205,7 +205,7 @@ export class NineteenHzEventSource extends BaseEventSourceHandler {
      */
     private createCmfEvent(parsed: ParsedEventRow): CmfEvent | null {
         try {
-            const { start, end, recurring } = this.parseDateRange(parsed.dateTime)
+            const { start, end } = this.parseDateRange(parsed.dateTime)
             
             // Build description from all columns as requested
             const descriptionParts = [
@@ -238,6 +238,7 @@ export class NineteenHzEventSource extends BaseEventSourceHandler {
                 description_urls: this.extractUrls(description),
                 start,
                 end,
+                tz: 'America/Los_Angeles', // PST/PDT timezone for Bay Area
                 location,
                 original_event_url: parsed.eventUrl,
             }

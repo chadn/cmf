@@ -1,12 +1,13 @@
 {
     "name": "calendar-map-filter",
-    "version": "0.2.7",
+    "version": "0.2.8",
     "private": true,
     "scripts": {
         "dev": "next dev",
         "build": "next build",
         "start": "next start",
         "lint": "next lint",
+        "cache": "node --experimental-transform-types src/scripts/upstash-redis.ts",
         "test": "jest --coverage"
     },
     "dependencies": {
