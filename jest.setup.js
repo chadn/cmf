@@ -28,7 +28,7 @@ process.env = {
     GOOGLE_CALENDAR_API_KEY: 'test-api-key',
     GOOGLE_MAPS_API_KEY: 'test-api-key',
     MAPLIBRE_STYLE_URL: 'https://demotiles.maplibre.org/style.json',
-    LOG_LEVEL: 'DEBUG',
+    LOG_LEVEL: 'WARN',
 }
 
 // Mock window.matchMedia

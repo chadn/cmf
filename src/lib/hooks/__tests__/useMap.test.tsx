@@ -84,15 +84,8 @@ describe('useMap', () => {
             bearing: 0,
             pitch: 0,
         })
-        expect(result.current.bounds).toEqual({
-            north: 37.7749,
-            south: 37.7749,
-            east: -122.4194,
-            west: -122.4194,
-        })
         expect(result.current.markers).toHaveLength(1)
         expect(result.current.selectedMarkerId).toBeNull()
-        expect(result.current.isMapOfAllEvents).toBe(true)
     })
 
     it('should update viewport', () => {
@@ -136,12 +129,6 @@ describe('useMap', () => {
             zoom: 12,
             bearing: 0,
             pitch: 0,
-        })
-        expect(result.current.bounds).toEqual({
-            north: 37.7749,
-            south: 37.7749,
-            east: -122.4194,
-            west: -122.4194,
         })
         expect(result.current.markers).toHaveLength(1)
     })

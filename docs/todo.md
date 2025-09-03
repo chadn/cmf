@@ -20,6 +20,10 @@ This is a high level list of things to do on the app. Not necessarily in priorit
     - ✅ https://events.pol-rev.com/api
     - ✅ https://www.wethepeopledissent.net/ Google Sheet
     - https://www.mobilize.us/nokings/, https://www.mobilize.us/?event_type=29 , https://www.mobilize.us/events/rally/
+1. ✅ Support search box updating map when a 5-digit zipcode is entered
+1. ✅ Support 19hz event source
+1. ✅ fix bug where events on event list are not filtered out.  
+1. ✅ Review changes to AGENT.md, ask AI to help with CI and other stuff
 1. Support events DB that is populated by independent scraping tasks
     - Hosting Scarping:
         - [Vercel Cron Jobs](https://vercel.com/docs/cron-jobs/quickstart) ([60sec max duration](https://vercel.com/docs/functions/configuring-functions/duration)),
@@ -35,8 +39,12 @@ This is a high level list of things to do on the app. Not necessarily in priorit
 1. compress json before writing to / after reading from redis. Consider [MessagePack](https://msgpack.org/index.html), [Protobuf](https://developers.google.com/protocol-buffers), [Arvo](https://avro.apache.org/), [BSON](https://en.wikipedia.org/wiki/BSON)
 1. batchGeocodeLocations() calls getCachedLocation() for each location. Instead, it should call a new function, getCachedLocations(), with many locations.
 1. Plura event end time is hardcoded to 1 hr after start, since only start time is shown on city pages. TODO: scrape event page itself for correct end time, and description (which is empty on city page)
-1. ✅ Support search box updating map when a 5-digit zipcode is entered
-1. Review changes to AGENT.md, ask AI to help with CI and other stuff
+1. Update AGENT.md with CI and related stuff
+1. Display dates update - Change '09/05 Fri' to '9/5 Fri'
+1. Support multiple event sources displaying at same time and shortcuts
+  - multiple via ?es=A,B where A and B are event sources
+  - shortcuts like ?es=sf where sf will be hardcoded to A,B
+  - requires making main source name clickable with detailed popup showing all sources and full source name, and links to sources (new).  Even with one source, good to make main source name clickable with detailed popup.
 
 (thanks https://euangoddard.github.io/clipboard2markdown/)
 

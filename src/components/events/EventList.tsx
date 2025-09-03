@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useMemo } from 'react'
 import { FilteredEvents, SortField, SortDirection } from '@/types/events'
 import { formatEventDate, formatEventDuration, extractDateParts } from '@/lib/utils/date'
 import { truncateLocation } from '@/lib/utils/location'
@@ -42,6 +42,30 @@ const EventList: React.FC<EventListProps> = ({ evts, selectedEventId, onEventSel
         }
     }, [selectedEventId])
 
+    const shownEvents = evts.shownEvents
+
+    const sortedEvents = useMemo(() => {
+        return [...shownEvents].sort((a, b) => {
+            let result = getComparisonResult(a, b, sortField, sortDirection)
+            if (result === 0) {
+                result = getComparisonResult(a, b, prevSortField, prevSortDirection)
+            }
+            return result
+        })
+    }, [shownEvents, sortField, sortDirection, prevSortField, prevSortDirection])
+
+    // Need uniqueTableKey to prevent React from reusing the same table element when events change.
+    // Create unique key based on both length AND content to handle cases where
+    // event count stays same but actual events change (different events, same count)
+    const uniqueTableKey = useMemo(() => {
+        if (sortedEvents.length === 0) return 'empty-table'
+
+        // Create hash from first and last event IDs plus count - efficient but unique enough
+        const firstId = sortedEvents[0]?.id || ''
+        const lastId = sortedEvents[sortedEvents.length - 1]?.id || ''
+        return `table-${sortedEvents.length}-${firstId}-${lastId}`
+    }, [sortedEvents])
+
     if (apiIsLoading) {
         return (
             <div className="p-2 text-center text-xs">
@@ -50,7 +74,6 @@ const EventList: React.FC<EventListProps> = ({ evts, selectedEventId, onEventSel
         )
     }
 
-    const shownEvents = evts.shownEvents
     if (shownEvents.length === 0) {
         return (
             <div className="p-4 text-center">
@@ -64,14 +87,6 @@ const EventList: React.FC<EventListProps> = ({ evts, selectedEventId, onEventSel
             </div>
         )
     }
-
-    const sortedEvents = [...shownEvents].sort((a, b) => {
-        let result = getComparisonResult(a, b, sortField, sortDirection)
-        if (result === 0) {
-            result = getComparisonResult(a, b, prevSortField, prevSortDirection)
-        }
-        return result
-    })
 
     // Toggle sort when a column header is clicked
     const handleSort = (field: SortField) => {
@@ -90,8 +105,6 @@ const EventList: React.FC<EventListProps> = ({ evts, selectedEventId, onEventSel
         return formatEventDate(dateString)
     }
 
-    // Note: extractDateParts is now imported from @/lib/utils/date as a pure function
-
     // Toggle expanded location
     const toggleLocationExpand = (eventId: string) => {
         if (expandedLocation === eventId) {
@@ -108,9 +121,9 @@ const EventList: React.FC<EventListProps> = ({ evts, selectedEventId, onEventSel
     }
 
     return (
-        <div className="flex flex-col flex-1 min-h-0 mt-0.5 md:mt-2">
+        <div className="event-list-div flex flex-col flex-1 min-h-0 mt-0.5 md:mt-2">
             {/* Fixed header table */}
-            <table className="w-full text-xs border-collapse table-fixed">
+            <table className="event-list-hdr-table w-full text-xs border-collapse table-fixed">
                 <thead className="bg-blue-100 hover:bg-blue-200 text-left text-xxs font-medium text-blue-800 uppercase tracking-wider cursor-pointer">
                     <tr>
                         <th
@@ -228,7 +241,7 @@ const EventList: React.FC<EventListProps> = ({ evts, selectedEventId, onEventSel
             </table>
             {/* Scrollable tbody */}
             <div className="flex-1 min-h-0 overflow-y-auto" ref={tbodyContainerRef}>
-                <table className="w-full text-xs border-collapse table-fixed">
+                <table className="event-list-table w-full text-xs border-collapse table-fixed" key={uniqueTableKey}>
                     <tbody className="bg-white divide-y divide-gray-100">
                         {sortedEvents.map((event) => (
                             <tr

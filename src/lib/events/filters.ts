@@ -75,12 +75,9 @@ export function applyMapFilter(
     if (!mapBounds) return true
 
     if (event.resolved_location?.status === 'resolved' && event.resolved_location.lat && event.resolved_location.lng) {
-        return (
-            event.resolved_location.lat >= mapBounds.south &&
-            event.resolved_location.lat <= mapBounds.north &&
-            event.resolved_location.lng >= mapBounds.west &&
-            event.resolved_location.lng <= mapBounds.east
-        )
+        const lat = event.resolved_location.lat
+        const lng = event.resolved_location.lng
+        return lat >= mapBounds.south && lat <= mapBounds.north && lng >= mapBounds.west && lng <= mapBounds.east
     }
 
     // For unresolved events, check if their marker (at aggregate center) is within bounds

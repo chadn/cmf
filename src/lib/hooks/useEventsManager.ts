@@ -12,19 +12,17 @@ interface UseEventsManagerProps {
     eventSourceId?: string | null
     dateRange?: { start: string; end: string }
     searchQuery?: string
-    mapBounds?: MapBounds
+    currentViewport?: MapBounds | null
     showUnknownLocationsOnly?: boolean
     sd?: string // Start date from URL
     ed?: string // End date from URL
 }
 
 interface UseEventsManagerResult {
-    eventsFn: () => FilteredEvents
     evts: FilteredEvents
     filters: {
         setDateRange: (dateRange: { start: string; end: string } | undefined) => void
         setSearchQuery: (query: string) => void
-        setMapBounds: (bounds: MapBounds | undefined) => void
         setShowUnknownLocationsOnly: (show: boolean) => void
         resetAll: () => void
     }
@@ -54,10 +52,6 @@ function eventsReducer(state: EventsState, action: EventsAction): EventsState {
             return { ...state, events: action.payload }
         case 'SET_FILTERS':
             return { ...state, filters: { ...state.filters, ...action.payload } }
-        case 'SELECT_EVENT':
-            return { ...state, selectedEventId: action.payload }
-        case 'SET_LOADING':
-            return { ...state, isLoading: action.payload }
         case 'SET_ERROR':
             return { ...state, error: action.payload }
         case 'CLEAR_ERROR':
@@ -71,7 +65,7 @@ export function useEventsManager({
     eventSourceId,
     dateRange,
     searchQuery,
-    mapBounds,
+    currentViewport,
     showUnknownLocationsOnly,
     sd,
     ed,
@@ -80,6 +74,9 @@ export function useEventsManager({
 
     // Use reducer for state management
     const [state, dispatch] = useReducer(eventsReducer, initialState)
+    
+    // Track filter changes to force useMemo recalculation
+    const [filterVersion, setFilterVersion] = useState(0)
 
     // Reset FilterEventsManager when event source changes
     useEffect(() => {
@@ -168,17 +165,6 @@ export function useEventsManager({
         logr.info('use_evts_mgr', `uE: isLoading changed to ${apiIsLoading}`)
     }, [apiIsLoading])
 
-    // Update events in FilterEventsManager when data changes
-    // TODO: understand this better - do we need this?
-    /*
-    useEffect(() => {
-        if (apiData?.events) {
-            logr.info('use_evts_mgr', `uE: Calling fltrEvtMgr.setEvents(${apiData.events.length})`)
-            fltrEvtMgr.setEvents(apiData.events)
-            dispatch({ type: 'SET_EVENTS', payload: apiData.events })
-        }
-    }, [apiData?.events, fltrEvtMgr])
-    */
     // Apply initial filters if provided
     useEffect(() => {
         if (dateRange) {
@@ -189,39 +175,40 @@ export function useEventsManager({
             fltrEvtMgr.setSearchQuery(searchQuery)
             dispatch({ type: 'SET_FILTERS', payload: { ...state.filters, searchQuery } })
         }
-        if (mapBounds) {
-            fltrEvtMgr.setMapBounds(mapBounds)
-            dispatch({ type: 'SET_FILTERS', payload: { ...state.filters, mapBounds } })
-        }
         if (showUnknownLocationsOnly !== undefined) {
             fltrEvtMgr.setShowUnknownLocationsOnly(showUnknownLocationsOnly)
             dispatch({ type: 'SET_FILTERS', payload: { ...state.filters, showUnknownLocationsOnly } })
         }
-    }, [dateRange, searchQuery, mapBounds, showUnknownLocationsOnly, fltrEvtMgr, state.filters])
+    }, [dateRange, searchQuery, showUnknownLocationsOnly, fltrEvtMgr])
+
+    // Memoize filtered events to avoid unnecessary recalculations, but keep it updated with the latest state and apiData
+    const currentFilteredEvents = useMemo(
+        () => fltrEvtMgr.getFilteredEvents(currentViewport || undefined),
+        [fltrEvtMgr, apiData, currentViewport, filterVersion]
+    )
 
     return {
-        eventsFn: () => fltrEvtMgr.getFilteredEvents(),
-        evts: fltrEvtMgr.getFilteredEvents(),
+        evts: currentFilteredEvents,
         filters: {
             setDateRange: (dateRange) => {
                 fltrEvtMgr.setDateRange(dateRange)
                 dispatch({ type: 'SET_FILTERS', payload: { ...state.filters, dateRange } })
+                setFilterVersion(prev => prev + 1)
             },
             setSearchQuery: (searchQuery) => {
                 fltrEvtMgr.setSearchQuery(searchQuery)
                 dispatch({ type: 'SET_FILTERS', payload: { ...state.filters, searchQuery } })
-            },
-            setMapBounds: (mapBounds) => {
-                fltrEvtMgr.setMapBounds(mapBounds)
-                dispatch({ type: 'SET_FILTERS', payload: { ...state.filters, mapBounds } })
+                setFilterVersion(prev => prev + 1)
             },
             setShowUnknownLocationsOnly: (show) => {
                 fltrEvtMgr.setShowUnknownLocationsOnly(show)
                 dispatch({ type: 'SET_FILTERS', payload: { ...state.filters, showUnknownLocationsOnly: show } })
+                setFilterVersion(prev => prev + 1)
             },
             resetAll: () => {
                 fltrEvtMgr.resetAllFilters()
                 dispatch({ type: 'SET_FILTERS', payload: {} })
+                setFilterVersion(prev => prev + 1)
             },
         },
         eventSource: apiData?.metadata,

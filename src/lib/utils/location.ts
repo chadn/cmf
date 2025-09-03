@@ -264,13 +264,20 @@ export function calculateBoundsFromViewport(viewport: MapViewport): MapBounds {
     const latDelta = 180 / zoomFactor // Smaller delta at higher zoom
     const lonDelta = 360 / zoomFactor // Smaller delta at higher zoom
 
-    // Calculate bounds
-    return roundMapBounds({
-        north: viewport.latitude + latDelta / 2,
-        south: viewport.latitude - latDelta / 2,
-        east: viewport.longitude + lonDelta / 2,
-        west: viewport.longitude - lonDelta / 2,
-    })
+    // Calculate bounds with reasonable limits
+    const bounds = {
+        north: Math.min(85, viewport.latitude + latDelta / 2), // Web Mercator max latitude
+        south: Math.max(-85, viewport.latitude - latDelta / 2), // Web Mercator min latitude
+        east: Math.min(180, viewport.longitude + lonDelta / 2),
+        west: Math.max(-180, viewport.longitude - lonDelta / 2),
+    }
+
+    // Ensure west < east (handle longitude wraparound)
+    if (bounds.west > bounds.east) {
+        bounds.east += 360
+    }
+
+    return roundMapBounds(bounds)
 }
 
 // Return a valid MapViewport, with default values if invalid

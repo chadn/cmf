@@ -189,7 +189,7 @@ describe('EventSourceSelector', () => {
             .filter(
                 (button) =>
                     button.textContent?.includes('Geocaching in Spain') ||
-                    button.textContent?.includes('SF Bay Area Facebook Events')
+                    button.textContent?.includes('SF Bay Facebook Events')
             )
 
         exampleButtons.forEach((button) => {
@@ -201,7 +201,7 @@ describe('EventSourceSelector', () => {
         render(<EventSourceSelector />)
 
         // Check that both examples are rendered
-        expect(screen.getByText('SF Bay Area Facebook Events (Google Calendar)')).toBeInTheDocument()
+        expect(screen.getByText('SF Bay Facebook Events (Google Calendar)')).toBeInTheDocument()
         expect(screen.getByText('Geocaching in Spain (Google Calendar)')).toBeInTheDocument()
 
         // Check for the correct event source IDs
@@ -214,7 +214,7 @@ describe('EventSourceSelector', () => {
             .filter(
                 (button) =>
                     button.textContent?.includes('Geocaching in Spain') ||
-                    button.textContent?.includes('SF Bay Area Facebook Events')
+                    button.textContent?.includes('SF Bay Facebook Events')
             )
 
         exampleButtons.forEach((button) => {

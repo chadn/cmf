@@ -44,10 +44,15 @@ jest.mock('react-map-gl', () => {
         }, [ref])
 
         return (
-            <button
+            <div
                 data-testid="map-container"
-                type="button"
                 onClick={() => onLoad?.()}
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        onLoad?.()
+                    }
+                }}
                 onMouseMove={() =>
                     onMove?.({
                         viewState: {
@@ -59,11 +64,14 @@ jest.mock('react-map-gl', () => {
                         },
                     })
                 }
-                ref={ref as React.RefObject<HTMLButtonElement>}
+                ref={ref as React.RefObject<HTMLDivElement>}
                 style={{ width: '100%', height: '100%', padding: 0, border: 'none', background: 'none' }}
+                role="button"
+                tabIndex={0}
+                aria-label="Mock map container"
             >
                 {children}
-            </button>
+            </div>
         )
     })
 
@@ -71,14 +79,15 @@ jest.mock('react-map-gl', () => {
 
     interface MarkerProps {
         children?: React.ReactNode
-        onClick?: () => void
+        longitude?: number
+        latitude?: number
+        anchor?: string
+        [key: string]: unknown // Accept any other props
     }
 
-    const MockMarker = ({ children, onClick }: MarkerProps) => (
-        <button data-testid="map-marker" onClick={onClick} type="button">
-            {children}
-        </button>
-    )
+    const MockMarker = ({ children }: MarkerProps) => {
+        return <div data-testid="map-marker">{children}</div>
+    }
 
     MockMarker.displayName = 'MockMarker'
 
@@ -260,14 +269,18 @@ describe('MapContainer', () => {
     it('calls onMarkerSelect when a marker is clicked', () => {
         render(<MapContainer {...defaultProps} />)
         const markers = screen.getAllByTestId('map-marker')
-        fireEvent.click(markers[0])
+        // Click on the first child (the div with onClick) inside the marker
+        const clickableDiv = markers[0].firstElementChild as HTMLElement
+        fireEvent.click(clickableDiv)
         expect(defaultProps.onMarkerSelect).toHaveBeenCalledWith('1')
     })
 
     it('calls onEventSelect with first event when marker is clicked', () => {
         render(<MapContainer {...defaultProps} />)
         const markers = screen.getAllByTestId('map-marker')
-        fireEvent.click(markers[0])
+        // Click on the first child (the div with onClick) inside the marker
+        const clickableDiv = markers[0].firstElementChild as HTMLElement
+        fireEvent.click(clickableDiv)
         expect(defaultProps.onEventSelect).toHaveBeenCalledWith('event1')
     })
 
@@ -282,12 +295,15 @@ describe('MapContainer', () => {
             await new Promise((resolve) => setTimeout(resolve, 20))
         })
 
-        expect(defaultProps.onBoundsChange).toHaveBeenCalledWith({
-            north: 37.7749,
-            south: 37.7749,
-            east: -122.4194,
-            west: -122.4194,
-        })
+        expect(defaultProps.onBoundsChange).toHaveBeenCalledWith(
+            {
+                north: 37.7749,
+                south: 37.7749,
+                east: -122.4194,
+                west: -122.4194,
+            },
+            false // not from user interaction
+        )
     })
 
     it('calls onViewportChange when map is moved', () => {

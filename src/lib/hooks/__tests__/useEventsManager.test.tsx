@@ -12,7 +12,7 @@ jest.mock('swr', () => ({
     }),
 }))
 
-// Mock the FilterEventsManager with a more complete implementation
+// Mock the FilterEventsManager with updated interface (no map bounds setters)
 jest.mock('@/lib/events/FilterEventsManager', () => {
     return {
         FilterEventsManager: jest.fn().mockImplementation(() => ({
@@ -20,7 +20,6 @@ jest.mock('@/lib/events/FilterEventsManager', () => {
             setEvents: jest.fn(),
             setDateRange: jest.fn(),
             setSearchQuery: jest.fn(),
-            setMapBounds: jest.fn(),
             setShowUnknownLocationsOnly: jest.fn(),
             resetAllFilters: jest.fn(),
             getFilteredEvents: jest.fn().mockReturnValue({
@@ -51,17 +50,15 @@ jest.mock('@/lib/utils/utils-client', () => ({
     fetcherLogr: jest.fn(),
 }))
 
-// TEMPORARILY DISABLED: Tests are causing the test runner to hang
-// This is a placeholder test that always passes
-describe('useEventsManager (TEMPORARILY DISABLED)', () => {
-    it('placeholder test - tests are temporarily disabled', () => {
-        expect(true).toBe(true)
-    })
-})
+import { renderHook, act } from '@testing-library/react'
+import { useEventsManager } from '../useEventsManager'
+import { CmfEvent } from '@/types/events'
+import { MapBounds } from '@/types/map'
 
-/*
-// Original tests below - temporarily disabled
-describe('useEventsManager', () => {
+// Reconfigure SWR mock to be controllable per test
+const swrMock = require('swr')
+
+describe('useEventsManager - new viewport parameter model', () => {
     // Use a single mock event instead of multiple
     const mockEvent: CmfEvent = {
         id: '1',
@@ -94,9 +91,7 @@ describe('useEventsManager', () => {
 
     beforeEach(() => {
         jest.clearAllMocks()
-        // Mock SWR to return our test data
-        const swr = require('swr')
-        swr.default.mockImplementation(() => ({
+        swrMock.default.mockImplementation(() => ({
             data: mockApiResponse,
             error: null,
             isLoading: false,
@@ -104,44 +99,59 @@ describe('useEventsManager', () => {
         }))
     })
 
-    it('should initialize with default values', () => {
-        const { result } = renderHook(() => useEventsManager())
+    it('accepts currentViewport parameter and passes it to getFilteredEvents', () => {
+        const currentViewport: MapBounds = {
+            north: 37.8,
+            south: 37.7,
+            east: -122.4,
+            west: -122.5,
+        }
 
-        expect(result.current.evts).toEqual({ 
-            shownEvents: [], 
-            totalEvents: 0,
-            mapFilteredEvents: [],
-            searchFilteredEvents: [],
-            dateFilteredEvents: [],
-            unknownLocationsFilteredEvents: [],
-            filteredEvents: [],
-            allEvents: [],
+        const { result } = renderHook(() =>
+            useEventsManager({
+                eventSourceId: 'test-source',
+                currentViewport,
+            })
+        )
+
+        expect(result.current.evts).toBeDefined()
+
+        // Verify getFilteredEvents is called with currentViewport
+        const filterManager = result.current.fltrEvtMgr
+        expect(filterManager.getFilteredEvents).toHaveBeenCalledWith(currentViewport)
+    })
+
+    it('exposes only domain filter setters (no map bounds setters)', () => {
+        const { result } = renderHook(() => useEventsManager({ eventSourceId: 'test-source' }))
+
+        expect(result.current.filters).toBeDefined()
+        expect(result.current.filters.setSearchQuery).toBeDefined()
+        expect(result.current.filters.setDateRange).toBeDefined()
+        expect(result.current.filters.setShowUnknownLocationsOnly).toBeDefined()
+        expect(result.current.filters.resetAll).toBeDefined()
+
+        // These should no longer exist
+        expect((result.current.filters as Record<string, unknown>).setMapBounds).toBeUndefined()
+        expect((result.current.filters as Record<string, unknown>).setViewportBounds).toBeUndefined()
+
+        // Test that filter setters work without throwing
+        act(() => {
+            result.current.filters.setSearchQuery('test')
+            result.current.filters.setDateRange({ start: '2024-01-01', end: '2024-01-02' })
+            result.current.filters.setShowUnknownLocationsOnly(true)
         })
-        expect(result.current.apiIsLoading).toBe(false)
-        expect(result.current.apiError).toBeNull()
-        expect(result.current.eventSource).toBeUndefined()
+        expect(result.current.evts).toBeDefined()
     })
 
     it('should fetch events when eventSourceId is provided', () => {
         const { result } = renderHook(() => useEventsManager({ eventSourceId: 'test-source' }))
 
-        expect(result.current.evts).toEqual({ 
-            shownEvents: [], 
-            totalEvents: 0,
-            mapFilteredEvents: [],
-            searchFilteredEvents: [],
-            dateFilteredEvents: [],
-            unknownLocationsFilteredEvents: [],
-            filteredEvents: [],
-            allEvents: [],
-        })
         expect(result.current.eventSource).toEqual(mockApiResponse.metadata)
     })
 
     it('should handle API errors', () => {
         const mockError = new Error('API Error')
-        const swr = require('swr')
-        swr.default.mockImplementation(() => ({
+        swrMock.default.mockImplementation(() => ({
             data: null,
             error: mockError,
             isLoading: false,
@@ -153,22 +163,15 @@ describe('useEventsManager', () => {
         expect(result.current.apiError).toBe(mockError)
     })
 
-    it('should update filters when provided', () => {
+    it('should update domain filters when provided (no map bounds)', () => {
         const dateRange = { start: '2024-04-01', end: '2024-04-02' }
         const searchQuery = 'test'
-        const mapBounds: MapBounds = {
-            north: 37.8,
-            south: 37.7,
-            east: -122.4,
-            west: -122.5,
-        }
 
         const { result } = renderHook(() =>
             useEventsManager({
                 eventSourceId: 'test-source',
                 dateRange,
                 searchQuery,
-                mapBounds,
                 showUnknownLocationsOnly: true,
             })
         )
@@ -176,7 +179,6 @@ describe('useEventsManager', () => {
         const filterManager = result.current.fltrEvtMgr
         expect(filterManager.setDateRange).toHaveBeenCalledWith(dateRange)
         expect(filterManager.setSearchQuery).toHaveBeenCalledWith(searchQuery)
-        expect(filterManager.setMapBounds).toHaveBeenCalledWith(mapBounds)
         expect(filterManager.setShowUnknownLocationsOnly).toHaveBeenCalledWith(true)
     })
 
@@ -189,5 +191,21 @@ describe('useEventsManager', () => {
 
         expect(result.current.fltrEvtMgr.resetAllFilters).toHaveBeenCalled()
     })
+
+    it('should re-run filtering when currentViewport changes', () => {
+        const viewport1: MapBounds = { north: 37.8, south: 37.7, east: -122.4, west: -122.5 }
+        const viewport2: MapBounds = { north: 37.9, south: 37.6, east: -122.3, west: -122.6 }
+
+        const { result, rerender } = renderHook(
+            ({ currentViewport }) => useEventsManager({ eventSourceId: 'test-source', currentViewport }),
+            { initialProps: { currentViewport: viewport1 } }
+        )
+
+        const filterManager = result.current.fltrEvtMgr
+        expect(filterManager.getFilteredEvents).toHaveBeenCalledWith(viewport1)
+
+        // Change viewport
+        rerender({ currentViewport: viewport2 })
+        expect(filterManager.getFilteredEvents).toHaveBeenCalledWith(viewport2)
+    })
 })
-*/

@@ -50,6 +50,10 @@ export const logr = {
         } else {
             console.warn('Invalid LOG_LEVEL:', level)
         }
+        logr.info(
+            'logr',
+            `Log level set to ${logr.getLogLevelString()}, process.env.LOG_LEVEL: ${process.env.LOG_LEVEL}`
+        )
     },
     setDebugArea: (area: string) => {
         logr._debugArea = area.trim().toLowerCase().split(',')
@@ -130,6 +134,10 @@ export const logr = {
      * @param message - The debug message
      * @param data - Optional data to log
      */
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    skip: (_area: string, _message: string, _data?: unknown) => {
+        // No-op function for skipped logs
+    }, 
     debug: (area: string, message: string, data?: unknown) => {
         return logr.logLevel('DEBUG', area, message, data)
     },

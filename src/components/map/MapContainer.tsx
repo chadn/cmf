@@ -19,7 +19,7 @@ interface MapContainerProps {
     markers: MapMarker[]
     selectedMarkerId: string | null
     onMarkerSelect: (markerId: string | null) => void
-    onBoundsChange: (bounds: MapBounds) => void
+    onBoundsChange: (bounds: MapBounds, fromUserInteraction?: boolean) => void
     onWidthHeightChange: (mapWidthHeight: { w: number; h: number }) => void
     selectedEventId: string | null
     onEventSelect: (eventId: string | null) => void
@@ -87,7 +87,7 @@ const MapContainer: React.FC<MapContainerProps> = ({
     const debouncedUpdateBounds = useDebounce(() => {
         const newBounds = getMapBounds()
         logr.info('mapc', 'Bounds updating after debounce', newBounds)
-        onBoundsChange(newBounds)
+        onBoundsChange(newBounds, true) // true = from user interaction
     }, 200)
 
     // Handle viewport change, Map onMove
@@ -113,7 +113,7 @@ const MapContainer: React.FC<MapContainerProps> = ({
             updateMapWidthHeight() // Update dimensions and notify parent if changed
             const initialBounds = getMapBounds()
             logr.info('mapc', 'timeout=10ms, setting initial bounds', initialBounds)
-            onBoundsChange(initialBounds)
+            onBoundsChange(initialBounds, false) // false = not from user interaction
         }, 10)
     }, [updateMapWidthHeight, getMapBounds, onBoundsChange])
 
@@ -246,18 +246,27 @@ const MapContainer: React.FC<MapContainerProps> = ({
 
                 {/* Markers */}
                 {markers.map((marker) => (
-                    <Marker
-                        key={marker.id}
-                        longitude={marker.longitude}
-                        latitude={marker.latitude}
-                        anchor="bottom"
-                        onClick={() => handleMarkerClick(marker)}
-                    >
-                        <MapMarkerComponent
-                            count={marker.events.length}
-                            isSelected={marker.id === selectedMarkerId}
-                            isUnresolved={marker.id === 'unresolved'}
-                        />
+                    <Marker key={marker.id} longitude={marker.longitude} latitude={marker.latitude} anchor="bottom">
+                        <div
+                            onClick={() => handleMarkerClick(marker)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault()
+                                    handleMarkerClick(marker)
+                                }
+                            }}
+                            role="button"
+                            tabIndex={0}
+                            aria-label={`View ${marker.events.length} event${
+                                marker.events.length === 1 ? '' : 's'
+                            } at this location`}
+                        >
+                            <MapMarkerComponent
+                                count={marker.events.length}
+                                isSelected={marker.id === selectedMarkerId}
+                                isUnresolved={marker.id === 'unresolved'}
+                            />
+                        </div>
                     </Marker>
                 ))}
 

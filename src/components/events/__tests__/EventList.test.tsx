@@ -377,4 +377,37 @@ describe('EventList', () => {
 
         expect(screen.getByText('No location')).toBeInTheDocument()
     })
+
+    it('uses a unique table key when events content changes with same length', () => {
+        const mockOnEventSelect = jest.fn()
+
+        const first: FilteredEvents = {
+            ...mockEventsManager,
+            shownEvents: [mockEvents[0], mockEvents[1]],
+            allEvents: [mockEvents[0], mockEvents[1]],
+        }
+        const second: FilteredEvents = {
+            ...mockEventsManager,
+            shownEvents: [mockEvents[2], mockEvents[3]],
+            allEvents: [mockEvents[2], mockEvents[3]],
+        }
+
+        const { rerender, container } = render(
+            <EventList evts={first} selectedEventId={null} onEventSelect={mockOnEventSelect} apiIsLoading={false} />
+        )
+
+        const firstTable = container.querySelector('table.event-list-table')
+        expect(firstTable).toBeInTheDocument()
+
+        // Rerender with different events but same count
+        rerender(
+            <EventList evts={second} selectedEventId={null} onEventSelect={mockOnEventSelect} apiIsLoading={false} />
+        )
+
+        const secondTable = container.querySelector('table.event-list-table')
+        expect(secondTable).toBeInTheDocument()
+        // Sanity-check that expected rows reflect second data set
+        expect(screen.queryByText('Test Event 1')).toBeNull()
+        expect(screen.queryByText('Test Event 3')).not.toBeNull()
+    })
 })

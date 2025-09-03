@@ -1,6 +1,6 @@
 'use client'
 
-import { CmfEvent, EventsFilter, FilteredEvents, FilterStats } from '@/types/events'
+import { CmfEvent, EventsFilter, FilteredEvents } from '@/types/events'
 import { MapBounds } from '@/types/map'
 import { logr } from '@/lib/utils/logr'
 import { calculateAggregateCenter } from '@/lib/utils/location'
@@ -25,7 +25,6 @@ export class FilterEventsManager {
         this.filters = {
             dateRange: undefined,
             searchQuery: undefined,
-            mapBounds: undefined,
             showUnknownLocationsOnly: undefined,
         }
         this.updateAggregateCenter()
@@ -78,8 +77,13 @@ export class FilterEventsManager {
 
     /**
      * Get filtered events
+     *
+     * Single-stage filtering model:
+     * - Domain filters: dateRange, searchQuery, showUnknownLocationsOnly determine core result set
+     * - Viewport filter: currentViewport (passed as parameter) determines what's currently visible
+     * - Map chip count = total events - events located in current viewport (including those they may be filtered out)
      */
-    getFilteredEvents(): FilteredEvents {
+    getFilteredEvents(currentViewport?: MapBounds): FilteredEvents {
         const filteredEvents: FilteredEvents = {
             mapFilteredEvents: [],
             searchFilteredEvents: [],
@@ -101,37 +105,64 @@ export class FilterEventsManager {
             this.updateAggregateCenter()
         }
 
+        // Apply domain filters (date, search, location type) and viewport filter independently
+        const domainFilteredEvents: CmfEvent[] = []
+
         this.allEvents.forEach((event) => {
-            let filtered = false
-            if (
-                !applyMapFilter(event, this.filters.mapBounds, this.aggregateCenter || undefined) &&
-                this.filters.mapBounds
-            ) {
-                filteredEvents.mapFilteredEvents.push(event)
-                filtered = true
-            }
+            let domainFiltered = false
+
+            // Calculate independent chip counts - each filter checks against ALL events
             if (!applySearchFilter(event, this.filters.searchQuery) && this.filters.searchQuery) {
                 filteredEvents.searchFilteredEvents.push(event)
-                filtered = true
             }
             if (!applyDateFilter(event, this.filters.dateRange) && this.filters.dateRange) {
                 filteredEvents.dateFilteredEvents.push(event)
-                filtered = true
             }
             if (
                 !applyUnknownLocationsFilter(event, this.filters.showUnknownLocationsOnly) &&
                 this.filters.showUnknownLocationsOnly
             ) {
                 filteredEvents.unknownLocationsFilteredEvents.push(event)
-                filtered = true
             }
-            if (filtered) {
+
+            // Apply viewport filter independently (for chip count)
+            if (currentViewport && !applyMapFilter(event, currentViewport, this.aggregateCenter || undefined)) {
+                filteredEvents.mapFilteredEvents.push(event)
+            }
+
+            // Check if event passes all domain filters (for determining shownEvents)
+            if (!applySearchFilter(event, this.filters.searchQuery) && this.filters.searchQuery) {
+                domainFiltered = true
+            }
+            if (!applyDateFilter(event, this.filters.dateRange) && this.filters.dateRange) {
+                domainFiltered = true
+            }
+            if (
+                !applyUnknownLocationsFilter(event, this.filters.showUnknownLocationsOnly) &&
+                this.filters.showUnknownLocationsOnly
+            ) {
+                domainFiltered = true
+            }
+
+            if (domainFiltered) {
                 filteredEvents.filteredEvents.push(event)
             } else {
-                filteredEvents.shownEvents.push(event)
+                domainFilteredEvents.push(event)
             }
         })
-        logr.debug('fltr_evts_mgr', 'getFilteredEvents returning filteredEvents:', filteredEvents)
+
+        // Apply viewport filter to determine what's currently shown
+        if (currentViewport) {
+            domainFilteredEvents.forEach((event) => {
+                const passesViewportFilter = applyMapFilter(event, currentViewport, this.aggregateCenter || undefined)
+                if (passesViewportFilter) {
+                    filteredEvents.shownEvents.push(event)
+                }
+            })
+        } else {
+            // No viewport filter, show all domain-filtered events
+            filteredEvents.shownEvents = domainFilteredEvents
+        }
 
         return filteredEvents
     }
@@ -156,10 +187,8 @@ export class FilterEventsManager {
         this.setFilter('searchQuery', searchQuery)
     }
 
-    // Set map bounds filter
-    setMapBounds(mapBounds?: MapBounds) {
-        this.setFilter('mapBounds', mapBounds)
-    }
+    // Note: Map bounds are now passed as parameter to getFilteredEvents()
+    // No longer stored in filter state
 
     // Set unknown locations filter
     setShowUnknownLocationsOnly(show: boolean) {
@@ -171,7 +200,6 @@ export class FilterEventsManager {
         this.filters = {
             dateRange: undefined,
             searchQuery: undefined,
-            mapBounds: undefined,
             showUnknownLocationsOnly: undefined,
         }
         logr.info('fltr_evts_mgr', 'All filters reset')
@@ -183,21 +211,5 @@ export class FilterEventsManager {
         this.aggregateCenter = null
         this.resetAllFilters()
         logr.info('fltr_evts_mgr', 'FilterEventsManager fully reset (events and filters)')
-    }
-
-    // Get filter stats - for displaying filter chips, etc.
-    getFilterStats(): FilterStats {
-        const filteredEvents = this.getFilteredEvents()
-        const stats: FilterStats = {
-            mapFilteredCount: filteredEvents.mapFilteredEvents.length,
-            searchFilteredCount: filteredEvents.searchFilteredEvents.length,
-            dateFilteredCount: filteredEvents.dateFilteredEvents.length,
-            unknownLocationsFilteredCount: filteredEvents.unknownLocationsFilteredEvents.length,
-            totalFilteredCount: filteredEvents.filteredEvents.length,
-            totalShownCount: filteredEvents.shownEvents.length,
-            totalEventsCount: this.allEvents.length,
-        }
-        logr.debug('fltr_evts_mgr', 'getFilterStats:', stats)
-        return stats
     }
 }

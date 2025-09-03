@@ -142,18 +142,47 @@ function HomeContent() {
     // Local state for filters
     const [dateSliderRange, setDateSliderRange] = useState<{ start: string; end: string } | undefined>(undefined)
 
+    // Local state for current viewport bounds (from map)
+    const [currentViewportBounds, setCurrentViewportBounds] = useState<MapBounds | null>(null)
+    const [isShowingAllEvents, setIsShowingAllEvents] = useState<boolean>(true)
+
     // Use our new EventsManager hook to get events and filter methods
-    const { eventsFn, evts, filters, eventSource, apiIsLoading, apiError } = useEventsManager({
+    // Only apply viewport filtering when not in "show all" mode
+    const { evts, filters, eventSource, apiIsLoading, apiError } = useEventsManager({
         eventSourceId,
+        currentViewport: isShowingAllEvents ? null : currentViewportBounds,
         sd: datesUrl.sd,
         ed: datesUrl.ed,
     })
 
-    const { viewport, setViewport, markers, selectedMarkerId, setSelectedMarkerId, resetMapToAllEvents } = useMap(
-        eventsFn(),
-        mapHookWidthHeight.w,
-        mapHookWidthHeight.h
+    // Handle map bounds change
+    const handleBoundsChangeForFilters = useCallback(
+        (bounds: MapBounds, fromUserInteraction: boolean = false) => {
+            // Update current viewport bounds for filtering (always, not just in main-state)
+            setCurrentViewportBounds(bounds)
+
+            // If this is from user interaction (pan/zoom), switch to viewport filtering mode
+            if (fromUserInteraction) {
+                setIsShowingAllEvents(false)
+            }
+
+            logr.info('app', 'handleBoundsChangeForFilters', { bounds, fromUserInteraction, isShowingAllEvents })
+        },
+        [isShowingAllEvents]
     )
+
+    const { viewport, setViewport, markers, selectedMarkerId, setSelectedMarkerId, resetMapToAllEvents } = useMap(
+        evts,
+        mapHookWidthHeight.w,
+        mapHookWidthHeight.h,
+        handleBoundsChangeForFilters
+    )
+
+    // Enhanced reset function that also resets to "show all" mode
+    const resetMapToAllEventsAndShowAll = useCallback(() => {
+        setIsShowingAllEvents(true)
+        resetMapToAllEvents()
+    }, [resetMapToAllEvents])
     // Ref for tracking the last applied search query from URL
     const searchQueryAppliedRef = useRef<string | null>(null)
 
@@ -242,20 +271,6 @@ function HomeContent() {
         [filters]
     )
 
-    // Handle map bounds change
-    const handleBoundsChangeForFilters = useCallback(
-        (bounds: MapBounds) => {
-            // Ignore bounds changes during initialization
-            if (appState !== 'main-state') {
-                logr.info('app', 'handleBoundsChangeForFilters: Ignoring during initialization')
-                return
-            }
-            logr.info('app', 'handleBoundsChangeForFilters', bounds)
-            filters.setMapBounds(bounds)
-        },
-        [filters, appState]
-    )
-
     // Handle map filter removal
     const handleClearMapFilter = () => {
         if (appState !== 'main-state') {
@@ -263,12 +278,12 @@ function HomeContent() {
             return
         }
         logr.info('app', 'handleClearMapFilter - clearing filters, selected events and markers')
-        filters.setMapBounds(undefined)
+        setCurrentViewportBounds(null) // Clear viewport filter
         setSelectedMarkerId(null)
         setSelectedEventIdUrl('') // match default value for param to clear from URL
         // Call resetMapToAllEvents to properly reset the map to show all events
-        logr.info('app', 'calling resetMapToAllEvents after Clearing URL for zoom, latitude, and longitude')
-        resetMapToAllEvents()
+        logr.info('app', 'calling resetMapToAllEventsAndShowAll after Clearing URL for zoom, latitude, and longitude')
+        resetMapToAllEventsAndShowAll()
     }
 
     // Properly memoize to avoid recreating function on each render
@@ -333,18 +348,18 @@ function HomeContent() {
         if (appState !== 'map-init') return
 
         if (selectedEventIdUrl) {
-            logr.info('app', 'uE: map-init: selectedEventIdUrl is set, resetMapToAllEvents')
+            logr.info('app', 'uE: map-init: selectedEventIdUrl is set, resetMapToAllEventsAndShowAll')
             handleEventSelect(selectedEventIdUrl)
         } else if (viewportUrl.z === null) {
-            logr.info('app', 'uE: map-init: zoom is null (not set), resetMapToAllEvents')
-            resetMapToAllEvents()
+            logr.info('app', 'uE: map-init: zoom is null (not set), resetMapToAllEventsAndShowAll')
+            resetMapToAllEventsAndShowAll()
         } else {
             logr.info('app', `uE: map-init: zoom=${viewportUrl.z}, setViewport from URL`)
             setViewport(viewportUrlToViewport(viewportUrl.lat, viewportUrl.lon, viewportUrl.z))
         }
         logr.info('app', 'uE: map-init done (url params)')
         dispatch({ type: 'MAP_INITIALIZED' })
-    }, [appState, selectedEventIdUrl, handleEventSelect, viewportUrl, resetMapToAllEvents, setViewport])
+    }, [appState, selectedEventIdUrl, handleEventSelect, viewportUrl, resetMapToAllEventsAndShowAll, setViewport])
 
     // Expose events data to window for debugging
     useEffect(() => {

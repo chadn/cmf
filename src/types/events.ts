@@ -1,5 +1,3 @@
-import { MapBounds } from './map'
-
 export type EventStatus = 'resolved' | 'unresolved'
 export const LOCATION_KEY_PREFIX = 'location:'
 export const EVENTS_CACHE_PREFIX = 'events:'
@@ -25,7 +23,6 @@ export interface CmfEvent {
     start: string // ISO string
     end: string // ISO string. Hack: if same as start, exact start time is not known. If 1 minute after start, end time is not known.
     startSecs?: number // start time in seconds since epoch
-    durationSecs?: number // duration in seconds (end - start)
     tz?: string // ex: 'America/Los_Angeles'; 'UNKNOWN' if location not found, 'LOCAL' if using UTC but time is actually local.
     location: string // always exists, may be empty, matches original_location
     resolved_location?: Location
@@ -33,16 +30,9 @@ export interface CmfEvent {
     // Keep any other existing fields
 }
 
-export interface EventFilters {
-    dateRange?: { start: string; end: string }
-    searchQuery?: string
-    mapBounds?: MapBounds
-    showUnknownLocationsOnly?: boolean
-}
-
 export interface EventsState {
     events: CmfEvent[]
-    filters: EventFilters
+    filters: EventsFilter
     selectedEventId: string | null
     isLoading: boolean
     error: Error | null
@@ -50,9 +40,7 @@ export interface EventsState {
 
 export type EventsAction =
     | { type: 'SET_EVENTS'; payload: CmfEvent[] }
-    | { type: 'SET_FILTERS'; payload: EventFilters }
-    | { type: 'SELECT_EVENT'; payload: string | null } // can be selected by map or list
-    | { type: 'SET_LOADING'; payload: boolean }
+    | { type: 'SET_FILTERS'; payload: EventsFilter }
     | { type: 'SET_ERROR'; payload: Error | null }
     | { type: 'CLEAR_ERROR' }
 
@@ -85,7 +73,6 @@ export interface EventSourceResponse {
 export interface EventsFilter {
     dateRange?: { start: string; end: string }
     searchQuery?: string
-    mapBounds?: MapBounds
     showUnknownLocationsOnly?: boolean
 }
 
@@ -99,14 +86,4 @@ export interface FilteredEvents {
     // totalShown is events that pass all filters, not filetred out. allEvents - totalFilteredEvents
     shownEvents: CmfEvent[]
     allEvents: CmfEvent[]
-}
-
-export interface FilterStats {
-    mapFilteredCount: number
-    searchFilteredCount: number
-    dateFilteredCount: number
-    unknownLocationsFilteredCount: number
-    totalFilteredCount: number
-    totalShownCount: number
-    totalEventsCount: number
 }

@@ -69,12 +69,12 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(({ headerName, eventCou
                                             </li>
                                             <li>
                                                 <a
-                                                    href="https://github.com/chadn/cmf?tab=readme-ov-file#calendar-map-filter-cmf"
+                                                    href="https://github.com/chadn/cmf/blob/main/docs/usage.md#how-to-use-cmf"
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="hover:underline"
                                                 >
-                                                    View Complete Usage Info on Github
+                                                    View Usage Doc on Github
                                                 </a>
                                             </li>
                                             <li>
@@ -104,7 +104,7 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(({ headerName, eventCou
                         {headerName}
                     </span>
                     {eventCount && (
-                        <span className="text-xs lg:text-sm xl:text-md 2xl:text-lg text-gray-800 ml-2 ">
+                        <span className="num-events-showing text-xs lg:text-sm xl:text-md 2xl:text-lg text-gray-800 ml-2 ">
                             Showing{' '}
                             <span className="whitespace-nowrap">
                                 <span className="font-bold text-sm lg:text-md xl:text-lg 2xl:text-xl">

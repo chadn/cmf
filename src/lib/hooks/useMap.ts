@@ -8,12 +8,10 @@ import { calculateMapBoundsAndViewport, generateMapMarkers } from '@/lib/utils/l
 interface UseMapReturn {
     viewport: MapViewport
     setViewport: (viewport: MapViewport) => void
-    bounds: MapBounds | null
     markers: MapMarker[]
     selectedMarkerId: string | null
     setSelectedMarkerId: (id: string | null) => void
     resetMapToAllEvents: () => void
-    isMapOfAllEvents: boolean
 }
 
 export const genMarkerId = (event: CmfEvent): string => {
@@ -32,9 +30,15 @@ export const genMarkerId = (event: CmfEvent): string => {
  * @param {FilteredEvents} props.evts - List of calendar events, usually filtered. Only events with locations are shown on the map.
  * @param {number} props.mapW - Width of the map in pixels, used for calculating map bounds
  * @param {number} props.mapH - Height of the map in pixels
+ * @param {Function} onBoundsChange - Callback to notify parent about bounds changes
  * @returns {UseMapReturn} - Map state and functions
  */
-export function useMap(evts: FilteredEvents, mapW: number, mapH: number): UseMapReturn {
+export function useMap(
+    evts: FilteredEvents,
+    mapW: number,
+    mapH: number,
+    onBoundsChange?: (bounds: MapBounds) => void
+): UseMapReturn {
     // Flag to track internal updates to prevent loops
     const isInternalUpdate = useRef(false)
 
@@ -65,12 +69,13 @@ export function useMap(evts: FilteredEvents, mapW: number, mapH: number): UseMap
         const filtered = markersFromAllEvents
             .map((marker) => {
                 const filteredEvents = marker.events.filter((event) => shownEventIds.has(event.id))
-                logr.debug('umap', 'filteredMarkers:Marker filtering', {
-                    markerId: marker.id,
-                    originalEventCount: marker.events.length,
-                    filteredEventCount: filteredEvents.length,
-                    events: filteredEvents.map((e) => e.id),
-                })
+                // Skip logging - was causing test issues with logr.skip method
+                // logr.debug('umap', 'filteredMarkers:Marker filtering', {
+                //     markerId: marker.id,
+                //     originalEventCount: marker.events.length,
+                //     filteredEventCount: filteredEvents.length,
+                //     events: filteredEvents.map((e) => e.id),
+                // })
                 return {
                     ...marker,
                     events: filteredEvents,
@@ -159,18 +164,25 @@ export function useMap(evts: FilteredEvents, mapW: number, mapH: number): UseMap
             bounds,
             markers: markersFromAllEvents,
         }))
+
+        // IMPORTANT: Notify parent component about the new bounds for filtering
+        if (bounds && onBoundsChange) {
+            onBoundsChange(bounds)
+        }
+
         logr.info('umap', `resetMapToAllEvents done.`)
-    }, [evts.allEvents, markersFromAllEvents, mapW, mapH])
+    }, [evts.allEvents, markersFromAllEvents, mapW, mapH, onBoundsChange])
 
     // Handle viewport changes from user interaction
     const setViewport = useCallback((newViewport: MapViewport) => {
         // Skip if this is an internal update
         if (isInternalUpdate.current) return
 
-        // TODO: calculate bounds from new viewport?
         setMapState((prev) => ({
             ...prev,
             viewport: newViewport,
+            // Note: bounds will be updated by page.tsx via onBoundsChange from MapContainer
+            // This keeps the actual map bounds in sync with the viewport
         }))
     }, [])
 
@@ -182,11 +194,9 @@ export function useMap(evts: FilteredEvents, mapW: number, mapH: number): UseMap
     return {
         viewport: mapState.viewport,
         setViewport,
-        bounds: mapState.bounds,
         markers: mapState.markers,
         selectedMarkerId: mapState.selectedMarkerId,
         setSelectedMarkerId: (id: string | null) => setMapState((prev) => ({ ...prev, selectedMarkerId: id })),
         resetMapToAllEvents,
-        isMapOfAllEvents: evts.shownEvents && evts.shownEvents.length === evts.allEvents.length,
     }
 }
