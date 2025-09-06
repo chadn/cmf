@@ -27,6 +27,7 @@ export interface CmfEvent {
     location: string // always exists, may be empty, matches original_location
     resolved_location?: Location
     note?: string // for internal use, eg 'plura'
+    src?: number // source index for multiple sources: 1 for first source, 2 for second, etc. Only used when 2+ sources
     // Keep any other existing fields
 }
 
@@ -47,6 +48,7 @@ export type EventsAction =
 export interface EventSourceType {
     prefix: string // must be unique, eg 'gc' for 'gc:1234567890'
     name: string
+    url: string
 }
 
 export interface EventSourceParams {

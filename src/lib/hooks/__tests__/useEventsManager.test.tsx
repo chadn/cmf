@@ -146,7 +146,7 @@ describe('useEventsManager - new viewport parameter model', () => {
     it('should fetch events when eventSourceId is provided', () => {
         const { result } = renderHook(() => useEventsManager({ eventSourceId: 'test-source' }))
 
-        expect(result.current.eventSource).toEqual(mockApiResponse.metadata)
+        expect(result.current.eventSources).toEqual(mockApiResponse.metadata)
     })
 
     it('should handle API errors', () => {

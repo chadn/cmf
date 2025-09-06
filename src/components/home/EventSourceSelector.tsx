@@ -39,11 +39,6 @@ const EventSourceSelector: React.FC = () => {
                 setEventSourceId(sourceId)
             }
 
-            // Validate event source ID format
-            if (!sourceId.includes(':')) {
-                throw new Error('Invalid event source format. Must include a colon (e.g., gc:example@gmail.com)')
-            }
-
             // Construct the URL with the event source ID
             const url = `/?es=${encodeURIComponent(sourceId)}`
             router.push(url)
@@ -58,8 +53,9 @@ const EventSourceSelector: React.FC = () => {
         logr.info('calendar', 'Example event source selected', {
             id,
             name: example?.name,
+            shortId: example?.shortId ? example.shortId : null
         })
-        setEventSourceId(id)
+        setEventSourceId(example?.shortId || id)
     }
 
     return (
@@ -105,7 +101,7 @@ const EventSourceSelector: React.FC = () => {
                             disabled={isLoading}
                         >
                             <div className="font-medium text-white">{source.name}</div>
-                            <div className="text-xs text-white truncate">{source.id}</div>
+                            <div className="text-xs text-white truncate">{source.shortId ? `${source.shortId} or ` : ''}{source.id}</div>
                         </button>
                     ))}
                 </div>

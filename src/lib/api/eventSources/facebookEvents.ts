@@ -14,6 +14,7 @@ export class FacebookEventsSource extends BaseEventSourceHandler {
     public readonly type: EventSourceType = {
         prefix: 'fb',
         name: 'Facebook Events',
+        url: '', // assigned to icsUrl below
     }
 
     async fetchEvents(params: EventSourceParams): Promise<EventSourceResponse> {
@@ -24,6 +25,7 @@ export class FacebookEventsSource extends BaseEventSourceHandler {
 
         const [uid, key] = params.id.split('-')
         const icsUrl = `https://www.facebook.com/events/ical/upcoming/?uid=${uid}&key=${key}`
+        this.type.url = icsUrl
 
         // ICS Feed URL https://www.facebook.com/events/ical/upcoming/?uid=677700808&key=3RlHDZnbeH2YJMpJ
         logr.info('api-es-fb', `Fetching Facebook events (note cannot customize timeMin/timeMax)`, icsUrl)

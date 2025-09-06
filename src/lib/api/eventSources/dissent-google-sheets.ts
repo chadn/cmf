@@ -13,12 +13,14 @@ const sheetTabs = {
     june14protests: 'June 14 Protests ',
     'june14-no-kings': 'June 14 Protests ',
     june6protests: 'June 6 Protests ',
+    oct18protests: 'No Kings - October 18 ',
 }
 
 export class DissentGoogleSheetsSource extends BaseEventSourceHandler {
     public readonly type: EventSourceType = {
         prefix: 'dissent',
-        name: 'WeThePeopleDissent.net',
+        name: 'We The People Dissent',
+        url: 'https://www.wethepeopledissent.net/',
     }
     async fetchEvents(params: EventSourceParams): Promise<EventSourceResponse> {
         const sheetTab =

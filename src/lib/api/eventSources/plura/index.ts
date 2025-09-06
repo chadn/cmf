@@ -34,6 +34,7 @@ export class PluraEventsSource extends BaseEventSourceHandler {
     public readonly type: EventSourceType = {
         prefix: 'plura',
         name: 'Plura Community Events',
+        url: 'https://heyplura.com/community-calendars',
     }
 
     constructor() {

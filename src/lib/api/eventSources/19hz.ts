@@ -20,12 +20,13 @@ export class NineteenHzEventSource extends BaseEventSourceHandler {
     public readonly type: EventSourceType = {
         prefix: '19hz',
         name: '19hz.info Bay Area Electronic Music Events',
+        url: 'https://19hz.info/eventlisting_BayArea.php',
     }
     private venueCache: Map<string, string> = new Map()
 
     async fetchEvents(params: EventSourceParams): Promise<EventSourceResponse> {
         try {
-            const url = 'https://19hz.info/eventlisting_BayArea.php'
+            const url = this.type.url
             logr.info('api-es-19hz', `Fetching events from ${url}`)
 
             const response = await axios.get(url)

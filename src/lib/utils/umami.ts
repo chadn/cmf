@@ -7,9 +7,12 @@ export const umamiTrack = (
     eventName: string,
     event_data?: { [key: string]: string | number | boolean | undefined }
 ) => {
+    // temp disable umami tracking
+    logr.info('umami', `SKIPPING umamiTrack(${eventName})`, event_data)
+    return
     try {
         if (typeof umami !== 'undefined') {
-            umami.track(eventName, event_data)
+            umami?.track(eventName, event_data)
         }
         logr.info('umami', `umamiTrack(${eventName})`, event_data)
     } catch {} // ignore errors

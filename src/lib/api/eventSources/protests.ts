@@ -54,6 +54,7 @@ export class ProtestsEventSource extends BaseEventSourceHandler {
     public readonly type: EventSourceType = {
         prefix: 'protest',
         name: 'Protests from pol-rev.com',
+        url: 'https://events.pol-rev.com/',
     }
 
     async fetchEvents(params: EventSourceParams): Promise<EventSourceResponse> {

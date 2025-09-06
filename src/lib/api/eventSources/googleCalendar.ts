@@ -6,6 +6,7 @@ import { logr } from '@/lib/utils/logr'
 import { BaseEventSourceHandler, registerEventSource } from './index'
 
 const GOOGLE_CALENDAR_API_BASE = 'https://www.googleapis.com/calendar/v3/calendars'
+const GOOGLE_CALENDAR_PUBLIC_URL_BASE = 'https://calendar.google.com/calendar/embed?src='
 if (!process.env.GOOGLE_CALENDAR_API_KEY) {
     logr.warn('api-es-gc', 'Google Calendar API key is not configured')
 } else {
@@ -16,6 +17,7 @@ export class GoogleCalendarEventSource extends BaseEventSourceHandler {
     public readonly type: EventSourceType = {
         prefix: 'gc',
         name: 'Google Calendar',
+        url: '', // assigned to apiUrl below
     }
     async fetchEvents(params: EventSourceParams): Promise<EventSourceResponse> {
         const calendarData = await this.fetchGoogleCalendarEvents(params.id, params.timeMin, params.timeMax)
@@ -84,6 +86,7 @@ export class GoogleCalendarEventSource extends BaseEventSourceHandler {
         }
 
         const apiUrl = `${GOOGLE_CALENDAR_API_BASE}/${encodeURIComponent(calendarId)}/events`
+        this.type.url = `${GOOGLE_CALENDAR_PUBLIC_URL_BASE}${encodeURIComponent(calendarId)}`
 
         logr.info('api-es-gc', `fetchGoogleCalendarEvents request`, {
             calendarId: calendarId,

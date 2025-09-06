@@ -329,9 +329,45 @@ export const parseAsEventSource = createParser({
     parse(queryValue) {
         if (typeof queryValue !== 'string') return null
 
+        // Handle comma-separated sources
+        if (queryValue.includes(',')) {
+            const sources = queryValue.split(',').map(s => s.trim()).filter(s => s)
+            const parsedSources: string[] = []
+            
+            for (const source of sources) {
+                // Check for example event sources first
+                const example = ExampleEventSources.find((es) => es.shortId === source)
+                if (example) {
+                    // If example contains comma-separated sources, expand them
+                    if (example.id.includes(',')) {
+                        parsedSources.push(...example.id.split(',').map(s => s.trim()))
+                    } else {
+                        parsedSources.push(example.id)
+                    }
+                } else {
+                    // Validate individual source format
+                    const regex = /^[a-zA-Z0-9]+:/
+                    if (regex.test(source)) {
+                        parsedSources.push(source)
+                    } else {
+                        return null // Invalid source in list
+                    }
+                }
+            }
+            
+            return parsedSources.length > 0 ? parsedSources : null
+        }
+
+        // Handle single source (existing logic)
         // check for example event sources first
         const example = ExampleEventSources.find((es) => es.shortId === queryValue)
-        if (example) return example.id
+        if (example) {
+            // If example contains comma-separated sources, return as array
+            if (example.id.includes(',')) {
+                return example.id.split(',').map(s => s.trim())
+            }
+            return example.id
+        }
 
         // match any string that starts with ascii chars or digits then a colon then any number of digits
         const regex = /^[a-zA-Z0-9]+:/
@@ -340,6 +376,22 @@ export const parseAsEventSource = createParser({
     },
     // serialize: a function that takes the parsed value and returns a string used in the URL.
     serialize(value) {
+        // Handle array of sources
+        if (Array.isArray(value)) {
+            // Check if this array matches an example shortcut
+            const valueString = value.join(',')
+            const example = ExampleEventSources?.find?.((es) => es.id === valueString && es.shortId)
+            if (example) return example.shortId as string
+            
+            // Otherwise, serialize each source individually and join with commas
+            const serializedSources = value.map(source => {
+                const example = ExampleEventSources?.find?.((es) => es.id === source && es.shortId)
+                return example ? example.shortId as string : source
+            })
+            return serializedSources.join(',')
+        }
+
+        // Handle single source (existing logic)
         // Check for example event sources first
         const example = ExampleEventSources?.find?.((es) => es.id === value && es.shortId)
         if (example) return example.shortId as string

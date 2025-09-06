@@ -1,16 +1,21 @@
 // Example event sources for demonstration
 export const ExampleEventSources = [
     {
+        name: 'SF Bay Music + FB Events',
+        id: '19hz:bayarea,gc:aabe6c219ee2af5b791ea6719e04a92990f9ccd1e68a3ff0d89bacd153a0b36d@group.calendar.google.com',
+        shortId: 'sf', // can just do es=sf in the url for 2 sources
+    },
+    {
         name: 'SF Bay Area Music Events (19hz.info)',
         id: '19hz:bayarea',
+        shortId: '19hz', // can just do es=19hz in the url
     },
     {
-        name: 'SF Bay Facebook Events (Google Calendar)',
+        name: 'SF Bay Facebook Events',
         id: 'gc:aabe6c219ee2af5b791ea6719e04a92990f9ccd1e68a3ff0d89bacd153a0b36d@group.calendar.google.com',
-        shortId: 'sf', // can just do es=sf in the url
     },
     {
-        name: 'Geocaching in Spain (Google Calendar)',
+        name: 'Geocaching in Spain',
         id: 'gc:geocachingspain@gmail.com',
     },
     {

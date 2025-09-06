@@ -89,6 +89,7 @@ export class MyNewEventSource extends BaseEventSourceHandler {
     public readonly type: EventSourceType = {
         prefix: 'ns',
         name: 'New Source',
+        url: 'https://homepage.com',
     };
 
     async fetchEvents(params: EventSourceParams): Promise<EventSourceResponse> {

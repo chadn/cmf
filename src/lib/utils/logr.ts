@@ -137,7 +137,7 @@ export const logr = {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     skip: (_area: string, _message: string, _data?: unknown) => {
         // No-op function for skipped logs
-    }, 
+    },
     debug: (area: string, message: string, data?: unknown) => {
         return logr.logLevel('DEBUG', area, message, data)
     },

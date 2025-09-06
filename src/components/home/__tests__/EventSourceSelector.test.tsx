@@ -92,45 +92,6 @@ describe('EventSourceSelector', () => {
         expect(mainContainer).toHaveClass('px-8')
     })
 
-    it('shows error when submitting invalid event source ID format', () => {
-        render(<EventSourceSelector />)
-
-        // Fill in the event source with invalid format (no colon)
-        const input = screen.getByLabelText('Enter Event Source ID string')
-        fireEvent.change(input, { target: { value: 'invalid-format' } })
-
-        // Submit form with invalid input
-        const submitButton = screen.getByText('View Events')
-        fireEvent.click(submitButton)
-
-        // Check for error message about invalid format
-        expect(screen.getByText(/Invalid event source format. Must include a colon/)).toBeInTheDocument()
-        expect(mockPush).not.toHaveBeenCalled()
-    })
-
-    it('clears error when entering a valid event source ID after error', () => {
-        render(<EventSourceSelector />)
-
-        // Fill in invalid format to trigger error
-        const input = screen.getByLabelText('Enter Event Source ID string')
-        fireEvent.change(input, { target: { value: 'invalid-format' } })
-
-        // Submit form with invalid input
-        const submitButton = screen.getByText('View Events')
-        fireEvent.click(submitButton)
-
-        // Verify error is shown
-        expect(screen.getByText(/Invalid event source format/)).toBeInTheDocument()
-
-        // Now enter a valid ID
-        fireEvent.change(input, { target: { value: 'gc:test@example.com' } })
-
-        // Submit again
-        fireEvent.click(submitButton)
-
-        // Error should be gone (component is in loading state)
-        expect(screen.queryByText(/Invalid event source format/)).not.toBeInTheDocument()
-    })
 
     it('redirects when submitting valid event source ID', async () => {
         render(<EventSourceSelector />)
@@ -151,7 +112,7 @@ describe('EventSourceSelector', () => {
         render(<EventSourceSelector />)
 
         // Find and click the example event source
-        const exampleButton = screen.getByText('Geocaching in Spain (Google Calendar)')
+        const exampleButton = screen.getByText('Geocaching in Spain')
         fireEvent.click(exampleButton)
 
         // Check that the input value was updated
@@ -161,7 +122,8 @@ describe('EventSourceSelector', () => {
         // Check logging was called
         expect(logr.info).toHaveBeenCalledWith('calendar', 'Example event source selected', {
             id: 'gc:geocachingspain@gmail.com',
-            name: 'Geocaching in Spain (Google Calendar)',
+            name: 'Geocaching in Spain',
+            shortId: null
         })
     })
 
@@ -201,12 +163,12 @@ describe('EventSourceSelector', () => {
         render(<EventSourceSelector />)
 
         // Check that both examples are rendered
-        expect(screen.getByText('SF Bay Facebook Events (Google Calendar)')).toBeInTheDocument()
-        expect(screen.getByText('Geocaching in Spain (Google Calendar)')).toBeInTheDocument()
+        expect(screen.getByText('SF Bay Facebook Events')).toBeInTheDocument()
+        expect(screen.getByText('Geocaching in Spain')).toBeInTheDocument()
 
         // Check for the correct event source IDs
         expect(screen.getByText('gc:geocachingspain@gmail.com')).toBeInTheDocument()
-        expect(screen.getByText(/aabe6c219ee2af5b791ea6719e04a92990f9ccd1e68a3ff0d89bacd153a0b36d/)).toBeInTheDocument()
+        expect(screen.getAllByText(/aabe6c219ee2af5b791ea6719e04a92990f9ccd1e68a3ff0d89bacd153a0b36d/)).toHaveLength(2) // appears in both combined source and individual source
 
         // Check that text is white
         const exampleButtons = screen

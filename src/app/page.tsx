@@ -25,11 +25,18 @@ import ErrorMessage from '@/components/common/ErrorMessage'
 import { umamiTrack } from '@/lib/utils/umami'
 import Sidebar from '@/components/layout/Sidebar'
 import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels'
+import { ExampleEventSources } from '@/lib/events/examples'
 
 declare global {
     interface Window {
         cmf_evts: FilteredEvents
-        cmf_evts_source: { name: string }
+        cmf_evts_sources: Array<{
+            name: string
+            totalCount: number
+            unknownLocationsCount: number
+            id: string
+            url: string
+        }> | null
     }
 }
 
@@ -148,7 +155,7 @@ function HomeContent() {
 
     // Use our new EventsManager hook to get events and filter methods
     // Only apply viewport filtering when not in "show all" mode
-    const { evts, filters, eventSource, apiIsLoading, apiError } = useEventsManager({
+    const { evts, filters, eventSources, apiIsLoading, apiError } = useEventsManager({
         eventSourceId,
         currentViewport: isShowingAllEvents ? null : currentViewportBounds,
         sd: datesUrl.sd,
@@ -207,7 +214,10 @@ function HomeContent() {
             setHeaderName('Loading Event Source...')
             dispatch({ type: 'EVENTS_LOADING' })
         }
-        umamiTrack('LoadCalendar', { es: eventSourceId ?? 'null', numEvents: evts.allEvents.length })
+        umamiTrack('LoadCalendar', {
+            es: Array.isArray(eventSourceId) ? eventSourceId.join(',') : eventSourceId ?? 'null',
+            numEvents: evts.allEvents.length,
+        })
     }, [eventSourceId, evts.allEvents.length])
 
     // Handle transition from events-init via EVENTS_LOADED action to map-init
@@ -220,10 +230,29 @@ function HomeContent() {
         logr.debug('app', msg)
         // Initialize if API loaded and we have events
         if (!apiIsLoading && all > 0) {
-            setHeaderName(eventSource?.name ?? 'Calendar Map Filter')
+            // Check if eventSourceId matches a shortId from ExampleEventSources
+            let headerName = eventSources?.[0]?.name ?? 'Calendar Map Filter'
+
+            // Handle array of event sources (when using shortId that expands to multiple sources)
+            if (Array.isArray(eventSourceId)) {
+                // Check if this array matches an example shortcut
+                const eventSourceIdString = eventSourceId.join(',')
+                const exampleSource = ExampleEventSources.find((es) => es.id === eventSourceIdString)
+                if (exampleSource) {
+                    headerName = exampleSource.name
+                }
+            } else {
+                // Handle single event source
+                const exampleSource = ExampleEventSources.find((es) => es.id === eventSourceId)
+                if (exampleSource) {
+                    headerName = exampleSource.name
+                }
+            }
+
+            setHeaderName(headerName)
             dispatch({ type: 'EVENTS_LOADED', hasEvents: all > 0 })
         }
-    }, [apiIsLoading, appState, evts, eventSource])
+    }, [apiIsLoading, appState, evts, eventSources])
 
     // Apply search filter when appState changes to main-state
     useEffect(() => {
@@ -365,9 +394,9 @@ function HomeContent() {
     useEffect(() => {
         if (typeof window !== 'undefined') {
             window.cmf_evts = evts
-            window.cmf_evts_source = eventSource
+            window.cmf_evts_sources = eventSources
         }
-    }, [evts, eventSource])
+    }, [evts, eventSources])
 
     // Update URL parameters when viewport changes
     useEffect(() => {
@@ -414,6 +443,7 @@ function HomeContent() {
                         <Sidebar
                             headerName={headerName}
                             eventCount={{ shown: evts.shownEvents.length, total: evts.allEvents.length }}
+                            eventSources={eventSources}
                             ref={eventsSidebarRef}
                             className="h-full"
                         >
