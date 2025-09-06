@@ -1,7 +1,7 @@
 'use client'
-import { useState, useEffect, useMemo, useReducer } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import useSWR from 'swr'
-import { EventsState, EventsAction, FilteredEvents, EventSourceResponse, CmfEvent } from '@/types/events'
+import { FilteredEvents, EventSourceResponse, CmfEvent } from '@/types/events'
 import { MapBounds } from '@/types/map'
 import { FilterEventsManager } from '@/lib/events/FilterEventsManager'
 import { logr } from '@/lib/utils/logr'
@@ -38,30 +38,7 @@ interface UseEventsManagerResult {
     fltrEvtMgr: FilterEventsManager
 }
 
-// Initial state
-const initialState: EventsState = {
-    events: [],
-    filters: {},
-    selectedEventId: null,
-    isLoading: false,
-    error: null,
-}
-
-// Reducer function
-function eventsReducer(state: EventsState, action: EventsAction): EventsState {
-    switch (action.type) {
-        case 'SET_EVENTS':
-            return { ...state, events: action.payload }
-        case 'SET_FILTERS':
-            return { ...state, filters: { ...state.filters, ...action.payload } }
-        case 'SET_ERROR':
-            return { ...state, error: action.payload }
-        case 'CLEAR_ERROR':
-            return { ...state, error: null }
-        default:
-            return state
-    }
-}
+// Removed reducer pattern - using direct state management instead
 
 export function useEventsManager({
     eventSourceId,
@@ -74,8 +51,8 @@ export function useEventsManager({
 }: UseEventsManagerProps = {}): UseEventsManagerResult {
     const [fltrEvtMgr] = useState(() => new FilterEventsManager())
 
-    // Use reducer for state management
-    const [state, dispatch] = useReducer(eventsReducer, initialState)
+    // Direct state management (replaced reducer pattern)
+    const [error, setError] = useState<Error | null>(null)
     
     // Track filter changes to force useMemo recalculation
     const [filterVersion, setFilterVersion] = useState(0)
@@ -83,7 +60,7 @@ export function useEventsManager({
     // Reset FilterEventsManager when event source changes
     useEffect(() => {
         logr.info('use_evts_mgr', `uE: FilterEventsManager reset, new eventSourceId: "${eventSourceId}"`)
-        dispatch({ type: 'CLEAR_ERROR' })
+        setError(null)
 
         fltrEvtMgr.reset()
     }, [eventSourceId, fltrEvtMgr])
@@ -148,7 +125,7 @@ export function useEventsManager({
         } else if (msg.includes('HTTP 429')) {
             userMessage = 'Too many requests - please try again later'
         }
-        dispatch({ type: 'SET_ERROR', payload: new Error(userMessage) })
+        setError(new Error(userMessage))
     }
 
     // Custom fetcher for multiple sources that uses Promise.all
@@ -180,32 +157,33 @@ export function useEventsManager({
                 : result.events
 
             allEvents.push(...eventsWithSrc)
-            totalCount += result.metadata.totalCount
-            totalUnknownLocations += result.metadata.unknownLocationsCount
+            totalCount += result.source.totalCount || 0
+            totalUnknownLocations += result.source.unknownLocationsCount || 0
             
             sources.push({
-                name: result.metadata.name,
-                totalCount: result.metadata.totalCount,
-                unknownLocationsCount: result.metadata.unknownLocationsCount,
-                id: result.metadata.id,
-                url: result.metadata.type.url,
+                name: result.source.name,
+                totalCount: result.source.totalCount || 0,
+                unknownLocationsCount: result.source.unknownLocationsCount || 0,
+                id: result.source.id || '',
+                url: result.source.url,
             })
         })
 
-        // Create aggregated metadata  
-        const allSourceIds = results.map(result => result.metadata.id)
-        const aggregatedMetadata = {
+        // Create aggregated source data  
+        const allSourceIds = results.map(result => result.source.id || '')
+        const aggregatedSource = {
+            prefix: results[0].source.prefix,
+            name: allSourceIds.length > 1 ? 'Multiple Event Sources' : results[0].source.name,
+            url: results[0].source.url,
             id: allSourceIds.length > 1 ? allSourceIds.join(',') : allSourceIds[0],
-            name: allSourceIds.length > 1 ? 'Multiple Event Sources' : results[0].metadata.name,
             totalCount,
             unknownLocationsCount: totalUnknownLocations,
-            type: results[0].metadata.type, // Use first source type for compatibility
         }
 
         return {
             aggregatedData: {
                 events: allEvents,
-                metadata: aggregatedMetadata,
+                source: aggregatedSource,
                 httpStatus: 200,
             },
             sources,
@@ -229,16 +207,16 @@ export function useEventsManager({
                 dispatchNot200(`HTTP ${data.httpStatus}:`)
                 return
             }
-            logr.info('use_evts_mgr', `✅ Single source events data fetched: "${data.metadata.name || 'Unknown Source'}"`, {
-                sourceId: data.metadata.id || 'unknown',
-                sourceType: data.metadata.type || 'unknown',
-                totalEvents: data.metadata.totalCount || 0,
-                unknownLocations: data.metadata.unknownLocationsCount || 0,
+            logr.info('use_evts_mgr', `✅ Single source events data fetched: "${data.source.name || 'Unknown Source'}"`, {
+                sourceId: data.source.id || 'unknown',
+                sourceType: data.source.prefix || 'unknown',
+                totalEvents: data.source.totalCount || 0,
+                unknownLocations: data.source.unknownLocationsCount || 0,
             })
             logr.debug('use_evts_mgr', `Before fltrEvtMgr.cmf_events_all=${fltrEvtMgr.cmf_events_all.length}`)
             logr.info('use_evts_mgr', `Calling fltrEvtMgr.setEvents(${data.events.length})`)
             fltrEvtMgr.setEvents(data.events)
-            dispatch({ type: 'SET_EVENTS', payload: data.events })
+            // Events are now managed by FilterEventsManager only
             logr.debug('use_evts_mgr', `After fltrEvtMgr.cmf_events_all=${fltrEvtMgr.cmf_events_all.length}`)
         },
         onError: (err) => {
@@ -255,18 +233,18 @@ export function useEventsManager({
         revalidateOnFocus: false,
         onSuccess: ({ aggregatedData, sources }) => {
             const data = aggregatedData
-            logr.info('use_evts_mgr', `✅ Multiple sources events data fetched: "${data.metadata.name}"`, {
-                sourceId: data.metadata.id,
-                sourceType: data.metadata.type,
-                totalEvents: data.metadata.totalCount,
-                unknownLocations: data.metadata.unknownLocationsCount,
+            logr.info('use_evts_mgr', `✅ Multiple sources events data fetched: "${data.source.name}"`, {
+                sourceId: data.source.id,
+                sourceType: data.source.prefix,
+                totalEvents: data.source.totalCount,
+                unknownLocations: data.source.unknownLocationsCount,
                 numSources: sources.length,
             })
             
             logr.debug('use_evts_mgr', `Before fltrEvtMgr.cmf_events_all=${fltrEvtMgr.cmf_events_all.length}`)
             logr.info('use_evts_mgr', `Calling fltrEvtMgr.setEvents(${data.events.length})`)
             fltrEvtMgr.setEvents(data.events)
-            dispatch({ type: 'SET_EVENTS', payload: data.events })
+            // Events are now managed by FilterEventsManager only
             logr.debug('use_evts_mgr', `After fltrEvtMgr.cmf_events_all=${fltrEvtMgr.cmf_events_all.length}`)
         },
         onError: (err) => {
@@ -277,11 +255,11 @@ export function useEventsManager({
     // Determine which data to use
     const apiData = isMultipleSources ? multiSwrData?.aggregatedData : singleApiData
     const eventSources = isMultipleSources ? multiSwrData?.sources : (singleApiData ? [{
-        name: singleApiData.metadata.name,
-        totalCount: singleApiData.metadata.totalCount,
-        unknownLocationsCount: singleApiData.metadata.unknownLocationsCount,
-        id: singleApiData.metadata.id,
-        url: singleApiData.metadata.type.url,
+        name: singleApiData.source.name,
+        totalCount: singleApiData.source.totalCount || 0,
+        unknownLocationsCount: singleApiData.source.unknownLocationsCount || 0,
+        id: singleApiData.source.id || '',
+        url: singleApiData.source.url,
     }] : null)
     const apiError = singleApiError || multiApiError
     const apiIsLoading = singleApiIsLoading || multiApiIsLoading
@@ -294,15 +272,12 @@ export function useEventsManager({
     useEffect(() => {
         if (dateRange) {
             fltrEvtMgr.setDateRange(dateRange)
-            dispatch({ type: 'SET_FILTERS', payload: { ...state.filters, dateRange } })
         }
         if (searchQuery) {
             fltrEvtMgr.setSearchQuery(searchQuery)
-            dispatch({ type: 'SET_FILTERS', payload: { ...state.filters, searchQuery } })
         }
         if (showUnknownLocationsOnly !== undefined) {
             fltrEvtMgr.setShowUnknownLocationsOnly(showUnknownLocationsOnly)
-            dispatch({ type: 'SET_FILTERS', payload: { ...state.filters, showUnknownLocationsOnly } })
         }
     }, [dateRange, searchQuery, showUnknownLocationsOnly, fltrEvtMgr])
 
@@ -317,28 +292,24 @@ export function useEventsManager({
         filters: {
             setDateRange: (dateRange) => {
                 fltrEvtMgr.setDateRange(dateRange)
-                dispatch({ type: 'SET_FILTERS', payload: { ...state.filters, dateRange } })
                 setFilterVersion(prev => prev + 1)
             },
             setSearchQuery: (searchQuery) => {
                 fltrEvtMgr.setSearchQuery(searchQuery)
-                dispatch({ type: 'SET_FILTERS', payload: { ...state.filters, searchQuery } })
                 setFilterVersion(prev => prev + 1)
             },
             setShowUnknownLocationsOnly: (show) => {
                 fltrEvtMgr.setShowUnknownLocationsOnly(show)
-                dispatch({ type: 'SET_FILTERS', payload: { ...state.filters, showUnknownLocationsOnly: show } })
                 setFilterVersion(prev => prev + 1)
             },
             resetAll: () => {
                 fltrEvtMgr.resetAllFilters()
-                dispatch({ type: 'SET_FILTERS', payload: {} })
                 setFilterVersion(prev => prev + 1)
             },
         },
         eventSources: eventSources || null,
-        apiIsLoading: apiIsLoading || state.isLoading,
-        apiError: apiError || state.error,
+        apiIsLoading: apiIsLoading,
+        apiError: apiError || error,
         fltrEvtMgr,
     }
 }

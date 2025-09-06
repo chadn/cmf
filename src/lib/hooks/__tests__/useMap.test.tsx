@@ -61,13 +61,14 @@ describe('useMap', () => {
     }
 
     const mockFilteredEvents = {
-        mapFilteredEvents: [],
-        searchFilteredEvents: [],
-        dateFilteredEvents: [],
-        unknownLocationsFilteredEvents: [],
-        filteredEvents: [],
-        shownEvents: [mockEvent],
         allEvents: [mockEvent],
+        visibleEvents: [mockEvent],
+        hiddenCounts: {
+            byMap: 0,
+            bySearch: 0,
+            byDate: 0,
+            byLocationFilter: 0,
+        },
     }
 
     beforeEach(() => {

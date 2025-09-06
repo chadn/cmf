@@ -58,12 +58,12 @@ export function useMap(
         }
     })
 
-    // Memoize filtered markers based on evts.shownEvents
+    // Memoize filtered markers based on evts.visibleEvents
     const filteredMarkers = useMemo(() => {
-        if (!evts.shownEvents) return []
+        if (!evts.visibleEvents) return []
 
         // Create a Set of event IDs that should be shown for efficient lookup
-        const shownEventIds = new Set(evts.shownEvents.map((event) => event.id))
+        const shownEventIds = new Set(evts.visibleEvents.map((event) => event.id))
 
         // Filter markers to only include those with events in the shown set
         const filtered = markersFromAllEvents
@@ -86,7 +86,7 @@ export function useMap(
         // Log the filtering results for debugging
         logr.info('umap', 'filteredMarkers updated', {
             totalMarkers: markersFromAllEvents.length,
-            shownEvents: evts.shownEvents.length,
+            visibleEvents: evts.visibleEvents.length,
             allEvents: evts.allEvents.length,
             markersShowing: filtered.map((m) => ({
                 id: m.id,
@@ -95,7 +95,7 @@ export function useMap(
         })
 
         return filtered
-    }, [evts.allEvents.length, evts.shownEvents, markersFromAllEvents])
+    }, [evts.allEvents.length, evts.visibleEvents, markersFromAllEvents])
 
     // Log when the hook initializes - only once
     useEffect(() => {
@@ -119,7 +119,7 @@ export function useMap(
         }
 
         if (markersChanged) {
-            const el = evts.shownEvents.length
+            const el = evts.visibleEvents.length
             const ol = mapState.markers.length
             logr.info('umap', `uE: markersChanged, ${filteredMarkers.length} markers, was ${ol}, from ${el} events`, {
                 oldMarkers: mapState.markers.map((m) => ({ id: m.id, count: m.events.length })),
@@ -146,7 +146,7 @@ export function useMap(
                 }))
             }
         }
-    }, [filteredMarkers, mapState.markers, evts.shownEvents, setMapState])
+    }, [filteredMarkers, mapState.markers, evts.visibleEvents, setMapState])
 
     // Update viewport to show all events
     const resetMapToAllEvents = useCallback(() => {

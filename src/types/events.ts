@@ -31,24 +31,16 @@ export interface CmfEvent {
     // Keep any other existing fields
 }
 
-export interface EventsState {
-    events: CmfEvent[]
-    filters: EventsFilter
-    selectedEventId: string | null
-    isLoading: boolean
-    error: Error | null
-}
+// Removed EventsState and EventsAction - replaced with direct state management
 
-export type EventsAction =
-    | { type: 'SET_EVENTS'; payload: CmfEvent[] }
-    | { type: 'SET_FILTERS'; payload: EventsFilter }
-    | { type: 'SET_ERROR'; payload: Error | null }
-    | { type: 'CLEAR_ERROR' }
-
-export interface EventSourceType {
+export interface EventSource {
     prefix: string // must be unique, eg 'gc' for 'gc:1234567890'
     name: string
     url: string
+    // Runtime fields added when processing API responses:
+    id?: string
+    totalCount?: number
+    unknownLocationsCount?: number
 }
 
 export interface EventSourceParams {
@@ -58,17 +50,9 @@ export interface EventSourceParams {
     [key: string]: string | undefined
 }
 
-export interface EventSourceResponseMetadata {
-    id: string
-    name: string
-    totalCount: number
-    unknownLocationsCount: number
-    type: EventSourceType
-}
-
 export interface EventSourceResponse {
     events: CmfEvent[]
-    metadata: EventSourceResponseMetadata
+    source: EventSource
     httpStatus: number
 }
 
@@ -79,13 +63,12 @@ export interface EventsFilter {
 }
 
 export interface FilteredEvents {
-    mapFilteredEvents: CmfEvent[]
-    searchFilteredEvents: CmfEvent[]
-    dateFilteredEvents: CmfEvent[]
-    unknownLocationsFilteredEvents: CmfEvent[]
-    // totalFiltered is all filtered out, is less than or equal to the sum of all filtered, since some events can be filtered out by multiple filters
-    filteredEvents: CmfEvent[]
-    // totalShown is events that pass all filters, not filetred out. allEvents - totalFilteredEvents
-    shownEvents: CmfEvent[]
     allEvents: CmfEvent[]
+    visibleEvents: CmfEvent[]  // events that pass all filters
+    hiddenCounts: {
+        byMap: number
+        bySearch: number
+        byDate: number
+        byLocationFilter: number
+    }
 }

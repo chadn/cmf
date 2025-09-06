@@ -1,11 +1,11 @@
-import { EventSourceParams, EventSourceResponse, EventSourceType } from '@/types/events'
+import { EventSourceParams, EventSourceResponse, EventSource } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
 
 /**
  * Base class for event source handlers that provides common functionality
  */
 export abstract class BaseEventSourceHandler {
-    abstract type: EventSourceType
+    abstract type: EventSource
     abstract fetchEvents(params: EventSourceParams): Promise<EventSourceResponse>
 
     /**

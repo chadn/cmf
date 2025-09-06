@@ -224,7 +224,7 @@ function HomeContent() {
     useEffect(() => {
         if (appState !== 'events-init') return
 
-        const k = evts.shownEvents.length
+        const k = evts.visibleEvents.length
         const all = evts.allEvents ? evts.allEvents.length : 0
         const msg = `uE: appState:events-init, apiIsLoading=${apiIsLoading}, evnts.shown=${k}, evnts.all=${all}`
         logr.debug('app', msg)
@@ -442,7 +442,7 @@ function HomeContent() {
                     <Panel minSize={20} maxSize={80} defaultSize={split[0]}>
                         <Sidebar
                             headerName={headerName}
-                            eventCount={{ shown: evts.shownEvents.length, total: evts.allEvents.length }}
+                            eventCount={{ shown: evts.visibleEvents.length, total: evts.allEvents.length }}
                             eventSources={eventSources}
                             ref={eventsSidebarRef}
                             className="h-full"

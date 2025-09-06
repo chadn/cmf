@@ -1,6 +1,6 @@
 import axios from 'axios'
 import * as cheerio from 'cheerio'
-import { CmfEvent, EventSourceParams, EventSourceResponse, EventSourceType } from '@/types/events'
+import { CmfEvent, EventSourceParams, EventSourceResponse, EventSource } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
 import { BaseEventSourceHandler, registerEventSource } from './index'
 import { parse19hzDateRange } from '@/lib/utils/date-parsing'
@@ -17,7 +17,7 @@ interface ParsedEventRow {
 }
 
 export class NineteenHzEventSource extends BaseEventSourceHandler {
-    public readonly type: EventSourceType = {
+    public readonly type: EventSource = {
         prefix: '19hz',
         name: '19hz.info Bay Area Electronic Music Events',
         url: 'https://19hz.info/eventlisting_BayArea.php',
@@ -54,12 +54,11 @@ export class NineteenHzEventSource extends BaseEventSourceHandler {
             return {
                 httpStatus: 200,
                 events,
-                metadata: {
+                source: {
+                    ...this.type,
                     id: params.id || 'bayarea',
-                    name: this.type.name,
                     totalCount: events.length,
                     unknownLocationsCount: 0, // Will be computed after geocoding
-                    type: this.type,
                 },
             }
         } catch (error) {

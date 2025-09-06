@@ -84,20 +84,20 @@ export class FilterEventsManager {
      * - Map chip count = total events - events located in current viewport (including those they may be filtered out)
      */
     getFilteredEvents(currentViewport?: MapBounds): FilteredEvents {
-        const filteredEvents: FilteredEvents = {
-            mapFilteredEvents: [],
-            searchFilteredEvents: [],
-            dateFilteredEvents: [],
-            unknownLocationsFilteredEvents: [],
-            filteredEvents: [],
-            shownEvents: [],
-            allEvents: this.allEvents,
+        const hiddenCounts = {
+            byMap: 0,
+            bySearch: 0,
+            byDate: 0,
+            byLocationFilter: 0,
         }
 
         if (Object.keys(this.filters).length === 0) {
             logr.debug('fltr_evts_mgr', 'getFilteredEvents returning all events, no filters exist')
-            filteredEvents.shownEvents = this.allEvents
-            return filteredEvents
+            return {
+                allEvents: this.allEvents,
+                visibleEvents: this.allEvents,
+                hiddenCounts,
+            }
         }
 
         // Ensure aggregate center is available for map filtering
@@ -112,25 +112,26 @@ export class FilterEventsManager {
             let domainFiltered = false
 
             // Calculate independent chip counts - each filter checks against ALL events
+            // Count events hidden by each filter (checking against ALL events for accurate counts)
             if (!applySearchFilter(event, this.filters.searchQuery) && this.filters.searchQuery) {
-                filteredEvents.searchFilteredEvents.push(event)
+                hiddenCounts.bySearch++
             }
             if (!applyDateFilter(event, this.filters.dateRange) && this.filters.dateRange) {
-                filteredEvents.dateFilteredEvents.push(event)
+                hiddenCounts.byDate++
             }
             if (
                 !applyUnknownLocationsFilter(event, this.filters.showUnknownLocationsOnly) &&
                 this.filters.showUnknownLocationsOnly
             ) {
-                filteredEvents.unknownLocationsFilteredEvents.push(event)
+                hiddenCounts.byLocationFilter++
             }
 
-            // Apply viewport filter independently (for chip count)
+            // Count events hidden by viewport filter independently
             if (currentViewport && !applyMapFilter(event, currentViewport, this.aggregateCenter || undefined)) {
-                filteredEvents.mapFilteredEvents.push(event)
+                hiddenCounts.byMap++
             }
 
-            // Check if event passes all domain filters (for determining shownEvents)
+            // Check if event passes all domain filters
             if (!applySearchFilter(event, this.filters.searchQuery) && this.filters.searchQuery) {
                 domainFiltered = true
             }
@@ -144,27 +145,30 @@ export class FilterEventsManager {
                 domainFiltered = true
             }
 
-            if (domainFiltered) {
-                filteredEvents.filteredEvents.push(event)
-            } else {
+            if (!domainFiltered) {
                 domainFilteredEvents.push(event)
             }
         })
 
-        // Apply viewport filter to determine what's currently shown
+        // Apply viewport filter to determine what's currently visible
+        const visibleEvents: CmfEvent[] = []
         if (currentViewport) {
             domainFilteredEvents.forEach((event) => {
                 const passesViewportFilter = applyMapFilter(event, currentViewport, this.aggregateCenter || undefined)
                 if (passesViewportFilter) {
-                    filteredEvents.shownEvents.push(event)
+                    visibleEvents.push(event)
                 }
             })
         } else {
             // No viewport filter, show all domain-filtered events
-            filteredEvents.shownEvents = domainFilteredEvents
+            visibleEvents.push(...domainFilteredEvents)
         }
 
-        return filteredEvents
+        return {
+            allEvents: this.allEvents,
+            visibleEvents,
+            hiddenCounts,
+        }
     }
 
     /**

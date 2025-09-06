@@ -54,6 +54,7 @@ import { renderHook, act } from '@testing-library/react'
 import { useEventsManager } from '../useEventsManager'
 import { CmfEvent } from '@/types/events'
 import { MapBounds } from '@/types/map'
+import { url } from 'inspector'
 
 // Reconfigure SWR mock to be controllable per test
 const swrMock = require('swr')
@@ -80,13 +81,15 @@ describe('useEventsManager - new viewport parameter model', () => {
 
     const mockApiResponse = {
         events: [mockEvent],
-        metadata: {
-            id: 'test-source',
+        source: {
+            prefix: 'test',
             name: 'Test Source',
-            type: 'test',
+            url: 'https://test.com',
+            id: 'test-source',
             totalCount: 1,
             unknownLocationsCount: 0,
         },
+        httpStatus: 200,
     }
 
     beforeEach(() => {
@@ -146,7 +149,13 @@ describe('useEventsManager - new viewport parameter model', () => {
     it('should fetch events when eventSourceId is provided', () => {
         const { result } = renderHook(() => useEventsManager({ eventSourceId: 'test-source' }))
 
-        expect(result.current.eventSources).toEqual(mockApiResponse.metadata)
+        expect(result.current.eventSources?.[0]).toEqual({
+            id: mockApiResponse.source.id,
+            name: mockApiResponse.source.name,
+            totalCount: mockApiResponse.source.totalCount,
+            unknownLocationsCount: mockApiResponse.source.unknownLocationsCount,
+            url: mockApiResponse.source.url
+        })
     })
 
     it('should handle API errors', () => {

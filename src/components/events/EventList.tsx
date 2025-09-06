@@ -42,17 +42,17 @@ const EventList: React.FC<EventListProps> = ({ evts, selectedEventId, onEventSel
         }
     }, [selectedEventId])
 
-    const shownEvents = evts.shownEvents
+    const visibleEvents = evts.visibleEvents
 
     const sortedEvents = useMemo(() => {
-        return [...shownEvents].sort((a, b) => {
+        return [...visibleEvents].sort((a, b) => {
             let result = getComparisonResult(a, b, sortField, sortDirection)
             if (result === 0) {
                 result = getComparisonResult(a, b, prevSortField, prevSortDirection)
             }
             return result
         })
-    }, [shownEvents, sortField, sortDirection, prevSortField, prevSortDirection])
+    }, [visibleEvents, sortField, sortDirection, prevSortField, prevSortDirection])
 
     // Need uniqueTableKey to prevent React from reusing the same table element when events change.
     // Create unique key based on both length AND content to handle cases where
@@ -74,7 +74,7 @@ const EventList: React.FC<EventListProps> = ({ evts, selectedEventId, onEventSel
         )
     }
 
-    if (shownEvents.length === 0) {
+    if (visibleEvents.length === 0) {
         return (
             <div className="p-4 text-center">
                 {apiIsLoading ? (

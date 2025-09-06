@@ -9,7 +9,7 @@
  * - types.ts: Defines shared interfaces and types
  */
 
-import { CmfEvent, EventSourceParams, EventSourceResponse, EventSourceType } from '@/types/events'
+import { CmfEvent, EventSourceParams, EventSourceResponse, EventSource } from '@/types/events'
 import { BaseEventSourceHandler, registerEventSource } from '../index'
 import { logr } from '@/lib/utils/logr'
 import { PluraEventScrapeStats } from './types'
@@ -31,7 +31,7 @@ export class PluraEventsSource extends BaseEventSourceHandler {
     // if fetchEventDetailstrue, fetch event details from the event page, otherwise just scrape the city page
     private fetchEventDetails: boolean = false
     public totalPages: number = 0
-    public readonly type: EventSourceType = {
+    public readonly type: EventSource = {
         prefix: 'plura',
         name: 'Plura Community Events',
         url: 'https://heyplura.com/community-calendars',
@@ -47,10 +47,10 @@ export class PluraEventsSource extends BaseEventSourceHandler {
         const resp: EventSourceResponse = {
             httpStatus: 200,
             events: [],
-            metadata: {
+            source: {
+                ...this.type,
                 id: cityToScrape,
                 name: `Plura Events - ${cityToScrape !== 'all' ? cityToScrape : 'Global'}`,
-                type: this.type,
                 totalCount: 0,
                 unknownLocationsCount: 0,
             },
@@ -104,7 +104,7 @@ export class PluraEventsSource extends BaseEventSourceHandler {
                 }
             }
             await setCachedCityMap(this.eventIdsToCityMap)
-            resp.metadata.totalCount = Object.keys(returnEvents).length
+            resp.source.totalCount = Object.keys(returnEvents).length
         } catch (error) {
             const err = error as { response?: { status?: number; statusText?: string } }
             logr.error('api-es-plura', `Error in fetchEvents: ${error instanceof Error ? error.message : err}`, error)

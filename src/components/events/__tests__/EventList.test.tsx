@@ -102,13 +102,14 @@ describe('EventList', () => {
     ]
 
     const mockEventsManager: FilteredEvents = {
-        shownEvents: mockEvents,
-        mapFilteredEvents: [],
-        searchFilteredEvents: [],
-        dateFilteredEvents: [],
-        unknownLocationsFilteredEvents: [],
-        filteredEvents: [],
         allEvents: mockEvents,
+        visibleEvents: mockEvents,
+        hiddenCounts: {
+            byMap: 0,
+            bySearch: 0,
+            byDate: 0,
+            byLocationFilter: 0,
+        },
     }
 
     it('renders a list of events', () => {
@@ -173,13 +174,14 @@ describe('EventList', () => {
     it('displays empty state when no events are found', () => {
         const mockOnEventSelect = jest.fn()
         const emptyEventsManager: FilteredEvents = {
-            shownEvents: [],
-            mapFilteredEvents: [],
-            searchFilteredEvents: [],
-            dateFilteredEvents: [],
-            unknownLocationsFilteredEvents: [],
-            filteredEvents: [],
             allEvents: [],
+            visibleEvents: [],
+            hiddenCounts: {
+                byMap: 0,
+                bySearch: 0,
+                byDate: 0,
+                byLocationFilter: 0,
+            },
         }
 
         render(
@@ -383,12 +385,12 @@ describe('EventList', () => {
 
         const first: FilteredEvents = {
             ...mockEventsManager,
-            shownEvents: [mockEvents[0], mockEvents[1]],
+            visibleEvents: [mockEvents[0], mockEvents[1]],
             allEvents: [mockEvents[0], mockEvents[1]],
         }
         const second: FilteredEvents = {
             ...mockEventsManager,
-            shownEvents: [mockEvents[2], mockEvents[3]],
+            visibleEvents: [mockEvents[2], mockEvents[3]],
             allEvents: [mockEvents[2], mockEvents[3]],
         }
 

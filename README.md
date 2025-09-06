@@ -49,13 +49,16 @@ See [Development](docs/development.md)
 
 ## 📚 Documentation
 
-For more detailed information, see the following documentation:
+**📖 Complete Documentation Index**: See [docs/README.md](docs/README.md) for full documentation overview
+
+**Quick Links**:
 
 -   [How to Use the App](docs/usage.md)
--   [Product Specification](docs/product.md)
--   [Implementation Details](docs/Implementation.md) includes directory structure and implementation decisions.
--   [Test coverage](docs/tests.md) output of `npm test`.
--   [To Do - Features, Bugs and Known Issues](docs/todo.md)
+-   [Development Setup](docs/development.md)
+-   [Implementation Details](docs/Implementation.md) - architecture and technical decisions
+-   [Architecture Decision Records (ADR)](docs/adr/README.md) - key architectural decisions and rationale
+-   [Test Coverage](docs/tests.md) - current test statistics and strategy
+-   [Feature Backlog](docs/todo.md) - planned features and known issues
 -   [Creating your own Event Source](src/lib/api/eventSources)
 
 ## History

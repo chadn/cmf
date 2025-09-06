@@ -1,7 +1,7 @@
 import { axiosGet } from '@/lib/utils/utils-server'
 import { addMonths, subMonths, format } from 'date-fns'
 import { GoogleCalendarResponse, GoogleCalendarEvent } from '@/types/googleApi'
-import { CmfEvent, EventSourceParams, EventSourceResponse, EventSourceType } from '@/types/events'
+import { CmfEvent, EventSourceParams, EventSourceResponse, EventSource } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
 import { BaseEventSourceHandler, registerEventSource } from './index'
 
@@ -14,7 +14,7 @@ if (!process.env.GOOGLE_CALENDAR_API_KEY) {
 }
 
 export class GoogleCalendarEventSource extends BaseEventSourceHandler {
-    public readonly type: EventSourceType = {
+    public readonly type: EventSource = {
         prefix: 'gc',
         name: 'Google Calendar',
         url: '', // assigned to apiUrl below
@@ -44,12 +44,12 @@ export class GoogleCalendarEventSource extends BaseEventSourceHandler {
         return {
             httpStatus: 200,
             events,
-            metadata: {
+            source: {
+                ...this.type,
                 id: params.id,
-                name: calendarData.summary,
+                name: `Google Calendar: ${calendarData.summary}`,
                 totalCount: events.length,
                 unknownLocationsCount: 0, // This will be computed after geocoding
-                type: this.type,
             },
         }
     }

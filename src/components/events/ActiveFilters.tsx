@@ -19,19 +19,19 @@ export default function ActiveFilters({
     const filterButtons = [
         {
             label: 'Map',
-            numEvents: evts.mapFilteredEvents.length,
+            numEvents: evts.hiddenCounts.byMap,
             onClick: onClearMapFilter,
             d: 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z',
         },
         {
             label: 'Search',
-            numEvents: evts.searchFilteredEvents.length,
+            numEvents: evts.hiddenCounts.bySearch,
             onClick: onClearSearchFilter,
             d: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z',
         },
         {
             label: 'Date',
-            numEvents: evts.dateFilteredEvents.length,
+            numEvents: evts.hiddenCounts.byDate,
             onClick: onClearDateFilter,
             d: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
         },

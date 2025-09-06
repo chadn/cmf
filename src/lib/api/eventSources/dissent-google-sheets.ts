@@ -1,4 +1,4 @@
-import { CmfEvent, EventSourceParams, EventSourceResponse, EventSourceType } from '@/types/events'
+import { CmfEvent, EventSourceParams, EventSourceResponse, EventSource } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
 import { BaseEventSourceHandler, registerEventSource } from './index'
 import { axiosGet } from '@/lib/utils/utils-server'
@@ -17,7 +17,7 @@ const sheetTabs = {
 }
 
 export class DissentGoogleSheetsSource extends BaseEventSourceHandler {
-    public readonly type: EventSourceType = {
+    public readonly type: EventSource = {
         prefix: 'dissent',
         name: 'We The People Dissent',
         url: 'https://www.wethepeopledissent.net/',
@@ -95,10 +95,10 @@ export class DissentGoogleSheetsSource extends BaseEventSourceHandler {
             return {
                 httpStatus: 200,
                 events,
-                metadata: {
+                source: {
+                    ...this.type,
                     id: params.id || '',
                     name: this.type.name + ' ' + sheetName,
-                    type: this.type,
                     totalCount: events.length,
                     unknownLocationsCount: events.filter((e) => !e.location).length,
                 },

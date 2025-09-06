@@ -66,7 +66,7 @@ The response format for all event sources:
 ```typescript
 export interface EventSourceResponse {
     events: CmfEvent[]
-    metadata: EventSourceMetadata
+    source: EventSource
 }
 ```
 
@@ -82,11 +82,11 @@ To add a new event source:
 ### Example:
 
 ```typescript
-import { BaseEventSourceHandler, EventSourceParams, EventSourceResponse, EventSourceType, registerEventSource } from './index';
+import { BaseEventSourceHandler, EventSourceParams, EventSourceResponse, EventSource, registerEventSource } from './index';
 import { CmfEvent } from '@/types/events';
 
 export class MyNewEventSource extends BaseEventSourceHandler {
-    public readonly type: EventSourceType = {
+    public readonly type: EventSource = {
         prefix: 'ns',
         name: 'New Source',
         url: 'https://homepage.com',
@@ -99,13 +99,13 @@ export class MyNewEventSource extends BaseEventSourceHandler {
 
         return {
             events,
-            metadata: {
+            source: {
+                ...this.type,
                 id: params.id,
-                name: 'Some custom New Source',
-                type: this.type,
                 totalCount: events.length,
                 unknownLocationsCount: 0
-            }
+            },
+            httpStatus: 200
         };
     }
 }

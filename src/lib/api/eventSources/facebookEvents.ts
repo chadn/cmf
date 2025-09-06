@@ -1,4 +1,4 @@
-import { EventSourceParams, EventSourceResponse, EventSourceType, CmfEvent } from '@/types/events'
+import { EventSourceParams, EventSourceResponse, EventSource, CmfEvent } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
 import { BaseEventSourceHandler, registerEventSource } from './index'
 import { parseIcsContent } from '@/lib/utils/icsParser'
@@ -11,7 +11,7 @@ import { HttpError } from '@/types/error'
 export class FacebookEventsSource extends BaseEventSourceHandler {
     // Event source format: 'fb:${facebookUid}-${facebookKey}'
     // https://www.facebook.com/events/ical/upcoming/?uid=677700808&key=3RlHDZnbeH2YJMpJ
-    public readonly type: EventSourceType = {
+    public readonly type: EventSource = {
         prefix: 'fb',
         name: 'Facebook Events',
         url: '', // assigned to icsUrl below
@@ -63,10 +63,10 @@ export class FacebookEventsSource extends BaseEventSourceHandler {
             return {
                 httpStatus: 200,
                 events: cmfEvents,
-                metadata: {
+                source: {
+                    ...this.type,
                     id: params.id,
                     name: 'Facebook Events',
-                    type: this.type,
                     totalCount: cmfEvents.length,
                     unknownLocationsCount: 0,
                 },

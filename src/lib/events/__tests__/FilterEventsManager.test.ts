@@ -36,13 +36,13 @@ describe('FilterEventsManager - new viewport parameter model', () => {
 
         // Without viewport parameter - shows all events
         const resultWithoutViewport = mgr.getFilteredEvents()
-        expect(resultWithoutViewport.shownEvents.map((e) => e.id).sort()).toEqual(['outside', 'visible'])
-        expect(resultWithoutViewport.mapFilteredEvents).toHaveLength(0)
+        expect(resultWithoutViewport.visibleEvents.map((e) => e.id).sort()).toEqual(['outside', 'visible'])
+        expect(resultWithoutViewport.hiddenCounts.byMap).toBe(0)
 
-        // With viewport parameter - filters both shown events and chip count
+        // With viewport parameter - filters both visible events and chip count
         const resultWithViewport = mgr.getFilteredEvents(viewportBounds)
-        expect(resultWithViewport.shownEvents.map((e) => e.id)).toEqual(['visible'])
-        expect(resultWithViewport.mapFilteredEvents.map((e) => e.id)).toEqual(['outside'])
+        expect(resultWithViewport.visibleEvents.map((e) => e.id)).toEqual(['visible'])
+        expect(resultWithViewport.hiddenCounts.byMap).toBe(1)
     })
 
     it('applies domain filters (date, search) independently of viewport', () => {
@@ -61,11 +61,11 @@ describe('FilterEventsManager - new viewport parameter model', () => {
         const result = mgr.getFilteredEvents(viewportBounds)
 
         // Date filter excludes outOfDate from domain results
-        expect(result.shownEvents.map((e) => e.id)).toEqual(['inDate'])
-        expect(result.dateFilteredEvents.map((e) => e.id)).toEqual(['outOfDate'])
+        expect(result.visibleEvents.map((e) => e.id)).toEqual(['inDate'])
+        expect(result.hiddenCounts.byDate).toBe(1)
 
         // Map chip shows viewport filtering against all events (not just domain results)
-        expect(result.mapFilteredEvents).toHaveLength(0) // both events are in viewport bounds
+        expect(result.hiddenCounts.byMap).toBe(0) // both events are in viewport bounds
     })
 
     it('calculates independent chip counts correctly', () => {
@@ -83,13 +83,13 @@ describe('FilterEventsManager - new viewport parameter model', () => {
         const result = mgr.getFilteredEvents(viewportBounds)
 
 
-        // Shown events: in viewport + in date range + matches search
-        expect(result.shownEvents.map((e) => e.id)).toEqual(['inViewport'])
+        // Visible events: in viewport + in date range + matches search
+        expect(result.visibleEvents.map((e) => e.id)).toEqual(['inViewport'])
 
         // Independent chip counts
-        expect(result.mapFilteredEvents).toHaveLength(2) // outViewport + outViewportOutDate (viewport filter against all events)
-        expect(result.dateFilteredEvents).toHaveLength(2) // inViewportOutDate + outViewportOutDate (date filter against all events)
-        expect(result.searchFilteredEvents).toHaveLength(1) // outViewportOutDate (search filter against all events)
+        expect(result.hiddenCounts.byMap).toBe(2) // outViewport + outViewportOutDate (viewport filter against all events)
+        expect(result.hiddenCounts.byDate).toBe(2) // inViewportOutDate + outViewportOutDate (date filter against all events)
+        expect(result.hiddenCounts.bySearch).toBe(1) // outViewportOutDate (search filter against all events)
     })
 
     it('handles no viewport parameter gracefully', () => {
@@ -100,8 +100,8 @@ describe('FilterEventsManager - new viewport parameter model', () => {
 
         const result = mgr.getFilteredEvents() // no viewport parameter
 
-        expect(result.shownEvents.map((e) => e.id)).toEqual(['a'])
-        expect(result.mapFilteredEvents).toHaveLength(0) // no viewport filtering
-        expect(result.searchFilteredEvents.map((e) => e.id)).toEqual(['b'])
+        expect(result.visibleEvents.map((e) => e.id)).toEqual(['a'])
+        expect(result.hiddenCounts.byMap).toBe(0) // no viewport filtering
+        expect(result.hiddenCounts.bySearch).toBe(1)
     })
 })

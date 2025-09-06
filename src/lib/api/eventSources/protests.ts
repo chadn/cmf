@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { format } from 'date-fns'
-import { CmfEvent, EventSourceParams, EventSourceResponse, EventSourceType } from '@/types/events'
+import { CmfEvent, EventSourceParams, EventSourceResponse, EventSource } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
 import { BaseEventSourceHandler, registerEventSource } from './index'
 
@@ -51,7 +51,7 @@ interface ProtestApiResponse {
 }
 
 export class ProtestsEventSource extends BaseEventSourceHandler {
-    public readonly type: EventSourceType = {
+    public readonly type: EventSource = {
         prefix: 'protest',
         name: 'Protests from pol-rev.com',
         url: 'https://events.pol-rev.com/',
@@ -88,12 +88,11 @@ export class ProtestsEventSource extends BaseEventSourceHandler {
         return {
             httpStatus: 200,
             events,
-            metadata: {
+            source: {
+                ...this.type,
                 id: 'protests',
-                name: this.type.name,
                 totalCount: events.length,
                 unknownLocationsCount: 0, // This will be computed after geocoding
-                type: this.type,
             },
         }
     }

@@ -24,12 +24,12 @@ const fetchAndGeocode = async (
     timeMax?: string
 ): Promise<EventSourceResponse> => {
     const startTime = performance.now()
-    const { events, metadata } = await fetchEvents(eventSourceId, {
+    const { events, source } = await fetchEvents(eventSourceId, {
         timeMin,
         timeMax,
     })
     let ms = Math.round(performance.now() - startTime)
-    const sz = JSON.stringify({ events, metadata }).length
+    const sz = JSON.stringify({ events, source }).length
     logr.info('api-events', `/api/events fetched ${events.length} events in ${ms}ms ${sz} bytes ${eventSourceId}`)
 
     // GEOCODE LOCATIONS
@@ -74,8 +74,8 @@ const fetchAndGeocode = async (
     // Construct the response
     const response: EventSourceResponse = {
         events: eventsWithLocationResolved,
-        metadata: {
-            ...metadata,
+        source: {
+            ...source,
             unknownLocationsCount,
         },
         httpStatus: 200,
@@ -86,7 +86,7 @@ const fetchAndGeocode = async (
 
     logr.info('api-events', `/api/events response ${sizeOfResponse} bytes, ${ms}ms for fetch + geocode`, {
         totalCount: response.events.length,
-        metadata: response.metadata,
+        source: response.source,
     })
 
     return response
