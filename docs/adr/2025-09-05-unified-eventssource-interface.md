@@ -1,4 +1,4 @@
-# ADR-0001: Unified EventSource Interface
+# ADR-0001: Unified EventsSource Interface
 
 ## Status
 
@@ -8,8 +8,8 @@ Accepted ✅ (2025-09-05)
 
 The type system had redundant interfaces causing maintenance issues and test failures:
 
-- `EventSourceType` interface for static definitions
-- `EventSourceResponseMetadata` interface for API responses  
+- `EventsSourceType` interface for static definitions
+- `EventsSourceResponseMetadata` interface for API responses  
 - Runtime format with different field structure
 
 This created:
@@ -19,10 +19,10 @@ This created:
 
 ## Decision
 
-Consolidate all EventSource representations into a single unified interface:
+Consolidate all EventsSource representations into a single unified interface:
 
 ```typescript
-interface EventSource {
+interface EventsSource {
     prefix: string    // Static definition fields
     name: string  
     url: string
@@ -42,7 +42,7 @@ interface EventSource {
 ## Consequences
 
 ### Positive
-- Single source of truth for EventSource data
+- Single source of truth for EventsSource data
 - Eliminated transformation functions 
 - Fixed test failures from type mismatches
 - Simplified API response structure

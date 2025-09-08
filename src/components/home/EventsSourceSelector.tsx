@@ -5,9 +5,9 @@ import { useRouter } from 'next/navigation'
 import LoadingSpinner from '../common/LoadingSpinner'
 import ErrorMessage from '../common/ErrorMessage'
 import { logr } from '@/lib/utils/logr'
-import { ExampleEventSources } from '@/lib/events/examples'
+import { ExampleEventsSources } from '@/lib/events/examples'
 
-const EventSourceSelector: React.FC = () => {
+const EventsSourceSelector: React.FC = () => {
     const router = useRouter()
     const [eventSourceId, setEventSourceId] = useState('')
     const [isLoading, setIsLoading] = useState(false)
@@ -15,7 +15,7 @@ const EventSourceSelector: React.FC = () => {
 
     // Log component mount - this will only run in the browser
     useEffect(() => {
-        logr.info('component', 'EventSourceSelector component mounted')
+        logr.info('component', 'EventsSourceSelector component mounted')
     }, [])
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -49,7 +49,7 @@ const EventSourceSelector: React.FC = () => {
     }
 
     const handleExampleSelect = (id: string) => {
-        const example = ExampleEventSources.find((es) => es.id === id)
+        const example = ExampleEventsSources.find((es) => es.id === id)
         logr.info('calendar', 'Example event source selected', {
             id,
             name: example?.name,
@@ -93,7 +93,7 @@ const EventSourceSelector: React.FC = () => {
                     Or try an example - click below then click View Events:
                 </h3>
                 <div className="space-y-2 max-h-72 overflow-y-auto">
-                    {ExampleEventSources.map((source) => (
+                    {ExampleEventsSources.map((source) => (
                         <button
                             key={`${source.id}`}
                             className="w-full text-left px-3 py-2 border rounded btn btn-secondary"
@@ -140,4 +140,4 @@ const EventSourceSelector: React.FC = () => {
     )
 }
 
-export default EventSourceSelector
+export default EventsSourceSelector

@@ -3,7 +3,7 @@
 import React, { Suspense } from 'react'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
-import EventSourceSelector from '@/components/home/EventSourceSelector'
+import EventsSourceSelector from '@/components/home/EventsSourceSelector'
 
 function HomeContent() {
     return (
@@ -44,7 +44,7 @@ function HomeContent() {
                         </div>
 
                         <div>
-                            <EventSourceSelector />
+                            <EventsSourceSelector />
                         </div>
                     </div>
                 </div>

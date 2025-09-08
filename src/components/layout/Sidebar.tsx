@@ -4,17 +4,12 @@ import * as Popover from '@radix-ui/react-popover'
 import { Button } from '@/components/ui/button'
 import { X } from 'lucide-react'
 import packageJson from '../../../package.json'
+import { EventsSource } from '@/types/events'
 
 interface SidebarProps {
     headerName?: string
     eventCount?: { shown: number; total: number }
-    eventSources?: Array<{
-        name: string
-        totalCount: number
-        unknownLocationsCount: number
-        id: string
-        url: string
-    }> | null
+    eventSources?: Array<EventsSource> | null
     children: ReactNode
     className?: string
 }
@@ -156,12 +151,13 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(({ headerName, eventCou
                                                                 View Source &nbsp;
                                                             </a>
                                                         )}
-                                                        Events: <span className="font-medium">{source.totalCount}</span>
-                                                        {source.unknownLocationsCount > 0 && (
-                                                            <span className="text-orange-600 ml-2">
-                                                                ({source.unknownLocationsCount} unknown locations)
-                                                            </span>
-                                                        )}
+                                                        Events: <span className="font-medium">{source.totalCount}</span>{' '}
+                                                        <a
+                                                            href={`/?es=${source.prefix}:${source.id}`}
+                                                            className="text-blue-600 hover:underline text-sm"
+                                                        >
+                                                            Show Only These
+                                                        </a>
                                                     </div>
                                                 </div>
                                             ))}
@@ -170,7 +166,7 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(({ headerName, eventCou
                                                     <div>
                                                         Total Events:{' '}
                                                         <span className="font-medium">
-                                                            {eventSources.reduce((sum, s) => sum + s.totalCount, 0)}
+                                                            {eventSources.reduce((sum, s) => sum + (s.totalCount || 0), 0)}
                                                         </span>
                                                     </div>
                                                 </div>

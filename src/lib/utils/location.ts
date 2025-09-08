@@ -2,7 +2,7 @@ import { MapBounds, MapViewport, MapMarker } from '@/types/map'
 import { CmfEvent } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
 import { createParser } from 'nuqs'
-import { ExampleEventSources } from '@/lib/events/examples'
+import { ExampleEventsSources } from '@/lib/events/examples'
 import { ViewState as ViewStateType } from 'react-map-gl'
 import WebMercatorViewport from '@math.gl/web-mercator'
 import { MutableRefObject } from 'react'
@@ -324,7 +324,7 @@ export const parseAsLatLon = createParser({
         return value.toFixed(5)
     },
 })
-export const parseAsEventSource = createParser({
+export const parseAsEventsSource = createParser({
     // parse: a function that takes a string and returns the parsed value, or null if invalid.
     parse(queryValue) {
         if (typeof queryValue !== 'string') return null
@@ -336,7 +336,7 @@ export const parseAsEventSource = createParser({
             
             for (const source of sources) {
                 // Check for example event sources first
-                const example = ExampleEventSources.find((es) => es.shortId === source)
+                const example = ExampleEventsSources.find((es) => es.shortId === source)
                 if (example) {
                     // If example contains comma-separated sources, expand them
                     if (example.id.includes(',')) {
@@ -360,7 +360,7 @@ export const parseAsEventSource = createParser({
 
         // Handle single source (existing logic)
         // check for example event sources first
-        const example = ExampleEventSources.find((es) => es.shortId === queryValue)
+        const example = ExampleEventsSources.find((es) => es.shortId === queryValue)
         if (example) {
             // If example contains comma-separated sources, return as array
             if (example.id.includes(',')) {
@@ -380,12 +380,12 @@ export const parseAsEventSource = createParser({
         if (Array.isArray(value)) {
             // Check if this array matches an example shortcut
             const valueString = value.join(',')
-            const example = ExampleEventSources?.find?.((es) => es.id === valueString && es.shortId)
+            const example = ExampleEventsSources?.find?.((es) => es.id === valueString && es.shortId)
             if (example) return example.shortId as string
             
             // Otherwise, serialize each source individually and join with commas
             const serializedSources = value.map(source => {
-                const example = ExampleEventSources?.find?.((es) => es.id === source && es.shortId)
+                const example = ExampleEventsSources?.find?.((es) => es.id === source && es.shortId)
                 return example ? example.shortId as string : source
             })
             return serializedSources.join(',')
@@ -393,7 +393,7 @@ export const parseAsEventSource = createParser({
 
         // Handle single source (existing logic)
         // Check for example event sources first
-        const example = ExampleEventSources?.find?.((es) => es.id === value && es.shortId)
+        const example = ExampleEventsSources?.find?.((es) => es.id === value && es.shortId)
         if (example) return example.shortId as string
 
         return value

@@ -1,4 +1,4 @@
-import { Location, LOCATION_KEY_PREFIX, EVENTS_CACHE_PREFIX, EventSourceResponse } from '@/types/events'
+import { Location, LOCATION_KEY_PREFIX, EVENTS_CACHE_PREFIX, EventsSourceResponse } from '@/types/events'
 import * as upstashCache from './upstash'
 import * as filesystemCache from './filesystem'
 import { logr } from '../utils/logr'
@@ -186,21 +186,21 @@ export const getEventsCache = async (
     eventSourceId: string,
     timeMin: string = '',
     timeMax: string = ''
-): Promise<EventSourceResponse | null> => {
+): Promise<EventsSourceResponse | null> => {
     let fetchKey = `${eventSourceId}-${roundTimeToNearestHour(timeMin)}-${roundTimeToNearestHour(timeMax)}`
-    const cachedResponse = await getCache<EventSourceResponse>(fetchKey, EVENTS_CACHE_PREFIX)
+    const cachedResponse = await getCache<EventsSourceResponse>(fetchKey, EVENTS_CACHE_PREFIX)
     if (cachedResponse) return cachedResponse
 
     // try again for the previous hour (in case it is 1 minute into a new hour)
     const timeMin2 = new Date(new Date(timeMin).getTime() - 59 * 60 * 1000).toISOString()
     const timeMax2 = new Date(new Date(timeMax).getTime() - 59 * 60 * 1000).toISOString()
     fetchKey = `${eventSourceId}-${roundTimeToNearestHour(timeMin2)}-${roundTimeToNearestHour(timeMax2)}`
-    const cachedResponse2 = await getCache<EventSourceResponse>(fetchKey, EVENTS_CACHE_PREFIX)
+    const cachedResponse2 = await getCache<EventsSourceResponse>(fetchKey, EVENTS_CACHE_PREFIX)
     return cachedResponse2
 }
 
 export const setEventsCache = async (
-    response: EventSourceResponse,
+    response: EventsSourceResponse,
     eventSourceId: string,
     timeMin?: string,
     timeMax?: string
@@ -212,7 +212,7 @@ export const setEventsCache = async (
     waitUntil(
         new Promise(async () => {
             try {
-                await setCache<EventSourceResponse>(fetchKey, response, EVENTS_CACHE_PREFIX, CACHE_TTL_API_EVENTSOURCE)
+                await setCache<EventsSourceResponse>(fetchKey, response, EVENTS_CACHE_PREFIX, CACHE_TTL_API_EVENTSOURCE)
                 logr.info('api-events', `waitUntil:Cached events TTL=${CACHE_TTL_API_EVENTSOURCE}s for ${fetchKey}`)
             } catch (error) {
                 logr.warn('api-events', `waitUntil:Failed to cache events for ${fetchKey}`, error)

@@ -27,31 +27,31 @@ The `BaseEventSourceHandler` abstract class provides the foundation for all even
 
 ```typescript
 export abstract class BaseEventSourceHandler {
-    abstract type: EventSourceType
-    abstract fetchEvents(params: EventSourceParams): Promise<EventSourceResponse>
+    abstract type: EventsSourceType
+    abstract fetchEvents(params: EventsSourceParams): Promise<EventsSourceResponse>
 
     // Common utility methods
     extractUrls(text: string): string[] { ... }
 }
 ```
 
-### EventSourceType
+### EventsSourceType
 
 Defines the metadata for an event source:
 
 ```typescript
-export interface EventSourceType {
+export interface EventsSourceType {
     prefix: string // must be unique, eg 'gc' for 'gc:1234567890'
     name: string // display name
 }
 ```
 
-### EventSourceParams
+### EventsSourceParams
 
 Parameters passed to the `fetchEvents` method:
 
 ```typescript
-export interface EventSourceParams {
+export interface EventsSourceParams {
     id: string
     timeMin?: string
     timeMax?: string
@@ -59,14 +59,14 @@ export interface EventSourceParams {
 }
 ```
 
-### EventSourceResponse
+### EventsSourceResponse
 
 The response format for all event sources:
 
 ```typescript
-export interface EventSourceResponse {
+export interface EventsSourceResponse {
     events: CmfEvent[]
-    source: EventSource
+    source: EventsSource
 }
 ```
 
@@ -77,22 +77,22 @@ To add a new event source:
 1. Create a new file in this directory (e.g., `myNewSource.ts`)
 2. Extend the `BaseEventSourceHandler` class
 3. Implement the required abstract methods
-4. Register your handler using `registerEventSource`
+4. Register your handler using `registerEventsSource`
 
 ### Example:
 
 ```typescript
-import { BaseEventSourceHandler, EventSourceParams, EventSourceResponse, EventSource, registerEventSource } from './index';
+import { BaseEventSourceHandler, EventsSourceParams, EventsSourceResponse, EventsSource, registerEventtodSource } from './index';
 import { CmfEvent } from '@/types/events';
 
-export class MyNewEventSource extends BaseEventSourceHandler {
-    public readonly type: EventSource = {
+export class MyNewEventsSource extends BaseEventSourceHandler {
+    public readonly type: EventsSource = {
         prefix: 'ns',
         name: 'New Source',
         url: 'https://homepage.com',
     };
 
-    async fetchEvents(params: EventSourceParams): Promise<EventSourceResponse> {
+    async fetchEvents(params: EventsSourceParams): Promise<EventsSourceResponse> {
         // Implement fetching logic
         // Transform source-specific events to CmfEvent format
         const events: CmfEvent[] = [...];
@@ -111,10 +111,10 @@ export class MyNewEventSource extends BaseEventSourceHandler {
 }
 
 // Register your handler
-const myNewEventSource = new MyNewEventSource();
-registerEventSource(myNewEventSource);
+const myNewEventsSource = new MyNewEventsSource();
+registerEventsSource(myNewEventsSource);
 
-export default myNewEventSource;
+export default myNewEventsSource;
 ```
 
 ## Geocoding

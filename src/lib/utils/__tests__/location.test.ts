@@ -8,12 +8,12 @@ import {
     viewportUrlToViewport,
     parseAsZoom,
     parseAsLatLon,
-    parseAsEventSource,
+    parseAsEventsSource,
     viewstate2Viewport,
 } from '../location'
 import { MapMarker } from '@/types/map'
 import { CmfEvent } from '@/types/events'
-import { ExampleEventSources } from '@/lib/events/examples'
+import { ExampleEventsSources } from '@/lib/events/examples'
 
 // Mock WebMercatorViewport
 jest.mock('@math.gl/web-mercator', () => {
@@ -52,9 +52,9 @@ jest.mock('@math.gl/web-mercator', () => {
     }
 })
 
-// Mock the exampleEventSources for parseAsEventSource tests
+// Mock the exampleEventsSources for parseAsEventsSource tests
 jest.mock('@/lib/events/examples', () => ({
-    ExampleEventSources: [
+    ExampleEventsSources: [
         { id: 'example:123', shortId: 'ex123' },
         { id: 'example:456', shortId: 'ex456' },
         { id: 'example:789', shortId: null }, // One without shortId
@@ -732,28 +732,28 @@ describe('Location and Map Utilities', () => {
         })
     })
 
-    describe('parseAsEventSource', () => {
+    describe('parseAsEventsSource', () => {
         it('should parse valid event source IDs', () => {
-            expect(parseAsEventSource.parse('facebook:123')).toBe('facebook:123')
-            expect(parseAsEventSource.parse('meetup:456')).toBe('meetup:456')
+            expect(parseAsEventsSource.parse('facebook:123')).toBe('facebook:123')
+            expect(parseAsEventsSource.parse('meetup:456')).toBe('meetup:456')
         })
 
         it('should parse example event source shortIds', () => {
-            expect(parseAsEventSource.parse('ex123')).toBe('example:123')
-            expect(parseAsEventSource.parse('ex456')).toBe('example:456')
+            expect(parseAsEventsSource.parse('ex123')).toBe('example:123')
+            expect(parseAsEventsSource.parse('ex456')).toBe('example:456')
         })
 
         it('should return null for invalid event source IDs', () => {
-            expect(parseAsEventSource.parse('invalid-format')).toBeNull()
-            expect(parseAsEventSource.parse('123')).toBeNull()
+            expect(parseAsEventsSource.parse('invalid-format')).toBeNull()
+            expect(parseAsEventsSource.parse('123')).toBeNull()
         })
 
         it('should serialize event source IDs correctly', () => {
-            // Mock the behavior of ExampleEventSources.find
+            // Mock the behavior of ExampleEventsSources.find
             // Setup mock implementations for this test only
-            const originalFind = ExampleEventSources.find
-            ExampleEventSources.find = jest.fn((callback) => {
-                // Return mockEventSource for example:123 and example:456
+            const originalFind = ExampleEventsSources.find
+            ExampleEventsSources.find = jest.fn((callback) => {
+                // Return mockEventsSource for example:123 and example:456
                 if (callback({ id: 'example:123', shortId: 'ex123' })) {
                     return { id: 'example:123', shortId: 'ex123' }
                 }
@@ -766,17 +766,17 @@ describe('Location and Map Utilities', () => {
 
             try {
                 // Regular IDs should remain unchanged
-                expect(parseAsEventSource.serialize('facebook:123')).toBe('facebook:123')
+                expect(parseAsEventsSource.serialize('facebook:123')).toBe('facebook:123')
 
                 // Example IDs with shortId should be converted to shortIds
-                expect(parseAsEventSource.serialize('example:123')).toBe('ex123')
-                expect(parseAsEventSource.serialize('example:456')).toBe('ex456')
+                expect(parseAsEventsSource.serialize('example:123')).toBe('ex123')
+                expect(parseAsEventsSource.serialize('example:456')).toBe('ex456')
 
                 // Example without shortId should return the original ID
-                expect(parseAsEventSource.serialize('example:789')).toBe('example:789')
+                expect(parseAsEventsSource.serialize('example:789')).toBe('example:789')
             } finally {
                 // Restore the original find method after the test
-                ExampleEventSources.find = originalFind
+                ExampleEventsSources.find = originalFind
             }
         })
     })

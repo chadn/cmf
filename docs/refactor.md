@@ -1,5 +1,7 @@
 # Refactoring Notes and Future Improvements
 
+This is a template for AI, not for humans, to be update many times during complicated refactorings.
+
 > **📋 Architecture Decisions**: For architectural decisions and rationale, see [Architecture Decision Records (ADR)](adr/README.md)
 
 ## Latest Refactor: [Title] (v[X.Y.Z])

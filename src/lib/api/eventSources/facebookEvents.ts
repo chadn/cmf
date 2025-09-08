@@ -1,6 +1,6 @@
-import { EventSourceParams, EventSourceResponse, EventSource, CmfEvent } from '@/types/events'
+import { EventsSourceParams, EventsSourceResponse, EventsSource, CmfEvent } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
-import { BaseEventSourceHandler, registerEventSource } from './index'
+import { BaseEventSourceHandler, registerEventsSource } from './index'
 import { parseIcsContent } from '@/lib/utils/icsParser'
 import axios from 'axios'
 import { HttpError } from '@/types/error'
@@ -11,13 +11,13 @@ import { HttpError } from '@/types/error'
 export class FacebookEventsSource extends BaseEventSourceHandler {
     // Event source format: 'fb:${facebookUid}-${facebookKey}'
     // https://www.facebook.com/events/ical/upcoming/?uid=677700808&key=3RlHDZnbeH2YJMpJ
-    public readonly type: EventSource = {
+    public readonly type: EventsSource = {
         prefix: 'fb',
         name: 'Facebook Events',
         url: '', // assigned to icsUrl below
     }
 
-    async fetchEvents(params: EventSourceParams): Promise<EventSourceResponse> {
+    async fetchEvents(params: EventsSourceParams): Promise<EventsSourceResponse> {
         if (!params.id || !params.id.includes('-')) {
             logr.warn('api-es-fb', 'Invalid Facebook event source ID format', { id: params.id })
             throw new Error('Invalid Facebook event source ID format')
@@ -88,6 +88,6 @@ export class FacebookEventsSource extends BaseEventSourceHandler {
 
 // Register the Facebook Events source
 const facebookEventsSource = new FacebookEventsSource()
-registerEventSource(facebookEventsSource)
+registerEventsSource(facebookEventsSource)
 
 export default facebookEventsSource

@@ -5,16 +5,16 @@ import MapContainer from '@/components/map/MapContainer'
 import EventList from '@/components/events/EventList'
 import DateAndSearchFilters from '@/components/events/DateAndSearchFilters'
 import Footer from '@/components/layout/Footer'
-import EventSourceSelector from '@/components/home/EventSourceSelector'
+import EventsSourceSelector from '@/components/home/EventsSourceSelector'
 import { useEventsManager } from '@/lib/hooks/useEventsManager'
 import { useMap, genMarkerId } from '@/lib/hooks/useMap'
 import { MapBounds } from '@/types/map'
-import { FilteredEvents } from '@/types/events'
+import { FilteredEvents, EventsSource } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
 import ActiveFilters from '@/components/events/ActiveFilters'
 import {
     viewportUrlToViewport,
-    parseAsEventSource,
+    parseAsEventsSource,
     parseAsZoom,
     parseAsLatLon,
     checkForZipCode,
@@ -25,18 +25,12 @@ import ErrorMessage from '@/components/common/ErrorMessage'
 import { umamiTrack } from '@/lib/utils/umami'
 import Sidebar from '@/components/layout/Sidebar'
 import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels'
-import { ExampleEventSources } from '@/lib/events/examples'
+import { ExampleEventsSources } from '@/lib/events/examples'
 
 declare global {
     interface Window {
         cmf_evts: FilteredEvents
-        cmf_evts_sources: Array<{
-            name: string
-            totalCount: number
-            unknownLocationsCount: number
-            id: string
-            url: string
-        }> | null
+        cmf_evts_sources: Array<EventsSource> | null
     }
 }
 
@@ -108,7 +102,7 @@ function useBreakpoint(query = '(min-width: 1024px)') {
 
 function HomeContent() {
     // URL query state parameters
-    const [eventSourceId] = useQueryState('es', parseAsEventSource) // replaced gc calendarId
+    const [eventSourceId] = useQueryState('es', parseAsEventsSource) // replaced gc calendarId
     const [selectedEventIdUrl, setSelectedEventIdUrl] = useQueryState('se', { defaultValue: '' })
     const [viewportUrl, setViewportUrl] = useQueryStates({
         z: parseAsZoom,
@@ -230,20 +224,20 @@ function HomeContent() {
         logr.debug('app', msg)
         // Initialize if API loaded and we have events
         if (!apiIsLoading && all > 0) {
-            // Check if eventSourceId matches a shortId from ExampleEventSources
+            // Check if eventSourceId matches a shortId from ExampleEventsSources
             let headerName = eventSources?.[0]?.name ?? 'Calendar Map Filter'
 
             // Handle array of event sources (when using shortId that expands to multiple sources)
             if (Array.isArray(eventSourceId)) {
                 // Check if this array matches an example shortcut
                 const eventSourceIdString = eventSourceId.join(',')
-                const exampleSource = ExampleEventSources.find((es) => es.id === eventSourceIdString)
+                const exampleSource = ExampleEventsSources.find((es) => es.id === eventSourceIdString)
                 if (exampleSource) {
                     headerName = exampleSource.name
                 }
             } else {
                 // Handle single event source
-                const exampleSource = ExampleEventSources.find((es) => es.id === eventSourceId)
+                const exampleSource = ExampleEventsSources.find((es) => es.id === eventSourceId)
                 if (exampleSource) {
                     headerName = exampleSource.name
                 }
@@ -424,7 +418,7 @@ function HomeContent() {
         return (
             <div className="min-h-screen flex flex-col">
                 <main className="flex-grow flex items-center justify-center">
-                    <EventSourceSelector />
+                    <EventsSourceSelector />
                 </main>
                 <Footer />
             </div>

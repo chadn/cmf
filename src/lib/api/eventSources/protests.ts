@@ -1,8 +1,8 @@
 import axios from 'axios'
 import { format } from 'date-fns'
-import { CmfEvent, EventSourceParams, EventSourceResponse, EventSource } from '@/types/events'
+import { CmfEvent, EventsSourceParams, EventsSourceResponse, EventsSource } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
-import { BaseEventSourceHandler, registerEventSource } from './index'
+import { BaseEventSourceHandler, registerEventsSource } from './index'
 
 // Interface for the Protest API response
 interface ProtestEvent {
@@ -50,14 +50,14 @@ interface ProtestApiResponse {
     }
 }
 
-export class ProtestsEventSource extends BaseEventSourceHandler {
-    public readonly type: EventSource = {
+export class ProtestsEventsSource extends BaseEventSourceHandler {
+    public readonly type: EventsSource = {
         prefix: 'protest',
         name: 'Protests from pol-rev.com',
         url: 'https://events.pol-rev.com/',
     }
 
-    async fetchEvents(params: EventSourceParams): Promise<EventSourceResponse> {
+    async fetchEvents(params: EventsSourceParams): Promise<EventsSourceResponse> {
         const protestData = await this.fetchProtestEvents(params.timeMin, params.timeMax)
 
         // Transform protest events to our format
@@ -273,7 +273,7 @@ export class ProtestsEventSource extends BaseEventSourceHandler {
 }
 
 // Register the Protests event source
-const protestsEventSource = new ProtestsEventSource()
-registerEventSource(protestsEventSource)
+const protestsEventsSource = new ProtestsEventsSource()
+registerEventsSource(protestsEventsSource)
 
-export default protestsEventSource
+export default protestsEventsSource

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { fetchEvents, getEventSourceHandler } from '@/lib/api/eventSources'
 import { batchGeocodeLocations } from '@/lib/api/geocoding'
 import { getEventsCache, setEventsCache } from '@/lib/cache'
-import { EventSourceResponse } from '@/types/events'
+import { EventsSourceResponse } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
 import { HttpError } from '@/types/error'
 import { convertWallTimeToZone, getTimezoneFromLatLng } from '@/lib/utils/timezones'
@@ -22,7 +22,7 @@ const fetchAndGeocode = async (
     eventSourceId: string,
     timeMin?: string,
     timeMax?: string
-): Promise<EventSourceResponse> => {
+): Promise<EventsSourceResponse> => {
     const startTime = performance.now()
     const { events, source } = await fetchEvents(eventSourceId, {
         timeMin,
@@ -72,7 +72,7 @@ const fetchAndGeocode = async (
     logr.info('api-events', `Events with unknown locations: ${unknownLocationsCount}`)
 
     // Construct the response
-    const response: EventSourceResponse = {
+    const response: EventsSourceResponse = {
         events: eventsWithLocationResolved,
         source: {
             ...source,

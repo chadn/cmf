@@ -150,6 +150,7 @@ describe('useEventsManager - new viewport parameter model', () => {
         const { result } = renderHook(() => useEventsManager({ eventSourceId: 'test-source' }))
 
         expect(result.current.eventSources?.[0]).toEqual({
+            prefix: mockApiResponse.source.prefix,
             id: mockApiResponse.source.id,
             name: mockApiResponse.source.name,
             totalCount: mockApiResponse.source.totalCount,

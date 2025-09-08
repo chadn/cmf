@@ -1,12 +1,12 @@
-import { EventSourceParams, EventSourceResponse, EventSource } from '@/types/events'
+import { EventsSourceParams, EventsSourceResponse, EventsSource } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
 
 /**
  * Base class for event source handlers that provides common functionality
  */
 export abstract class BaseEventSourceHandler {
-    abstract type: EventSource
-    abstract fetchEvents(params: EventSourceParams): Promise<EventSourceResponse>
+    abstract type: EventsSource
+    abstract fetchEvents(params: EventsSourceParams): Promise<EventsSourceResponse>
 
     /**
      * Extracts URLs from a text string
@@ -27,7 +27,7 @@ const eventSourceHandlers: BaseEventSourceHandler[] = []
 /**
  * Register a new event source handler
  */
-export function registerEventSource(handler: BaseEventSourceHandler): void {
+export function registerEventsSource(handler: BaseEventSourceHandler): void {
     // check existing handlers for duplicate prefix
     const existingHandler = eventSourceHandlers.find((h) => h.type.prefix === handler.type.prefix)
     if (existingHandler) {
@@ -58,8 +58,8 @@ export function getEventSourceHandler(eventSourceId: string): [BaseEventSourceHa
  */
 export async function fetchEvents(
     eventSourceId: string,
-    params: Omit<EventSourceParams, 'id'>
-): Promise<EventSourceResponse> {
+    params: Omit<EventsSourceParams, 'id'>
+): Promise<EventsSourceResponse> {
     const [handler, sourceId] = getEventSourceHandler(eventSourceId)
 
     if (!handler) {

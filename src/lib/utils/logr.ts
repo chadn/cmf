@@ -50,7 +50,7 @@ export const logr = {
         } else {
             console.warn('Invalid LOG_LEVEL:', level)
         }
-        logr.info(
+        logr.debug(
             'logr',
             `Log level set to ${logr.getLogLevelString()}, process.env.LOG_LEVEL: ${process.env.LOG_LEVEL}`
         )

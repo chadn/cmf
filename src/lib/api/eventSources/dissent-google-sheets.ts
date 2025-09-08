@@ -1,6 +1,6 @@
-import { CmfEvent, EventSourceParams, EventSourceResponse, EventSource } from '@/types/events'
+import { CmfEvent, EventsSourceParams, EventsSourceResponse, EventsSource } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
-import { BaseEventSourceHandler, registerEventSource } from './index'
+import { BaseEventSourceHandler, registerEventsSource } from './index'
 import { axiosGet } from '@/lib/utils/utils-server'
 import { HttpError } from '@/types/error'
 import { parseDateString } from '@/lib/utils/timezones'
@@ -17,12 +17,12 @@ const sheetTabs = {
 }
 
 export class DissentGoogleSheetsSource extends BaseEventSourceHandler {
-    public readonly type: EventSource = {
+    public readonly type: EventsSource = {
         prefix: 'dissent',
         name: 'We The People Dissent',
         url: 'https://www.wethepeopledissent.net/',
     }
-    async fetchEvents(params: EventSourceParams): Promise<EventSourceResponse> {
+    async fetchEvents(params: EventsSourceParams): Promise<EventsSourceResponse> {
         const sheetTab =
             params.id in sheetTabs ? sheetTabs[params.id as keyof typeof sheetTabs] : sheetTabs.june14protests
         const sheetUrl = `${SHEET_BASE_URL}${SHEET_ID}/values/${encodeURIComponent(sheetTab)}`
@@ -118,6 +118,6 @@ export class DissentGoogleSheetsSource extends BaseEventSourceHandler {
 }
 
 const dissentGoogleSheetsSource = new DissentGoogleSheetsSource()
-registerEventSource(dissentGoogleSheetsSource)
+registerEventsSource(dissentGoogleSheetsSource)
 
 export default dissentGoogleSheetsSource

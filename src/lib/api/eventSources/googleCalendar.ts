@@ -1,9 +1,9 @@
 import { axiosGet } from '@/lib/utils/utils-server'
 import { addMonths, subMonths, format } from 'date-fns'
 import { GoogleCalendarResponse, GoogleCalendarEvent } from '@/types/googleApi'
-import { CmfEvent, EventSourceParams, EventSourceResponse, EventSource } from '@/types/events'
+import { CmfEvent, EventsSourceParams, EventsSourceResponse, EventsSource } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
-import { BaseEventSourceHandler, registerEventSource } from './index'
+import { BaseEventSourceHandler, registerEventsSource } from './index'
 
 const GOOGLE_CALENDAR_API_BASE = 'https://www.googleapis.com/calendar/v3/calendars'
 const GOOGLE_CALENDAR_PUBLIC_URL_BASE = 'https://calendar.google.com/calendar/embed?src='
@@ -13,13 +13,13 @@ if (!process.env.GOOGLE_CALENDAR_API_KEY) {
     logr.info('api-es-gc', 'Google Calendar API key is configured')
 }
 
-export class GoogleCalendarEventSource extends BaseEventSourceHandler {
-    public readonly type: EventSource = {
+export class GoogleCalendarEventsSource extends BaseEventSourceHandler {
+    public readonly type: EventsSource = {
         prefix: 'gc',
         name: 'Google Calendar',
         url: '', // assigned to apiUrl below
     }
-    async fetchEvents(params: EventSourceParams): Promise<EventSourceResponse> {
+    async fetchEvents(params: EventsSourceParams): Promise<EventsSourceResponse> {
         const calendarData = await this.fetchGoogleCalendarEvents(params.id, params.timeMin, params.timeMax)
 
         // Transform Google Calendar events to our format
@@ -108,7 +108,7 @@ export class GoogleCalendarEventSource extends BaseEventSourceHandler {
 }
 
 // Register the Google Calendar event source
-const googleCalendarEventSource = new GoogleCalendarEventSource()
-registerEventSource(googleCalendarEventSource)
+const googleCalendarEventsSource = new GoogleCalendarEventsSource()
+registerEventsSource(googleCalendarEventsSource)
 
-export default googleCalendarEventSource
+export default googleCalendarEventsSource

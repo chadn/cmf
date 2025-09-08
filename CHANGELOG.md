@@ -5,20 +5,51 @@ All notable changes to Calendar Map Filter (CMF) will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.12] - 2025-09-08
+
+### Added
+
+-   "Show Only These" feature in Sidebar for quick filtering to specific event sources
+    -   Direct links to filter to individual event sources (e.g., `/?es=gc:calendar123`)
+    -   Improves user workflow for exploring events from specific sources
+
+### Changed
+
+-   EventSource renamed to EventsSource to resolve TypeScript conflict with browser's built-in EventSource interface
+-   Updated type system throughout codebase to use unified EventsSource interface
+-   Improved type safety with proper prefix property handling
+
+### Fixed
+
+-   TypeScript compilation errors related to EventSource type conflicts
+-   Test expectations updated to match new EventsSource interface
+
+### Documentation
+
+-   Major restructure of Implementation.md - streamlined from 608 to 303 lines
+    -   Removed redundant architectural decision details (moved to ADR)
+    -   Simplified directory structure with cleaner formatting
+    -   Updated data structure examples to reflect EventsSource changes
+    -   Enhanced quick reference section with ADR links
+-   Updated ADR index with improved organization and new entries
+    -   Added historical ADRs for foundational decisions
+    -   Reordered entries chronologically for better navigation
+-   Cleaned up docs/README.md by removing outdated refactor.md references
+
 ## [0.2.11] - 2025-09-05
 
 ### Added
 
--   Type system consolidation and simplification
--   Unified EventSource interface replacing multiple type representations
--   Simplified FilteredEvents structure from 7 arrays to 2 + metadata
 -   Comprehensive refactoring documentation in docs/refactor.md
 -   Architecture Decision Records (ADR) in docs/adr/ following MADR template
 
 ### Changed
 
+-   Type system consolidation and simplification
+-   Unified EventsSource (orig EventSource) interface replacing multiple type representations
+-   Simplified FilteredEvents structure from 7 arrays to 2 + metadata
 -   Removed complex useReducer pattern in favor of direct state management
--   Consolidated EventSourceType + EventSourceResponseMetadata into EventSource
+-   Consolidated EventSourceType + EventSourceResponseMetadata into EventsSource
 -   Updated API responses from `metadata` to `source` field structure
 -   Improved type consistency across 15 files in codebase
 
@@ -51,13 +82,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
--   Comprehensive event filtering system refactor
--   New FilterEventsManager architecture for better performance
--   Enhanced map bounds synchronization system
 -   Extensive test coverage for filtering components
 
 ### Changed
 
+-   Comprehensive event filtering system refactor
+-   New FilterEventsManager architecture for better performance
+-   Enhanced map bounds synchronization system
 -   Major refactor of filters, events list, and map bounds storage
 -   Simplified event filtering logic for better maintainability
 -   Improved performance through optimized data structures

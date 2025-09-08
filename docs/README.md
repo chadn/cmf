@@ -34,13 +34,6 @@ This directory contains comprehensive documentation for Calendar Map Filter (CMF
 
 ### For Maintainers
 
--   **[refactor.md](refactor.md)** - Refactoring guidelines and process template
-
-    -   React best practices analysis and scorecard
-    -   Refactoring DO/DON'T guidelines
-    -   Performance optimization opportunities
-    -   Template for documenting future refactors
-
 -   **[todo.md](todo.md)** - Feature backlog and known issues
     -   Planned features and enhancements
     -   Current bugs and limitations

@@ -1,6 +1,6 @@
 import React from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
-import EventSourceSelector from '../EventSourceSelector'
+import EventsSourceSelector from '../EventsSourceSelector'
 import '@testing-library/jest-dom'
 import { useRouter } from 'next/navigation'
 import { logr } from '@/lib/utils/logr'
@@ -45,7 +45,7 @@ console.error = (...args) => {
     originalConsoleError(...args)
 }
 
-describe('EventSourceSelector', () => {
+describe('EventsSourceSelector', () => {
     const mockPush = jest.fn()
     const mockUmamiTrack = jest.fn()
 
@@ -72,7 +72,7 @@ describe('EventSourceSelector', () => {
     })
 
     it('renders the event source selector form with correct styling', () => {
-        render(<EventSourceSelector />)
+        render(<EventsSourceSelector />)
 
         // Check for main elements
         expect(screen.getByText('Welcome to CMF - Calendar Map Filter')).toBeInTheDocument()
@@ -94,7 +94,7 @@ describe('EventSourceSelector', () => {
 
 
     it('redirects when submitting valid event source ID', async () => {
-        render(<EventSourceSelector />)
+        render(<EventsSourceSelector />)
 
         // Fill in the event source ID
         const input = screen.getByLabelText('Enter Event Source ID string')
@@ -109,7 +109,7 @@ describe('EventSourceSelector', () => {
     })
 
     it('selects an example event source when clicked', () => {
-        render(<EventSourceSelector />)
+        render(<EventsSourceSelector />)
 
         // Find and click the example event source
         const exampleButton = screen.getByText('Geocaching in Spain')
@@ -128,7 +128,7 @@ describe('EventSourceSelector', () => {
     })
 
     it('shows loading spinner when submitting and disables inputs', async () => {
-        render(<EventSourceSelector />)
+        render(<EventsSourceSelector />)
 
         // Fill in the event source ID
         const input = screen.getByLabelText('Enter Event Source ID string')
@@ -160,7 +160,7 @@ describe('EventSourceSelector', () => {
     })
 
     it('renders all example event sources correctly with white text', () => {
-        render(<EventSourceSelector />)
+        render(<EventsSourceSelector />)
 
         // Check that both examples are rendered
         expect(screen.getByText('SF Bay Facebook Events')).toBeInTheDocument()
@@ -189,7 +189,7 @@ describe('EventSourceSelector', () => {
     })
 
     it('renders a link to usage documentation', () => {
-        render(<EventSourceSelector />)
+        render(<EventsSourceSelector />)
 
         // Check for the "Read Usage Docs" link
         const link = screen.getByText('Read Usage Docs')

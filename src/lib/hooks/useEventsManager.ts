@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useMemo } from 'react'
 import useSWR from 'swr'
-import { FilteredEvents, EventSourceResponse, CmfEvent } from '@/types/events'
+import { FilteredEvents, EventsSourceResponse, CmfEvent, EventsSource } from '@/types/events'
 import { MapBounds } from '@/types/map'
 import { FilterEventsManager } from '@/lib/events/FilterEventsManager'
 import { logr } from '@/lib/utils/logr'
@@ -26,13 +26,7 @@ interface UseEventsManagerResult {
         setShowUnknownLocationsOnly: (show: boolean) => void
         resetAll: () => void
     }
-    eventSources: Array<{
-        name: string
-        totalCount: number
-        unknownLocationsCount: number
-        id: string
-        url: string
-    }> | null
+    eventSources: Array<EventsSource> | null
     apiIsLoading: boolean
     apiError: Error | null
     fltrEvtMgr: FilterEventsManager
@@ -130,8 +124,8 @@ export function useEventsManager({
 
     // Custom fetcher for multiple sources that uses Promise.all
     const multiSourceFetcher = async (urls: string[]): Promise<{
-        aggregatedData: EventSourceResponse
-        sources: Array<{ name: string; totalCount: number; unknownLocationsCount: number; id: string; url: string }>
+        aggregatedData: EventsSourceResponse
+        sources: Array<EventsSource>
     }> => {
         const results = await Promise.all(urls.map(url => fetcherLogr(url)))
         
@@ -147,11 +141,11 @@ export function useEventsManager({
 
         // Aggregate all events and add src field for multiple sources
         const allEvents: CmfEvent[] = []
-        const sources: Array<{ name: string; totalCount: number; unknownLocationsCount: number; id: string; url: string }> = []
+        const sources: Array<EventsSource> = []
         let totalCount = 0
         let totalUnknownLocations = 0
 
-        results.forEach((result: EventSourceResponse, index: number) => {
+        results.forEach((result: EventsSourceResponse, index: number) => {
             const eventsWithSrc = isMultipleSources 
                 ? result.events.map(event => ({ ...event, src: index + 1 }))
                 : result.events
@@ -161,6 +155,7 @@ export function useEventsManager({
             totalUnknownLocations += result.source.unknownLocationsCount || 0
             
             sources.push({
+                prefix: result.source.prefix,
                 name: result.source.name,
                 totalCount: result.source.totalCount || 0,
                 unknownLocationsCount: result.source.unknownLocationsCount || 0,
@@ -197,7 +192,7 @@ export function useEventsManager({
         isLoading: singleApiIsLoading,
     } = useSWR(singleApiUrl, fetcherLogr, {
         revalidateOnFocus: false,
-        onSuccess: (data: EventSourceResponse) => {
+        onSuccess: (data: EventsSourceResponse) => {
             if (!(data && data.httpStatus)) {
                 dispatchNot200(`HTTP 500: onSuccess should have data.httpStatus`)
                 return
@@ -255,6 +250,7 @@ export function useEventsManager({
     // Determine which data to use
     const apiData = isMultipleSources ? multiSwrData?.aggregatedData : singleApiData
     const eventSources = isMultipleSources ? multiSwrData?.sources : (singleApiData ? [{
+        prefix: singleApiData.source.prefix,
         name: singleApiData.source.name,
         totalCount: singleApiData.source.totalCount || 0,
         unknownLocationsCount: singleApiData.source.unknownLocationsCount || 0,

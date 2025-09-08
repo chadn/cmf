@@ -9,8 +9,8 @@
  * - types.ts: Defines shared interfaces and types
  */
 
-import { CmfEvent, EventSourceParams, EventSourceResponse, EventSource } from '@/types/events'
-import { BaseEventSourceHandler, registerEventSource } from '../index'
+import { CmfEvent, EventsSourceParams, EventsSourceResponse, EventsSource } from '@/types/events'
+import { BaseEventSourceHandler, registerEventsSource } from '../index'
 import { logr } from '@/lib/utils/logr'
 import { PluraEventScrapeStats } from './types'
 import { getCachedEvents, getCityEventsCache, setCachedCityMap, setCachedEvents, setCityEventsCache } from './cache'
@@ -31,7 +31,7 @@ export class PluraEventsSource extends BaseEventSourceHandler {
     // if fetchEventDetailstrue, fetch event details from the event page, otherwise just scrape the city page
     private fetchEventDetails: boolean = false
     public totalPages: number = 0
-    public readonly type: EventSource = {
+    public readonly type: EventsSource = {
         prefix: 'plura',
         name: 'Plura Community Events',
         url: 'https://heyplura.com/community-calendars',
@@ -41,10 +41,10 @@ export class PluraEventsSource extends BaseEventSourceHandler {
         super()
     }
 
-    async fetchEvents(params: EventSourceParams): Promise<EventSourceResponse> {
+    async fetchEvents(params: EventsSourceParams): Promise<EventsSourceResponse> {
         const cityToScrape = params.id || 'all'
         const returnEvents: Record<string, CmfEvent> = {} //  our key is eventId, val is CMF Event
-        const resp: EventSourceResponse = {
+        const resp: EventsSourceResponse = {
             httpStatus: 200,
             events: [],
             source: {
@@ -237,6 +237,6 @@ export class PluraEventsSource extends BaseEventSourceHandler {
 
 // Create and register the event source
 const pluraEventsSource = new PluraEventsSource()
-registerEventSource(pluraEventsSource)
+registerEventsSource(pluraEventsSource)
 
 export { pluraEventsSource }

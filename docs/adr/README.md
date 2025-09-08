@@ -4,10 +4,14 @@ This directory contains Architecture Decision Records for the Calendar Map Filte
 
 ## Index
 
--   [2025-09-03-viewport-parameter-pattern](2025-09-03-viewport-parameter-pattern.md) - Viewport Parameter Pattern for Map Filtering
--   [2025-09-05-unified-eventsource-interface](2025-09-05-unified-eventsource-interface.md) - Unified EventSource Interface
--   [2025-09-05-simplified-filtered-events-structure](2025-09-05-simplified-filtered-events-structure.md) - Simplified FilteredEvents Structure
 -   [2025-09-05-direct-state-over-reducer-pattern](2025-09-05-direct-state-over-reducer-pattern.md) - Direct State Management Over Reducer Pattern
+-   [2025-09-05-simplified-filtered-events-structure](2025-09-05-simplified-filtered-events-structure.md) - Simplified FilteredEvents Structure
+-   [2025-09-05-unified-eventssource-interface](2025-09-05-unified-eventssource-interface.md) - Unified EventsSource Interface
+-   [2025-09-03-viewport-parameter-pattern](2025-09-03-viewport-parameter-pattern.md) - Viewport Parameter Pattern for Map Filtering
+-   [2025-05-20-vercel-deployment-platform](2025-05-20-vercel-deployment-platform.md) - Vercel as Primary Deployment Platform
+-   [2025-05-20-upstash-redis-for-geocoding-cache](2025-05-20-upstash-redis-for-geocoding-cache.md) - Upstash Redis for Geocoding Cache
+-   [2025-05-20-tailwind-css-implementation](2025-05-20-tailwind-css-implementation.md) - Tailwind CSS Implementation Strategy
+-   [2025-05-20-react-context-over-redux](2025-05-20-react-context-over-redux.md) - React Context Over Redux for State Management
 
 ## Status Definitions
 

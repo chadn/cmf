@@ -33,7 +33,7 @@ export interface CmfEvent {
 
 // Removed EventsState and EventsAction - replaced with direct state management
 
-export interface EventSource {
+export interface EventsSource {
     prefix: string // must be unique, eg 'gc' for 'gc:1234567890'
     name: string
     url: string
@@ -43,16 +43,16 @@ export interface EventSource {
     unknownLocationsCount?: number
 }
 
-export interface EventSourceParams {
+export interface EventsSourceParams {
     id: string
     timeMin?: string
     timeMax?: string
     [key: string]: string | undefined
 }
 
-export interface EventSourceResponse {
+export interface EventsSourceResponse {
     events: CmfEvent[]
-    source: EventSource
+    source: EventsSource
     httpStatus: number
 }
 

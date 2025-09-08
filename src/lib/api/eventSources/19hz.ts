@@ -1,8 +1,8 @@
 import axios from 'axios'
 import * as cheerio from 'cheerio'
-import { CmfEvent, EventSourceParams, EventSourceResponse, EventSource } from '@/types/events'
+import { CmfEvent, EventsSourceParams, EventsSourceResponse, EventsSource } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
-import { BaseEventSourceHandler, registerEventSource } from './index'
+import { BaseEventSourceHandler, registerEventsSource } from './index'
 import { parse19hzDateRange } from '@/lib/utils/date-parsing'
 
 interface ParsedEventRow {
@@ -16,15 +16,15 @@ interface ParsedEventRow {
     venue: string
 }
 
-export class NineteenHzEventSource extends BaseEventSourceHandler {
-    public readonly type: EventSource = {
+export class NineteenHzEventsSource extends BaseEventSourceHandler {
+    public readonly type: EventsSource = {
         prefix: '19hz',
         name: '19hz.info Bay Area Electronic Music Events',
         url: 'https://19hz.info/eventlisting_BayArea.php',
     }
     private venueCache: Map<string, string> = new Map()
 
-    async fetchEvents(params: EventSourceParams): Promise<EventSourceResponse> {
+    async fetchEvents(params: EventsSourceParams): Promise<EventsSourceResponse> {
         try {
             const url = this.type.url
             logr.info('api-es-19hz', `Fetching events from ${url}`)
@@ -294,7 +294,7 @@ export class NineteenHzEventSource extends BaseEventSourceHandler {
 }
 
 // Register the 19hz event source
-const nineteenHzEventSource = new NineteenHzEventSource()
-registerEventSource(nineteenHzEventSource)
+const nineteenHzEventsSource = new NineteenHzEventsSource()
+registerEventsSource(nineteenHzEventsSource)
 
-export default nineteenHzEventSource
+export default nineteenHzEventsSource
