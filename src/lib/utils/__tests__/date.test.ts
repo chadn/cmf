@@ -7,8 +7,8 @@ describe('Date Utilities', () => {
         it('formats a valid date string correctly', () => {
             const result = formatEventDate('2025-03-15T14:30:00Z')
             // Check that the result contains expected parts (month, day, time)
-            expect(result).toContain('03/15')
-            expect(result).toMatch(/\d{2}\/\d{2}/)
+            expect(result).toContain('3/15')
+            expect(result).toMatch(/\d{1,2}\/\d{1,2}/)
         })
 
         it('returns "Invalid date" for invalid date strings', () => {

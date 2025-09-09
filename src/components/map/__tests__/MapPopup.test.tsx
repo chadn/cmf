@@ -14,6 +14,14 @@ jest.mock('@/lib/utils/logr', () => ({
     },
 }))
 
+// Mock calendar utilities
+jest.mock('@/lib/utils/calendar', () => ({
+    generateGoogleCalendarUrl: jest.fn(
+        () => 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=Test%20Event'
+    ),
+    downloadIcsFile: jest.fn(),
+}))
+
 describe('MapPopup', () => {
     const mockEvent: CmfEvent = {
         id: '1',
@@ -86,8 +94,8 @@ describe('MapPopup', () => {
         render(<MapPopup marker={mockMarker} />)
 
         // The actual formatted date will depend on the formatEventDate implementation
-        // This is a simplified check for the format MM/dd EEE h:mm am/pm
-        expect(screen.getByText(/\d{2}\/\d{2} \w{3} \d{1,2}:\d{2}(am|pm)/i)).toBeInTheDocument()
+        // This is a simplified check for the format M/d EEE h:mm am/pm
+        expect(screen.getByText(/\d{1,2}\/\d{1,2} \w{3} \d{1,2}:\d{2}(am|pm)/i)).toBeInTheDocument()
     })
 
     it('truncates long descriptions', () => {
@@ -185,5 +193,65 @@ describe('MapPopup', () => {
 
         // Should eventually show event details
         expect(screen.getByText('Test Event')).toBeInTheDocument()
+    })
+
+    it('renders Add To Cal button', () => {
+        render(<MapPopup marker={mockMarker} />)
+
+        expect(screen.getByText('Add To Cal')).toBeInTheDocument()
+    })
+
+    it('opens calendar popover when Add To Cal is clicked', async () => {
+        render(<MapPopup marker={mockMarker} />)
+
+        // Click the Add To Cal button
+        fireEvent.click(screen.getByText('Add To Cal'))
+
+        // Should show the popover content
+        expect(screen.getByText('Add to your Calendar')).toBeInTheDocument()
+        expect(screen.getByText('• Google Calendar')).toBeInTheDocument()
+        expect(screen.getByText('• Apple (iCal) Calendar')).toBeInTheDocument()
+    })
+
+    it('opens Google Calendar when Google Calendar option is clicked', async () => {
+        // Mock window.open
+        const mockOpen = jest.fn()
+        Object.defineProperty(window, 'open', {
+            value: mockOpen,
+            writable: true,
+        })
+
+        render(<MapPopup marker={mockMarker} />)
+
+        // Click Add To Cal to open popover
+        fireEvent.click(screen.getByText('Add To Cal'))
+
+        // Click Google Calendar option
+        fireEvent.click(screen.getByText('• Google Calendar'))
+
+        // Should call generateGoogleCalendarUrl with the event and undefined eventSources
+        const { generateGoogleCalendarUrl } = await import('@/lib/utils/calendar')
+        expect(generateGoogleCalendarUrl).toHaveBeenCalledWith(mockEvent, undefined)
+
+        // Should open new window with Google Calendar URL
+        expect(mockOpen).toHaveBeenCalledWith(
+            'https://calendar.google.com/calendar/render?action=TEMPLATE&text=Test%20Event',
+            '_blank',
+            'noopener,noreferrer'
+        )
+    })
+
+    it('downloads ICS file when Apple Calendar option is clicked', async () => {
+        render(<MapPopup marker={mockMarker} />)
+
+        // Click Add To Cal to open popover
+        fireEvent.click(screen.getByText('Add To Cal'))
+
+        // Click Apple Calendar option
+        fireEvent.click(screen.getByText('• Apple (iCal) Calendar'))
+
+        // Should call downloadIcsFile with the event and undefined eventSources
+        const { downloadIcsFile } = await import('@/lib/utils/calendar')
+        expect(downloadIcsFile).toHaveBeenCalledWith(mockEvent, undefined)
     })
 })

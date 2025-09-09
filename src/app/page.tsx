@@ -150,7 +150,7 @@ function HomeContent() {
     // Use our new EventsManager hook to get events and filter methods
     // Only apply viewport filtering when not in "show all" mode
     const { evts, filters, eventSources, apiIsLoading, apiError } = useEventsManager({
-        eventSourceId,
+        eventSourceId: eventSourceId,
         currentViewport: isShowingAllEvents ? null : currentViewportBounds,
         sd: datesUrl.sd,
         ed: datesUrl.ed,
@@ -225,7 +225,13 @@ function HomeContent() {
         // Initialize if API loaded and we have events
         if (!apiIsLoading && all > 0) {
             // Check if eventSourceId matches a shortId from ExampleEventsSources
-            let headerName = eventSources?.[0]?.name ?? 'Calendar Map Filter'
+
+            // default name for multiple sources (common) and for single source with no name (shouldn't happen).
+            let headerName = 'Calendar Map Filter Sources'
+
+            if (eventSources && eventSources.length === 1 && eventSources[0].name) {
+                headerName = eventSources[0].name
+            }
 
             // Handle array of event sources (when using shortId that expands to multiple sources)
             if (Array.isArray(eventSourceId)) {
@@ -235,6 +241,10 @@ function HomeContent() {
                 if (exampleSource) {
                     headerName = exampleSource.name
                 }
+                // If no matching example and multiple sources, keep the default 'Calendar Map Filter Sources'
+            } else if (eventSources && eventSources.length > 1) {
+                // Multiple sources but not an array eventSourceId - keep default name
+                headerName = 'Calendar Map Filter Sources'
             } else {
                 // Handle single event source
                 const exampleSource = ExampleEventsSources.find((es) => es.id === eventSourceId)
@@ -246,7 +256,7 @@ function HomeContent() {
             setHeaderName(headerName)
             dispatch({ type: 'EVENTS_LOADED', hasEvents: all > 0 })
         }
-    }, [apiIsLoading, appState, evts, eventSources])
+    }, [apiIsLoading, appState, evts, eventSources, eventSourceId])
 
     // Apply search filter when appState changes to main-state
     useEffect(() => {
@@ -497,6 +507,7 @@ function HomeContent() {
                                 onWidthHeightChange={setMapHookWidthHeight}
                                 selectedEventId={selectedEventIdUrl}
                                 onEventSelect={setSelectedEventIdUrl}
+                                eventSources={eventSources || undefined}
                             />
                         </div>
                     </Panel>

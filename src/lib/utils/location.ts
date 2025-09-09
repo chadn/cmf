@@ -338,11 +338,16 @@ export const parseAsEventsSource = createParser({
                 // Check for example event sources first
                 const example = ExampleEventsSources.find((es) => es.shortId === source)
                 if (example) {
-                    // If example contains comma-separated sources, expand them
-                    if (example.id.includes(',')) {
-                        parsedSources.push(...example.id.split(',').map(s => s.trim()))
-                    } else {
-                        parsedSources.push(example.id)
+                    // Handle new structure with ids object
+                    if (example.ids) {
+                        parsedSources.push(...Object.keys(example.ids))
+                    } else if (example.id) {
+                        // If example contains comma-separated sources, expand them
+                        if (example.id.includes(',')) {
+                            parsedSources.push(...example.id.split(',').map(s => s.trim()))
+                        } else {
+                            parsedSources.push(example.id)
+                        }
                     }
                 } else {
                     // Validate individual source format
@@ -362,11 +367,17 @@ export const parseAsEventsSource = createParser({
         // check for example event sources first
         const example = ExampleEventsSources.find((es) => es.shortId === queryValue)
         if (example) {
-            // If example contains comma-separated sources, return as array
-            if (example.id.includes(',')) {
-                return example.id.split(',').map(s => s.trim())
+            // Handle new structure with ids object
+            if (example.ids) {
+                const idKeys = Object.keys(example.ids)
+                return idKeys.length === 1 ? idKeys[0] : idKeys
+            } else if (example.id) {
+                // If example contains comma-separated sources, return as array
+                if (example.id.includes(',')) {
+                    return example.id.split(',').map(s => s.trim())
+                }
+                return example.id
             }
-            return example.id
         }
 
         // match any string that starts with ascii chars or digits then a colon then any number of digits
@@ -385,7 +396,12 @@ export const parseAsEventsSource = createParser({
             
             // Otherwise, serialize each source individually and join with commas
             const serializedSources = value.map(source => {
-                const example = ExampleEventsSources?.find?.((es) => es.id === source && es.shortId)
+                // Check both id and ids structures
+                const example = ExampleEventsSources?.find?.((es) => {
+                    if (es.id === source && es.shortId) return true
+                    if (es.ids && Object.keys(es.ids).includes(source) && es.shortId) return true
+                    return false
+                })
                 return example ? example.shortId as string : source
             })
             return serializedSources.join(',')
@@ -393,7 +409,11 @@ export const parseAsEventsSource = createParser({
 
         // Handle single source (existing logic)
         // Check for example event sources first
-        const example = ExampleEventsSources?.find?.((es) => es.id === value && es.shortId)
+        const example = ExampleEventsSources?.find?.((es) => {
+            if (es.id === value && es.shortId) return true
+            if (es.ids && Object.keys(es.ids).includes(value) && es.shortId) return true
+            return false
+        })
         if (example) return example.shortId as string
 
         return value

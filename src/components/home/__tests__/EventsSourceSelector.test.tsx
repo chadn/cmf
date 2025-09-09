@@ -3,7 +3,6 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import EventsSourceSelector from '../EventsSourceSelector'
 import '@testing-library/jest-dom'
 import { useRouter } from 'next/navigation'
-import { logr } from '@/lib/utils/logr'
 
 // Mock the Next.js router
 jest.mock('next/navigation', () => ({
@@ -81,7 +80,7 @@ describe('EventsSourceSelector', () => {
         expect(screen.getByText('View Events')).toBeInTheDocument()
 
         // Check for the correct text
-        expect(screen.getByText(/Or try an example - click below then click View Events/i)).toBeInTheDocument()
+        expect(screen.getByText('Examples:')).toBeInTheDocument()
 
         // Check for the border-t and border-black classes
         const mainContainer = screen
@@ -91,7 +90,6 @@ describe('EventsSourceSelector', () => {
         expect(mainContainer).toHaveClass('border-black')
         expect(mainContainer).toHaveClass('px-8')
     })
-
 
     it('redirects when submitting valid event source ID', async () => {
         render(<EventsSourceSelector />)
@@ -108,23 +106,19 @@ describe('EventsSourceSelector', () => {
         expect(mockPush).toHaveBeenCalledWith('/?es=gc%3Atest%40example.com')
     })
 
-    it('selects an example event source when clicked', () => {
+    it('renders example event source links correctly', () => {
         render(<EventsSourceSelector />)
 
-        // Find and click the example event source
-        const exampleButton = screen.getByText('Geocaching in Spain')
-        fireEvent.click(exampleButton)
+        // Find the example event source link
+        const exampleLink = screen.getByText('Geocaching in Spain')
+        expect(exampleLink).toBeInTheDocument()
 
-        // Check that the input value was updated
+        // Check that it's a link with the correct href
+        expect(exampleLink.closest('a')).toHaveAttribute('href', '/?es=gc:geocachingspain@gmail.com')
+
+        // Check that the input field is not affected by the link
         const input = screen.getByLabelText('Enter Event Source ID string') as HTMLInputElement
-        expect(input.value).toBe('gc:geocachingspain@gmail.com')
-
-        // Check logging was called
-        expect(logr.info).toHaveBeenCalledWith('calendar', 'Example event source selected', {
-            id: 'gc:geocachingspain@gmail.com',
-            name: 'Geocaching in Spain',
-            shortId: null
-        })
+        expect(input.value).toBe('')
     })
 
     it('shows loading spinner when submitting and disables inputs', async () => {
@@ -145,47 +139,28 @@ describe('EventsSourceSelector', () => {
         expect(input).toBeDisabled()
         expect(submitButton).toBeDisabled()
 
-        // Check that example buttons are disabled
-        const exampleButtons = screen
-            .getAllByRole('button')
-            .filter(
-                (button) =>
-                    button.textContent?.includes('Geocaching in Spain') ||
-                    button.textContent?.includes('SF Bay Facebook Events')
-            )
-
-        exampleButtons.forEach((button) => {
-            expect(button).toBeDisabled()
-        })
+        // Example links should still be clickable (they're not buttons that get disabled)
+        const exampleLink = screen.getByText('Geocaching in Spain').closest('a')
+        expect(exampleLink).not.toBeNull()
     })
 
-    it('renders all example event sources correctly with white text', () => {
+    it('renders all example event sources correctly as links', () => {
         render(<EventsSourceSelector />)
 
-        // Check that both examples are rendered
+        // Check that key examples are rendered
         expect(screen.getByText('SF Bay Facebook Events')).toBeInTheDocument()
         expect(screen.getByText('Geocaching in Spain')).toBeInTheDocument()
+        expect(screen.getByText('SF Bay Music + FB Events')).toBeInTheDocument()
 
-        // Check for the correct event source IDs
-        expect(screen.getByText('gc:geocachingspain@gmail.com')).toBeInTheDocument()
-        expect(screen.getAllByText(/aabe6c219ee2af5b791ea6719e04a92990f9ccd1e68a3ff0d89bacd153a0b36d/)).toHaveLength(2) // appears in both combined source and individual source
+        // Check that they have correct href attributes
+        const geocachingLink = screen.getByText('Geocaching in Spain').closest('a')
+        expect(geocachingLink).toHaveAttribute('href', '/?es=gc:geocachingspain@gmail.com')
 
-        // Check that text is white
-        const exampleButtons = screen
-            .getAllByRole('button')
-            .filter(
-                (button) =>
-                    button.textContent?.includes('Geocaching in Spain') ||
-                    button.textContent?.includes('SF Bay Facebook Events')
-            )
+        const sfBayLink = screen.getByText('SF Bay Music + FB Events').closest('a')
+        expect(sfBayLink).toHaveAttribute('href', '/?es=sf')
 
-        exampleButtons.forEach((button) => {
-            const nameDiv = button.querySelector('div:first-child')
-            const idDiv = button.querySelector('div:last-child')
-
-            expect(nameDiv).toHaveClass('text-white')
-            expect(idDiv).toHaveClass('text-white')
-        })
+        // Check that the links have the correct styling
+        expect(geocachingLink).toHaveClass('hover:underline', 'text-blue-600')
     })
 
     it('renders a link to usage documentation', () => {
@@ -196,12 +171,11 @@ describe('EventsSourceSelector', () => {
         expect(link).toBeInTheDocument()
         expect(link.closest('a')).toHaveAttribute(
             'href',
-            'https://github.com/chadn/cmf/blob/main/docs/usage.md#how-to-use-cmf'
+            'https://github.com/chadn/cmf/blob/main/docs/usage.md#initial-view---pick-event-source'
         )
         expect(link.closest('a')).toHaveAttribute('target', '_blank')
 
         // Check for the help text
-        expect(screen.getByText(/to find your Calendar ID/i)).toBeInTheDocument()
-        expect(screen.getByText(/and more on using this app/i)).toBeInTheDocument()
+        expect(screen.getByText(/to find your Event Source ID and more on using this app/i)).toBeInTheDocument()
     })
 })

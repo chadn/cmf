@@ -15,7 +15,7 @@ export function formatEventDate(dateString: string, includeTime: boolean = true)
             return 'Invalid date'
         }
         // aaa is 'am' or 'pm'
-        return includeTime ? format(date, 'MM/dd EEE h:mmaaa') : format(date, 'MM/dd EEE')
+        return includeTime ? format(date, 'M/d EEE h:mmaaa') : format(date, 'M/d EEE')
     } catch (error) {
         logr.warn('date', 'Error formatting date:', error)
         return 'Invalid date'
@@ -177,15 +177,15 @@ export function calculateTodayValue(now: Date, minDate: Date): number {
 /**
  * Extracts date and time parts from a formatted date string
  * @param dateString - ISO date string
- * @returns Object with dateDay (MM/DD Day) and time (hh:mm am/pm) parts
+ * @returns Object with dateDay (M/D Day) and time (hh:mm am/pm) parts
  */
 export function extractDateParts(dateString: string): { dateDay: string; time: string } {
     const fullDate = formatEventDate(dateString)
-    // Split the date into parts (MM/DD Day and Time)
+    // Split the date into parts (M/D Day and Time)
     const parts = fullDate.match(/^([\d/]+\s[A-Za-z]+)\s(.+)$/)
     if (parts && parts.length >= 3) {
         return {
-            dateDay: parts[1], // MM/DD Day
+            dateDay: parts[1], // M/D Day
             time: parts[2], // hh:mm am/pm
         }
     }

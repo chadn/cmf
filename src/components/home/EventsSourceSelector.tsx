@@ -48,15 +48,6 @@ const EventsSourceSelector: React.FC = () => {
         }
     }
 
-    const handleExampleSelect = (id: string) => {
-        const example = ExampleEventsSources.find((es) => es.id === id)
-        logr.info('calendar', 'Example event source selected', {
-            id,
-            name: example?.name,
-            shortId: example?.shortId ? example.shortId : null
-        })
-        setEventSourceId(example?.shortId || id)
-    }
 
     return (
         <div className="max-w-md mx-auto px-8 py-6 bg-white rounded-lg shadow-md border-t border-black">
@@ -90,20 +81,39 @@ const EventsSourceSelector: React.FC = () => {
             {/* Example event sources */}
             <div className="mt-8">
                 <h3 className="text-sm font-medium text-gray-500 mb-2">
-                    Or try an example - click below then click View Events:
+                    Examples:
                 </h3>
                 <div className="space-y-2 max-h-72 overflow-y-auto">
-                    {ExampleEventsSources.map((source) => (
-                        <button
-                            key={`${source.id}`}
-                            className="w-full text-left px-3 py-2 border rounded btn btn-secondary"
-                            onClick={() => handleExampleSelect(source.id)}
-                            disabled={isLoading}
-                        >
-                            <div className="font-medium text-white">{source.name}</div>
-                            <div className="text-xs text-white truncate">{source.shortId ? `${source.shortId} or ` : ''}{source.id}</div>
-                        </button>
-                    ))}
+                    <ol className="pl-5 space-y-1" style={{listStyleType: 'decimal'}}>
+                        {ExampleEventsSources.map((source, index) => (
+                            <li key={index}>
+                                {source.ids ? (
+                                    <div>
+                                        <div className="font-medium text-gray-700 mb-1">{source.name}</div>
+                                        <div className="text-sm">
+                                            {Object.entries(source.ids).map(([key, value], index, array) => (
+                                                <span key={key}>
+                                                    <a
+                                                        href={`/?es=${key}`}
+                                                        className="hover:underline text-blue-600 hover:bg-blue-50 rounded"
+                                                    >
+                                                        {value}
+                                                    </a>{index < array.length - 1 && <span className="text-gray-400">, </span>}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <a
+                                        href={`/?es=${source.shortId ? source.shortId : source.id}`}
+                                        className="hover:underline text-blue-600"
+                                    >
+                                        {source.name}
+                                    </a>
+                                )}
+                            </li>
+                        ))}
+                    </ol>
                 </div>
             </div>
 
@@ -111,7 +121,7 @@ const EventsSourceSelector: React.FC = () => {
             <div className="mt-8 text-sm text-gray-500">
                 <p className="text-md mt-1">
                     <a
-                        href="https://github.com/chadn/cmf/blob/main/docs/usage.md#how-to-use-cmf"
+                        href="https://github.com/chadn/cmf/blob/main/docs/usage.md#initial-view---pick-event-source"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium transition-colors"
@@ -133,7 +143,7 @@ const EventsSourceSelector: React.FC = () => {
                         Read Usage Docs
                     </a>
                     <br />
-                    to find your Calendar ID and more on using this app.
+                    to find your Event Source ID and more on using this app.
                 </p>
             </div>
         </div>

@@ -5,6 +5,26 @@ All notable changes to Calendar Map Filter (CMF) will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.13] - 2025-09-08
+
+### Added
+
+-   "Add To Cal" button in map popups to add events to Google Calendar or download .ics files for Apple Calendar
+-   Support for 19hz events in many cities: LA, Chicago, Vegas, etc. (previously only SF Bay Area)
+-   Facebook event links extracted and displayed in map popups as "FB Event" when available
+
+### Changed
+
+-   Date format now shows single digits without leading zeros (e.g., "9/5 Fri" instead of "09/05 Fri")
+-   Home page examples now use direct links instead of buttons for easier navigation
+-   "Show Only These" links in sidebar only appear when they would change the current view
+-   Version info in About popover now includes git commit hash
+
+### Fixed
+
+-   Event list sorting by start date now works correctly
+-   19hz events with ambiguous city names (like "Highland Park") now use regional context for proper geocoding
+
 ## [0.2.12] - 2025-09-08
 
 ### Added

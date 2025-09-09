@@ -1,34 +1,9 @@
 # To Do
 
 This is a high level list of things to do on the app. Not necessarily in prioritized order.
+Done items in [CHANGELOG](../CHANGELOG.md)
 
-1. ✅ When clicking on CMF in top left, open/close menu without resetting app state. When open, show
-    1. ✅ About Blurb
-    1. ✅ Enter new Source (homepage)
-    1. ✅ Usage Info on Github
-    1. ✅ Share button (copies to clipboard)
-    1. ✅ Show timezone (defaults to browser local)
-    1. change timezone
-1. ✅ Make design better
-    1. ✅ USE Shadcn
-    1. ✅ On desktop, make map go to top (header should only be on left side panel).
-    1. ✅ Make design more compact - Put search box and dates in same row. Click on either will expand.
-1. Favorite events, remember favs via cookies or browser local storage.
-1. ✅ Make list panel open all the way, half way (normal) or close entirely except small CMF with count of events showing
-    - ✅ Added react-resizable-panels to allow user to control size of map by dragging line.
-1. Add more protest event sources
-    - ✅ https://events.pol-rev.com/api
-    - ✅ https://www.wethepeopledissent.net/ Google Sheet
-    - https://www.mobilize.us/nokings/, https://www.mobilize.us/?event_type=29 , https://www.mobilize.us/events/rally/
-1. ✅ Support search box updating map when a 5-digit zipcode is entered
-1. ✅ Support 19hz event source
-1. ✅ fix bug where events on event list are not filtered out.  
-1. ✅ Review changes to AGENT.md, ask AI to help with CI and other stuff
-1. ✅ Support multiple event sources displaying at same time and shortIds from examples.ts
-  - multiple via ?es=A,B where A and B are event sources
-  - shortIds like ?es=sf where sf will be hardcoded to A,B
-  - requires making main source name clickable with detailed popup showing all sources and full source name, and links to sources (new).  Even with one source, good to make main source name clickable with detailed popup.
-1. ✅ Add version from package.json to About popup, probably at bottom below timezone
+1. Create 2nd redis instance for dev work, to be used by localhost or dev server.  This will prevent problems in production when data structures stored in redis change during development.  Or more simply, prepend "dev-" to all redis keys when in dev.
 1. Support events DB that is populated by independent scraping tasks
     - Hosting Scarping:
         - [Vercel Cron Jobs](https://vercel.com/docs/cron-jobs/quickstart) ([60sec max duration](https://vercel.com/docs/functions/configuring-functions/duration)),
@@ -45,7 +20,6 @@ This is a high level list of things to do on the app. Not necessarily in priorit
 1. batchGeocodeLocations() calls getCachedLocation() for each location. Instead, it should call a new function, getCachedLocations(), with many locations.
 1. Plura event end time is hardcoded to 1 hr after start, since only start time is shown on city pages. TODO: scrape event page itself for correct end time, and description (which is empty on city page)
 1. Update AGENT.md with CI and related stuff
-1. Display dates update - Change '09/05 Fri' to '9/5 Fri'
 
 (thanks https://euangoddard.github.io/clipboard2markdown/)
 

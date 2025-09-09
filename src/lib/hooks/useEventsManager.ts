@@ -47,7 +47,7 @@ export function useEventsManager({
 
     // Direct state management (replaced reducer pattern)
     const [error, setError] = useState<Error | null>(null)
-    
+
     // Track filter changes to force useMemo recalculation
     const [filterVersion, setFilterVersion] = useState(0)
 
@@ -61,7 +61,7 @@ export function useEventsManager({
 
     // Determine if we have single or multiple sources
     const isMultipleSources = Array.isArray(eventSourceId)
-    
+
     // For single sources, use the original SWR pattern. For multiple sources, use custom fetcher
     const singleApiUrl = useMemo(() => {
         if (!eventSourceId || isMultipleSources) return null
@@ -74,19 +74,20 @@ export function useEventsManager({
             `&timeMax=${encodeURIComponent(timeMax || '')}`
         )
     }, [eventSourceId, isMultipleSources, sd, ed])
-    
+
     // Memoize the API URLs construction for multiple sources only
     const multiApiUrls = useMemo(() => {
         if (!isMultipleSources || !Array.isArray(eventSourceId)) return null
         // timeMin and timeMax must be RFC3339 date strings
         const timeMin = getDateFromUrlDateString(sd || '-1m')?.toISOString()
         const timeMax = getDateFromUrlDateString(ed || '3m')?.toISOString()
-        
-        return eventSourceId.map(sourceId => (
-            `/api/events?id=${encodeURIComponent(sourceId)}` +
-            `&timeMin=${encodeURIComponent(timeMin || '')}` +
-            `&timeMax=${encodeURIComponent(timeMax || '')}`
-        ))
+
+        return eventSourceId.map(
+            (sourceId) =>
+                `/api/events?id=${encodeURIComponent(sourceId)}` +
+                `&timeMin=${encodeURIComponent(timeMin || '')}` +
+                `&timeMax=${encodeURIComponent(timeMax || '')}`
+        )
     }, [eventSourceId, isMultipleSources, sd, ed])
 
     // Log the API URLs being used
@@ -104,8 +105,8 @@ export function useEventsManager({
         // Format user-friendly error message
         let userMessage = 'Failed to fetch events'
         if (msg.includes('HTTP 404')) {
-            const hasGoogleCalendar = Array.isArray(eventSourceId) 
-                ? eventSourceId.some(id => id.startsWith('gc:'))
+            const hasGoogleCalendar = Array.isArray(eventSourceId)
+                ? eventSourceId.some((id) => id.startsWith('gc:'))
                 : eventSourceId?.startsWith('gc:')
             if (hasGoogleCalendar) {
                 userMessage = `Google Calendar not found - confirm source and try again`
@@ -123,12 +124,14 @@ export function useEventsManager({
     }
 
     // Custom fetcher for multiple sources that uses Promise.all
-    const multiSourceFetcher = async (urls: string[]): Promise<{
+    const multiSourceFetcher = async (
+        urls: string[]
+    ): Promise<{
         aggregatedData: EventsSourceResponse
         sources: Array<EventsSource>
     }> => {
-        const results = await Promise.all(urls.map(url => fetcherLogr(url)))
-        
+        const results = await Promise.all(urls.map((url) => fetcherLogr(url)))
+
         // Validate all responses
         for (const result of results) {
             if (!(result && result.httpStatus)) {
@@ -146,14 +149,14 @@ export function useEventsManager({
         let totalUnknownLocations = 0
 
         results.forEach((result: EventsSourceResponse, index: number) => {
-            const eventsWithSrc = isMultipleSources 
-                ? result.events.map(event => ({ ...event, src: index + 1 }))
+            const eventsWithSrc = isMultipleSources
+                ? result.events.map((event) => ({ ...event, src: index + 1 }))
                 : result.events
 
             allEvents.push(...eventsWithSrc)
             totalCount += result.source.totalCount || 0
             totalUnknownLocations += result.source.unknownLocationsCount || 0
-            
+
             sources.push({
                 prefix: result.source.prefix,
                 name: result.source.name,
@@ -164,8 +167,8 @@ export function useEventsManager({
             })
         })
 
-        // Create aggregated source data  
-        const allSourceIds = results.map(result => result.source.id || '')
+        // Create aggregated source data
+        const allSourceIds = results.map((result) => result.source.id || '')
         const aggregatedSource = {
             prefix: results[0].source.prefix,
             name: allSourceIds.length > 1 ? 'Multiple Event Sources' : results[0].source.name,
@@ -202,12 +205,16 @@ export function useEventsManager({
                 dispatchNot200(`HTTP ${data.httpStatus}:`)
                 return
             }
-            logr.info('use_evts_mgr', `✅ Single source events data fetched: "${data.source.name || 'Unknown Source'}"`, {
-                sourceId: data.source.id || 'unknown',
-                sourceType: data.source.prefix || 'unknown',
-                totalEvents: data.source.totalCount || 0,
-                unknownLocations: data.source.unknownLocationsCount || 0,
-            })
+            logr.info(
+                'use_evts_mgr',
+                `✅ Single source events data fetched: "${data.source.name || 'Unknown Source'}"`,
+                {
+                    sourceId: data.source.id || 'unknown',
+                    sourceType: data.source.prefix || 'unknown',
+                    totalEvents: data.source.totalCount || 0,
+                    unknownLocations: data.source.unknownLocationsCount || 0,
+                }
+            )
             logr.debug('use_evts_mgr', `Before fltrEvtMgr.cmf_events_all=${fltrEvtMgr.cmf_events_all.length}`)
             logr.info('use_evts_mgr', `Calling fltrEvtMgr.setEvents(${data.events.length})`)
             fltrEvtMgr.setEvents(data.events)
@@ -224,39 +231,49 @@ export function useEventsManager({
         data: multiSwrData,
         error: multiApiError,
         isLoading: multiApiIsLoading,
-    } = useSWR(multiApiUrls ? `multi:${multiApiUrls.join('|')}` : null, multiApiUrls ? () => multiSourceFetcher(multiApiUrls) : null, {
-        revalidateOnFocus: false,
-        onSuccess: ({ aggregatedData, sources }) => {
-            const data = aggregatedData
-            logr.info('use_evts_mgr', `✅ Multiple sources events data fetched: "${data.source.name}"`, {
-                sourceId: data.source.id,
-                sourceType: data.source.prefix,
-                totalEvents: data.source.totalCount,
-                unknownLocations: data.source.unknownLocationsCount,
-                numSources: sources.length,
-            })
-            
-            logr.debug('use_evts_mgr', `Before fltrEvtMgr.cmf_events_all=${fltrEvtMgr.cmf_events_all.length}`)
-            logr.info('use_evts_mgr', `Calling fltrEvtMgr.setEvents(${data.events.length})`)
-            fltrEvtMgr.setEvents(data.events)
-            // Events are now managed by FilterEventsManager only
-            logr.debug('use_evts_mgr', `After fltrEvtMgr.cmf_events_all=${fltrEvtMgr.cmf_events_all.length}`)
-        },
-        onError: (err) => {
-            dispatchNot200(err.message || err)
-        },
-    })
+    } = useSWR(
+        multiApiUrls ? `multi:${multiApiUrls.join('|')}` : null,
+        multiApiUrls ? () => multiSourceFetcher(multiApiUrls) : null,
+        {
+            revalidateOnFocus: false,
+            onSuccess: ({ aggregatedData, sources }) => {
+                const data = aggregatedData
+                logr.info('use_evts_mgr', `✅ Multiple sources events data fetched: "${data.source.name}"`, {
+                    sourceId: data.source.id,
+                    sourceType: data.source.prefix,
+                    totalEvents: data.source.totalCount,
+                    unknownLocations: data.source.unknownLocationsCount,
+                    numSources: sources.length,
+                })
+
+                logr.debug('use_evts_mgr', `Before fltrEvtMgr.cmf_events_all=${fltrEvtMgr.cmf_events_all.length}`)
+                logr.info('use_evts_mgr', `Calling fltrEvtMgr.setEvents(${data.events.length})`)
+                fltrEvtMgr.setEvents(data.events)
+                // Events are now managed by FilterEventsManager only
+                logr.debug('use_evts_mgr', `After fltrEvtMgr.cmf_events_all=${fltrEvtMgr.cmf_events_all.length}`)
+            },
+            onError: (err) => {
+                dispatchNot200(err.message || err)
+            },
+        }
+    )
 
     // Determine which data to use
     const apiData = isMultipleSources ? multiSwrData?.aggregatedData : singleApiData
-    const eventSources = isMultipleSources ? multiSwrData?.sources : (singleApiData ? [{
-        prefix: singleApiData.source.prefix,
-        name: singleApiData.source.name,
-        totalCount: singleApiData.source.totalCount || 0,
-        unknownLocationsCount: singleApiData.source.unknownLocationsCount || 0,
-        id: singleApiData.source.id || '',
-        url: singleApiData.source.url,
-    }] : null)
+    const eventSources = isMultipleSources
+        ? multiSwrData?.sources
+        : singleApiData
+        ? [
+              {
+                  prefix: singleApiData.source.prefix,
+                  name: singleApiData.source.name,
+                  totalCount: singleApiData.source.totalCount || 0,
+                  unknownLocationsCount: singleApiData.source.unknownLocationsCount || 0,
+                  id: singleApiData.source.id || '',
+                  url: singleApiData.source.url,
+              },
+          ]
+        : null
     const apiError = singleApiError || multiApiError
     const apiIsLoading = singleApiIsLoading || multiApiIsLoading
 
@@ -277,9 +294,12 @@ export function useEventsManager({
         }
     }, [dateRange, searchQuery, showUnknownLocationsOnly, fltrEvtMgr])
 
-    // Memoize filtered events to avoid unnecessary recalculations, but keep it updated with the latest state and apiData
+    // Memoize filtered events to avoid unnecessary recalculations
+    // apiData: needed to trigger recalculation when new events are loaded
+    // filterVersion: needed to trigger recalculation when filters change
     const currentFilteredEvents = useMemo(
         () => fltrEvtMgr.getFilteredEvents(currentViewport || undefined),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         [fltrEvtMgr, apiData, currentViewport, filterVersion]
     )
 
@@ -288,19 +308,19 @@ export function useEventsManager({
         filters: {
             setDateRange: (dateRange) => {
                 fltrEvtMgr.setDateRange(dateRange)
-                setFilterVersion(prev => prev + 1)
+                setFilterVersion((prev) => prev + 1)
             },
             setSearchQuery: (searchQuery) => {
                 fltrEvtMgr.setSearchQuery(searchQuery)
-                setFilterVersion(prev => prev + 1)
+                setFilterVersion((prev) => prev + 1)
             },
             setShowUnknownLocationsOnly: (show) => {
                 fltrEvtMgr.setShowUnknownLocationsOnly(show)
-                setFilterVersion(prev => prev + 1)
+                setFilterVersion((prev) => prev + 1)
             },
             resetAll: () => {
                 fltrEvtMgr.resetAllFilters()
-                setFilterVersion(prev => prev + 1)
+                setFilterVersion((prev) => prev + 1)
             },
         },
         eventSources: eventSources || null,

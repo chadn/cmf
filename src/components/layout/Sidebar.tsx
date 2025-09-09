@@ -1,10 +1,12 @@
-import React, { forwardRef, ReactNode } from 'react'
+import React, { forwardRef, ReactNode, useMemo } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import * as Popover from '@radix-ui/react-popover'
 import { Button } from '@/components/ui/button'
 import { X } from 'lucide-react'
 import packageJson from '../../../package.json'
 import { EventsSource } from '@/types/events'
+import { useQueryState } from 'nuqs'
+import { parseAsEventsSource } from '@/lib/utils/location'
 
 interface SidebarProps {
     headerName?: string
@@ -15,15 +17,22 @@ interface SidebarProps {
 }
 
 const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(({ headerName, eventCount, eventSources, children }, ref) => {
-    // Get browser timezone and offset
-    const browserTz = typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : 'Unknown'
-    let tzOffset = ''
-    if (typeof Intl !== 'undefined') {
+    // Only get current es parameter when eventSources exist (optimization)
+    const [currentEventSourceId] = useQueryState('es', parseAsEventsSource)
+    
+    // Memoize timezone calculation (expensive operations)
+    const timezoneInfo = useMemo(() => {
+        if (typeof Intl === 'undefined') return { browserTz: 'Unknown', tzOffset: '' }
+        
+        const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone
         const offsetMin = new Date().getTimezoneOffset()
         const offsetHr = -offsetMin / 60
         const sign = offsetHr >= 0 ? '+' : '-'
-        tzOffset = ` UTC${sign}${Math.abs(offsetHr)}`
-    }
+        const tzOffset = ` UTC${sign}${Math.abs(offsetHr)}`
+        
+        return { browserTz, tzOffset }
+    }, [])
+    
     // Share handler
     const handleShare = async () => {
         try {
@@ -33,6 +42,9 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(({ headerName, eventCou
             alert('Failed to copy link.')
         }
     }
+    
+    // Memoize git SHA calculation
+    const sha = useMemo(() => (process.env.GIT_COMMIT_SHA || '').substring(0, 7), [])
     return (
         <Card ref={ref} className="w-full flex flex-col h-full min-h-0 p-1 border-r bg-white">
             <div className="sticky top-0 z-10 bg-white pb-2 pt-2 border-b mb-2">
@@ -61,23 +73,21 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(({ headerName, eventCou
                                     <div className="font-semibold text-lg mb-2">About</div>
                                     <div className="text-sm text-gray-700 mb-2">
                                         CMF lets you use a map to view and filter events. You can also filter by date or
-                                        search term.
+                                        search term.                                                 <a
+                                                    href="https://github.com/chadn/cmf/blob/main/docs/usage.md#how-to-use-cmf"
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="hover:underline text-blue-700"
+                                                >
+                                                    View Usage Doc on Github
+                                                </a>
+
                                     </div>
                                     <div className="flex flex-col gap-2 text-blue-700  text-sm">
                                         <ul className="list-disc pl-5 space-y-1">
                                             <li>
                                                 <a href="/" className="hover:underline">
                                                     Enter New Source
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a
-                                                    href="https://github.com/chadn/cmf/blob/main/docs/usage.md#how-to-use-cmf"
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="hover:underline"
-                                                >
-                                                    View Usage Doc on Github
                                                 </a>
                                             </li>
                                             <li>
@@ -95,14 +105,14 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(({ headerName, eventCou
                                     <div className="flex items-center gap-2 mt-2">
                                         <span className="text-sm">Timezone used for Times:</span>
                                         <span className="font-mono text-xs bg-gray-100 rounded px-2 py-0.5">
-                                            {browserTz}
-                                            {tzOffset}
+                                            {timezoneInfo.browserTz}
+                                            {timezoneInfo.tzOffset}
                                         </span>
                                     </div>
                                     <div className="flex items-center gap-2 mt-2">
                                         <span className="text-sm">CMF Version:</span>
                                         <span className="font-mono text-xs bg-gray-100 rounded px-2 py-0.5">
-                                            {packageJson.version}
+                                            {packageJson.version} {sha}
                                         </span>
                                     </div>
                                 </div>
@@ -132,7 +142,7 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(({ headerName, eventCou
                                         </button>
                                     </Popover.Close>
                                     <div className="p-4 space-y-3">
-                                        <div className="font-semibold text-lg mb-3">Event Sources</div>
+                                        <div className="font-semibold text-lg mb-3">Events Sources</div>
 
                                         <div className="space-y-3">
                                             {eventSources.map((source, index) => (
@@ -152,12 +162,14 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(({ headerName, eventCou
                                                             </a>
                                                         )}
                                                         Events: <span className="font-medium">{source.totalCount}</span>{' '}
-                                                        <a
-                                                            href={`/?es=${source.prefix}:${source.id}`}
-                                                            className="text-blue-600 hover:underline text-sm"
-                                                        >
-                                                            Show Only These
-                                                        </a>
+                                                        {currentEventSourceId !== `${source.prefix}:${source.id}` && (
+                                                            <a
+                                                                href={`/?es=${source.prefix}:${source.id}`}
+                                                                className="text-blue-600 hover:underline text-sm"
+                                                            >
+                                                                Show Only These
+                                                            </a>
+                                                        )}
                                                     </div>
                                                 </div>
                                             ))}
@@ -166,7 +178,10 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(({ headerName, eventCou
                                                     <div>
                                                         Total Events:{' '}
                                                         <span className="font-medium">
-                                                            {eventSources.reduce((sum, s) => sum + (s.totalCount || 0), 0)}
+                                                            {eventSources.reduce(
+                                                                (sum, s) => sum + (s.totalCount || 0),
+                                                                0
+                                                            )}
                                                         </span>
                                                     </div>
                                                 </div>

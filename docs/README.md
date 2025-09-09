@@ -66,15 +66,15 @@ This directory contains comprehensive documentation for Calendar Map Filter (CMF
 
 **New Developers**: Follow [development.md](development.md) → [Implementation.md](Implementation.md) → [tests.md](tests.md)
 
-**New Contributors**: Review [development.md](development.md) → [refactor.md](refactor.md) → [todo.md](todo.md)
+**New Contributors**: Review [development.md](development.md) → [todo.md](todo.md) → [adr/README.md](adr/README.md)
 
-**Maintainers**: Check [todo.md](todo.md) → [tests.md](tests.md) → [refactor.md](refactor.md)
+**Maintainers**: Check [todo.md](todo.md) → [tests.md](tests.md) → [adr/README.md](adr/README.md)
 
 ## 📋 Documentation Standards
 
 All documents in this directory follow these principles:
 
--   **Up to Date**: Content matches current v0.2.11 codebase
+-   **Up to Date**: Content matches current v0.2.13 codebase
 -   **Well Organized**: Logical flow with clear cross-references
 -   **Concise**: High-level focus, avoiding implementation minutiae
 -   **Cross-Referenced**: Links between related documents

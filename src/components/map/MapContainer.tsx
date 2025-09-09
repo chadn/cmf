@@ -4,6 +4,7 @@ import { useRef, useEffect, useState, useCallback } from 'react'
 import Map, { Marker, Popup, NavigationControl, ViewState, MapRef } from 'react-map-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { MapViewport, MapBounds, MapMarker } from '@/types/map'
+import { EventsSource } from '@/types/events'
 import MapMarkerComponent from './MapMarker'
 import MapPopup from './MapPopup'
 import { logr } from '@/lib/utils/logr'
@@ -23,6 +24,7 @@ interface MapContainerProps {
     onWidthHeightChange: (mapWidthHeight: { w: number; h: number }) => void
     selectedEventId: string | null
     onEventSelect: (eventId: string | null) => void
+    eventSources?: EventsSource[]
 }
 
 const MapContainer: React.FC<MapContainerProps> = ({
@@ -35,6 +37,7 @@ const MapContainer: React.FC<MapContainerProps> = ({
     onWidthHeightChange,
     selectedEventId,
     onEventSelect,
+    eventSources,
 }) => {
     const mapRef = useRef<MapRef>(null)
     const [popupMarker, setPopupMarker] = useState<MapMarker | null>(null)
@@ -287,6 +290,7 @@ const MapContainer: React.FC<MapContainerProps> = ({
                             marker={popupMarker}
                             selectedEventId={selectedEventId}
                             onEventSelect={handleEventSelect}
+                            eventSources={eventSources}
                         />
                     </Popup>
                 )}

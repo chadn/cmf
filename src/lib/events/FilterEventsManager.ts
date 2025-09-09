@@ -91,8 +91,10 @@ export class FilterEventsManager {
             byLocationFilter: 0,
         }
 
-        if (Object.keys(this.filters).length === 0) {
-            logr.debug('fltr_evts_mgr', 'getFilteredEvents returning all events, no filters exist')
+        // Check if any filters have actual values (not just undefined)
+        const hasActiveFilters = Object.values(this.filters).some((value) => value !== undefined)
+        if (!hasActiveFilters && !currentViewport) {
+            logr.debug('fltr_evts_mgr', 'getFilteredEvents returning all events, no active filters and no viewport')
             return {
                 allEvents: this.allEvents,
                 visibleEvents: this.allEvents,

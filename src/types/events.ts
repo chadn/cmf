@@ -64,7 +64,7 @@ export interface EventsFilter {
 
 export interface FilteredEvents {
     allEvents: CmfEvent[]
-    visibleEvents: CmfEvent[]  // events that pass all filters
+    visibleEvents: CmfEvent[] // events that pass all filters
     hiddenCounts: {
         byMap: number
         bySearch: number

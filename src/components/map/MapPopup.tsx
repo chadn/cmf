@@ -1,18 +1,22 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { MapMarker } from '@/types/map'
+import { EventsSource } from '@/types/events'
 import { formatEventDate, formatEventDuration } from '@/lib/utils/date'
 import { logr } from '@/lib/utils/logr'
 import { LOCATION_KEY_PREFIX } from '@/types/events'
+import { generateGoogleCalendarUrl, downloadIcsFile } from '@/lib/utils/calendar'
+import * as Popover from '@radix-ui/react-popover'
 
 interface MapPopupProps {
     marker: MapMarker
     selectedEventId?: string | null
     onEventSelect?: (eventId: string) => void
+    eventSources?: EventsSource[]
 }
 
-const MapPopup: React.FC<MapPopupProps> = ({ marker, selectedEventId, onEventSelect }) => {
+const MapPopup: React.FC<MapPopupProps> = ({ marker, selectedEventId, onEventSelect, eventSources }) => {
     const { events } = marker
 
     // Default to first event if no valid event is selected
@@ -40,20 +44,40 @@ const MapPopup: React.FC<MapPopupProps> = ({ marker, selectedEventId, onEventSel
         })
     }, [selectedEventId, events, getInitialIndex])
 
-    // Safety check - ensure we have events
+    // Get current event (with safety checks)
+    const currentEvent =
+        events && events.length > 0 && currentIndex >= 0 && currentIndex < events.length ? events[currentIndex] : null
+
+    // Extract Facebook URL from current event description (memoized)
+    const facebookEventUrl = useMemo(() => {
+        if (!currentEvent?.description) return null
+        const fbUrlRegex = /https:\/\/www\.facebook\.com\/events\/\d+\/?/g
+        const matches = currentEvent.description.match(fbUrlRegex)
+        return matches ? matches[matches.length - 1] : null
+    }, [currentEvent?.description])
+
+    // Memoized calendar event handlers
+    const handleGoogleCalendar = useCallback(() => {
+        if (!currentEvent) return
+        const googleUrl = generateGoogleCalendarUrl(currentEvent, eventSources)
+        window.open(googleUrl, '_blank', 'noopener,noreferrer')
+    }, [currentEvent, eventSources])
+
+    const handleAppleCalendar = useCallback(() => {
+        if (!currentEvent) return
+        downloadIcsFile(currentEvent, eventSources)
+    }, [currentEvent, eventSources])
+
+    // Early returns after all hooks
     if (!events || events.length === 0) {
         return <div className="p-2 text-sm bg-white text-gray-800 rounded-lg shadow">No events at this location</div>
     }
 
-    // Safety check - ensure currentIndex is valid
     if (currentIndex < 0 || currentIndex >= events.length) {
         setCurrentIndex(0)
         return <div className="p-2 text-sm bg-white text-gray-800 rounded-lg shadow">Loading event details...</div>
     }
 
-    const currentEvent = events[currentIndex]
-
-    // Final safety check
     if (!currentEvent) {
         return <div className="p-2 text-sm bg-white text-gray-800 rounded-lg shadow">Event details unavailable</div>
     }
@@ -105,11 +129,23 @@ const MapPopup: React.FC<MapPopupProps> = ({ marker, selectedEventId, onEventSel
 
             {/* Event description (truncated) */}
             {currentEvent.description && (
-                <p className="text-xs mb-2 max-h-20 overflow-y-auto text-gray-600">
-                    {currentEvent.description.length > 150
-                        ? `${currentEvent.description.substring(0, 150)}...`
-                        : currentEvent.description}
-                </p>
+                <div className="mb-2">
+                    <p className="text-xs max-h-20 overflow-y-auto text-gray-600">
+                        {currentEvent.description.length > 150
+                            ? `${currentEvent.description.substring(0, 150)}...`
+                            : currentEvent.description}
+                    </p>
+                    {facebookEventUrl && (
+                        <a
+                            href={facebookEventUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-blue-600 hover:underline mt-1 inline-block"
+                        >
+                            FB Event
+                        </a>
+                    )}
+                </div>
             )}
 
             {currentEvent.resolved_location?.status !== 'resolved' && (
@@ -121,15 +157,49 @@ const MapPopup: React.FC<MapPopupProps> = ({ marker, selectedEventId, onEventSel
                 </p>
             )}
             {/* Original event link */}
-            <a
-                href={currentEvent.original_event_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-blue-600 hover:underline block mb-2"
-                title={`${LOCATION_KEY_PREFIX}${currentEvent.resolved_location?.original_location}`}
-            >
-                View Original Event
-            </a>
+            <div className="flex justify-between items-center mb-2 text-xs">
+                <a
+                    href={currentEvent.original_event_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline"
+                    title={`${LOCATION_KEY_PREFIX}${currentEvent.resolved_location?.original_location}`}
+                >
+                    View Original Event
+                </a>
+
+                {/* Add To Cal Popover */}
+                <Popover.Root>
+                    <Popover.Trigger asChild>
+                        <button className="text-blue-600 hover:underline focus:outline-none">Add To Cal</button>
+                    </Popover.Trigger>
+                    <Popover.Portal>
+                        <Popover.Content
+                            className="z-50 bg-white rounded-md shadow-lg border p-3 min-w-[200px]"
+                            sideOffset={5}
+                        >
+                            <div className="flex flex-col gap-2">
+                                <h4 className="font-medium text-sm text-gray-900 mb-2">Add to your Calendar</h4>
+
+                                <button
+                                    onClick={handleGoogleCalendar}
+                                    className="text-left text-sm text-blue-600 hover:underline focus:outline-none"
+                                >
+                                    • Google Calendar
+                                </button>
+
+                                <button
+                                    onClick={handleAppleCalendar}
+                                    className="text-left text-sm text-blue-600 hover:underline focus:outline-none"
+                                >
+                                    • Apple (iCal) Calendar
+                                </button>
+                            </div>
+                            <Popover.Arrow className="fill-white" />
+                        </Popover.Content>
+                    </Popover.Portal>
+                </Popover.Root>
+            </div>
 
             {/* Pagination controls (if multiple events) */}
             {events.length > 1 && (

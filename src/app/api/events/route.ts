@@ -47,6 +47,9 @@ const fetchAndGeocode = async (
 
     // Add resolved locations to events
     const eventsWithLocationResolved = events.map((event) => {
+        // Always populate startSecs for reliable sorting
+        event.startSecs = Math.round(new Date(event.start).getTime() / 1000)
+        
         if (event.location && locationMap.has(event.location)) {
             const resolved_location = locationMap.get(event.location)
             if (event.tz === 'LOCAL' && resolved_location) {
@@ -54,6 +57,7 @@ const fetchAndGeocode = async (
                 if (event.tz != 'UNKNOWN') {
                     event.start = convertWallTimeToZone(event.start, event.tz)
                     event.end = convertWallTimeToZone(event.end, event.tz)
+                    // Recalculate startSecs after timezone conversion
                     event.startSecs = Math.round(new Date(event.start).getTime() / 1000)
                 }
             }

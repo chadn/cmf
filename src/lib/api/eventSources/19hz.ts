@@ -4,6 +4,7 @@ import { CmfEvent, EventsSourceParams, EventsSourceResponse, EventsSource } from
 import { logr } from '@/lib/utils/logr'
 import { BaseEventSourceHandler, registerEventsSource } from './index'
 import { parse19hzDateRange } from '@/lib/utils/date-parsing'
+import { extractVenueAndCity } from '@/lib/utils/venue-parsing'
 
 interface ParsedEventRow {
     dateTime: string
@@ -19,15 +20,47 @@ interface ParsedEventRow {
 export class NineteenHzEventsSource extends BaseEventSourceHandler {
     public readonly type: EventsSource = {
         prefix: '19hz',
-        name: '19hz.info Bay Area Electronic Music Events',
-        url: 'https://19hz.info/eventlisting_BayArea.php',
+        name: '19hz.info Music Events',
+        url: 'https://19hz.info/',
     }
     private venueCache: Map<string, string> = new Map()
 
+    /**
+     * Build the event listing URL for a given city code
+     */
+    private buildEventListingUrl(cityCode: string): string {
+        return `https://19hz.info/eventlisting_${cityCode}.php`
+    }
+
+    /**
+     * Get city information for known cities, with fallbacks for unknown ones
+     */
+    private getCityInfo(cityCode: string): { name: string; timezone: string; state: string } {
+        // Ideally we don't have any of this city data hardcoded, but need timezone, so this was born.
+        const knownCities: { [key: string]: { name: string; timezone: string; state: string } } = {
+            BayArea: { name: 'Bay Area', timezone: 'America/Los_Angeles', state: 'CA' },
+            LasVegas: { name: 'Las Vegas', timezone: 'America/Los_Angeles', state: 'NV' },
+            CHI: { name: 'Chicago', timezone: 'America/Chicago', state: 'IL' },
+            ORE: { name: 'Oregon', timezone: 'America/Los_Angeles', state: 'OR' },
+        }
+
+        return (
+            knownCities[cityCode] || {
+                name: cityCode,
+                timezone: 'America/Los_Angeles', // Default timezone
+                state: 'CA', // Default state
+            }
+        )
+    }
+
     async fetchEvents(params: EventsSourceParams): Promise<EventsSourceResponse> {
         try {
-            const url = this.type.url
-            logr.info('api-es-19hz', `Fetching events from ${url}`)
+            // Determine which city page to fetch from
+            const cityCode = params.id || 'BayArea'
+            const cityInfo = this.getCityInfo(cityCode)
+            const url = this.buildEventListingUrl(cityCode)
+
+            logr.info('api-es-19hz', `Fetching events from ${cityInfo.name} (${url})`)
 
             const response = await axios.get(url)
 
@@ -38,9 +71,9 @@ export class NineteenHzEventsSource extends BaseEventSourceHandler {
 
             // Find the events table and process each row
             $('table tbody tr').each((_, row) => {
-                const parsedEvent = this.parseEventRow($, $(row))
+                const parsedEvent = this.parseEventRow($, $(row), cityInfo)
                 if (parsedEvent) {
-                    const cmfEvent = this.createCmfEvent(parsedEvent)
+                    const cmfEvent = this.createCmfEvent(parsedEvent, cityInfo)
                     if (cmfEvent) {
                         // Ensure unique ID by adding suffix if needed
                         cmfEvent.id = this.ensureUniqueId(cmfEvent.id, events)
@@ -56,7 +89,9 @@ export class NineteenHzEventsSource extends BaseEventSourceHandler {
                 events,
                 source: {
                     ...this.type,
-                    id: params.id || 'bayarea',
+                    name: `${this.type.name} - ${cityInfo.name}`,
+                    url: url,
+                    id: params.id || 'BayArea',
                     totalCount: events.length,
                     unknownLocationsCount: 0, // Will be computed after geocoding
                 },
@@ -71,7 +106,11 @@ export class NineteenHzEventsSource extends BaseEventSourceHandler {
     /**
      * Parse a single event row from the HTML table
      */
-    private parseEventRow($: cheerio.Root, $row: cheerio.Cheerio): ParsedEventRow | null {
+    private parseEventRow(
+        $: cheerio.Root,
+        $row: cheerio.Cheerio,
+        cityInfo: { name: string; timezone: string; state: string }
+    ): ParsedEventRow | null {
         try {
             const cells = $row.find('td')
             if (cells.length < 6) return null
@@ -103,7 +142,7 @@ export class NineteenHzEventsSource extends BaseEventSourceHandler {
                 .join(', ')
 
             // Extract venue from event title
-            let venue = this.extractVenueAndCity(eventTitle)
+            let venue = extractVenueAndCity(eventTitle, cityInfo.state, cityInfo.name, this.venueCache)
 
             // Clean venue formatting
             if (venue) {
@@ -157,46 +196,6 @@ export class NineteenHzEventsSource extends BaseEventSourceHandler {
         logr.info('api-es-19hz', `Built venue cache with ${this.venueCache.size} venues`)
     }
 
-    /**
-     * Extract venue and city from event title in format "Event Name @ Venue (City)"
-     */
-    private extractVenueAndCity(eventTitle: string): string {
-        // Match pattern: "Event @ Venue (City)" or "Event @ Venue"
-        const match = eventTitle.match(/^(.+?)\s*@\s*([^(]+?)(?:\s*\(([^)]+)\))?$/)
-
-        if (match) {
-            const venue = match[2]?.trim() || ''
-            const city = match[3]?.trim() || ''
-
-            // Check venue cache for full address
-            const cachedAddress = this.venueCache.get(venue.toLowerCase())
-            if (cachedAddress) {
-                return cachedAddress
-            }
-
-            // Handle TBA case - only city known
-            if (venue.toLowerCase() === 'tba' && city) {
-                return `${city}, CA`
-            }
-
-            // No match in cache, format as "Venue, city, CA" without parens
-            if (venue && city) {
-                return `${venue}, ${city}, CA`
-            }
-
-            logr.info('api-es-19hz', `Unexpected venue and city for event: ${eventTitle}`)
-            return `${venue}, ${city}, CA, USA`
-        }
-
-        // Fallback: look for city in parentheses at the end
-        const cityMatch = eventTitle.match(/\(([^)]+)\)$/)
-        if (cityMatch) {
-            return `${cityMatch[1].trim()}, CA`
-        }
-
-        logr.info('api-es-19hz', `Unexpected venue and city formatting for event: ${eventTitle}`)
-        return ''
-    }
 
     /**
      * Parse date/time text into start and end dates
@@ -227,7 +226,10 @@ export class NineteenHzEventsSource extends BaseEventSourceHandler {
     /**
      * Create a CmfEvent from parsed row data
      */
-    private createCmfEvent(parsed: ParsedEventRow): CmfEvent | null {
+    private createCmfEvent(
+        parsed: ParsedEventRow,
+        cityInfo: { name: string; timezone: string; state: string }
+    ): CmfEvent | null {
         try {
             const { start, end } = this.parseDateRange(parsed.dateTime)
 
@@ -279,7 +281,7 @@ export class NineteenHzEventsSource extends BaseEventSourceHandler {
                 description_urls: this.extractUrls(description),
                 start,
                 end,
-                tz: 'America/Los_Angeles', // PST/PDT timezone for Bay Area
+                tz: cityInfo.timezone, // Dynamic timezone based on city
                 location,
                 original_event_url: parsed.eventUrl,
             }

@@ -54,9 +54,9 @@ import { renderHook, act } from '@testing-library/react'
 import { useEventsManager } from '../useEventsManager'
 import { CmfEvent } from '@/types/events'
 import { MapBounds } from '@/types/map'
-import { url } from 'inspector'
 
 // Reconfigure SWR mock to be controllable per test
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const swrMock = require('swr')
 
 describe('useEventsManager - new viewport parameter model', () => {
