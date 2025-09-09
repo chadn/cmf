@@ -5,6 +5,37 @@ The goal is guidance, recommending a solution when more than one common solution
 Everything here is a recommendation, should only deviate when good reason and user approves.
 Also follow the user level guidelines in ~/.config/AGENT.md
 
+# Do the following if user asks
+
+@prompt VerifyCommit Plan:
+Review the latest git commit. Ensure the following are true — fix if not - and summarize what you did.
+
+1. package.json:
+    - Version is incremented appropriately (patch/minor/major)
+
+2. CHANGELOG.md:
+    - Entry exists for this commit
+    - Describes all relevant changes accurately
+    - Marks any breaking changes
+
+3. docs/adr/:
+    - If the commit includes a significant refactor or architectural change:
+        - Create or update an ADR that reflects the **final state and rationale** of the change.
+        - Do not append notes or running commentary — rewrite the ADR to be accurate, complete, and concise.
+    - To verify:
+        - Review the full git diff and re-read the ADR in its entirety
+        - Ensure the ADR covers **all relevant changes** from the commit
+        - Follow formatting and writing guidelines in `docs/adr/README.md`
+
+4. File reference docs:
+    - If any files were added, removed, or renamed:
+        - Update all affected documentation (e.g. tests.md, Implementation.md)
+
+5. tests.md:
+    - Test coverage output is current
+    - Timestamp from `npm test && date` is newer than any code or test file in this commit.
+    - If outdated, run `npm test && date` and replace the section
+
 # General Project Preferences
 
 ## Versioning

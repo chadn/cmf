@@ -65,7 +65,7 @@ describe('venue-parsing utilities', () => {
         })
 
         it('should try multiple state patterns', () => {
-            const result = getStateFromEventSource('Los Angeles')
+            getStateFromEventSource('Los Angeles')
             expect(mockGetCityStateFromCity).toHaveBeenCalledWith('Los Angeles, CA')
             // Would also check IL, OR, NV patterns if CA didn't match
         })

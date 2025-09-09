@@ -19,7 +19,7 @@ import {
     parseAsLatLon,
     checkForZipCode,
 } from '@/lib/utils/location'
-import { parseAsCmfDate, parseAsDateQuickFilter } from '@/lib/utils/date'
+import { parseAsCmfDate, parseAsDateQuickFilter } from '@/lib/utils/date-nuqs'
 import { useQueryState, useQueryStates } from 'nuqs'
 import ErrorMessage from '@/components/common/ErrorMessage'
 import { umamiTrack } from '@/lib/utils/umami'
@@ -291,7 +291,7 @@ function HomeContent() {
         [filters, setSearchQueryUrl, searchQueryAppliedRef, setViewport, viewport]
     )
 
-    // Handle date range changes
+    // handleDateRangeChange - update date filter and slider
     const handleDateRangeChange = useCallback(
         (newDateRange: { start: string; end: string } | undefined) => {
             logr.info('app', 'Date filter changed', {
@@ -374,6 +374,7 @@ function HomeContent() {
         },
         [evts.allEvents, markers, selectedEventIdUrl, setSelectedEventIdUrl, setSelectedMarkerId, setViewport, viewport]
     )
+
 
     // Handle transition from map-init via MAP_INITIALIZED action to main-state
     // Basically apply url params to map

@@ -19,20 +19,20 @@ interface SidebarProps {
 const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(({ headerName, eventCount, eventSources, children }, ref) => {
     // Only get current es parameter when eventSources exist (optimization)
     const [currentEventSourceId] = useQueryState('es', parseAsEventsSource)
-    
+
     // Memoize timezone calculation (expensive operations)
     const timezoneInfo = useMemo(() => {
         if (typeof Intl === 'undefined') return { browserTz: 'Unknown', tzOffset: '' }
-        
+
         const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone
         const offsetMin = new Date().getTimezoneOffset()
         const offsetHr = -offsetMin / 60
         const sign = offsetHr >= 0 ? '+' : '-'
         const tzOffset = ` UTC${sign}${Math.abs(offsetHr)}`
-        
+
         return { browserTz, tzOffset }
     }, [])
-    
+
     // Share handler
     const handleShare = async () => {
         try {
@@ -42,7 +42,7 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(({ headerName, eventCou
             alert('Failed to copy link.')
         }
     }
-    
+
     // Memoize git SHA calculation
     const sha = useMemo(() => (process.env.GIT_COMMIT_SHA || '').substring(0, 7), [])
     return (
@@ -72,16 +72,16 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(({ headerName, eventCou
                                 <div className="p-4 space-y-3">
                                     <div className="font-semibold text-lg mb-2">About</div>
                                     <div className="text-sm text-gray-700 mb-2">
-                                        CMF lets you use a map to view and filter events. You can also filter by date or
-                                        search term.                                                 <a
-                                                    href="https://github.com/chadn/cmf/blob/main/docs/usage.md#how-to-use-cmf"
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="hover:underline text-blue-700"
-                                                >
-                                                    View Usage Doc on Github
-                                                </a>
-
+                                        CMF, Calendar Map Filter, lets you use a map to view and filter events. You can
+                                        also filter by date or search term.{' '}
+                                        <a
+                                            href="https://github.com/chadn/cmf/blob/main/docs/usage.md#how-to-use-cmf"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="hover:underline text-blue-700"
+                                        >
+                                            View Usage Doc on Github
+                                        </a>
                                     </div>
                                     <div className="flex flex-col gap-2 text-blue-700  text-sm">
                                         <ul className="list-disc pl-5 space-y-1">
@@ -97,7 +97,7 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(({ headerName, eventCou
                                                     className="hover:underline cursor-pointer p-0 m-0 bg-transparent border-none text-inherit font-inherit text-blue-700 text-sm"
                                                     style={{ textAlign: 'left' }}
                                                 >
-                                                    Copy URL to clipboard
+                                                    Share - Copy URL to clipboard
                                                 </button>
                                             </li>
                                         </ul>

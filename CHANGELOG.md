@@ -5,6 +5,20 @@ All notable changes to Calendar Map Filter (CMF) will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.14] - 2025-09-09
+
+### Fixed
+
+-   Quick filter URL parameters (`qf=next7days`, `qf=today`, etc.) now work correctly on page load
+-   `qf=today` filter now correctly shows events for today instead of returning zero results
+-   Date filtering now uses proper day boundaries (4:01am - 11:59pm), excludes late-night events from previous day
+
+### Technical
+
+-   Moved URL parameter handling from DateQuickButtons to DateAndSearchFilters component for proper timing during app initialization, see [adr](docs/adr/2025-09-09-fix-quick-filter-url-parameter-timing.md)
+-   Refactored duplicate date boundary helper functions into shared utilities in `src/lib/utils/date.ts`
+-   Updated test assertions to reflect new time boundary behavior (4:01am start instead of midnight)
+
 ## [0.2.13] - 2025-09-08
 
 ### Added

@@ -1,7 +1,8 @@
 /**
- * Date parsing utilities for event sources
+ * Date parsing utilities for event source 19hz. 
  * Extracted for testability and reusability
  */
+
 
 import { logr } from './logr'
 
@@ -103,7 +104,7 @@ export function parse19hzDateRange(
 ): { start: string; end: string; recurring: boolean } {
     // Input validation
     if (!dateTimeText || typeof dateTimeText !== 'string' || dateTimeText.trim() === '') {
-        logr.warn('date-parsing', 'Invalid or empty dateTimeText provided')
+        logr.warn('date-19hz-parsing', 'Invalid or empty dateTimeText provided')
         const now = new Date()
         return {
             start: now.toISOString(),
@@ -266,7 +267,7 @@ export function parse19hzDateRange(
         }
         
         // Fallback: use current time with 4-hour duration
-        logr.warn('date-parsing', `Could not parse 19hz date format: ${dateTimeText}`)
+        logr.warn('date-19hz-parsing', `Could not parse 19hz date format: ${dateTimeText}`)
         const now = new Date()
         const startDate = new Date(now)
         const endDate = new Date(startDate.getTime() + 4 * 60 * 60 * 1000)
@@ -277,7 +278,7 @@ export function parse19hzDateRange(
             recurring: false,
         }
     } catch (error) {
-        logr.warn('date-parsing', `Error parsing 19hz date range: ${dateTimeText}`, error)
+        logr.warn('date-19hz-parsing', `Error parsing 19hz date range: ${dateTimeText}`, error)
         const now = new Date()
         return {
             start: now.toISOString(),

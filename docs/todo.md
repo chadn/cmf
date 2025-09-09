@@ -3,7 +3,7 @@
 This is a high level list of things to do on the app. Not necessarily in prioritized order.
 Done items in [CHANGELOG](../CHANGELOG.md)
 
-1. Create 2nd redis instance for dev work, to be used by localhost or dev server.  This will prevent problems in production when data structures stored in redis change during development.  Or more simply, prepend "dev-" to all redis keys when in dev.
+1. Create 2nd redis instance for dev work, to be used by localhost or dev server. This will prevent problems in production when data structures stored in redis change during development. Or more simply, prepend "dev-" to all redis keys when in dev.
 1. Support events DB that is populated by independent scraping tasks
     - Hosting Scarping:
         - [Vercel Cron Jobs](https://vercel.com/docs/cron-jobs/quickstart) ([60sec max duration](https://vercel.com/docs/functions/configuring-functions/duration)),
@@ -16,10 +16,13 @@ Done items in [CHANGELOG](../CHANGELOG.md)
 1. Have a map search box - Add ability for user to type location in box, then map jumps to it. like https://thetide.guide/, Use https://maps.googleapis.com/maps/api/place/js/AutocompletionService.GetPredictionsJson
 1. Use CMF for multi day festivals - sliders can be hour instead of day, quick filters can be next 3 hrs, tonight, etc. Can support custom maps and custom event sources
 1. switch url params lat&lon to ll (or llz), like https://www.google.com/maps/d/u/0/viewer?mid=1NiJprGgrxLL6FBEV0Cg2NtkHlLhc-kA&ll=36.62469946088837%2C-119.44145496585381&z=6
+1. Since URL params are always avail via "Copy URL to clipboard", make llz optional (default no llz). Under "Timezone used for Times" can have checkbox for "Include llz updates in URL".
 1. compress json before writing to / after reading from redis. Consider [MessagePack](https://msgpack.org/index.html), [Protobuf](https://developers.google.com/protocol-buffers), [Arvo](https://avro.apache.org/), [BSON](https://en.wikipedia.org/wiki/BSON)
 1. batchGeocodeLocations() calls getCachedLocation() for each location. Instead, it should call a new function, getCachedLocations(), with many locations.
 1. Plura event end time is hardcoded to 1 hr after start, since only start time is shown on city pages. TODO: scrape event page itself for correct end time, and description (which is empty on city page)
 1. Update AGENT.md with CI and related stuff
+1. When page loads to only show events for today, the map should automatically resize after applying filter, zoom in as much as possible but still have all markers shown.  This may get tricky, since if you remove the only current filter , "filtered by date" chip, then not all events may on map, so "filtered by map" chip would have to appear.  Maybe a better idea is to have a button or link that zooms map in to show only events in event list.
+
 
 (thanks https://euangoddard.github.io/clipboard2markdown/)
 
@@ -31,7 +34,7 @@ Working on fixing these:
 
 1. Feature: if start and end time are same, code assumes timing is not accurate, and says "See event for time" instead of showing time
 1. chrome on android - Sometimes top of app (CMF, title) goes up off screen when using map to select events, triggering scrollTo, which may trigger browser to scroll up.
-1. qf on links are broken. When clicking link with `qf=next3days`, the dates will be the 4 month window, not 3 days as you expect. Numbers are not filtered yet. As soon as you click on days it fixes itself. https://cmf-dev.vercel.app/?es=plura:all&qf=next3days
+1. 19hz has recurring events that also sometimes appear in non-recurring event section, which creates almost duplicate entries (duplicates can be identified and prevented). Consider ways to remove duplicates - original event source, identitcal title, etc.
 
 ## Features
 

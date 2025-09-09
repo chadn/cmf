@@ -1,7 +1,5 @@
 import { logr } from '@/lib/utils/logr'
 import { format, formatDistance, parseISO, isValid } from 'date-fns'
-import { createParser } from 'nuqs'
-import { dateQuickFilterLabels } from '@/lib/utils/date-constants'
 
 /**
  * Formats a date for display in the UI
@@ -121,49 +119,6 @@ export function getDateFromUrlDateString(dateString: string): Date | null {
     return null
 }
 
-// Custom parsers to read and write values to the URL
-// url params have a value of null if they do not or should not exist.
-export const parseAsCmfDate = createParser({
-    // parse: a function that takes a string and returns the parsed value, or null if invalid.
-    parse(queryValue) {
-        if (getDateFromUrlDateString(queryValue)) {
-            return queryValue
-        }
-        return null
-    },
-    // serialize: a function that takes the parsed value and returns a string used in the URL.
-    serialize(value) {
-        return value
-    },
-})
-
-export const parseAsDateQuickFilter = createParser({
-    parse(queryValue) {
-        logr.info('date', 'parseAsDateQuickFilter parse queryValue:', queryValue)
-        if (!queryValue) return null
-
-        // Convert the query value to lowercase with no spaces for comparison
-        const normalizedQueryValue = queryValue.toLowerCase().replace(/\s+/g, '')
-
-        // Check if any of the labels match when normalized
-        const matchingLabel = dateQuickFilterLabels.find(
-            (label) => label.toLowerCase().replace(/\s+/g, '') === normalizedQueryValue
-        )
-
-        if (matchingLabel) {
-            return normalizedQueryValue
-        }
-
-        // if queryValue is not a value from quickFilterLabels, return null
-        return null
-    },
-    // serialize: a function that takes the parsed value and returns a string used in the URL.
-    serialize(value) {
-        logr.info('date', 'parseAsDateQuickFilter serialize queryValue:', value)
-        return value
-    },
-})
-
 /**
  * Calculates today's value in slider units (days from minDate)
  * @param now - Current date
@@ -193,4 +148,42 @@ export function extractDateParts(dateString: string): { dateDay: string; time: s
         dateDay: fullDate,
         time: '',
     }
+}
+
+/**
+ * Summary of start and end time Logic
+ * When matching events to date filter window,
+ * the time chosen for start of window is 4:01am of start day in correct timezone, 
+ * and end of window is 11:59pm of end day in correct timezone.  
+ * Any event that ends after start of window, or starts before end of window should be included.
+ * 4:01am is used because people think of Saturday 2am or 3am as Friday night, 
+ * and we don't want to include friday night events when date filter starts on saturday.
+ * 
+ * Currently the date slider cannot pick time, only days.
+ * In the future the date slider may support times, and this logic will need to account for that.
+ */
+
+/**
+ * Helper to get start of day (04:01:00) for a given day offset from a minimum date
+ * Using 4:01am as start of day so as not to include events that end at 2am, 3am, or 4am.
+ * @param days - Number of days from the minimum date
+ * @param minDate - The minimum date to calculate from
+ * @returns ISO string for start of day
+ */
+export function getStartOfDay(days: number, minDate: Date): string {
+    const date = new Date(minDate.getTime() + days * (1000 * 60 * 60 * 24))
+    date.setHours(4, 1, 0, 0)
+    return date.toISOString()
+}
+
+/**
+ * Helper to get end of day (23:59:59) for a given day offset from a minimum date
+ * @param days - Number of days from the minimum date
+ * @param minDate - The minimum date to calculate from
+ * @returns ISO string for end of day
+ */
+export function getEndOfDay(days: number, minDate: Date): string {
+    const date = new Date(minDate.getTime() + days * (1000 * 60 * 60 * 24))
+    date.setHours(23, 59, 59, 999)
+    return date.toISOString()
 }

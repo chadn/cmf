@@ -3,7 +3,7 @@ import * as cheerio from 'cheerio'
 import { CmfEvent, EventsSourceParams, EventsSourceResponse, EventsSource } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
 import { BaseEventSourceHandler, registerEventsSource } from './index'
-import { parse19hzDateRange } from '@/lib/utils/date-parsing'
+import { parse19hzDateRange } from '@/lib/utils/date-19hz-parsing'
 import { extractVenueAndCity } from '@/lib/utils/venue-parsing'
 
 interface ParsedEventRow {
@@ -20,7 +20,7 @@ interface ParsedEventRow {
 export class NineteenHzEventsSource extends BaseEventSourceHandler {
     public readonly type: EventsSource = {
         prefix: '19hz',
-        name: '19hz.info Music Events',
+        name: '19hz Music Events',
         url: 'https://19hz.info/',
     }
     private venueCache: Map<string, string> = new Map()

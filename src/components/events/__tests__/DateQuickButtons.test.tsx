@@ -87,12 +87,12 @@ describe('DateQuickButtons', () => {
 
         // Start value should be 0 (beginning of range)
         expect(mockSetStartValue).toHaveBeenCalledWith(0)
-        // End value should be todayValue (30)
-        expect(mockSetEndValue).toHaveBeenCalledWith(todayValue)
-        // onDateRangeChange should be called with correct dates
+        // End value should be todayValue - 1 (29) for Past filter
+        expect(mockSetEndValue).toHaveBeenCalledWith(todayValue - 1)
+        // onDateRangeChange should be called with correct dates using proper day boundaries
         expect(mockOnDateRangeChange).toHaveBeenCalledWith({
-            start: getDateFromDays(0),
-            end: getDateFromDays(todayValue),
+            start: expect.stringMatching(/^2023-06-14T11:01:00\.000Z$/),
+            end: expect.stringMatching(/^2023-07-14T06:59:59\.999Z$/),
         })
         // onDateQuickFilterChange should be called with 'past'
         expect(mockOnDateQuickFilterChange).toHaveBeenCalledWith('past')
@@ -119,8 +119,8 @@ describe('DateQuickButtons', () => {
         expect(mockSetStartValue).toHaveBeenCalledWith(todayValue)
         expect(mockSetEndValue).toHaveBeenCalledWith(totalDays)
         expect(mockOnDateRangeChange).toHaveBeenCalledWith({
-            start: getDateFromDays(todayValue),
-            end: getDateFromDays(totalDays),
+            start: expect.stringMatching(/^2023-07-14T11:01:00\.000Z$/),
+            end: expect.stringMatching(/^2023-08-14T06:59:59\.999Z$/),
         })
         expect(mockOnDateQuickFilterChange).toHaveBeenCalledWith('future')
     })
@@ -147,8 +147,8 @@ describe('DateQuickButtons', () => {
         expect(mockSetStartValue).toHaveBeenCalledWith(todayValue)
         expect(mockSetEndValue).toHaveBeenCalledWith(threeDaysLaterValue)
         expect(mockOnDateRangeChange).toHaveBeenCalledWith({
-            start: getDateFromDays(todayValue),
-            end: getDateFromDays(threeDaysLaterValue),
+            start: expect.stringMatching(/^2023-07-14T11:01:00\.000Z$/),
+            end: expect.stringMatching(/^2023-07-18T06:59:59\.999Z$/),
         })
         expect(mockOnDateQuickFilterChange).toHaveBeenCalledWith('next3days')
     })
@@ -178,8 +178,8 @@ describe('DateQuickButtons', () => {
         expect(mockSetStartValue).toHaveBeenCalledWith(fridayValue)
         expect(mockSetEndValue).toHaveBeenCalledWith(sundayValue)
         expect(mockOnDateRangeChange).toHaveBeenCalledWith({
-            start: getDateFromDays(fridayValue),
-            end: getDateFromDays(sundayValue),
+            start: expect.stringMatching(/^2023-07-14T11:01:00\.000Z$/),
+            end: expect.stringMatching(/^2023-07-17T06:59:59\.999Z$/),
         })
         expect(mockOnDateQuickFilterChange).toHaveBeenCalledWith('weekend')
     })
@@ -211,8 +211,8 @@ describe('DateQuickButtons', () => {
         expect(mockSetStartValue).toHaveBeenCalledWith(fridayValue)
         expect(mockSetEndValue).toHaveBeenCalledWith(sundayValue)
         expect(mockOnDateRangeChange).toHaveBeenCalledWith({
-            start: getDateFromDays(fridayValue),
-            end: getDateFromDays(sundayValue),
+            start: expect.stringMatching(/^2023-07-14T11:01:00\.000Z$/),
+            end: expect.stringMatching(/^2023-07-17T06:59:59\.999Z$/),
         })
     })
 
@@ -265,90 +265,14 @@ describe('DateQuickButtons', () => {
         expect(mockSetStartValue).toHaveBeenCalledWith(todayValue)
         expect(mockSetEndValue).toHaveBeenCalledWith(todayValue)
         expect(mockOnDateRangeChange).toHaveBeenCalledWith({
-            start: getDateFromDays(todayValue),
-            end: getDateFromDays(todayValue),
+            start: expect.stringMatching(/^2023-07-14T11:01:00\.000Z$/),
+            end: expect.stringMatching(/^2023-07-15T06:59:59\.999Z$/),
         })
         expect(mockOnDateQuickFilterChange).toHaveBeenCalledWith('today')
     })
 
-    it('handles URL parameter initialization correctly', () => {
-        render(
-            <DateQuickButtons
-                now={now}
-                minDate={minDate}
-                totalDays={totalDays}
-                setStartValue={mockSetStartValue}
-                setEndValue={mockSetEndValue}
-                getDateFromDays={getDateFromDays}
-                onDateRangeChange={mockOnDateRangeChange}
-                onDateQuickFilterChange={mockOnDateQuickFilterChange}
-                dateQuickFilterUrl="next7days"
-                appState="main-state"
-            />
-        )
-
-        // The component should automatically select Next 7 days based on the URL parameter
-        const todayValue = 30
-        const sevenDaysLaterValue = todayValue + 7
-
-        expect(mockSetStartValue).toHaveBeenCalledWith(todayValue)
-        expect(mockSetEndValue).toHaveBeenCalledWith(sevenDaysLaterValue)
-        expect(mockOnDateRangeChange).toHaveBeenCalledWith({
-            start: getDateFromDays(todayValue),
-            end: getDateFromDays(sevenDaysLaterValue),
-        })
-    })
-
-    it('handles weekend URL parameter initialization correctly', () => {
-        render(
-            <DateQuickButtons
-                now={now}
-                minDate={minDate}
-                totalDays={totalDays}
-                setStartValue={mockSetStartValue}
-                setEndValue={mockSetEndValue}
-                getDateFromDays={getDateFromDays}
-                onDateRangeChange={mockOnDateRangeChange}
-                onDateQuickFilterChange={mockOnDateQuickFilterChange}
-                dateQuickFilterUrl="weekend"
-                appState="main-state"
-            />
-        )
-
-        // The component should automatically select Weekend based on the URL parameter
-        // Today is Saturday, so Friday is today (no days to add)
-        const fridayValue = 30 // Today (Saturday) is already day 30
-        const sundayValue = 32 // Sunday is 2 days after Friday
-
-        expect(mockSetStartValue).toHaveBeenCalledWith(fridayValue)
-        expect(mockSetEndValue).toHaveBeenCalledWith(sundayValue)
-        expect(mockOnDateRangeChange).toHaveBeenCalledWith({
-            start: getDateFromDays(fridayValue),
-            end: getDateFromDays(sundayValue),
-        })
-    })
-
-    it('does not process URL parameter when appState is not main-state', () => {
-        render(
-            <DateQuickButtons
-                now={now}
-                minDate={minDate}
-                totalDays={totalDays}
-                setStartValue={mockSetStartValue}
-                setEndValue={mockSetEndValue}
-                getDateFromDays={getDateFromDays}
-                onDateRangeChange={mockOnDateRangeChange}
-                onDateQuickFilterChange={mockOnDateQuickFilterChange}
-                dateQuickFilterUrl="next7days"
-                appState="loading" // Not main-state
-            />
-        )
-
-        // No automatic selection should happen
-        expect(mockSetStartValue).not.toHaveBeenCalled()
-        expect(mockSetEndValue).not.toHaveBeenCalled()
-        expect(mockOnDateRangeChange).not.toHaveBeenCalled()
-    })
+    // Note: URL parameter handling tests removed as this functionality 
+    // was moved to DateAndSearchFilters component
 
     it('highlights the active filter button', () => {
         render(
@@ -421,8 +345,8 @@ describe('DateQuickButtons', () => {
         expect(mockSetStartValue).toHaveBeenCalledWith(todayValue)
         expect(mockSetEndValue).toHaveBeenCalledWith(smallTotalDays)
         expect(mockOnDateRangeChange).toHaveBeenCalledWith({
-            start: getDateFromDays(todayValue),
-            end: getDateFromDays(smallTotalDays),
+            start: expect.stringMatching(/^2023-07-14T11:01:00\.000Z$/),
+            end: expect.stringMatching(/^2023-07-20T06:59:59\.999Z$/),
         })
     })
 })

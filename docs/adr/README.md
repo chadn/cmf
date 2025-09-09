@@ -4,6 +4,7 @@ This directory contains Architecture Decision Records for the Calendar Map Filte
 
 ## Index
 
+-   [2025-09-09-fix-quick-filter-url-parameter-timing](2025-09-09-fix-quick-filter-url-parameter-timing.md) - Fix Quick Filter URL Parameter Timing Issue
 -   [2025-09-05-direct-state-over-reducer-pattern](2025-09-05-direct-state-over-reducer-pattern.md) - Direct State Management Over Reducer Pattern
 -   [2025-09-05-simplified-filtered-events-structure](2025-09-05-simplified-filtered-events-structure.md) - Simplified FilteredEvents Structure
 -   [2025-09-05-unified-eventssource-interface](2025-09-05-unified-eventssource-interface.md) - Unified EventsSource Interface

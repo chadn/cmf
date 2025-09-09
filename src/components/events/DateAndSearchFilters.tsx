@@ -1,10 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { format, subMonths, addMonths, addDays, differenceInCalendarDays } from 'date-fns'
 import DateQuickButtons from './DateQuickButtons'
-import { getDateFromUrlDateString } from '@/lib/utils/date'
+import { getDateFromUrlDateString, getStartOfDay, getEndOfDay } from '@/lib/utils/date'
+import { calculateQuickFilterRange } from '@/lib/utils/quickFilters'
 import { umamiTrack } from '@/lib/utils/umami'
+import { logr } from '@/lib/utils/logr'
 import { Calendar } from '@/components/ui/calendar'
 import { Slider } from '@/components/ui/slider'
 import * as Popover from '@radix-ui/react-popover'
@@ -55,6 +57,46 @@ export default function DateAndSearchFilters({
         }
     }, [showDateSliders])
 
+    // Ref to track if we've already processed the initial URL parameter
+    const initialUrlProcessed = useRef(false)
+
+    // Handle URL quick filter parameter - this needs to run outside of popover
+    useEffect(() => {
+        // Only process once when we have the right conditions
+        if (dateQuickFilterUrl && !initialUrlProcessed.current && (appState === 'map-init' || appState === 'main-state')) {
+            logr.info('date-filters', `URL params: applying ${dateQuickFilterUrl} filter during ${appState}`)
+
+            // Calculate today's value
+            const todayValue = Math.floor((now.getTime() - minDate.getTime()) / (1000 * 60 * 60 * 24))
+
+            // Use shared quick filter logic
+            const range = calculateQuickFilterRange(dateQuickFilterUrl, todayValue, totalDays, getDateFromDays)
+            if (!range) {
+                logr.warn('date-filters', `Unknown or invalid quick filter: ${dateQuickFilterUrl}`)
+                return
+            }
+            
+            const newStartDays = range.start
+            const newEndDays = range.end
+
+            // Apply the date range with proper day boundaries
+            setStartDays(newStartDays)
+            setEndDays(newEndDays)
+
+            onDateRangeChange({
+                start: getStartOfDay(newStartDays, minDate),
+                end: getEndOfDay(newEndDays, minDate),
+            })
+
+            // Keep the quick filter in URL for consistency (don't clear it)
+
+            // Mark as processed
+            initialUrlProcessed.current = true
+            logr.info('date-filters', `Applied quick filter ${dateQuickFilterUrl}: days ${newStartDays}-${newEndDays}`)
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [dateQuickFilterUrl, appState, now, minDate, totalDays, onDateRangeChange, onDateQuickFilterChange])
+
     // Convert slider value to date
     const getDateFromDays = (days: number) => {
         const date = new Date(minDate.getTime() + days * (1000 * 60 * 60 * 24))
@@ -89,14 +131,14 @@ export default function DateAndSearchFilters({
         if (updateWhich === 'start') {
             setStartDays(selectedDays)
             onDateRangeChange({
-                start: getDateFromDays(selectedDays),
-                end: getDateFromDays(endDays),
+                start: getStartOfDay(selectedDays, minDate),
+                end: getEndOfDay(endDays, minDate),
             })
         } else {
             setEndDays(selectedDays)
             onDateRangeChange({
-                start: getDateFromDays(startDays),
-                end: getDateFromDays(selectedDays),
+                start: getStartOfDay(startDays, minDate),
+                end: getEndOfDay(selectedDays, minDate),
             })
         }
         if (onDateQuickFilterChange) onDateQuickFilterChange('')
@@ -141,8 +183,8 @@ export default function DateAndSearchFilters({
                                             setStartDays(newStart)
                                             setEndDays(newEnd)
                                             onDateRangeChange({
-                                                start: getDateFromDays(newStart),
-                                                end: getDateFromDays(newEnd),
+                                                start: getStartOfDay(newStart, minDate),
+                                                end: getEndOfDay(newEnd, minDate),
                                             })
                                             if (onDateQuickFilterChange) onDateQuickFilterChange('')
                                         }}
@@ -255,7 +297,6 @@ export default function DateAndSearchFilters({
                                             onDateRangeChange={onDateRangeChange}
                                             dateQuickFilterUrl={dateQuickFilterUrl}
                                             onDateQuickFilterChange={onDateQuickFilterChange}
-                                            appState={appState}
                                         />
                                     </div>
                                 </div>
