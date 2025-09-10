@@ -69,13 +69,6 @@ export function useMap(
         const filtered = markersFromAllEvents
             .map((marker) => {
                 const filteredEvents = marker.events.filter((event) => shownEventIds.has(event.id))
-                // Skip logging - was causing test issues with logr.skip method
-                // logr.debug('umap', 'filteredMarkers:Marker filtering', {
-                //     markerId: marker.id,
-                //     originalEventCount: marker.events.length,
-                //     filteredEventCount: filteredEvents.length,
-                //     events: filteredEvents.map((e) => e.id),
-                // })
                 return {
                     ...marker,
                     events: filteredEvents,
@@ -84,25 +77,16 @@ export function useMap(
             .filter((marker) => marker.events.length > 0)
 
         // Log the filtering results for debugging
-        logr.info('umap', 'filteredMarkers updated', {
-            totalMarkers: markersFromAllEvents.length,
-            visibleEvents: evts.visibleEvents.length,
-            allEvents: evts.allEvents.length,
-            markersShowing: filtered.map((m) => ({
-                id: m.id,
-                eventCount: m.events.length,
-            })),
-        })
+        logr.info('umap', `filteredMarkers updated - ${filtered.length} of ${markersFromAllEvents.length} markers showing,`
+            + ` with ${evts.visibleEvents.length} of ${evts.allEvents.length} visible events`)
 
         return filtered
     }, [evts.allEvents.length, evts.visibleEvents, markersFromAllEvents])
 
     // Log when the hook initializes - only once
     useEffect(() => {
-        logr.info('umap', 'uE: useMap hook initialized', {
-            initialViewport: { ...mapState.viewport },
-            eventsCount: evts.allEvents.length,
-        })
+        const vport = `lat=${mapState.viewport.latitude} lon=${mapState.viewport.longitude} zoom=${mapState.viewport.zoom}`
+        logr.info('umap', `uE: useMap hook initialized. ${evts.allEvents.length} evts, ${vport}`)
         // empty dependency array to run only once
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])

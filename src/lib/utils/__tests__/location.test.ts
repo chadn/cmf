@@ -100,14 +100,14 @@ describe('Location and Map Utilities', () => {
             const result = calculateMapBoundsAndViewport([], 800, 600)
 
             expect(result.bounds).toEqual({
-                north: 0,
-                south: 0,
-                east: 0,
-                west: 0,
+                north: 79,
+                south: -44,
+                east: -29,
+                west: -208,
             })
             expect(result.viewport).toEqual({
-                latitude: 0,
-                longitude: 0,
+                latitude: 17.5,
+                longitude: -118.5,
                 zoom: expect.any(Number),
                 bearing: 0,
                 pitch: 0,
@@ -226,14 +226,14 @@ describe('Location and Map Utilities', () => {
     })
 
     describe('calculateBoundsFromMarkers', () => {
-        it('should return zero bounds for empty markers array', () => {
+        it('should return default world bounds for empty markers array', () => {
             const result = calculateBoundsFromMarkers([])
 
             expect(result).toEqual({
-                north: 0,
-                south: 0,
-                east: 0,
-                west: 0,
+                north: 79,
+                south: -44,
+                east: -29,
+                west: -208,
             })
         })
 
@@ -628,7 +628,7 @@ describe('Location and Map Utilities', () => {
             expect(result).toEqual({
                 latitude: 0,
                 longitude: 0,
-                zoom: 0,
+                zoom: 1,
                 bearing: 0,
                 pitch: 0,
             })
@@ -650,7 +650,7 @@ describe('Location and Map Utilities', () => {
             expect(result2).toEqual({
                 latitude: 37.7749,
                 longitude: -122.4194,
-                zoom: 0, // Default when out of range
+                zoom: 1, // Default when out of range (minimum zoom 1)
                 bearing: 0,
                 pitch: 0,
             })

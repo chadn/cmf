@@ -4,12 +4,12 @@ This document makes it easy to see test coverage and compare against the [Direct
 
 ```
 npm test && date
-> calendar-map-filter@0.2.14 test
+> calendar-map-filter@0.2.15 test
 > jest --coverage
 ----------------------------|---------|----------|---------|---------|---------------------------------------------
 File                        | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s                           
 ----------------------------|---------|----------|---------|---------|---------------------------------------------
-All files                   |   79.47 |    67.98 |   80.66 |   80.39 |                                             
+All files                   |   79.63 |    67.98 |    80.6 |   80.56 |                                             
  components/common          |     100 |      100 |     100 |     100 |                                             
   ErrorMessage.tsx          |     100 |      100 |     100 |     100 |                                             
   LoadingSpinner.tsx        |     100 |      100 |     100 |     100 |                                             
@@ -68,7 +68,7 @@ Tests:       2 skipped, 344 passed, 346 total
 Snapshots:   0 total
 Time:        2.366 s
 Ran all test suites.
-Tue Sep  9 13:17:51 PDT 2025
+Tue Sep  9 18:20:38 PDT 2025
 ```
 
 ## Next Steps for Testing

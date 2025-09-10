@@ -382,10 +382,10 @@ function HomeContent() {
         if (appState !== 'map-init') return
 
         if (selectedEventIdUrl) {
-            logr.info('app', 'uE: map-init: selectedEventIdUrl is set, resetMapToAllEventsAndShowAll')
+            logr.info('app', 'uE: map-init: selectedEventIdUrl is set, handleEventSelect')
             handleEventSelect(selectedEventIdUrl)
         } else if (viewportUrl.z === null) {
-            logr.info('app', 'uE: map-init: zoom is null (not set), resetMapToAllEventsAndShowAll')
+            logr.info('app', 'uE: map-init: zoom is null (not set in URL), so resetMapToAllEventsAndShowAll()')
             resetMapToAllEventsAndShowAll()
         } else {
             logr.info('app', `uE: map-init: zoom=${viewportUrl.z}, setViewport from URL`)

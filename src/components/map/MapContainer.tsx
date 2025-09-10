@@ -122,10 +122,8 @@ const MapContainer: React.FC<MapContainerProps> = ({
 
     // Log when component mounts
     useEffect(() => {
-        logr.info('mapc', 'MapContainer component mounted', {
-            initialViewport: viewport,
-            markerCount: markers.length,
-        })
+        const vport = `lat=${viewport.latitude} lon=${viewport.longitude} zoom=${viewport.zoom}`
+        logr.info('mapc', `MapContainer mounted, ${markers.length} markers, ${vport} `)
     }, [viewport, markers.length])
 
     // Close popup when selected marker changes to null

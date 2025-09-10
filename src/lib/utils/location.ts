@@ -195,11 +195,12 @@ export function viewstate2Viewport(viewport: ViewStateType): MapViewport {
  */
 export function calculateBoundsFromMarkers(markers: MapMarker[]): MapBounds {
     if (markers.length === 0) {
+        // Return reasonable default bounds covering most of the world instead of invalid (0,0,0,0)
         return {
-            north: 0,
-            south: 0,
-            east: 0,
-            west: 0,
+            north: 79,
+            south: -44,
+            east: -29,
+            west: -208,
         }
     }
     // Initialize with the first marker's coordinates
@@ -286,7 +287,7 @@ export const viewportUrlToViewport = (lat: number | null, lon: number | null, z:
     return {
         latitude: lat !== null && lat <= 180 && lat >= -180 ? Number(lat.toFixed(6)) : 0,
         longitude: lon !== null && lon <= 180 && lon >= -180 ? Number(lon.toFixed(6)) : 0,
-        zoom: z !== null && z <= 22 && z > 0 ? z : 0,
+        zoom: z !== null && z <= 22 && z > 0 ? z : 1, // Use zoom 1 as minimum instead of 0
         bearing: 0,
         pitch: 0,
     }
