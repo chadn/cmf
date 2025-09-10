@@ -18,6 +18,7 @@ const customJestConfig = {
     transformIgnorePatterns: ['/node_modules/(?!(nuqs|cheerio)/)'],
     moduleFileExtensions: ['js', 'jsx', 'ts', 'tsx', 'json', 'node'],
     testMatch: ['**/__tests__/**/*.[jt]s?(x)', '**/?(*.)+(spec|test).[jt]s?(x)'],
+    coverageReporters: ['text', 'json-summary', 'lcov'],
 }
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async

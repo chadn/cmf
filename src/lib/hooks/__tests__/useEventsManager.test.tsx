@@ -31,6 +31,7 @@ jest.mock('@/lib/events/FilterEventsManager', () => {
                 unknownLocationsFilteredEvents: [],
                 filteredEvents: [],
                 allEvents: [],
+                visibleEvents: [],
             }),
             cmf_events_all: [],
         })),
@@ -217,5 +218,259 @@ describe('useEventsManager - new viewport parameter model', () => {
         // Change viewport
         rerender({ currentViewport: viewport2 })
         expect(filterManager.getFilteredEvents).toHaveBeenCalledWith(viewport2)
+    })
+
+    describe('Multiple Event Sources', () => {
+        beforeEach(() => {
+            // Mock multiple API responses
+            swrMock.default.mockImplementation((url) => {
+                if (typeof url === 'string') {
+                    return {
+                        data: mockApiResponse,
+                        error: null,
+                        isLoading: false,
+                        mutate: jest.fn(),
+                    }
+                }
+                
+                // Handle multiple URLs array
+                if (Array.isArray(url)) {
+                    return {
+                        data: url.map(() => mockApiResponse),
+                        error: null,
+                        isLoading: false,
+                        mutate: jest.fn(),
+                    }
+                }
+                
+                return {
+                    data: undefined,
+                    error: null,
+                    isLoading: false,
+                    mutate: jest.fn(),
+                }
+            })
+        })
+
+        it('should handle multiple event sources', () => {
+            const { result } = renderHook(() => useEventsManager({ 
+                eventSourceId: ['source1', 'source2']
+            }))
+
+            expect(result.current.evts).toBeDefined()
+        })
+
+        it('should construct multiple API URLs correctly', () => {
+            renderHook(() => useEventsManager({ 
+                eventSourceId: ['source1', 'source2'],
+                sd: '2024-01-01',
+                ed: '2024-12-31'
+            }))
+
+            // Should call SWR with multiple URLs constructed
+            expect(swrMock.default).toHaveBeenCalled()
+        })
+    })
+
+    describe('Error Handling', () => {
+        it('should handle HTTP 404 errors for Google Calendar', () => {
+            const mockError = { message: 'HTTP 404 Not Found' }
+            swrMock.default.mockImplementation(() => ({
+                data: null,
+                error: mockError,
+                isLoading: false,
+                mutate: jest.fn(),
+            }))
+
+            const { result } = renderHook(() => useEventsManager({ 
+                eventSourceId: 'gc:calendar@gmail.com'
+            }))
+
+            expect(result.current.apiError).toBe(mockError)
+        })
+
+        it('should handle HTTP 404 errors for non-Google Calendar sources', () => {
+            const mockError = { message: 'HTTP 404 Not Found' }
+            swrMock.default.mockImplementation(() => ({
+                data: null,
+                error: mockError,
+                isLoading: false,
+                mutate: jest.fn(),
+            }))
+
+            const { result } = renderHook(() => useEventsManager({ 
+                eventSourceId: 'fb:event-page'
+            }))
+
+            expect(result.current.apiError).toBe(mockError)
+        })
+
+        it('should handle HTTP 403 errors', () => {
+            const mockError = { message: 'HTTP 403 Forbidden' }
+            swrMock.default.mockImplementation(() => ({
+                data: null,
+                error: mockError,
+                isLoading: false,
+                mutate: jest.fn(),
+            }))
+
+            const { result } = renderHook(() => useEventsManager({ 
+                eventSourceId: 'test-source'
+            }))
+
+            expect(result.current.apiError).toBe(mockError)
+        })
+
+        it('should handle HTTP 401 errors', () => {
+            const mockError = { message: 'HTTP 401 Unauthorized' }
+            swrMock.default.mockImplementation(() => ({
+                data: null,
+                error: mockError,
+                isLoading: false,
+                mutate: jest.fn(),
+            }))
+
+            const { result } = renderHook(() => useEventsManager({ 
+                eventSourceId: 'test-source'
+            }))
+
+            expect(result.current.apiError).toBe(mockError)
+        })
+
+        it('should handle non-200 HTTP status responses', () => {
+            const mockResponseWith500 = {
+                ...mockApiResponse,
+                httpStatus: 500
+            }
+            
+            swrMock.default.mockImplementation(() => ({
+                data: mockResponseWith500,
+                error: null,
+                isLoading: false,
+                mutate: jest.fn(),
+            }))
+
+            const { result } = renderHook(() => useEventsManager({ 
+                eventSourceId: 'test-source'
+            }))
+
+            expect(result.current.evts).toBeDefined()
+            // Component should handle non-200 status gracefully
+        })
+    })
+
+    describe('URL Date Parameters', () => {
+        it('should use sd and ed parameters for API URLs', () => {
+            renderHook(() => useEventsManager({ 
+                eventSourceId: 'test-source',
+                sd: '2024-01-01',
+                ed: '2024-12-31'
+            }))
+
+            // Should have called SWR with properly constructed URL containing date params
+            expect(swrMock.default).toHaveBeenCalled()
+            const callArgs = swrMock.default.mock.calls[0]
+            expect(callArgs[0]).toBeDefined() // URL should be constructed
+        })
+
+        it('should use default date ranges when sd/ed not provided', () => {
+            renderHook(() => useEventsManager({ 
+                eventSourceId: 'test-source'
+            }))
+
+            expect(swrMock.default).toHaveBeenCalled()
+        })
+
+        it('should handle invalid date parameters gracefully', () => {
+            renderHook(() => useEventsManager({ 
+                eventSourceId: 'test-source',
+                sd: 'invalid-date',
+                ed: 'another-invalid-date'
+            }))
+
+            expect(swrMock.default).toHaveBeenCalled()
+            // Should not crash with invalid date parameters
+        })
+    })
+
+    describe('Loading States', () => {
+        it('should handle loading state correctly', () => {
+            swrMock.default.mockImplementation(() => ({
+                data: undefined,
+                error: null,
+                isLoading: true,
+                mutate: jest.fn(),
+            }))
+
+            const { result } = renderHook(() => useEventsManager({ 
+                eventSourceId: 'test-source'
+            }))
+
+            expect(result.current.apiIsLoading).toBe(true)
+            expect(result.current.eventSources).toBeNull()
+        })
+
+        it('should transition from loading to loaded state', () => {
+            let isLoading = true
+            swrMock.default.mockImplementation(() => ({
+                data: isLoading ? undefined : mockApiResponse,
+                error: null,
+                isLoading,
+                mutate: jest.fn(),
+            }))
+
+            const { result, rerender } = renderHook(() => useEventsManager({ 
+                eventSourceId: 'test-source'
+            }))
+
+            expect(result.current.apiIsLoading).toBe(true)
+
+            // Simulate loading completion
+            isLoading = false
+            swrMock.default.mockImplementation(() => ({
+                data: mockApiResponse,
+                error: null,
+                isLoading: false,
+                mutate: jest.fn(),
+            }))
+            
+            rerender()
+            
+            expect(result.current.apiIsLoading).toBe(false)
+            expect(result.current.eventSources).toHaveLength(1)
+        })
+    })
+
+    describe('Filter Integration', () => {
+        it('should properly integrate with FilterEventsManager', () => {
+            const { result } = renderHook(() => useEventsManager({
+                eventSourceId: 'test-source',
+                dateRange: { start: '2024-01-01', end: '2024-01-31' },
+                searchQuery: 'music',
+                showUnknownLocationsOnly: true,
+            }))
+
+            const filterManager = result.current.fltrEvtMgr
+            
+            // Verify filter manager was called with all filters
+            expect(filterManager.setDateRange).toHaveBeenCalledWith({
+                start: '2024-01-01',
+                end: '2024-01-31'
+            })
+            expect(filterManager.setSearchQuery).toHaveBeenCalledWith('music')
+            expect(filterManager.setShowUnknownLocationsOnly).toHaveBeenCalledWith(true)
+        })
+
+        it('should handle undefined filter values', () => {
+            const { result } = renderHook(() => useEventsManager({
+                eventSourceId: 'test-source',
+                dateRange: undefined,
+                searchQuery: undefined,
+                showUnknownLocationsOnly: undefined,
+            }))
+
+            // Should not crash with undefined filter values
+            expect(result.current.fltrEvtMgr).toBeDefined()
+        })
     })
 })

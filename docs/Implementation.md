@@ -47,6 +47,14 @@ The application follows a hybrid Next.js architecture:
 URL Parameters → API Routes → Event Sources → Geocoding Cache → FilterEventsManager → UI Components
 ```
 
+**Filtering Architecture:**
+
+-   **Two-stage filtering**: Domain filters (date, search) → Viewport filter (map bounds)
+-   **Domain filters** determine core event set, applied in FilterEventsManager
+-   **Viewport filter** determines what's visible on map, applied separately
+-   **Independent chip counts**: Each filter chip shows events hidden by that filter alone
+-   **Map bounds interaction**: Setting bounds to `null` shows all domain-filtered events
+
 ## Directory Structure
 
 ```
@@ -111,11 +119,15 @@ URL Parameters → API Routes → Event Sources → Geocoding Cache → FilterEv
     /hooks                      # Custom React hooks
       /useEventsManager.ts      # Event fetching, filtering, and state
       /useMap.ts                # Map viewport and marker management
+      /useBreakpoint.ts         # Responsive breakpoint detection hook
+    /state                      # State management
+      /appStateReducer.ts       # Application state machine and actions
     /utils                      # Utility functions
       /date.ts                  # Date formatting and calculations
       /date-19hz-parsing.ts     # Date parsing for 19hz event source
       /date-constants.ts        # Date-related constants
       /date-nuqs.ts             # Date utilities for nuqs URL state management
+      /headerNames.ts           # Dynamic header name determination utilities
       /icsParser.ts             # iCalendar format parsing
       /location.ts              # Location utilities and map bounds
       /logr.ts                  # Logging utility with rate limiting
@@ -214,6 +226,26 @@ Event Source Handler → API endpoint (/api/events?id=source:id)
 → Fetch events → Transform to CmfEvent format → Geocode locations
 → Cache results → Return EventsSourceResponse
 ```
+
+## URL Parsing
+
+Note llz is short for lat,lon,zoom. For details on all URL Params, see [types/urlparams.d.ts](../src/types/urlparams.d.ts)
+
+App parses URL in the following order:
+1. `es` triggers event load on map page. No es, or invalid es, goes to home page.
+1. Apply any domain filters: search `sq`, date `qf` (soon: `fsd` + `fed`, which overwrites qf if qf also present)
+1. If se and valid event id: act like user clicked on event (highlight on event list, show marker, zoom in).  No more parsing.
+1. If se and not valid: act like se wasn't present, remove from url, console log warning, and continue.
+1. If llz and es only: update map based on llz coordinates, check the llz checkbox.
+1. Update map based on events visible. If domain filters leave only 2 markers, zoom to those 2 markers. If no domain filters, zoom to fit all events.
+
+URL Parsing and Updating Guidelines and Reasoning
+- Prioritize map to be useful for finding events over using map to share map-specific stuff.
+- llz in URL is not ideal, since llz can lead to different map for different devices, since devices have different map sizes
+- llz is still cool, so show in URL if llz checkbox checked
+- if qf=next7days or sq=berkeley reduces events to a few, map will zoom in to those - makes map useful.
+- when map has se, qf, or sq, the lat/lon/zoom will not be in URL - 
+ 
 
 ## Troubleshooting
 

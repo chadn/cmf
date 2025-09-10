@@ -35,6 +35,7 @@ export const ExampleEventsSources = [
     {
         name: 'SF Bay Facebook Events',
         id: 'gc:aabe6c219ee2af5b791ea6719e04a92990f9ccd1e68a3ff0d89bacd153a0b36d@group.calendar.google.com',
+        shortId: 'chadrock', // can just do es=chadrock in the url
     },
     {
         name: 'Geocaching in Spain',

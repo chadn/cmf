@@ -77,6 +77,7 @@ export class FilterEventsManager {
 
     /**
      * Get filtered events
+     * @param currentViewport - Current map viewport bounds for map filtering. If not provided, no map filtering will be applied.
      *
      * Single-stage filtering model:
      * - Domain filters: dateRange, searchQuery, showUnknownLocationsOnly determine core result set

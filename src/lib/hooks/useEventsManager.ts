@@ -207,7 +207,7 @@ export function useEventsManager({
             }
             logr.info(
                 'use_evts_mgr',
-                `✅ Single source events data fetched: "${data.source.name || 'Unknown Source'}"`,
+                `Single source events data fetched: "${data.source.name || 'Unknown Source'}"`,
                 {
                     sourceId: data.source.id || 'unknown',
                     sourceType: data.source.prefix || 'unknown',
@@ -238,7 +238,7 @@ export function useEventsManager({
             revalidateOnFocus: false,
             onSuccess: ({ aggregatedData, sources }) => {
                 const data = aggregatedData
-                logr.info('use_evts_mgr', `✅ Multiple sources events data fetched: "${data.source.name}"`, {
+                logr.info('use_evts_mgr', `Multiple sources events data fetched: "${data.source.name}"`, {
                     sourceId: data.source.id,
                     sourceType: data.source.prefix,
                     totalEvents: data.source.totalCount,
@@ -302,6 +302,16 @@ export function useEventsManager({
         // eslint-disable-next-line react-hooks/exhaustive-deps
         [fltrEvtMgr, apiData, currentViewport, filterVersion]
     )
+    useEffect(() => {
+        const logVp = currentViewport ? 
+        `north=${currentViewport.north} south=${currentViewport.south} east=${currentViewport.east} west=${currentViewport.west}`
+        : 'null'
+        logr.info('use_evts_mgr', `uE: currentViewport now ${logVp}`)
+    }, [currentViewport])
+    
+    useEffect(() => {
+        logr.info('use_evts_mgr', `uE: evts.visibleEvents now ${currentFilteredEvents.visibleEvents.length}`)
+    }, [currentFilteredEvents.visibleEvents.length])
 
     return {
         evts: currentFilteredEvents,

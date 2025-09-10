@@ -174,8 +174,10 @@ export function roundMapBounds(bounds: MapBounds): MapBounds {
 }
 
 /**
- * Converts a ViewState object to a MapViewport object, rounding latitude and longitude to 6 decimal places, 10 cm or 4 inches accuracy.
- * @param viewport - The ViewState object to convert
+ * Converts a ViewState object to a MapViewport object, basically 
+ *  - dropping padding from the ViewStateType. Not sure this matters?
+ *  - rounding latitude and longitude to 6 decimal places, 10 cm or 4 inches accuracy.
+ * @param viewport - The ViewState object to convert, basically 
  * @returns A new MapViewport object with the converted values
  */
 export function viewstate2Viewport(viewport: ViewStateType): MapViewport {
@@ -218,6 +220,16 @@ export function calculateBoundsFromMarkers(markers: MapMarker[]): MapBounds {
         ret.west = Math.min(ret.west, marker.longitude)
     })
 
+    // Add padding to ensure markers on exact boundaries are included after rounding
+    // Plus it looks better to not have markers touching the edges.
+    const SMALL_PADDING = 0.00001 // Slightly larger than toFixed(6) precision to handle rounding
+    const LARGE_PADDING = 0.003   // And if just one marker, give it a bit more breathing room.
+    const PADDING = markers.length === 1 ? LARGE_PADDING : SMALL_PADDING
+    ret.north += PADDING
+    ret.south -= PADDING
+    ret.east += PADDING
+    ret.west -= PADDING
+
     logr.info('location', 'calculateBoundsFromMarkers return:', ret)
 
     return roundMapBounds(ret)
@@ -244,7 +256,7 @@ export function calculateViewportFromBounds(bounds: MapBounds, width: number, he
     )
     // => bounds: instance of WebMercatorViewport
     // {longitude: -73.48760000000007, latitude: 41.268014439447484, zoom: 7.209231188444142}
-    const ret = viewportUrlToViewport(bound.latitude, bound.longitude, bound.zoom)
+    const ret = llzToViewport(bound.latitude, bound.longitude, bound.zoom)
 
     logr.info('location', `calculateViewportFromBounds(w=${width},h=${height}) MapViewport:`, ret)
     return ret
@@ -283,11 +295,11 @@ export function calculateBoundsFromViewport(viewport: MapViewport): MapBounds {
 
 // Return a valid MapViewport, with default values if invalid
 // url params have a value of  null if they do not or should not exist.
-export const viewportUrlToViewport = (lat: number | null, lon: number | null, z: number | null): MapViewport => {
+export const llzToViewport = (lat: number | null, lon: number | null, z: number | null): MapViewport => {
     return {
         latitude: lat !== null && lat <= 180 && lat >= -180 ? Number(lat.toFixed(6)) : 0,
         longitude: lon !== null && lon <= 180 && lon >= -180 ? Number(lon.toFixed(6)) : 0,
-        zoom: z !== null && z <= 22 && z > 0 ? z : 1, // Use zoom 1 as minimum instead of 0
+        zoom: z !== null && z <= 22 && z > 0 ? Number(z.toFixed(2)) : 1, // Use zoom 1 as minimum instead of 0
         bearing: 0,
         pitch: 0,
     }

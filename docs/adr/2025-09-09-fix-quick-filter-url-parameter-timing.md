@@ -39,7 +39,7 @@ From the logs:
 ...
 23:25:39.022 [INFO][APP] uE: map-init: zoom is null (not set),resetMapToAllEventsAndShowAll
 23:25:39.024 [INFO][APP] uE: map-init done (url params)
-23:25:39.027 [INFO][APP] action=MAP_INITIALIZED making appState=main-state, oldState=map-init
+23:25:39.027 [INFO][APP] action=MAP_INITIALIZED making appState=main-state, prevState=map-init
 ```
 
 The quick filter was parsed but never applied because the DateQuickButtons component only triggers in `main-state`, after the map had already been reset to show all events.

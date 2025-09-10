@@ -8,12 +8,13 @@ import Footer from '@/components/layout/Footer'
 import EventsSourceSelector from '@/components/home/EventsSourceSelector'
 import { useEventsManager } from '@/lib/hooks/useEventsManager'
 import { useMap, genMarkerId } from '@/lib/hooks/useMap'
+import { useBreakpoint } from '@/lib/hooks/useBreakpoint'
 import { MapBounds } from '@/types/map'
 import { FilteredEvents, EventsSource } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
 import ActiveFilters from '@/components/events/ActiveFilters'
 import {
-    viewportUrlToViewport,
+    llzToViewport,
     parseAsEventsSource,
     parseAsZoom,
     parseAsLatLon,
@@ -26,6 +27,8 @@ import { umamiTrack } from '@/lib/utils/umami'
 import Sidebar from '@/components/layout/Sidebar'
 import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels'
 import { ExampleEventsSources } from '@/lib/events/examples'
+import { appStateReducer, appActions, INITIAL_APP_STATE, isViewportSet, isReadyForViewportSetting } from '@/lib/state/appStateReducer'
+import { determineHeaderName } from '@/lib/utils/headerNames'
 
 declare global {
     interface Window {
@@ -34,111 +37,34 @@ declare global {
     }
 }
 
-// Application state machine types
-type AppState = 'uninitialized' | 'events-init' | 'map-init' | 'main-prep' | 'main-state' | 'menu-shown'
-// Actions that can be dispatched to change or transition state
-type AppAction =
-    | { type: 'RESET_STATE' }
-    | { type: 'EVENTS_LOADING' }
-    | { type: 'EVENTS_LOADED'; hasEvents: boolean }
-    | { type: 'INIT_MAP_WITH_ALL_EVENTS' }
-    | { type: 'MAP_INITIALIZED' }
-    | { type: 'SHOW_MENU' }
-    | { type: 'HIDE_MENU' }
-
-// Application state machine, appState.
-// uninitialized - first initial state, nothing is known. Initial URL params are stored.
-// events-init - fetching events from eventSource based on initial URL params
-// map-init - update map based on initial URL params and updated eventSource events
-// main-prep - apply filters based on url parameters (IS THIS NEEDED?)
-// main-state - respond to user interactions, updates some url parameters
-// menu-shown - map and filters on pause, user can view info about CMF - link to GitHub, blog, stats on current eventSource and filter
-function appReducer(state: AppState, action: AppAction): AppState {
-    let newState = state
-    switch (action.type) {
-        case 'RESET_STATE':
-            newState = 'uninitialized'
-            break
-        case 'EVENTS_LOADING':
-            newState = 'events-init'
-            break
-        case 'EVENTS_LOADED':
-            // type guard added to quiet build error
-            if (action.type === 'EVENTS_LOADED') {
-                // Only proceed if we have events
-                newState = action.hasEvents ? 'map-init' : state
-            }
-            break
-        case 'MAP_INITIALIZED':
-            newState = 'main-state'
-            break
-        case 'SHOW_MENU':
-            newState = 'menu-shown'
-            break
-        case 'HIDE_MENU':
-            newState = 'main-state'
-            break
-    }
-    if (newState !== state) {
-        logr.info('app', `action=${action.type} making appState=${newState}, oldState=${state}`)
-    } else {
-        logr.info('app', `action=${action.type} no change in appState=${newState}`)
-    }
-    return newState
-}
-
 // Custom hook to detect if screen is desktop (lg: 1024px and up)
-function useBreakpoint(query = '(min-width: 1024px)') {
-    const [matches, setMatches] = useState(false)
-    useEffect(() => {
-        const media = window.matchMedia(query)
-        if (media.matches !== matches) setMatches(media.matches)
-        const listener = () => setMatches(media.matches)
-        media.addEventListener('change', listener)
-        return () => media.removeEventListener('change', listener)
-    }, [matches, query])
-    return matches
-}
 
 function HomeContent() {
-    // URL query state parameters
+    // URL query state parameters - described in CmfUrlParams
     const [eventSourceId] = useQueryState('es', parseAsEventsSource) // replaced gc calendarId
     const [selectedEventIdUrl, setSelectedEventIdUrl] = useQueryState('se', { defaultValue: '' })
+    const [searchQueryUrl, setSearchQueryUrl] = useQueryState('sq', { defaultValue: '' }) // search query
+    const [dateQuickFilterUrl, setDateQuickFilterUrl] = useQueryState('qf', parseAsDateQuickFilter)
     const [viewportUrl, setViewportUrl] = useQueryStates({
         z: parseAsZoom,
         lat: parseAsLatLon,
         lon: parseAsLatLon,
     })
-    const [searchQueryUrl, setSearchQueryUrl] = useQueryState('sq', { defaultValue: '' }) // search query
     const [datesUrl] = useQueryStates({
         sd: parseAsCmfDate.withDefault('-1m'), // app start date
         ed: parseAsCmfDate.withDefault('3m'), // app end date
         //fsd: parseAsCmfDate.withDefault('0d'), // filter start date  - not using, qf is good enough. leaving for future reference.
         //fed: parseAsCmfDate, // filter end date
     })
-    // quick filter (today, next3days, future, past, etc)
-    const [dateQuickFilterUrl, setDateQuickFilterUrl] = useQueryState('qf', parseAsDateQuickFilter)
-    const initialUrlParams = {
-        es: eventSourceId,
-        se: selectedEventIdUrl,
-        z: viewportUrl.z,
-        lat: viewportUrl.lat,
-        lon: viewportUrl.lon,
-        sq: searchQueryUrl,
-        sd: datesUrl.sd,
-        ed: datesUrl.ed,
-        //fsd: datesUrl.fsd,
-        //fed: datesUrl.fed,
-        qf: dateQuickFilterUrl,
-    }
-    logr.debug('app', `HomeContent initialUrlParams=${JSON.stringify(initialUrlParams)}`)
-
-    const [appState, dispatch] = useReducer(appReducer, 'uninitialized')
+    const [appState, dispatch] = useReducer(appStateReducer, INITIAL_APP_STATE)
     const [headerName, setHeaderName] = useState('Calendar Map Filter')
     const [mapHookWidthHeight, setMapHookWidthHeight] = useState({ w: 999, h: 999 }) // in pixels
+    const [llzChecked, setLlzChecked] = useState(false) // TODO: finish implementing checkbox from todo.md
 
     // Ref for the events sidebar container
     const eventsSidebarRef = useRef<HTMLDivElement>(null)
+
+    // Auto-resize tracking removed - now handled by AppState machine
 
     // Local state for filters
     const [dateSliderRange, setDateSliderRange] = useState<{ start: string; end: string } | undefined>(undefined)
@@ -149,7 +75,7 @@ function HomeContent() {
 
     // Use our new EventsManager hook to get events and filter methods
     // Only apply viewport filtering when not in "show all" mode
-    const { evts, filters, eventSources, apiIsLoading, apiError } = useEventsManager({
+    const { evts, filters, eventSources, apiIsLoading, apiError, fltrEvtMgr } = useEventsManager({
         eventSourceId: eventSourceId,
         currentViewport: isShowingAllEvents ? null : currentViewportBounds,
         sd: datesUrl.sd,
@@ -166,26 +92,21 @@ function HomeContent() {
             if (fromUserInteraction) {
                 setIsShowingAllEvents(false)
             }
-
-            logr.info('app', 'handleBoundsChangeForFilters', { bounds, fromUserInteraction, isShowingAllEvents })
+            const logBounds = `north=${bounds.north} south=${bounds.south} east=${bounds.east} west=${bounds.west}`
+            logr.info('app', `handleBoundsChangeForFilters: ${logBounds}`, { fromUserInteraction, isShowingAllEvents })
         },
         [isShowingAllEvents]
     )
 
-    const { viewport, setViewport, markers, selectedMarkerId, setSelectedMarkerId, resetMapToAllEvents } = useMap(
+    const { viewport, setViewport, markers, selectedMarkerId, setSelectedMarkerId, resetMapToVisibleEvents } = useMap(
+        appState,
+        dispatch,
         evts,
+        fltrEvtMgr,
         mapHookWidthHeight.w,
         mapHookWidthHeight.h,
-        handleBoundsChangeForFilters
+        handleBoundsChangeForFilters,
     )
-
-    // Enhanced reset function that also resets to "show all" mode
-    const resetMapToAllEventsAndShowAll = useCallback(() => {
-        setIsShowingAllEvents(true)
-        resetMapToAllEvents()
-    }, [resetMapToAllEvents])
-    // Ref for tracking the last applied search query from URL
-    const searchQueryAppliedRef = useRef<string | null>(null)
 
     // Ref for zip code mapping (must be mutable)
     const zipLatLonRef = useRef<{ [zip: string]: string } | null>(null) as MutableRefObject<{
@@ -203,79 +124,43 @@ function HomeContent() {
         logr.info('app', `uE: Event Src changed es=${eventSourceId}, changing appState`)
         if (!eventSourceId) {
             setHeaderName('Calendar Map Filter')
-            dispatch({ type: 'RESET_STATE' })
+            // No reset needed - will just stay in events-init
         } else {
             setHeaderName('Loading Event Source...')
-            dispatch({ type: 'EVENTS_LOADING' })
+            dispatch(appActions.eventsLoading())
         }
+        // TODO move this somewhere else - perhaps umami has own file to track appState changes?
+        /*
         umamiTrack('LoadCalendar', {
             es: Array.isArray(eventSourceId) ? eventSourceId.join(',') : eventSourceId ?? 'null',
             numEvents: evts.allEvents.length,
         })
-    }, [eventSourceId, evts.allEvents.length])
+        */
+    }, [eventSourceId])
 
-    // Handle transition from events-init via EVENTS_LOADED action to map-init
+    // Handle transition from events-init via EVENTS_LOADED action to events-loaded
     useEffect(() => {
         if (appState !== 'events-init') return
 
         const k = evts.visibleEvents.length
         const all = evts.allEvents ? evts.allEvents.length : 0
         const msg = `uE: appState:events-init, apiIsLoading=${apiIsLoading}, evnts.shown=${k}, evnts.all=${all}`
-        logr.debug('app', msg)
+        logr.info('app', msg)
         // Initialize if API loaded and we have events
         if (!apiIsLoading && all > 0) {
-            // Check if eventSourceId matches a shortId from ExampleEventsSources
-
-            // default name for multiple sources (common) and for single source with no name (shouldn't happen).
-            let headerName = 'Calendar Map Filter Sources'
-
-            if (eventSources && eventSources.length === 1 && eventSources[0].name) {
-                headerName = eventSources[0].name
-            }
-
-            // Handle array of event sources (when using shortId that expands to multiple sources)
-            if (Array.isArray(eventSourceId)) {
-                // Check if this array matches an example shortcut
-                const eventSourceIdString = eventSourceId.join(',')
-                const exampleSource = ExampleEventsSources.find((es) => es.id === eventSourceIdString)
-                if (exampleSource) {
-                    headerName = exampleSource.name
-                }
-                // If no matching example and multiple sources, keep the default 'Calendar Map Filter Sources'
-            } else if (eventSources && eventSources.length > 1) {
-                // Multiple sources but not an array eventSourceId - keep default name
-                headerName = 'Calendar Map Filter Sources'
-            } else {
-                // Handle single event source
-                const exampleSource = ExampleEventsSources.find((es) => es.id === eventSourceId)
-                if (exampleSource) {
-                    headerName = exampleSource.name
-                }
-            }
-
+            const headerName = determineHeaderName(eventSourceId, eventSources, ExampleEventsSources)
             setHeaderName(headerName)
-            dispatch({ type: 'EVENTS_LOADED', hasEvents: all > 0 })
+            dispatch(appActions.eventsLoaded(all > 0))
         }
     }, [apiIsLoading, appState, evts, eventSources, eventSourceId])
 
-    // Apply search filter when appState changes to main-state
-    useEffect(() => {
-        if (appState !== 'main-state') return
-
-        // Only apply the search filter from URL if we haven't applied this value before
-        // This prevents infinite loops when searchQueryUrl changes through normal UI interaction
-        if (searchQueryUrl && searchQueryAppliedRef.current !== searchQueryUrl) {
-            logr.info('app', 'uE: main-state: applying search filter from URL', { searchQueryUrl })
-            filters.setSearchQuery(searchQueryUrl)
-            searchQueryAppliedRef.current = searchQueryUrl
-        }
-    }, [appState, filters, searchQueryUrl])
+    // NOTE: Search filter URL application moved to DateAndSearchFilters component
+    // to apply during map-init state for consistency with date filters
 
     // Handle search query changes
     const handleSearchChange = useCallback(
         async (query: string) => {
             logr.info('app', 'Search filter changed', { query })
-            searchQueryAppliedRef.current = query
             setSearchQueryUrl(query)
             filters.setSearchQuery(query)
             const result = await checkForZipCode(query, zipLatLonRef)
@@ -288,7 +173,7 @@ function HomeContent() {
                 })
             }
         },
-        [filters, setSearchQueryUrl, searchQueryAppliedRef, setViewport, viewport]
+        [filters, setSearchQueryUrl, setViewport, viewport]
     )
 
     // handleDateRangeChange - update date filter and slider
@@ -314,12 +199,19 @@ function HomeContent() {
         setCurrentViewportBounds(null) // Clear viewport filter
         setSelectedMarkerId(null)
         setSelectedEventIdUrl('') // match default value for param to clear from URL
-        // Call resetMapToAllEvents to properly reset the map to show all events
-        logr.info('app', 'calling resetMapToAllEventsAndShowAll after Clearing URL for zoom, latitude, and longitude')
-        resetMapToAllEventsAndShowAll()
+
+        // Use resetMapToVisibleEvents to properly reset the map to show all domain-filtered events
+        resetMapToVisibleEvents()
+    }
+
+    const handleShowAllDomainFltrdEvnts = () => {
+        logr.info('app', 'handleShowAllDomainFltrdEvnts - calling resetMapToVisibleEvents')
+        // Use resetMapToVisibleEvents to properly reset the map to show all domain-filtered events
+        resetMapToVisibleEvents()
     }
 
     // Properly memoize to avoid recreating function on each render
+    // TODO: move this to another file, maybe new file like src/lib/utils/eventSelection.ts
     const handleEventSelect = useCallback(
         (eventId: string | null) => {
             logr.info('app', `handleEventSelect() selectedEventIdUrl from ${selectedEventIdUrl} to ${eventId}`)
@@ -376,24 +268,54 @@ function HomeContent() {
     )
 
 
-    // Handle transition from map-init via MAP_INITIALIZED action to main-state
-    // Basically apply url params to map
-    useEffect(() => {
-        if (appState !== 'map-init') return
+    // Removed confusing useEffect - DateAndSearchFilters handles URL filter application directly
 
+    // Handle URL parsing steps 3-6 after domain filters are applied
+    useEffect(() => {
+        if (!isReadyForViewportSetting(appState)) return
+
+        // Step 3: Handle selected event (se parameter)
         if (selectedEventIdUrl) {
-            logr.info('app', 'uE: map-init: selectedEventIdUrl is set, handleEventSelect')
-            handleEventSelect(selectedEventIdUrl)
-        } else if (viewportUrl.z === null) {
-            logr.info('app', 'uE: map-init: zoom is null (not set in URL), so resetMapToAllEventsAndShowAll()')
-            resetMapToAllEventsAndShowAll()
-        } else {
-            logr.info('app', `uE: map-init: zoom=${viewportUrl.z}, setViewport from URL`)
-            setViewport(viewportUrlToViewport(viewportUrl.lat, viewportUrl.lon, viewportUrl.z))
+            logr.info('app', 'URL parsing step 3: selectedEventIdUrl is set, checking if valid')
+            
+            // Step 4: Validate event ID 
+            // If se and valid event id: act like user clicked on event 
+            // If se and not valid: act like se wasn't present, remove from url, console log warning, and continue)
+            const event = evts.allEvents.find((e) => e.id === selectedEventIdUrl)
+            if (!event) {
+                logr.warn('app', `URL parsing step 4: Invalid event ID '${selectedEventIdUrl}', treating as if se wasn't present`)
+                // Continue to step 5/6 as if se wasn't present
+                // TODO: Clear invalid se from URL
+            } else {
+                logr.info('app', 'URL parsing step 3-4: Valid event ID, selecting event (no more URL parsing)')
+                handleEventSelect(selectedEventIdUrl)
+                dispatch(appActions.viewportSet())
+                return // Stop URL parsing here per rules
+            }
         }
-        logr.info('app', 'uE: map-init done (url params)')
-        dispatch({ type: 'MAP_INITIALIZED' })
-    }, [appState, selectedEventIdUrl, handleEventSelect, viewportUrl, resetMapToAllEventsAndShowAll, setViewport])
+
+        // Step 5: If llz and es only: update map based on llz coordinates
+        if (viewportUrl.z !== null) {
+            logr.info('app', `URL parsing step 5: Setting viewport from llz coordinates (z=${viewportUrl.z})`)
+            setViewport(llzToViewport(viewportUrl.lat, viewportUrl.lon, viewportUrl.z))
+            // TODO: Set llz checkbox state
+            dispatch(appActions.viewportSet())
+            return
+        }
+
+        // Step 6: Auto-resize map based on domain-filtered events
+        logr.info('app', 'URL parsing step 6: Auto-resizing map to show domain-filtered events')
+        resetMapToVisibleEvents()
+        // resetMapToVisibleEvents will dispatch VIEWPORT_SET
+    }, [appState, selectedEventIdUrl, handleEventSelect, viewportUrl, resetMapToVisibleEvents, setViewport, evts.allEvents])
+
+    // Final transition to main-state
+    useEffect(() => {
+        if (isViewportSet(appState)) {
+            logr.info('app', 'uE: viewport-set -> main-state')
+            dispatch(appActions.readyForInteraction())
+        }
+    }, [appState])
 
     // Expose events data to window for debugging
     useEffect(() => {
@@ -414,15 +336,19 @@ function HomeContent() {
         if (selectedEventIdUrl && selectedEventIdUrl !== '') {
             // Remove viewport parameters and just keep the selected event ID
             setViewportUrl({ lat: null, lon: null, z: null })
-        } else {
+            logr.info('app', `Updated URL parameter se only, selectedEventIdUrl=${selectedEventIdUrl}, no zoom=${viewport.zoom}`)
+        } else if (llzChecked) {
             setViewportUrl({
                 lat: viewport.latitude,
                 lon: viewport.longitude,
                 z: viewport.zoom,
             })
+            logr.info('app', `Updated llz URL parameters, no selectedEventIdUrl and llzChecked, zoom=${viewport.zoom}`)
+        } else {
+            logr.info('app', `Updated no URL parameters, llzChecked=${llzChecked}`)
+
         }
-        logr.info('app', `Updated URL parameters, selectedEventIdUrl=${selectedEventIdUrl}, zoom=${viewport.zoom}`)
-    }, [viewport, appState, selectedEventIdUrl, setViewportUrl])
+    }, [viewport, appState, selectedEventIdUrl, llzChecked, setViewportUrl])
 
     // If no eventSourceId is provided, show the eventSource selector
     if (!eventSourceId) {
@@ -449,6 +375,7 @@ function HomeContent() {
                             headerName={headerName}
                             eventCount={{ shown: evts.visibleEvents.length, total: evts.allEvents.length }}
                             eventSources={eventSources}
+                            onShowAllDomainFltrdEvnts={handleShowAllDomainFltrdEvnts}
                             ref={eventsSidebarRef}
                             className="h-full"
                         >
@@ -466,11 +393,12 @@ function HomeContent() {
                                 onSearchChange={handleSearchChange}
                                 dateSliderRange={dateSliderRange}
                                 onDateRangeChange={handleDateRangeChange}
-                                dateQuickFilterUrl={dateQuickFilterUrl}
                                 onDateQuickFilterChange={setDateQuickFilterUrl}
                                 appState={appState}
-                                sd={datesUrl.sd}
-                                ed={datesUrl.ed}
+                                searchQueryFromUrl={searchQueryUrl}
+                                dateQuickFilterFromUrl={dateQuickFilterUrl}
+                                dateRangeFromUrl={{ sd: datesUrl.sd, ed: datesUrl.ed }}
+                                dispatch={dispatch}
                             />
                             {apiError ? (
                                 <div className="p-4">

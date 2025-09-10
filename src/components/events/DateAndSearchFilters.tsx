@@ -10,17 +10,20 @@ import { logr } from '@/lib/utils/logr'
 import { Calendar } from '@/components/ui/calendar'
 import { Slider } from '@/components/ui/slider'
 import * as Popover from '@radix-ui/react-popover'
+import { AppState, AppAction, appActions, isReadyForUrlParsing } from '@/lib/state/appStateReducer'
 
 interface DateAndSearchFiltersProps {
     searchQuery: string
     onSearchChange: (query: string) => void
     dateSliderRange?: { start: string; end: string }
     onDateRangeChange: (range: { start: string; end: string } | undefined) => void
-    dateQuickFilterUrl?: string | null
     onDateQuickFilterChange?: (value: string) => void
-    appState?: string
-    sd?: string // Start date from URL
-    ed?: string // End date from URL
+    appState: AppState
+    // URL parameters for initial filter application
+    searchQueryFromUrl?: string
+    dateQuickFilterFromUrl?: string | null
+    dateRangeFromUrl?: { sd?: string; ed?: string }
+    dispatch: React.Dispatch<AppAction> // Direct dispatch function for state actions
 }
 
 export default function DateAndSearchFilters({
@@ -28,18 +31,23 @@ export default function DateAndSearchFilters({
     onSearchChange,
     dateSliderRange,
     onDateRangeChange,
-    dateQuickFilterUrl,
     onDateQuickFilterChange,
     appState,
-    sd,
-    ed,
+    searchQueryFromUrl,
+    dateQuickFilterFromUrl,
+    dateRangeFromUrl,
+    dispatch,
 }: DateAndSearchFiltersProps) {
     const [showDateSliders, setShowDateSliders] = useState(false)
 
+    // Use URL parameters directly from props
+    const searchQueryUrl = searchQueryFromUrl
+    const dateQuickFilterUrl = dateQuickFilterFromUrl
+
     // Date slider state
     const now = new Date()
-    const minDate = getDateFromUrlDateString(sd || '-1m') || subMonths(now, 1)
-    const maxDate = getDateFromUrlDateString(ed || '3m') || addMonths(now, 3)
+    const minDate = getDateFromUrlDateString(dateRangeFromUrl?.sd || '-1m') || subMonths(now, 1)
+    const maxDate = getDateFromUrlDateString(dateRangeFromUrl?.ed || '3m') || addMonths(now, 3)
     const totalDays = differenceInCalendarDays(maxDate, minDate)
     const [startDays, setStartDays] = useState(0)
     const [endDays, setEndDays] = useState(totalDays)
@@ -57,45 +65,55 @@ export default function DateAndSearchFilters({
         }
     }, [showDateSliders])
 
-    // Ref to track if we've already processed the initial URL parameter
-    const initialUrlProcessed = useRef(false)
+    // Ref to track which URL parameters have been processed
+    const urlParamsProcessed = useRef({
+        dateQuickFilter: false,
+        searchQuery: false,
+    })
 
-    // Handle URL quick filter parameter - this needs to run outside of popover
+    // Handle URL parameters (domain filters: date and search) 
     useEffect(() => {
-        // Only process once when we have the right conditions
-        if (dateQuickFilterUrl && !initialUrlProcessed.current && (appState === 'map-init' || appState === 'main-state')) {
-            logr.info('date-filters', `URL params: applying ${dateQuickFilterUrl} filter during ${appState}`)
+        if (!isReadyForUrlParsing(appState)) return
+        
+        let filtersApplied = false
 
-            // Calculate today's value
-            const todayValue = Math.floor((now.getTime() - minDate.getTime()) / (1000 * 60 * 60 * 24))
-
-            // Use shared quick filter logic
-            const range = calculateQuickFilterRange(dateQuickFilterUrl, todayValue, totalDays, getDateFromDays)
+        // Apply date quick filter from URL
+        if (dateQuickFilterUrl && !urlParamsProcessed.current.dateQuickFilter) {
+            logr.info('url-filters', `URL params: applying date filter "${dateQuickFilterUrl}" during ${appState}`)
+            const todayDayValue = Math.floor((now.getTime() - minDate.getTime()) / (1000 * 60 * 60 * 24))
+            const range = calculateQuickFilterRange(dateQuickFilterUrl, todayDayValue, totalDays, getDateFromDays)
             if (!range) {
-                logr.warn('date-filters', `Unknown or invalid quick filter: ${dateQuickFilterUrl}`)
-                return
+                logr.warn('url-filters', `Unknown or invalid quick filter: ${dateQuickFilterUrl}`)
+            } else {
+                // Apply the date range with proper day boundaries
+                setStartDays(range.start)
+                setEndDays(range.end)
+                onDateRangeChange({
+                    start: getStartOfDay(range.start, minDate),
+                    end: getEndOfDay(range.end, minDate),
+                })
+                logr.info('url-filters', `Applied date filter ${dateQuickFilterUrl}: days ${range.start}-${range.end}`)
             }
-            
-            const newStartDays = range.start
-            const newEndDays = range.end
-
-            // Apply the date range with proper day boundaries
-            setStartDays(newStartDays)
-            setEndDays(newEndDays)
-
-            onDateRangeChange({
-                start: getStartOfDay(newStartDays, minDate),
-                end: getEndOfDay(newEndDays, minDate),
-            })
-
-            // Keep the quick filter in URL for consistency (don't clear it)
-
-            // Mark as processed
-            initialUrlProcessed.current = true
-            logr.info('date-filters', `Applied quick filter ${dateQuickFilterUrl}: days ${newStartDays}-${newEndDays}`)
+            urlParamsProcessed.current.dateQuickFilter = true
+            filtersApplied = true
         }
+
+        // Apply search filter from URL
+        if (searchQueryUrl && !urlParamsProcessed.current.searchQuery) {
+            logr.info('url-filters', `URL params: applying search filter "${searchQueryUrl}" during ${appState}`)            
+            onSearchChange(searchQueryUrl)
+            urlParamsProcessed.current.searchQuery = true
+            logr.info('url-filters', `Applied search filter: "${searchQueryUrl}"`)
+            filtersApplied = true
+        }
+
+        // Notify parent about URL filters completion (auto-resize will be handled separately in step 6)
+        if (filtersApplied || (!dateQuickFilterUrl && !searchQueryUrl)) {
+            dispatch(appActions.urlFiltersApplied())
+        }
+
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [dateQuickFilterUrl, appState, now, minDate, totalDays, onDateRangeChange, onDateQuickFilterChange])
+    }, [dateQuickFilterFromUrl, searchQueryFromUrl, appState, now, minDate, totalDays, onDateRangeChange, onSearchChange, dispatch])
 
     // Convert slider value to date
     const getDateFromDays = (days: number) => {

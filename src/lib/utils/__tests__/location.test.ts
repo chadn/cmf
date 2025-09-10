@@ -5,7 +5,7 @@ import {
     genMarkerId,
     calculateBoundsFromMarkers,
     calculateBoundsFromViewport,
-    viewportUrlToViewport,
+    llzToViewport,
     parseAsZoom,
     parseAsLatLon,
     parseAsEventsSource,
@@ -611,9 +611,9 @@ describe('Location and Map Utilities', () => {
         })
     })
 
-    describe('viewportUrlToViewport', () => {
+    describe('llzToViewport', () => {
         it('should return valid viewport with valid inputs', () => {
-            const result = viewportUrlToViewport(37.7749, -122.4194, 12)
+            const result = llzToViewport(37.7749, -122.4194, 12)
             expect(result).toEqual({
                 latitude: 37.7749,
                 longitude: -122.4194,
@@ -624,7 +624,7 @@ describe('Location and Map Utilities', () => {
         })
 
         it('should handle null inputs with defaults', () => {
-            const result = viewportUrlToViewport(null, null, null)
+            const result = llzToViewport(null, null, null)
             expect(result).toEqual({
                 latitude: 0,
                 longitude: 0,
@@ -636,7 +636,7 @@ describe('Location and Map Utilities', () => {
 
         it('should handle out of range values', () => {
             // Latitude and longitude out of range
-            const result1 = viewportUrlToViewport(200, -200, 12)
+            const result1 = llzToViewport(200, -200, 12)
             expect(result1).toEqual({
                 latitude: 0, // Default when out of range
                 longitude: 0, // Default when out of range
@@ -646,7 +646,7 @@ describe('Location and Map Utilities', () => {
             })
 
             // Zoom out of range
-            const result2 = viewportUrlToViewport(37.7749, -122.4194, 30)
+            const result2 = llzToViewport(37.7749, -122.4194, 30)
             expect(result2).toEqual({
                 latitude: 37.7749,
                 longitude: -122.4194,
@@ -657,7 +657,7 @@ describe('Location and Map Utilities', () => {
         })
 
         it('should round coordinates to 6 decimal places', () => {
-            const result = viewportUrlToViewport(37.7749123456789, -122.4194987654321, 12)
+            const result = llzToViewport(37.7749123456789, -122.4194987654321, 12)
             expect(result).toEqual({
                 latitude: 37.774912,
                 longitude: -122.419499,

@@ -2,6 +2,8 @@ import { renderHook, act } from '@testing-library/react'
 import { useMap } from '../useMap'
 import { CmfEvent } from '@/types/events'
 import { MapViewport } from '@/types/map'
+import { AppState } from '@/lib/state/appStateReducer'
+import { FilterEventsManager } from '@/lib/events/FilterEventsManager'
 
 // Mock the generateMapMarkers function
 jest.mock('@/lib/utils/location', () => ({
@@ -29,6 +31,10 @@ jest.mock('@/lib/utils/location', () => ({
             bearing: 0,
             pitch: 0,
         },
+    })),
+    calculateAggregateCenter: jest.fn().mockImplementation(() => ({
+        lat: 37.7749,
+        lng: -122.4194,
     })),
 }))
 
@@ -71,12 +77,25 @@ describe('useMap', () => {
         },
     }
 
+    const mockAppState: AppState = 'main-state'
+    const mockDispatch = jest.fn()
+    const mockFilterEventsManager = new FilterEventsManager(mockFilteredEvents.allEvents)
+    const mockMapW = 800
+    const mockMapH = 600
+
     beforeEach(() => {
         jest.clearAllMocks()
     })
 
     it('should initialize with default values', () => {
-        const { result } = renderHook(() => useMap(mockFilteredEvents))
+        const { result } = renderHook(() => useMap(
+            mockAppState, 
+            mockDispatch, 
+            mockFilteredEvents, 
+            mockFilterEventsManager,
+            mockMapW,
+            mockMapH
+        ))
 
         expect(result.current.viewport).toEqual({
             latitude: 37.7749,
@@ -90,7 +109,14 @@ describe('useMap', () => {
     })
 
     it('should update viewport', () => {
-        const { result } = renderHook(() => useMap(mockFilteredEvents))
+        const { result } = renderHook(() => useMap(
+            mockAppState, 
+            mockDispatch, 
+            mockFilteredEvents, 
+            mockFilterEventsManager,
+            mockMapW,
+            mockMapH
+        ))
 
         const newViewport: MapViewport = {
             latitude: 37.7833,
@@ -108,7 +134,14 @@ describe('useMap', () => {
     })
 
     it('should update selected marker', () => {
-        const { result } = renderHook(() => useMap(mockFilteredEvents))
+        const { result } = renderHook(() => useMap(
+            mockAppState, 
+            mockDispatch, 
+            mockFilteredEvents, 
+            mockFilterEventsManager,
+            mockMapW,
+            mockMapH
+        ))
 
         act(() => {
             result.current.setSelectedMarkerId('marker-1')
@@ -117,11 +150,18 @@ describe('useMap', () => {
         expect(result.current.selectedMarkerId).toBe('marker-1')
     })
 
-    it('should reset map to show all events', () => {
-        const { result } = renderHook(() => useMap(mockFilteredEvents))
+    it('should reset map to show visible events', () => {
+        const { result } = renderHook(() => useMap(
+            mockAppState, 
+            mockDispatch, 
+            mockFilteredEvents, 
+            mockFilterEventsManager,
+            mockMapW,
+            mockMapH
+        ))
 
         act(() => {
-            result.current.resetMapToAllEvents()
+            result.current.resetMapToVisibleEvents()
         })
 
         expect(result.current.viewport).toEqual({
@@ -144,11 +184,20 @@ describe('useMap', () => {
 
         const filteredEventsWithoutLocation = {
             ...mockFilteredEvents,
-            shownEvents: [eventWithoutLocation],
+            visibleEvents: [eventWithoutLocation],
             allEvents: [eventWithoutLocation],
         }
 
-        const { result } = renderHook(() => useMap(filteredEventsWithoutLocation))
+        const filterManagerWithoutLocation = new FilterEventsManager([eventWithoutLocation])
+
+        const { result } = renderHook(() => useMap(
+            mockAppState, 
+            mockDispatch, 
+            filteredEventsWithoutLocation, 
+            filterManagerWithoutLocation,
+            mockMapW,
+            mockMapH
+        ))
 
         expect(result.current.markers).toHaveLength(0)
     })

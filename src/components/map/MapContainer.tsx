@@ -87,6 +87,7 @@ const MapContainer: React.FC<MapContainerProps> = ({
         return ret
     }, [mapRef])
 
+    // TODO: note possible side effects 
     const debouncedUpdateBounds = useDebounce(() => {
         const newBounds = getMapBounds()
         logr.info('mapc', 'Bounds updating after debounce', newBounds)
@@ -99,7 +100,7 @@ const MapContainer: React.FC<MapContainerProps> = ({
             const vp = viewstate2Viewport(newViewstate)
             logr.info(
                 'mapc',
-                'Map onMove: handleViewportChange: updateMapWidthHeight, onViewportChange, debouncedUpdateBounds',
+                'uC: Map onMove: handleViewportChange: updateMapWidthHeight, onViewportChange, debouncedUpdateBounds',
                 vp
             )
             updateMapWidthHeight() // Update dimensions and notify parent if changed
@@ -111,7 +112,7 @@ const MapContainer: React.FC<MapContainerProps> = ({
 
     // Handle Map onLoad
     const handleMapLoad = useCallback(() => {
-        logr.info('mapc', 'Map onLoad: handleMapLoad')
+        logr.info('mapc', 'uC: Map onLoad: handleMapLoad')
         setTimeout(() => {
             updateMapWidthHeight() // Update dimensions and notify parent if changed
             const initialBounds = getMapBounds()
@@ -120,17 +121,20 @@ const MapContainer: React.FC<MapContainerProps> = ({
         }, 10)
     }, [updateMapWidthHeight, getMapBounds, onBoundsChange])
 
-    // Log when component mounts
+    // Log when markers length changes
+    useEffect(() => {
+        logr.info('mapc', `uE: MapContainer updated num markers, now ${markers.length}`)
+    }, [markers.length])
+
+    // Log when viewport changes
     useEffect(() => {
         const vport = `lat=${viewport.latitude} lon=${viewport.longitude} zoom=${viewport.zoom}`
-        logr.info('mapc', `MapContainer mounted, ${markers.length} markers, ${vport} `)
-    }, [viewport, markers.length])
+        logr.info('mapc', `uE: MapContainer updated viewport, now ${vport}`)
+    }, [viewport.latitude, viewport.longitude, viewport.zoom])
 
     // Close popup when selected marker changes to null
     useEffect(() => {
         if (!selectedMarkerId) {
-            // TODO: DONE. Fix potential infinite loop by checking if popupMarker is already null
-            // Only set to null if it's not already null to prevent unnecessary rerenders
             if (popupMarker !== null) {
                 setPopupMarker(null)
             }

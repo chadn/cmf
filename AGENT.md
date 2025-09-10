@@ -20,21 +20,29 @@ Review the latest git commit. Ensure the following are true — fix if not - and
 
 3. docs/adr/:
     - If the commit includes a significant refactor or architectural change:
-        - Create or update an ADR that reflects the **final state and rationale** of the change.
-        - Do not append notes or running commentary — rewrite the ADR to be accurate, complete, and concise.
+        - Create or update an ADR that reflects the **final state and rationale** of the change
+        - Rewrite the ADR as a clean snapshot (do not append commentary)
     - To verify:
-        - Review the full git diff and re-read the ADR in its entirety
-        - Ensure the ADR covers **all relevant changes** from the commit
-        - Follow formatting and writing guidelines in `docs/adr/README.md`
+        - Review the full git diff and re-read the ADR in full
+        - Ensure the ADR reflects all relevant changes
+        - Follow `docs/adr/README.md` guidelines
 
 4. File reference docs:
     - If any files were added, removed, or renamed:
         - Update all affected documentation (e.g. tests.md, Implementation.md)
 
 5. tests.md:
-    - Test coverage output is current
-    - Timestamp from `npm test && date` is newer than any code or test file in this commit.
-    - If outdated, run `npm test && date` and replace the section
+    - Test coverage block is up to date
+    - Timestamp from `npm test && date` is newer than any file in this commit
+    - If not, re-run tests and update the section
+
+6. Remaining documentation:
+    - Review all other `.md` files for accuracy and relevance
+    - If related to this commit, update as needed
+    - If unrelated but clearly improvable, suggest improvements with reasoning (do not modify yet)
+
+Do not commit or push until all items are verified.
+
 
 # General Project Preferences
 

@@ -12,11 +12,12 @@ interface SidebarProps {
     headerName?: string
     eventCount?: { shown: number; total: number }
     eventSources?: Array<EventsSource> | null
+    onShowAllDomainFltrdEvnts?: () => void
     children: ReactNode
     className?: string
 }
 
-const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(({ headerName, eventCount, eventSources, children }, ref) => {
+const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(({ headerName, eventCount, eventSources, onShowAllDomainFltrdEvnts, children }, ref) => {
     // Only get current es parameter when eventSources exist (optimization)
     const [currentEventSourceId] = useQueryState('es', parseAsEventsSource)
 
@@ -197,8 +198,12 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(({ headerName, eventCou
                         </span>
                     )}
                     {eventCount && (
-                        <span className="num-events-showing text-xs lg:text-sm xl:text-md 2xl:text-lg text-gray-800 ml-2 ">
-                            Showing{' '}
+                        <button 
+                            title="Click to update map to show all visible events"
+                            onClick={onShowAllDomainFltrdEvnts}
+                            className="num-events-visible text-blue-600 hover:text-blue-800 hover:bg-blue-200 text-xs lg:text-sm xl:text-md 2xl:text-lg ml-2 px-1 py-0.5 rounded transition-colors cursor-pointer"
+                            disabled={!onShowAllDomainFltrdEvnts}
+                        >
                             <span className="whitespace-nowrap">
                                 <span className="font-bold text-sm lg:text-md xl:text-lg 2xl:text-xl">
                                     {eventCount.shown}
@@ -208,8 +213,8 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(({ headerName, eventCou
                                     {eventCount.total}
                                 </span>
                             </span>{' '}
-                            events
-                        </span>
+                            Visible
+                        </button>
                     )}
                 </div>
             </div>

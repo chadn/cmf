@@ -4,17 +4,17 @@ This document makes it easy to see test coverage and compare against the [Direct
 
 ```
 npm test && date
-> calendar-map-filter@0.2.15 test
+> calendar-map-filter@0.2.16 test
 > jest --coverage
 ----------------------------|---------|----------|---------|---------|---------------------------------------------
 File                        | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s                           
 ----------------------------|---------|----------|---------|---------|---------------------------------------------
-All files                   |   79.63 |    67.98 |    80.6 |   80.56 |                                             
+All files                   |   81.35 |    71.02 |   81.41 |   82.27 |                                             
  components/common          |     100 |      100 |     100 |     100 |                                             
   ErrorMessage.tsx          |     100 |      100 |     100 |     100 |                                             
   LoadingSpinner.tsx        |     100 |      100 |     100 |     100 |                                             
- components/events          |   75.54 |    67.56 |   80.48 |    75.7 |                                             
-  DateAndSearchFilters.tsx  |   61.84 |    48.21 |   69.23 |    62.5 | 67-95,122-144,204-261                       
+ components/events          |   83.67 |    73.54 |   80.48 |   84.04 |                                             
+  DateAndSearchFilters.tsx  |   81.81 |    65.07 |   69.23 |   83.13 | 140-162,222-279                      
   DateQuickButtons.tsx      |    91.3 |       75 |     100 |    91.3 | 47-48                                       
   EventDetails.tsx          |     100 |      100 |     100 |     100 |                                             
   EventList.tsx             |   82.05 |    78.04 |   80.95 |   81.57 | 38-39,134-136,161-163,188-190,217-219       
@@ -42,20 +42,22 @@ All files                   |   79.63 |    67.98 |    80.6 |   80.56 |
   FilterEventsManager.ts    |   73.01 |    76.47 |   52.94 |   73.77 | 41-43,57-73,107,128,147,201-219             
   examples.ts               |     100 |      100 |     100 |     100 |                                             
   filters.ts                |      75 |    64.51 |   66.66 |      75 | 9-10,47,58,84-88,105                        
- lib/hooks                  |    59.7 |    35.29 |   68.96 |   58.28 |                                             
-  useEventsManager.ts       |   49.19 |    34.95 |   56.66 |   46.95 | 82-87,99,104-123,133-181,199-225,236-256    
-  useMap.ts                 |   76.62 |     37.5 |   82.14 |      80 | 18-25,122-128,139-143,170                   
- lib/utils                  |   80.07 |    71.67 |   85.26 |   81.32 |                                             
+ lib/hooks                  |   62.55 |    46.72 |   70.68 |   61.29 |                                             
+  useEventsManager.ts       |   53.22 |    48.54 |      60 |    51.3 | 104-123,133-181,199-225,236-256             
+  useMap.ts                 |   75.86 |    36.84 |   82.14 |   77.46 | 20-27,118-124,135-139,166-167,189-192,197   
+ lib/state                  |     100 |      100 |     100 |     100 |                                             
+  appStateReducer.ts        |     100 |      100 |     100 |     100 |                                 
+ lib/utils                  |   81.47 |    72.18 |   85.26 |   82.81 |                                             
   calendar.ts               |   85.52 |     72.5 |     100 |   85.52 | 28-29,45,55,75,81,127-128,133-134,150       
-  date-19hz-parsing.ts      |   88.18 |    83.87 |     100 |   87.96 | 68-82,281-283                               
+  date-19hz-parsing.ts      |   95.45 |    87.09 |     100 |   95.37 | 63-64,281-283                               
   date-constants.ts         |     100 |      100 |     100 |     100 |                                             
   date.ts                   |   90.27 |    88.88 |     100 |   91.54 | 18-19,45,52-53,147                          
   icsParser.ts              |     100 |      100 |     100 |     100 |                                             
-  location.ts               |   67.55 |    55.23 |   71.42 |      70 | 232,277,334-363,372-373,377,393-407,427-458 
+  location.ts               |   67.55 |    55.23 |   71.42 |      70 | 233,278,335-364,373-374,378,394-408,428-459 
   logr.ts                   |   71.18 |    67.44 |   91.66 |   70.17 | 39,68-93,113,160                            
   quickFilters.ts           |     100 |      100 |     100 |     100 |                                             
   timezones.ts              |   90.38 |    61.53 |   85.71 |   93.18 | 75,114-115                                  
-  umami.ts                  |   52.63 |     37.5 |     100 |   52.94 | 13-17,30-33                                 
+  umami.ts                  |    64.7 |     37.5 |     100 |   66.66 | 12,27-30                                    
   utils-client.ts           |   52.94 |     64.7 |      60 |   53.06 | 10-41,59,63,94,113-114                      
   utils-shared.ts           |   85.29 |    72.72 |     100 |    87.5 | 27,46,48,50                                 
   venue-parsing.ts          |     100 |    86.66 |     100 |     100 | 19,56,82,139-143                            
@@ -63,12 +65,13 @@ All files                   |   79.63 |    67.98 |    80.6 |   80.56 |
   events.ts                 |      75 |      100 |     100 |     100 |                                             
 ----------------------------|---------|----------|---------|---------|---------------------------------------------
 
-Test Suites: 1 skipped, 28 passed, 28 of 29 total
-Tests:       2 skipped, 344 passed, 346 total
+Test Suites: 1 skipped, 29 passed, 29 of 30 total
+Tests:       2 skipped, 397 passed, 399 total
 Snapshots:   0 total
-Time:        2.366 s
+Time:        2.76 s
 Ran all test suites.
-Tue Sep  9 18:20:38 PDT 2025
+Total Lines of Code: 1664
+Fri Sep 12 08:07:00 PDT 2025
 ```
 
 ## Next Steps for Testing

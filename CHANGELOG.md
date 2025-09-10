@@ -5,6 +5,32 @@ All notable changes to Calendar Map Filter (CMF) will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.16] - 2025-09-12
+
+### Added
+
+-   Added `resetMapToVisibleEvents()` function to zoom map to show only currently filtered events
+-   Added `appStateReducer.ts`, for AppState machine with proper Redux-style patterns with reducer, action creators and type guards
+-   Added `useBreakpoint.ts` hook extracted from page.tsx for reusability
+-   Added `headerNames.ts` utility for determining dynamic header names
+-   Added URL Parsing rules to Implementation.md to guide code and make it more understandable
+
+### Changed
+
+-   **BREAKING**: Major refactor of application state management from scattered useRef flags to centralized AppState machine
+-   Improved URL parameter processing with consistent timing for date and search filters
+-   Simplified component interfaces by consolidating URL parameter handling
+-   Enhanced type safety with proper TypeScript types for URL parameters and actions
+-   Refactored `DateAndSearchFilters` component to handle both date and search URL parameters during initialization
+
+### Technical
+
+-   URL parsing now follows documented 6-step sequence with proper state transitions
+-   Eliminated race conditions between domain filters (date/search) and viewport handling
+-   Added comprehensive test coverage for new `useMap` hook functionality
+-   Updated Jest configuration to include coverage reporting
+-   Improved code maintainability by simplifying 500+ line page.tsx and moving functionality to other files, some new.
+
 ## [0.2.15] - 2025-09-09
 
 ### Fixed
@@ -16,7 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Technical
 
--   Updated `viewportUrlToViewport` to use zoom 1 as minimum instead of problematic zoom 0
+-   Updated `viewportUrlToViewport` (0.2.16 renamed `llzToViewport`) to use zoom 1 as minimum instead of problematic zoom 0
 -   Modified `calculateBoundsFromMarkers` to return reasonable world bounds when no markers exist
 
 ## [0.2.14] - 2025-09-09
