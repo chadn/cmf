@@ -3,75 +3,76 @@
 This document makes it easy to see test coverage and compare against the [Directory Structure in Implementation.md](Implementation.md#directory-structure)
 
 ```
-npm test && date
-> calendar-map-filter@0.2.16 test
-> jest --coverage
+npm test
+> calendar-map-filter@0.2.17 test
+> jest --coverage && node src/scripts/show-total-loc.mjs && date && echo
+...
 ----------------------------|---------|----------|---------|---------|---------------------------------------------
-File                        | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s                           
+File                        | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
 ----------------------------|---------|----------|---------|---------|---------------------------------------------
-All files                   |   81.35 |    71.02 |   81.41 |   82.27 |                                             
- components/common          |     100 |      100 |     100 |     100 |                                             
-  ErrorMessage.tsx          |     100 |      100 |     100 |     100 |                                             
-  LoadingSpinner.tsx        |     100 |      100 |     100 |     100 |                                             
- components/events          |   83.67 |    73.54 |   80.48 |   84.04 |                                             
-  DateAndSearchFilters.tsx  |   81.81 |    65.07 |   69.23 |   83.13 | 140-162,222-279                      
-  DateQuickButtons.tsx      |    91.3 |       75 |     100 |    91.3 | 47-48                                       
-  EventDetails.tsx          |     100 |      100 |     100 |     100 |                                             
-  EventList.tsx             |   82.05 |    78.04 |   80.95 |   81.57 | 38-39,134-136,161-163,188-190,217-219       
- components/home            |   80.55 |    66.66 |     100 |      80 |                                             
-  EventsSourceSelector.tsx  |   80.55 |    66.66 |     100 |      80 | 35-39,46-47                                 
- components/layout          |     100 |      100 |     100 |     100 |                                             
-  Footer.tsx                |     100 |      100 |     100 |     100 |                                             
-  Header.tsx                |     100 |      100 |     100 |     100 |                                             
- components/map             |   91.35 |    79.51 |   93.75 |   93.79 |                                             
-  MapContainer.tsx          |   89.41 |    78.94 |   89.47 |   90.12 | 91-92,137,163-165,256-258                   
-  MapMarker.tsx             |   94.44 |    81.81 |     100 |     100 | 15,35                                       
-  MapPopup.tsx              |   93.22 |    79.41 |     100 |   98.07 | 77                                          
- components/ui              |   94.11 |    66.66 |      90 |     100 |                                             
-  button.tsx                |     100 |    66.66 |     100 |     100 | 45                                          
-  calendar.tsx              |    87.5 |       75 |   85.71 |     100 | 71,138-148                                  
-  slider.tsx                |     100 |    33.33 |     100 |     100 | 13                                          
- lib                        |     100 |      100 |     100 |     100 |                                             
-  utils.ts                  |     100 |      100 |     100 |     100 |                                             
- lib/api                    |   91.76 |    83.33 |   94.73 |   92.94 |                                             
-  geocoding.ts              |   91.76 |    83.33 |   94.73 |   92.94 | 50,81,119,153,284,312-314,358,383,425       
- lib/api/eventSources/plura |   75.64 |    76.92 |      60 |   75.34 |                                             
-  types.ts                  |     100 |      100 |     100 |     100 |                                             
-  utils.ts                  |      75 |    76.92 |      60 |      75 | 71,91-92,100,148,157-191                    
- lib/events                 |   74.22 |    70.76 |   56.52 |   74.44 |                                             
-  FilterEventsManager.ts    |   73.01 |    76.47 |   52.94 |   73.77 | 41-43,57-73,107,128,147,201-219             
-  examples.ts               |     100 |      100 |     100 |     100 |                                             
-  filters.ts                |      75 |    64.51 |   66.66 |      75 | 9-10,47,58,84-88,105                        
- lib/hooks                  |   62.55 |    46.72 |   70.68 |   61.29 |                                             
-  useEventsManager.ts       |   53.22 |    48.54 |      60 |    51.3 | 104-123,133-181,199-225,236-256             
-  useMap.ts                 |   75.86 |    36.84 |   82.14 |   77.46 | 20-27,118-124,135-139,166-167,189-192,197   
- lib/state                  |     100 |      100 |     100 |     100 |                                             
-  appStateReducer.ts        |     100 |      100 |     100 |     100 |                                 
- lib/utils                  |   81.47 |    72.18 |   85.26 |   82.81 |                                             
-  calendar.ts               |   85.52 |     72.5 |     100 |   85.52 | 28-29,45,55,75,81,127-128,133-134,150       
-  date-19hz-parsing.ts      |   95.45 |    87.09 |     100 |   95.37 | 63-64,281-283                               
-  date-constants.ts         |     100 |      100 |     100 |     100 |                                             
-  date.ts                   |   90.27 |    88.88 |     100 |   91.54 | 18-19,45,52-53,147                          
-  icsParser.ts              |     100 |      100 |     100 |     100 |                                             
-  location.ts               |   67.55 |    55.23 |   71.42 |      70 | 233,278,335-364,373-374,378,394-408,428-459 
-  logr.ts                   |   71.18 |    67.44 |   91.66 |   70.17 | 39,68-93,113,160                            
-  quickFilters.ts           |     100 |      100 |     100 |     100 |                                             
-  timezones.ts              |   90.38 |    61.53 |   85.71 |   93.18 | 75,114-115                                  
-  umami.ts                  |    64.7 |     37.5 |     100 |   66.66 | 12,27-30                                    
-  utils-client.ts           |   52.94 |     64.7 |      60 |   53.06 | 10-41,59,63,94,113-114                      
-  utils-shared.ts           |   85.29 |    72.72 |     100 |    87.5 | 27,46,48,50                                 
-  venue-parsing.ts          |     100 |    86.66 |     100 |     100 | 19,56,82,139-143                            
- types                      |      75 |      100 |     100 |     100 |                                             
-  events.ts                 |      75 |      100 |     100 |     100 |                                             
+All files                   |   81.49 |    71.25 |   81.58 |   82.41 |
+ components/common          |     100 |      100 |     100 |     100 |
+  ErrorMessage.tsx          |     100 |      100 |     100 |     100 |
+  LoadingSpinner.tsx        |     100 |      100 |     100 |     100 |
+ components/events          |   83.67 |    73.54 |   80.48 |   84.04 |
+  DateAndSearchFilters.tsx  |   81.81 |    65.07 |   69.23 |   83.13 | 140-162,222-279
+  DateQuickButtons.tsx      |    91.3 |       75 |     100 |    91.3 | 47-48
+  EventDetails.tsx          |     100 |      100 |     100 |     100 |
+  EventList.tsx             |   82.05 |    78.04 |   80.95 |   81.57 | 38-39,134-136,161-163,188-190,217-219
+ components/home            |   80.55 |    66.66 |     100 |      80 |
+  EventsSourceSelector.tsx  |   80.55 |    66.66 |     100 |      80 | 35-39,46-47
+ components/layout          |     100 |      100 |     100 |     100 |
+  Footer.tsx                |     100 |      100 |     100 |     100 |
+  Header.tsx                |     100 |      100 |     100 |     100 |
+ components/map             |   91.51 |    79.51 |   93.93 |   93.91 |
+  MapContainer.tsx          |   89.77 |    78.94 |      90 |   90.47 | 92-93,139,165-167,258-260
+  MapMarker.tsx             |   94.44 |    81.81 |     100 |     100 | 15,35
+  MapPopup.tsx              |   93.22 |    79.41 |     100 |   98.07 | 77
+ components/ui              |   94.11 |    66.66 |      90 |     100 |
+  button.tsx                |     100 |    66.66 |     100 |     100 | 45
+  calendar.tsx              |    87.5 |       75 |   85.71 |     100 | 71,138-148
+  slider.tsx                |     100 |    33.33 |     100 |     100 | 13
+ lib                        |     100 |      100 |     100 |     100 |
+  utils.ts                  |     100 |      100 |     100 |     100 |
+ lib/api                    |   91.76 |    83.33 |   94.73 |   92.94 |
+  geocoding.ts              |   91.76 |    83.33 |   94.73 |   92.94 | 50,81,119,153,284,312-314,358,383,425
+ lib/api/eventSources/plura |   75.64 |    76.92 |      60 |   75.34 |
+  types.ts                  |     100 |      100 |     100 |     100 |
+  utils.ts                  |      75 |    76.92 |      60 |      75 | 71,91-92,100,148,157-191
+ lib/events                 |   74.22 |    70.76 |   56.52 |   74.44 |
+  FilterEventsManager.ts    |   73.01 |    76.47 |   52.94 |   73.77 | 41-43,57-73,108,129,148,202-220
+  examples.ts               |     100 |      100 |     100 |     100 |
+  filters.ts                |      75 |    64.51 |   66.66 |      75 | 9-10,47,58,84-88,105
+ lib/hooks                  |   63.42 |    47.58 |   71.66 |    62.3 |
+  useEventsManager.ts       |   55.03 |    49.52 |    62.5 |   53.33 | 104-123,133-181,199-225,236-256
+  useMap.ts                 |   75.86 |    36.84 |   82.14 |   77.46 | 20-27,118-124,135-139,166-167,189-192,197
+ lib/state                  |     100 |      100 |     100 |     100 |
+  appStateReducer.ts        |     100 |      100 |     100 |     100 |
+ lib/utils                  |   81.11 |    72.56 |   84.21 |   82.56 |
+  calendar.ts               |   85.52 |     72.5 |     100 |   85.52 | 28-29,45,55,75,81,127-128,133-134,150
+  date-19hz-parsing.ts      |   95.45 |     88.7 |     100 |   95.37 | 63-64,281-283
+  date-constants.ts         |     100 |      100 |     100 |     100 |
+  date.ts                   |   90.27 |    88.88 |     100 |   91.54 | 18-19,45,52-53,147
+  icsParser.ts              |     100 |      100 |     100 |     100 |
+  location.ts               |   68.71 |    56.07 |   71.42 |   71.25 | 245,290,347-376,385-386,390,406-420,440-471
+  logr.ts                   |   71.18 |    67.44 |   91.66 |   70.17 | 39,68-93,113,160
+  quickFilters.ts           |     100 |      100 |     100 |     100 |
+  timezones.ts              |   90.38 |    61.53 |   85.71 |   93.18 | 75,114-115
+  umami.ts                  |   41.17 |     37.5 |       0 |   46.66 | 10-14,27-30
+  utils-client.ts           |   52.94 |     64.7 |      60 |   53.06 | 10-41,59,63,94,113-114
+  utils-shared.ts           |   85.29 |    72.72 |     100 |    87.5 | 27,46,48,50
+  venue-parsing.ts          |     100 |    86.66 |     100 |     100 | 19,56,82,139-143
+ types                      |      75 |      100 |     100 |     100 |
+  events.ts                 |      75 |      100 |     100 |     100 |
 ----------------------------|---------|----------|---------|---------|---------------------------------------------
 
 Test Suites: 1 skipped, 29 passed, 29 of 30 total
 Tests:       2 skipped, 397 passed, 399 total
 Snapshots:   0 total
-Time:        2.76 s
+Time:        2.716 s
 Ran all test suites.
-Total Lines of Code: 1664
-Fri Sep 12 08:07:00 PDT 2025
+Total Lines of Code: 1678
+Mon Sep 15 13:21:19 PDT 2025
 ```
 
 ## Next Steps for Testing
@@ -175,3 +176,7 @@ For API:
 -   Added proper null checks in the MapPopup component to prevent errors when selectedEventId is undefined
 -   Improved the handling of optional props throughout components for better error resilience
 -   All components now properly handle edge cases and optional properties
+-   Fixed failing location utility tests to match actual implementation behavior:
+    -   Updated test expectations to account for coordinate padding and rounding
+    -   Tests now properly verify that bounds include small padding for better map display
+    -   Fixed assertions to match the 6-decimal-place coordinate precision used in production

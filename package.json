@@ -1,6 +1,6 @@
 {
     "name": "calendar-map-filter",
-    "version": "0.2.16",
+    "version": "0.2.17",
     "private": true,
     "scripts": {
         "dev": "next dev",
@@ -8,7 +8,7 @@
         "start": "next start",
         "lint": "next lint",
         "cache": "node --experimental-transform-types src/scripts/upstash-redis.ts",
-        "test": "jest --coverage && node src/scripts/show-total-loc.mjs"
+        "test": "jest --coverage && node src/scripts/show-total-loc.mjs && date && echo"
     },
     "dependencies": {
         "@math.gl/web-mercator": "^4.1.0",

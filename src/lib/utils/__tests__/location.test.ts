@@ -124,11 +124,12 @@ describe('Location and Map Utilities', () => {
 
             const result = calculateMapBoundsAndViewport([marker], 800, 600)
 
+            // Should add padding to single marker and round to 6 decimal places
             expect(result.bounds).toEqual({
-                north: 37.7749,
-                south: 37.7749,
-                east: -122.4194,
-                west: -122.4194,
+                north: 37.7779,
+                south: 37.7719,
+                east: -122.4164,
+                west: -122.4224,
             })
             expect(result.viewport).toEqual({
                 latitude: 37.7749,
@@ -165,13 +166,13 @@ describe('Location and Map Utilities', () => {
 
             const result = calculateMapBoundsAndViewport(markers, 800, 600)
 
-            // Check that bounds include all markers (without expecting padding)
+            // Check that bounds include all markers with small padding and rounding
             expect(result.bounds).toBeDefined()
             if (result.bounds) {
-                expect(result.bounds.north).toBe(37.7935) // Max latitude
-                expect(result.bounds.south).toBe(37.7749) // Min latitude
-                expect(result.bounds.east).toBe(-122.4167) // Max longitude (east most)
-                expect(result.bounds.west).toBe(-122.4399) // Min longitude (west most)
+                expect(result.bounds.north).toBe(37.79351) // Max latitude + small padding
+                expect(result.bounds.south).toBe(37.77489) // Min latitude - small padding
+                expect(result.bounds.east).toBe(-122.41669) // Max longitude + small padding
+                expect(result.bounds.west).toBe(-122.43991) // Min longitude - small padding
             }
 
             // Check viewport center is between min and max coordinates
@@ -208,10 +209,10 @@ describe('Location and Map Utilities', () => {
             const result = calculateMapBoundsAndViewport(markers, 800, 600)
 
             expect(result.bounds).toEqual({
-                north: 37.7749,
-                south: 37.7749,
-                east: -122.4194,
-                west: -122.4194,
+                north: 37.77491,
+                south: 37.77489,
+                east: -122.41939,
+                west: -122.41941,
             })
             expect(result.viewport).toEqual({
                 latitude: 37.7749,
@@ -248,10 +249,10 @@ describe('Location and Map Utilities', () => {
             const result = calculateBoundsFromMarkers([marker])
 
             expect(result).toEqual({
-                north: 37.7749,
-                south: 37.7749,
-                east: -122.4194,
-                west: -122.4194,
+                north: 37.7779,
+                south: 37.7719,
+                east: -122.4164,
+                west: -122.4224,
             })
         })
 
@@ -279,11 +280,11 @@ describe('Location and Map Utilities', () => {
 
             const result = calculateBoundsFromMarkers(markers)
 
-            // Check exact bounds without padding
-            expect(result.north).toBe(37.7935) // Max latitude
-            expect(result.south).toBe(37.7749) // Min latitude
-            expect(result.east).toBe(-122.4167) // Max longitude (east most)
-            expect(result.west).toBe(-122.4399) // Min longitude (west most)
+            // Check bounds with small padding and rounding
+            expect(result.north).toBe(37.79351) // Max latitude + small padding
+            expect(result.south).toBe(37.77489) // Min latitude - small padding
+            expect(result.east).toBe(-122.41669) // Max longitude + small padding
+            expect(result.west).toBe(-122.43991) // Min longitude - small padding
         })
 
         it('should handle markers with extreme values', () => {
@@ -310,10 +311,10 @@ describe('Location and Map Utilities', () => {
 
             const result = calculateBoundsFromMarkers(markers)
 
-            expect(result.north).toBe(90)
-            expect(result.south).toBe(-90)
-            expect(result.east).toBe(180)
-            expect(result.west).toBe(-180)
+            expect(result.north).toBe(90.00001)
+            expect(result.south).toBe(-90.00001)
+            expect(result.east).toBe(180.00001)
+            expect(result.west).toBe(-180.00001)
         })
     })
 

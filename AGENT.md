@@ -11,14 +11,17 @@ Also follow the user level guidelines in ~/.config/AGENT.md
 Review the latest git commit. Ensure the following are true — fix if not - and summarize what you did.
 
 1. package.json:
+
     - Version is incremented appropriately (patch/minor/major)
 
 2. CHANGELOG.md:
+
     - Entry exists for this commit
     - Describes all relevant changes accurately
     - Marks any breaking changes
 
 3. docs/adr/:
+
     - If the commit includes a significant refactor or architectural change:
         - Create or update an ADR that reflects the **final state and rationale** of the change
         - Rewrite the ADR as a clean snapshot (do not append commentary)
@@ -28,13 +31,16 @@ Review the latest git commit. Ensure the following are true — fix if not - and
         - Follow `docs/adr/README.md` guidelines
 
 4. File reference docs:
+
     - If any files were added, removed, or renamed:
         - Update all affected documentation (e.g. tests.md, Implementation.md)
 
-5. tests.md:
-    - Test coverage block is up to date
-    - Timestamp from `npm test && date` is newer than any file in this commit
-    - If not, re-run tests and update the section
+5. docs/tests.md:
+
+    - If timestamp from `npm test` section in tests.md is newer than any file's last modified timestamp in this commit, done. Go to 6.
+    - Run `npm test`. If any tests are failing, attempt to fix.
+    - Copy appropriate output to tests.md, ensuring the formatted code block in tests.md matches the EXACT output 
+    format and order from `npm test` - do not rearrange, reorder, or reorganize any lines.
 
 6. Remaining documentation:
     - Review all other `.md` files for accuracy and relevance
@@ -42,7 +48,6 @@ Review the latest git commit. Ensure the following are true — fix if not - and
     - If unrelated but clearly improvable, suggest improvements with reasoning (do not modify yet)
 
 Do not commit or push until all items are verified.
-
 
 # General Project Preferences
 

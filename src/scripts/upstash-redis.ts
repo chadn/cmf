@@ -15,7 +15,7 @@ config({ path: resolve(process.cwd(), '../../.env.local') })
 const ME = 'node --experimental-transform-types upstash-redis.ts'
 const HELP_MESSAGE = `
 Available commands:
-get-keys <pattern>      - Output first 10 keys matching pattern (use '*' for all keys). If less than 10 keys, includes TTL and size.
+get-keys <pattern>      - Output first 10 keys matching pattern (use '*' for all keys). If less than 10 keys, includes TTL, size, and value
 get-keys-all <pattern>  - Output all keys matching pattern (use '*' for all keys). Good to redirect to a file.
 get-key-count <pattern> - Output count of keys matching pattern
 get-value <key>         - Output value for a specific key
@@ -29,7 +29,7 @@ ${ME} get-key-count 'plura:*'
 ${ME} get-keys 'plura:city:'
 ${ME} get-keys-all  > keys.txt
 ${ME} delete-keys 'plura:city:*'
-${ME} fix-location example 
+${ME} fix-location example  # outputs detailed example 
 ${ME} fix-location 'location:Asiento' 'location:Asiento,sf,ca' 
   Note you create proper location keys using geocode cmd:
   curl 'https://cmf-chad.vercel.app/api/geocode?a=Asiento,sf,ca'
@@ -137,6 +137,15 @@ Value for key location:Pleasant Hill City Hall
   "status": "resolved"
 }
 
+SUMMARY
+-------
+1. Hover over "View Original Event" to see location that needs fix. Ex: "location:Asiento"
+2. Decide string that will yield correct location. Ex: "Asiento,SF,CA"
+3. curl 'https://cmf-chad.vercel.app/api/geocode?a=Asiento,SF,CA'
+4. ${ME} fix-location 'location:Asiento' 'location:Asiento,SF,CA'
+
+Optionally check redis cache for existing similar keys
+${ME} get-keys 'location:Asient*'
 
 `
 
@@ -203,12 +212,12 @@ async function getValue(key: string): Promise<any> {
 // Delete keys matching pattern
 async function deleteKeys(pattern: string): Promise<number> {
     const client = getRedisClient()
-    const { keys, info } = await getKeysWithInfo(pattern)
+    const { keys, info, vals } = await getKeysWithInfo(pattern)
     if (keys.length === 0) {
         console.log('No keys found matching pattern:', pattern)
         return 0
     }
-    console.log(`Found ${keys.length} keys matching pattern: '${pattern}'\nFirst 10:`, info)
+    console.log(`Found ${keys.length} keys matching pattern: '${pattern}'\nFirst 10:`, info,vals)
 
     if (await confirm('Are you sure you want to delete these keys?')) {
         const pipeline = client.pipeline()
@@ -285,16 +294,23 @@ async function getKeysWithInfo(
 ): Promise<{
     keys: string[]
     info?: Record<string, { ttl: number; size: number; ttlStr: string }> // only on first 10 keys if showAll is false
+    vals?: string[] // only on first 10 keys if showAll is false
 }> {
     const allKeys = await getKeys(pattern)
     if (showAll) {
         return { keys: allKeys }
     }
     const info: Record<string, { ttl: number; size: number; ttlStr: string }> = {}
+    const vals: string[] = []
     for (const key of allKeys.slice(0, 10)) {
         info[key] = await getKeyInfo(key)
     }
-    return { keys: allKeys, info }
+    // Also include value as one-line string
+    for (const key of allKeys.slice(0, 10)) {
+        const value = await getValue(key)
+        vals.push(JSON.stringify(value))
+    }
+    return { keys: allKeys, info, vals }
 }
 
 // Fix location by copying k2's value to k1 while preserving k1's original_location
@@ -342,13 +358,13 @@ async function main() {
                 if (!pattern.includes('*')) {
                     pattern = `${pattern}*`
                 }
-                const { keys, info } = await getKeysWithInfo(pattern, command === 'get-keys-all')
+                const { keys, info, vals } = await getKeysWithInfo(pattern, command === 'get-keys-all')
                 if (command === 'get-keys-all') {
                     // support json option in the future: process.stdout.write(JSON.stringify(keys, null, 2))
                     process.stdout.write(keys.join('\n'))
                 } else {
                     console.log(`Found ${keys.length} keys matching pattern: '${pattern}'\nFirst 10:`, info)
-                    console.log(`${ME} get-value '${keys[0]}'`)
+                    console.log(`Values:`, vals)
                 }
                 break
             }

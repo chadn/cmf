@@ -16,24 +16,21 @@ Done items in [CHANGELOG](../CHANGELOG.md)
 1. Have a map search box - Add ability for user to type location in box, then map jumps to it. like https://thetide.guide/, Use https://maps.googleapis.com/maps/api/place/js/AutocompletionService.GetPredictionsJson
 1. Use CMF for multi day festivals - sliders can be hour instead of day, quick filters can be next 3 hrs, tonight, etc. Can support custom maps and custom event sources
 1. switch url params lat&lon to ll (or llz), like https://www.google.com/maps/d/u/0/viewer?mid=1NiJprGgrxLL6FBEV0Cg2NtkHlLhc-kA&ll=36.62469946088837%2C-119.44145496585381&z=6
-1. Since URL params are always avail via "Copy URL to clipboard", make llz optional (default no llz). Under "Timezone used for Times" can have checkbox for "Include llz updates in URL".
 1. compress json before writing to / after reading from redis. Consider [MessagePack](https://msgpack.org/index.html), [Protobuf](https://developers.google.com/protocol-buffers), [Arvo](https://avro.apache.org/), [BSON](https://en.wikipedia.org/wiki/BSON)
 1. batchGeocodeLocations() calls getCachedLocation() for each location. Instead, it should call a new function, getCachedLocations(), with many locations.
 1. Plura event end time is hardcoded to 1 hr after start, since only start time is shown on city pages. TODO: scrape event page itself for correct end time, and description (which is empty on city page)
 1. Update AGENT.md with CI and related stuff
-1. When page loads to only show events for today, the map should automatically resize after applying filter, zoom in as much as possible but still have all markers shown.  This may get tricky, since if you remove the only current filter , "filtered by date" chip, then not all events may on map, so "filtered by map" chip would have to appear.  Maybe a better idea is to have a button or link that zooms map in to show only events in event list.
+1. When page loads to only show events for today, the map should automatically resize after applying filter, zoom in as much as possible but still have all markers shown. This may get tricky, since if you remove the only current filter , "filtered by date" chip, then not all events may on map, so "filtered by map" chip would have to appear. Maybe a better idea is to have a button or link that zooms map in to show only events in event list.
 1. Enable parsing and showing plura's ever evolving site categories, similar to 19hz:DC. So plura:sf-bay-area-polyamory should load https://heyplura.com/sf-bay-area-polyamory
 1. add support for fsd+fed
-1. add 2 checkboxes after "Share - Copy URL.." and before "Timezone...": preferQz: "Prefer qf over fsd & fed" and llzInUrl: "Add llz in URL". on page load, both checkbox are by default unchecked
-1. Chips should always appear in this order: date - map - search
-1. replace lat=xx&lon=yy&z=zz with llz=lat,lon,zz
-1. Update Share copy url 
-  - if qf, and "prefer qf..." checkbox is checked, put qf in URL
-  - if qf, and "prefer qf..." checkbox is unchecked, replace qf with corresponding fsd=YYYY-MM-DD&fed=YYYY-MM-DD  
-  - if no qf, and if any date filters are active, then add fsd+fed
-  - add sq if search term is present. 
-  - add llz only if user has "Add llz in URL" checkbox checked, filters or not.
-
+    - Add checkbox preferQf: "Prefer qf over fsd & fed"
+1. replace lat=xx&lon=yy&z=zz with llz=xx,yy,zz
+1. Update Share copy url
+    - if qf, and "prefer qf..." checkbox is checked, put qf in URL
+    - if qf, and "prefer qf..." checkbox is unchecked, replace qf with corresponding fsd=YYYY-MM-DD&fed=YYYY-MM-DD
+    - if no qf, and if any date filters are active, then add fsd+fed
+    - add sq if search term is present.
+    - add llz only if user has "Add llz in URL" checkbox checked, filters or not.
 
 (thanks https://euangoddard.github.io/clipboard2markdown/)
 
@@ -46,9 +43,8 @@ Working on fixing these:
 1. Feature: if start and end time are same, code assumes timing is not accurate, and says "See event for time" instead of showing time
 1. chrome on android - Sometimes top of app (CMF, title) goes up off screen when using map to select events, triggering scrollTo, which may trigger browser to scroll up.
 1. 19hz has recurring events that also sometimes appear in non-recurring event section, which creates almost duplicate entries (duplicates can be identified and prevented). Consider ways to remove almost duplicates - original event source, identitcal title, etc.
-1. Logging bug if multiple event sources, could be more than just logs. Below is sourceType 19hz and gc (google calendar), but only gc's id is logged.  TODO: review how multiple event sources are resolved - create a new function that will turn a given es string into an array of type:id's using examples.ts. Also fix this log:
-[INFO][USE_EVTS_MGR] ✅ Multiple sources events data fetched: "Multiple Event Sources" {sourceId: 'BayArea,aabe6c219ee2af5b791ea6719e04a92990f9ccd1e68a3ff0d89bacd153a0b36d@group.calendar.google.com', sourceType: '19hz', totalEvents: 703, unknownLocations: 9, numSources: 2}
-
+1. Logging bug if multiple event sources, could be more than just logs. Below is sourceType 19hz and gc (google calendar), but only gc's id is logged. TODO: review how multiple event sources are resolved - create a new function that will turn a given es string into an array of type:id's using examples.ts. Also fix this log:
+   [INFO][USE_EVTS_MGR] ✅ Multiple sources events data fetched: "Multiple Event Sources" {sourceId: 'BayArea,aabe6c219ee2af5b791ea6719e04a92990f9ccd1e68a3ff0d89bacd153a0b36d@group.calendar.google.com', sourceType: '19hz', totalEvents: 703, unknownLocations: 9, numSources: 2}
 
 ## Features
 

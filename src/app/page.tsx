@@ -13,13 +13,7 @@ import { MapBounds } from '@/types/map'
 import { FilteredEvents, EventsSource } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
 import ActiveFilters from '@/components/events/ActiveFilters'
-import {
-    llzToViewport,
-    parseAsEventsSource,
-    parseAsZoom,
-    parseAsLatLon,
-    checkForZipCode,
-} from '@/lib/utils/location'
+import { llzToViewport, parseAsEventsSource, parseAsZoom, parseAsLatLon, checkForZipCode } from '@/lib/utils/location'
 import { parseAsCmfDate, parseAsDateQuickFilter } from '@/lib/utils/date-nuqs'
 import { useQueryState, useQueryStates } from 'nuqs'
 import ErrorMessage from '@/components/common/ErrorMessage'
@@ -36,8 +30,6 @@ declare global {
         cmf_evts_sources: Array<EventsSource> | null
     }
 }
-
-// Custom hook to detect if screen is desktop (lg: 1024px and up)
 
 function HomeContent() {
     // URL query state parameters - described in CmfUrlParams
@@ -298,7 +290,7 @@ function HomeContent() {
         if (viewportUrl.z !== null) {
             logr.info('app', `URL parsing step 5: Setting viewport from llz coordinates (z=${viewportUrl.z})`)
             setViewport(llzToViewport(viewportUrl.lat, viewportUrl.lon, viewportUrl.z))
-            // TODO: Set llz checkbox state
+            setLlzChecked(true)
             dispatch(appActions.viewportSet())
             return
         }
@@ -345,8 +337,9 @@ function HomeContent() {
             })
             logr.info('app', `Updated llz URL parameters, no selectedEventIdUrl and llzChecked, zoom=${viewport.zoom}`)
         } else {
-            logr.info('app', `Updated no URL parameters, llzChecked=${llzChecked}`)
-
+            // Clear llz URL parameters when checkbox is unchecked
+            setViewportUrl({ lat: null, lon: null, z: null })
+            logr.info('app', `Cleared llz URL parameters, llzChecked=${llzChecked}`)
         }
     }, [viewport, appState, selectedEventIdUrl, llzChecked, setViewportUrl])
 
@@ -376,6 +369,8 @@ function HomeContent() {
                             eventCount={{ shown: evts.visibleEvents.length, total: evts.allEvents.length }}
                             eventSources={eventSources}
                             onShowAllDomainFltrdEvnts={handleShowAllDomainFltrdEvnts}
+                            llzChecked={llzChecked}
+                            onLlzCheckedChange={setLlzChecked}
                             ref={eventsSidebarRef}
                             className="h-full"
                         >

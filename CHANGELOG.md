@@ -5,6 +5,17 @@ All notable changes to Calendar Map Filter (CMF) will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.17] - 2025-09-15
+
+### Added
+
+-   "Add llz in URL" checkbox in CMF popover menu to control latitude/longitude/zoom URL parameters
+
+### Technical
+
+-   Change scripts/upstash-redis to make it easier to fix locations
+-   Minor tweaks to formatting, etc.
+
 ## [0.2.16] - 2025-09-12
 
 ### Added
