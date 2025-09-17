@@ -1,6 +1,6 @@
 import React from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
-import ErrorMessage from '../ErrorMessage'
+import ErrorMessage from '@/components/common/ErrorMessage'
 import '@testing-library/jest-dom'
 
 describe('ErrorMessage', () => {
@@ -11,21 +11,14 @@ describe('ErrorMessage', () => {
     })
 
     it('applies custom className', () => {
-        render(
-            <ErrorMessage
-                message="Test error message"
-                className="custom-class"
-            />
-        )
+        render(<ErrorMessage message="Test error message" className="custom-class" />)
         const container = screen.getByTestId('error-message-container')
         expect(container.classList.contains('custom-class')).toBe(true)
     })
 
     it('calls onRetry when retry button is clicked', () => {
         const mockRetry = jest.fn()
-        render(
-            <ErrorMessage message="Test error message" onRetry={mockRetry} />
-        )
+        render(<ErrorMessage message="Test error message" onRetry={mockRetry} />)
 
         const retryButton = screen.getByText('Try again')
         fireEvent.click(retryButton)

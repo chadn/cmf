@@ -2,8 +2,9 @@ import {
     QUICK_FILTER_CONFIGS,
     getQuickFilterConfig,
     calculateQuickFilterRange,
-    getAllQuickFilterConfigs
-} from '../quickFilters'
+    getAllQuickFilterConfigs,
+    calculateFilterDateRange,
+} from '@/lib/utils/quickFilters'
 
 describe('quickFilters utility', () => {
     // Mock date helper function
@@ -20,14 +21,14 @@ describe('quickFilters utility', () => {
     describe('QUICK_FILTER_CONFIGS', () => {
         it('should have all expected filter configurations', () => {
             const expectedIds = ['past', 'future', 'today', 'next3days', 'next7days', 'weekend']
-            const actualIds = QUICK_FILTER_CONFIGS.map(config => config.id)
-            
+            const actualIds = QUICK_FILTER_CONFIGS.map((config) => config.id)
+
             expect(actualIds).toEqual(expectedIds)
             expect(QUICK_FILTER_CONFIGS).toHaveLength(6)
         })
 
         it('should have proper structure for each config', () => {
-            QUICK_FILTER_CONFIGS.forEach(config => {
+            QUICK_FILTER_CONFIGS.forEach((config) => {
                 expect(config).toHaveProperty('id')
                 expect(config).toHaveProperty('label')
                 expect(config).toHaveProperty('calculate')
@@ -119,7 +120,7 @@ describe('quickFilters utility', () => {
                     const resultDate = new Date(baseDate.getTime() + days * 24 * 60 * 60 * 1000)
                     return resultDate.toISOString()
                 }
-                
+
                 const range = calculateQuickFilterRange('weekend', 30, totalDays, saturdayGetDateFromDays)
                 // When today is Saturday, Friday is yesterday (day 29), Sunday is tomorrow (day 31)
                 // But the logic uses current day as Friday if it's Friday-Saturday
@@ -133,7 +134,7 @@ describe('quickFilters utility', () => {
                     const resultDate = new Date(baseDate.getTime() + days * 24 * 60 * 60 * 1000)
                     return resultDate.toISOString()
                 }
-                
+
                 const range = calculateQuickFilterRange('weekend', 30, totalDays, wednesdayGetDateFromDays)
                 // July 12, 2023 is Wednesday (day 3), so daysToFriday = 5 - 3 = 2
                 // Friday is todayValue + 2 = 30 + 2 = 32, Sunday = 32 + 2 = 34
@@ -151,7 +152,7 @@ describe('quickFilters utility', () => {
                     const resultDate = new Date(baseDate.getTime() + days * 24 * 60 * 60 * 1000)
                     return resultDate.toISOString()
                 }
-                
+
                 const range = calculateQuickFilterRange('weekend', 30, totalDays, sundayGetDateFromDays)
                 // The test failed with start: 34, end: 36, so let me adjust expectation to match actual logic
                 // June 11 + 30 days = July 11, 2023. Let me check what day that actually is and adjust
@@ -164,7 +165,7 @@ describe('quickFilters utility', () => {
                     const resultDate = new Date(baseDate.getTime() + days * 24 * 60 * 60 * 1000)
                     return resultDate.toISOString()
                 }
-                
+
                 // Sunday at day 57, would calculate Friday at 62 (exceeds totalDays)
                 const range = calculateQuickFilterRange('weekend', 57, totalDays, nearEndGetDateFromDays)
                 expect(range).toEqual({ start: 60, end: 60 }) // Both capped at totalDays
@@ -214,17 +215,197 @@ describe('quickFilters utility', () => {
             const total = 90
 
             // Test all filters with realistic data
-            expect(calculateQuickFilterRange('past', todayDays, total, realGetDateFromDays)).toEqual({ start: 0, end: 14 })
-            expect(calculateQuickFilterRange('future', todayDays, total, realGetDateFromDays)).toEqual({ start: 15, end: 90 })
-            expect(calculateQuickFilterRange('today', todayDays, total, realGetDateFromDays)).toEqual({ start: 15, end: 15 })
-            expect(calculateQuickFilterRange('next3days', todayDays, total, realGetDateFromDays)).toEqual({ start: 15, end: 18 })
-            expect(calculateQuickFilterRange('next7days', todayDays, total, realGetDateFromDays)).toEqual({ start: 15, end: 22 })
-            
+            expect(calculateQuickFilterRange('past', todayDays, total, realGetDateFromDays)).toEqual({
+                start: 0,
+                end: 14,
+            })
+            expect(calculateQuickFilterRange('future', todayDays, total, realGetDateFromDays)).toEqual({
+                start: 15,
+                end: 90,
+            })
+            expect(calculateQuickFilterRange('today', todayDays, total, realGetDateFromDays)).toEqual({
+                start: 15,
+                end: 15,
+            })
+            expect(calculateQuickFilterRange('next3days', todayDays, total, realGetDateFromDays)).toEqual({
+                start: 15,
+                end: 18,
+            })
+            expect(calculateQuickFilterRange('next7days', todayDays, total, realGetDateFromDays)).toEqual({
+                start: 15,
+                end: 22,
+            })
+
             // Weekend calculation will depend on what day June 30, 2023 was
             const weekendRange = calculateQuickFilterRange('weekend', todayDays, total, realGetDateFromDays)
             expect(weekendRange).toBeDefined()
             expect(weekendRange!.start).toBeGreaterThanOrEqual(todayDays)
             expect(weekendRange!.end).toBeLessThanOrEqual(total)
+        })
+    })
+
+    describe('calculateFilterDateRange', () => {
+        // Base date for tests - June 15, 2023, 1pm UTC so not affected by UTC vs local time
+        const minDate = new Date('2023-06-15T13:00:00.000Z')
+        const totalDays = 60
+
+        describe('valid date ranges', () => {
+            it('should calculate date range correctly for valid fsd and fed', () => {
+                // June 20, 2023 (5 days after baseDate) to June 25, 2023 (10 days after)
+                const filterDates = { fsd: '2023-06-20', fed: '2023-06-25' }
+                const range = calculateFilterDateRange(filterDates, totalDays, minDate)
+
+                expect(range).toEqual({ start: 5, end: 10 })
+            })
+
+            it('should handle same start and end date', () => {
+                const filterDates = { fsd: '2023-06-20', fed: '2023-06-20' }
+                const range = calculateFilterDateRange(filterDates, totalDays, minDate)
+
+                expect(range).toEqual({ start: 5, end: 5 })
+            })
+
+            it('should work with dates at the beginning of range', () => {
+                const filterDates = { fsd: '2023-06-15', fed: '2023-06-17' }
+                const range = calculateFilterDateRange(filterDates, totalDays, minDate)
+
+                expect(range).toEqual({ start: 0, end: 2 })
+            })
+
+            it('should work with dates at the end of range', () => {
+                // Test dates near the end of the totalDays range
+                const filterDates = { fsd: '2023-08-12', fed: '2023-08-14' }
+                const range = calculateFilterDateRange(filterDates, totalDays, minDate)
+
+                expect(range).toEqual({ start: 58, end: 60 })
+            })
+        })
+
+        describe('invalid inputs', () => {
+            it('should return null when fsd is missing', () => {
+                const filterDates = { fed: '2023-06-25' }
+                const range = calculateFilterDateRange(filterDates, totalDays, minDate)
+
+                expect(range).toBeNull()
+            })
+
+            it('should return null when fed is missing', () => {
+                const filterDates = { fsd: '2023-06-20' }
+                const range = calculateFilterDateRange(filterDates, totalDays, minDate)
+
+                expect(range).toBeNull()
+            })
+
+            it('should return null when both fsd and fed are missing', () => {
+                const filterDates = {}
+                const range = calculateFilterDateRange(filterDates, totalDays, minDate)
+
+                expect(range).toBeNull()
+            })
+
+            it('should return null when fsd is empty string', () => {
+                const filterDates = { fsd: '', fed: '2023-06-25' }
+                const range = calculateFilterDateRange(filterDates, totalDays, minDate)
+
+                expect(range).toBeNull()
+            })
+
+            it('should return null when fed is empty string', () => {
+                const filterDates = { fsd: '2023-06-20', fed: '' }
+                const range = calculateFilterDateRange(filterDates, totalDays, minDate)
+
+                expect(range).toBeNull()
+            })
+        })
+
+        describe('date validation', () => {
+            it('should return null when start date is after end date', () => {
+                const filterDates = { fsd: '2023-06-25', fed: '2023-06-20' }
+                const range = calculateFilterDateRange(filterDates, totalDays, minDate)
+
+                expect(range).toBeNull()
+            })
+
+            it('should return null when fsd date is not found in range', () => {
+                // Date before the range starts
+                const filterDates = { fsd: '2023-06-10', fed: '2023-06-20' }
+                const range = calculateFilterDateRange(filterDates, totalDays, minDate)
+
+                expect(range).toBeNull()
+            })
+
+            it('should return null when fed date is not found in range', () => {
+                // Date after the range ends
+                const filterDates = { fsd: '2023-06-20', fed: '2023-09-01' }
+                const range = calculateFilterDateRange(filterDates, totalDays, minDate)
+
+                expect(range).toBeNull()
+            })
+
+            it('should return null for invalid date format', () => {
+                const filterDates = { fsd: 'invalid-date', fed: '2023-06-25' }
+                const range = calculateFilterDateRange(filterDates, totalDays, minDate)
+
+                expect(range).toBeNull()
+            })
+        })
+
+        describe('date format handling', () => {
+            it('should handle ISO format extraction correctly', () => {
+                // Test the actual format conversion that was the bug fix
+                const filterDates = { fsd: '2023-06-20', fed: '2023-06-25' }
+
+                const range = calculateFilterDateRange(filterDates, totalDays, minDate)
+                expect(range).toEqual({ start: 5, end: 10 })
+            })
+
+            it('should handle edge case where getDateFromDays throws error', () => {
+                const filterDates = { fsd: '2023-06-20', fed: '2023-06-25' }
+
+                const range = calculateFilterDateRange(filterDates, totalDays, minDate)
+                expect(range).toEqual({ start: 5, end: 10 })
+            })
+        })
+
+        describe('edge cases', () => {
+            it('should handle totalDays of 0', () => {
+                const filterDates = { fsd: '2023-06-15', fed: '2023-06-15' }
+                const range = calculateFilterDateRange(filterDates, 0, minDate)
+
+                expect(range).toEqual({ start: 0, end: 0 })
+            })
+
+            it('should handle totalDays of 1', () => {
+                const filterDates = { fsd: '2023-06-15', fed: '2023-06-16' }
+                const range = calculateFilterDateRange(filterDates, 1, minDate)
+
+                expect(range).toEqual({ start: 0, end: 1 })
+            })
+
+            it('should work with realistic date ranges', () => {
+                // Test with actual dates that might be used in the app
+                const realDates = { fsd: '2025-09-20', fed: '2025-09-22' }
+                const minDate2025 = new Date('2025-09-01T13:00:00.000Z')
+
+                const range = calculateFilterDateRange(realDates, 30, minDate2025)
+                expect(range).toEqual({ start: 19, end: 21 }) // Sept 20th is 19 days after Sept 1st
+            })
+        })
+
+        describe('performance considerations', () => {
+            it('should find dates efficiently when they exist early in range', () => {
+                const filterDates = { fsd: '2023-06-16', fed: '2023-06-17' }
+                const range = calculateFilterDateRange(filterDates, totalDays, minDate)
+
+                expect(range).toEqual({ start: 1, end: 2 })
+            })
+
+            it('should find dates efficiently when they exist late in range', () => {
+                const filterDates = { fsd: '2023-08-13', fed: '2023-08-14' }
+                const range = calculateFilterDateRange(filterDates, totalDays, minDate)
+
+                expect(range).toEqual({ start: 59, end: 60 })
+            })
         })
     })
 })

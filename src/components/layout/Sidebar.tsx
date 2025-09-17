@@ -1,46 +1,63 @@
 import React, { forwardRef, ReactNode, useMemo } from 'react'
+import Image from 'next/image'
 import { Card, CardContent } from '@/components/ui/card'
 import * as Popover from '@radix-ui/react-popover'
 import { Button } from '@/components/ui/button'
 import { X } from 'lucide-react'
-import packageJson from '../../../package.json'
+import packageJson from '@/../package.json'
 import { EventsSource } from '@/types/events'
 import { useQueryState } from 'nuqs'
-import { parseAsEventsSource } from '@/lib/utils/location'
+import { parseAsEventsSource } from '@/lib/utils/url-utils'
+import { buildShareUrl, ShareUrlParams } from '@/lib/utils/url-utils'
+import { timezoneInfo } from '@/lib/utils/date'
 
 interface SidebarProps {
     headerName?: string
     eventCount?: { shown: number; total: number }
     eventSources?: Array<EventsSource> | null
-    onShowAllDomainFltrdEvnts?: () => void
+    onResetMapToVisibleEvents?: () => void
     children: ReactNode
     className?: string
     llzChecked?: boolean
     onLlzCheckedChange?: (checked: boolean) => void
+    preferQfChecked?: boolean
+    onPreferQfCheckedChange?: (checked: boolean) => void
+    // Current URL state for building Share URL - matches ShareUrlParams
+    currentUrlState?: ShareUrlParams['currentUrlState']
 }
 
 const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(
-    ({ headerName, eventCount, eventSources, onShowAllDomainFltrdEvnts, children, llzChecked, onLlzCheckedChange }, ref) => {
+    (
+        {
+            headerName,
+            eventCount,
+            eventSources,
+            onResetMapToVisibleEvents,
+            children,
+            llzChecked,
+            onLlzCheckedChange,
+            preferQfChecked,
+            onPreferQfCheckedChange,
+            currentUrlState,
+        },
+        ref
+    ) => {
         // Only get current es parameter when eventSources exist (optimization)
         const [currentEventSourceId] = useQueryState('es', parseAsEventsSource)
 
         // Memoize timezone calculation (expensive operations)
-        const timezoneInfo = useMemo(() => {
-            if (typeof Intl === 'undefined') return { browserTz: 'Unknown', tzOffset: '' }
+        const timezoneInfoData = useMemo(() => timezoneInfo(), [])
 
-            const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone
-            const offsetMin = new Date().getTimezoneOffset()
-            const offsetHr = -offsetMin / 60
-            const sign = offsetHr >= 0 ? '+' : '-'
-            const tzOffset = ` UTC${sign}${Math.abs(offsetHr)}`
-
-            return { browserTz, tzOffset }
-        }, [])
-
-        // Share handler
         const handleShare = async () => {
             try {
-                await navigator.clipboard.writeText(window.location.href)
+                // Build custom Share URL based on preferences
+                const shareUrl = buildShareUrl({
+                    currentUrlState,
+                    preferQfChecked,
+                    llzChecked,
+                    baseUrl: window.location.href,
+                })
+                await navigator.clipboard.writeText(shareUrl)
                 alert('Link copied to clipboard!')
             } catch {
                 alert('Failed to copy link.')
@@ -74,7 +91,16 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(
                                         </button>
                                     </Popover.Close>
                                     <div className="p-4 space-y-3">
-                                        <div className="font-semibold text-lg mb-2">About</div>
+                                        <div className="font-semibold text-lg mb-2 flex items-center gap-2">
+                                            <Image
+                                                src="/images/blue-marker-green-map.png"
+                                                alt="Map icon"
+                                                className="w-8 h-8"
+                                                width={32}
+                                                height={32}
+                                            />
+                                            About
+                                        </div>
                                         <div className="text-sm text-gray-700 mb-2">
                                             CMF, Calendar Map Filter, lets you use a map to view and filter events. You
                                             can also filter by date or search term. <br />
@@ -115,16 +141,38 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(
                                                     onChange={(e) => onLlzCheckedChange(e.target.checked)}
                                                     className="text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                                                 />
-                                                <label htmlFor="llz-checkbox" className="text-sm cursor-pointer" title="Recommend no llz in URL to let map auto zoom to show visible events">
+                                                <label
+                                                    htmlFor="llz-checkbox"
+                                                    className="text-sm cursor-pointer"
+                                                    title="LLZ is Lat,Long,Zoom. Recommend no llz in URL to let map auto zoom to show visible events"
+                                                >
                                                     Add llz in URL
+                                                </label>
+                                            </div>
+                                        )}
+                                        {onPreferQfCheckedChange && (
+                                            <div className="flex items-center gap-2 mt-2">
+                                                <input
+                                                    type="checkbox"
+                                                    id="prefer-qf-checkbox"
+                                                    checked={preferQfChecked !== false}
+                                                    onChange={(e) => onPreferQfCheckedChange(e.target.checked)}
+                                                    className="text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                                />
+                                                <label
+                                                    htmlFor="prefer-qf-checkbox"
+                                                    className="text-sm cursor-pointer"
+                                                    title="When checked, uses quick filter (qf) in URL. When unchecked, uses specific start/end dates (fsd/fed) in URL - better if link will be used for more than a day."
+                                                >
+                                                    Prefer qf over fsd & fed
                                                 </label>
                                             </div>
                                         )}
                                         <div className="flex items-center gap-2 mt-2">
                                             <span className="text-sm">Timezone used for Times:</span>
                                             <span className="font-mono text-xs bg-gray-100 rounded px-2 py-0.5">
-                                                {timezoneInfo.browserTz}
-                                                {timezoneInfo.tzOffset}
+                                                {timezoneInfoData.browserTz}
+                                                {timezoneInfoData.tzOffset}
                                             </span>
                                         </div>
                                         <div className="flex items-center gap-2 mt-2">
@@ -143,6 +191,7 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(
                                 <Popover.Trigger asChild>
                                     <Button
                                         variant="ghost"
+                                        title="Click to view event source details"
                                         className="sidebar-headerName text-md sm:text-lg lg:text-2xl font-semibold text-blue-600 hover:text-blue-800 hover:bg-blue-200 px-2 py-1 mx-2 rounded"
                                     >
                                         {headerName}
@@ -172,19 +221,21 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(
                                                             {source.url && (
                                                                 <a
                                                                     href={source.url}
+                                                                    title="Click to open new window showing event source web page"
                                                                     target="_blank"
                                                                     rel="noopener noreferrer"
                                                                     className="text-blue-600 hover:underline text-sm"
                                                                 >
-                                                                    View Source &nbsp;
+                                                                    View Source
                                                                 </a>
-                                                            )}
+                                                            )}{' '}
                                                             Events:{' '}
                                                             <span className="font-medium">{source.totalCount}</span>{' '}
                                                             {currentEventSourceId !==
                                                                 `${source.prefix}:${source.id}` && (
                                                                 <a
                                                                     href={`/?es=${source.prefix}:${source.id}`}
+                                                                    title="Click to reload with just this event source"
                                                                     className="text-blue-600 hover:underline text-sm"
                                                                 >
                                                                     Show Only These
@@ -218,10 +269,10 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(
                         )}
                         {eventCount && (
                             <button
-                                title="Click to update map to show all visible events"
-                                onClick={onShowAllDomainFltrdEvnts}
+                                title="Click to center map on visible events"
+                                onClick={onResetMapToVisibleEvents}
                                 className="num-events-visible text-blue-600 hover:text-blue-800 hover:bg-blue-200 text-xs lg:text-sm xl:text-md 2xl:text-lg ml-2 px-1 py-0.5 rounded transition-colors cursor-pointer"
-                                disabled={!onShowAllDomainFltrdEvnts}
+                                disabled={!onResetMapToVisibleEvents}
                             >
                                 <span className="whitespace-nowrap">
                                     <span className="font-bold text-sm lg:text-md xl:text-lg 2xl:text-xl">

@@ -1,7 +1,7 @@
 import React from 'react'
 import { render, screen } from '@testing-library/react'
 import '@testing-library/jest-dom'
-import MapMarker from '../MapMarker'
+import MapMarker from '@/components/map/MapMarker'
 
 describe('MapMarker', () => {
     it('renders with count of 1', () => {

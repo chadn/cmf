@@ -1,11 +1,12 @@
 'use client'
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { MapViewport, MapBounds, MapMarker, MapState } from '@/types/map'
-import { CmfEvent, FilteredEvents } from '@/types/events'
+import { CmfEvent, CmfEvents } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
-import { calculateMapBoundsAndViewport, generateMapMarkers } from '@/lib/utils/location'
-import { appActions, AppState, isReadyForViewportSetting, isReadyForInteraction } from '@/lib/state/appStateReducer'
-import { FilterEventsManager } from '../events/FilterEventsManager'
+import { calculateMapBoundsAndViewport, calculateViewportFromBounds, generateMapMarkers } from '@/lib/utils/location'
+import { AppState } from '@/lib/state/appStateReducer'
+import { FilterEventsManager } from '@/lib/events/FilterEventsManager'
+import { stringify } from '@/lib/utils/utils-shared'
 
 interface UseMapReturn {
     viewport: MapViewport
@@ -13,7 +14,7 @@ interface UseMapReturn {
     markers: MapMarker[]
     selectedMarkerId: string | null
     setSelectedMarkerId: (id: string | null) => void
-    resetMapToVisibleEvents: () => void
+    resetMapToVisibleEvents: (options?: { useBounds?: boolean; mapBounds?: MapBounds }) => void
 }
 
 export const genMarkerId = (event: CmfEvent): string => {
@@ -30,37 +31,35 @@ export const genMarkerId = (event: CmfEvent): string => {
 /**
  * Custom hook for managing map state and interactions
  * @param {AppState} appState - Current application state
- * @param {React.Dispatch<any>} dispatch - Dispatch function for updating app state
- * @param {FilteredEvents} props.evts - List of calendar events, usually filtered. Only events with locations are shown on the map.
- * @param {number} props.mapW - Width of the map in pixels, used for calculating map bounds
- * @param {number} props.mapH - Height of the map in pixels
+ * @param {CmfEvents} cmfEvents - core events object, contains allEvents and filtered visibleEvents
+ * @param {number} mapW - Width of the map in pixels, used for calculating map bounds
+ * @param {number} mapH - Height of the map in pixels
  * @param {Function} onBoundsChange - Callback to notify parent about bounds changes
  * @returns {UseMapReturn} - Map state and functions
  */
 export function useMap(
     appState: AppState,
-    dispatch: React.Dispatch<ReturnType<typeof appActions[keyof typeof appActions]>>,
-    evts: FilteredEvents,
-    fltrEvtMgr: FilterEventsManager,
+    cmfEvents: CmfEvents,
+    filtrEvtMgr: FilterEventsManager,
     mapW: number,
     mapH: number,
-    onBoundsChange?: (bounds: MapBounds) => void
+    onBoundsChange?: (bounds: MapBounds, fromUserInteraction?: boolean) => void
 ): UseMapReturn {
     // Flag to track internal updates to prevent loops
     const isInternalUpdate = useRef(false)
 
     // Memoize markers generation from events
-    const markersFromAllEvents = useMemo(() => generateMapMarkers(evts.allEvents), [evts.allEvents])
+    const markersFromAllEvents = useMemo(() => generateMapMarkers(cmfEvents.allEvents), [cmfEvents.allEvents])
 
     // TODO: delete these logr once this is stable
     useEffect(() => {
-        logr.info('umap', `${markersFromAllEvents.length} markersFromAllEvents from ${evts.allEvents.length} total events`)
-    }, [markersFromAllEvents, evts.allEvents.length])
-    
+        logr.info('umap', `${markersFromAllEvents.length} markers from ${cmfEvents.allEvents.length} all events`)
+    }, [markersFromAllEvents, cmfEvents.allEvents.length])
+
     // Combine all map state into a single state object
     const [mapState, setMapState] = useState<MapState>(() => {
         const { bounds, viewport } = calculateMapBoundsAndViewport(markersFromAllEvents, mapW, mapH)
-        logr.info('umap', 'setMapState', { viewport, bounds })
+        logr.info('umap', `setMapState from ${mapW},${mapH}: ${stringify(viewport)} ${stringify(bounds)}`)
 
         return {
             viewport,
@@ -70,12 +69,12 @@ export function useMap(
         }
     })
 
-    // Memoize filtered markers based on evts.visibleEvents
+    // Memoize filtered markers based on cmfEvents.visibleEvents
     const filteredMarkers = useMemo(() => {
-        if (!evts.visibleEvents) return []
+        if (!cmfEvents.visibleEvents) return []
 
         // Create a Set of event IDs that should be shown for efficient lookup
-        const shownEventIds = new Set(evts.visibleEvents.map((event) => event.id))
+        const shownEventIds = new Set(cmfEvents.visibleEvents.map((event) => event.id))
 
         // Filter markers to only include those with events in the shown set
         const filtered = markersFromAllEvents
@@ -89,19 +88,46 @@ export function useMap(
             .filter((marker) => marker.events.length > 0)
 
         // Log the filtering results for debugging
-        logr.info('umap', `filteredMarkers updated - ${filtered.length} of ${markersFromAllEvents.length} markers`
-            + ` showing, with ${evts.visibleEvents.length} of ${evts.allEvents.length} visible events`)
-
+        logr.info(
+            'umap',
+            `filteredMarkers updated - ${filtered.length} of ${markersFromAllEvents.length} ` +
+                ` markers showing, with ${cmfEvents.visibleEvents.length} of ${cmfEvents.allEvents.length} visible events`
+        )
         return filtered
-    }, [evts.visibleEvents, evts.allEvents.length, markersFromAllEvents])
+    }, [cmfEvents.visibleEvents, cmfEvents.allEvents.length, markersFromAllEvents])
 
     // Log when the hook initializes - only once
     useEffect(() => {
-        const vport = `lat=${mapState.viewport.latitude} lon=${mapState.viewport.longitude} zoom=${mapState.viewport.zoom}`
-        logr.info('umap', `uE: useMap hook initialized. ${evts.allEvents.length} evts, ${vport}`)
+        logr.info(
+            'umap',
+            `uE: useMap hook initialized. ${cmfEvents.allEvents.length} cmfEvents, ${stringify(mapState.viewport)}`
+        )
         // empty dependency array to run only once
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
+
+    // Respond to map dimension changes by recalculating viewport and bounds
+    // Uses current markers (not all markers) to preserve user's current view
+    // STATUS: BUGGY - disabling
+    useEffect(() => {
+        logr.info('umap', `uE: map dimensions changed to ${mapW}x${mapH} or ${mapState.markers.length} markers`)
+        if (mapH || mapW) return // temp disabling
+
+        const { bounds, viewport } = calculateMapBoundsAndViewport(mapState.markers, mapW, mapH)
+        logr.info(
+            'umap',
+            `uE: map dimensions changed to ${mapW}x${mapH}, recalculating viewport for ${mapState.markers.length} current markers`
+        )
+        setMapState((prev) => ({
+            ...prev,
+            viewport,
+            bounds,
+        }))
+        // Notify parent about bounds change if callback is provided
+        if (bounds && onBoundsChange) {
+            onBoundsChange(bounds, false) // false = not from user interaction
+        }
+    }, [mapW, mapH, onBoundsChange, mapState.markers])
 
     // Update markers when filtered markers change
     useEffect(() => {
@@ -115,7 +141,7 @@ export function useMap(
         }
 
         if (markersChanged) {
-            const el = evts.visibleEvents.length
+            const el = cmfEvents.visibleEvents.length
             const ol = mapState.markers.length
             logr.info('umap', `uE: markersChanged, ${filteredMarkers.length} markers, was ${ol}, from ${el} events`, {
                 oldMarkers: mapState.markers.map((m) => ({ id: m.id, count: m.events.length })),
@@ -142,7 +168,7 @@ export function useMap(
                 }))
             }
         }
-    }, [filteredMarkers, mapState.markers, evts.visibleEvents, setMapState])
+    }, [filteredMarkers, mapState.markers, cmfEvents.visibleEvents, setMapState])
 
     // Handle viewport changes from user interaction
     const setViewport = useCallback((newViewport: MapViewport) => {
@@ -157,53 +183,78 @@ export function useMap(
         }))
     }, [])
 
-
-    // Handle showing all events that pass search/date filters (clear map bounds only)
-    const resetMapToVisibleEvents = useCallback(() => {
-        // maybe add to isReady: isViewportSet(appState)
-        const isReady = isReadyForViewportSetting(appState) || isReadyForInteraction(appState)
-        if (!isReady) {
-            logr.info('umap', 'resetMapToVisibleEvents: Ignoring - not in ready state')
-            return
-        }
-
-        // Get domain-filtered visible events (what would be visible if no map bounds)
-        // calling getFilteredEvents() with no mapbounds param will not filter based on map bounds
-        const visibleEvents = fltrEvtMgr.getFilteredEvents().visibleEvents
-        const markersFromVisibleEvts = generateMapMarkers(visibleEvents);
-
-        // Calculate map bounds from domain-filtered visible events (ignore map bounds) and update viewport
-        if (markersFromVisibleEvts.length > 0) {
-            const { bounds, viewport } = calculateMapBoundsAndViewport(markersFromVisibleEvts, mapW, mapH)
-            logr.info('umap', `resetMapToVisibleEvents: updating viewport to show ${markersFromVisibleEvts.length}`
-                +` markers from ${visibleEvents.length} visible events`)
-            setMapState((prev) => ({
-                ...prev,
-                viewport,
-                bounds,
-                markers: markersFromVisibleEvts,
-            }))
-
-            // IMPORTANT: Notify parent component about the new bounds for filtering
-            if (bounds && onBoundsChange) {
-                onBoundsChange(bounds)
+    /**
+     *  resetMapToVisibleEvents goal is to update map so it's showing all visible events, which is sometimes 0.
+     *  It does this over several steps
+     *  1. Figures out the events that should be shown
+     *     1a. First filters based on current domain filters (date, search)
+     *     1b. If mapbounds is supplied, it uses that to filter events byMap
+     *     1c. If not supplied but useBounds==true, then use current bounds to filter byMap
+     *  2. Build set of markers from those events
+     *  3. Compute new bounds to focus on just those new markers.
+     *  4. If there are no markers, all events are filtered out
+     *     4a. If mapBounds was supplied, use that as new map bounds - shortcut to setMapState
+     *     4b. if no mapBounds was supplied, do nothing (should not be here)
+     *  This should not change any filters or markers, it only recalculates ideal map bounds.
+     *  @param options.mapBounds - custom map bounds to use for filtering, implies useBounds=true.
+     *  @param options.useBounds - If true and no mapBounds, use current map bounds for filtering. If false, reset map as if no filters.
+     */
+    const resetMapToVisibleEvents = useCallback(
+        (options?: { mapBounds?: MapBounds; useBounds?: boolean }) => {
+            // Allow resetMapToVisibleEvents to run as soon as events are loaded
+            // TODO: this logic should be moved out of here - it should be the responsibility of the caller
+            const isReady = appState !== 'starting-app' && appState !== 'fetching-events'
+            if (!isReady) {
+                logr.info('umap', 'resetMapToVisibleEvents: Ignoring - not in ready state')
+                return
             }
-        } else {
-            logr.info('umap', `resetMapToVisibleEvents: doing nothing to show 0 markers`)
-        }
-        // Dispatch viewport set action for proper state machine transition
-        // TODO: should dispatch happen even if markers.length === 0?  I think so.
-        if (isReadyForViewportSetting(appState)) {
-            dispatch(appActions.viewportSet())
-        }
-    }, [
-        appState,
-        fltrEvtMgr,
-        mapW, mapH,
-        setMapState,
-        onBoundsChange,
-        dispatch,
-    ])
+            const curBounds = options?.mapBounds ? options.mapBounds : options?.useBounds ? mapState.bounds : undefined
+            logr.info(
+                'umap',
+                `resetMapToVisibleEvents(${stringify(options)}) ${mapState.markers.length} markers, curBounds:${stringify(curBounds)}`
+            )
+
+            // Get domain-filtered visible events for current viewport
+            const curEvents = filtrEvtMgr.getCmfEvents(curBounds || undefined)
+            const markers = generateMapMarkers(curBounds ? curEvents.visibleEvents : curEvents.allEvents)
+
+            // Calculate map bounds from domain-filtered visible events (ignore map bounds) and update viewport
+            if (markers.length > 0) {
+                // calculate new bounds for the map
+                const { bounds, viewport } = calculateMapBoundsAndViewport(markers, mapW, mapH)
+                const log = curBounds
+                    ? curEvents.visibleEvents.length + ' visible'
+                    : curEvents.allEvents.length + ' all'
+                logr.info(
+                    'umap',
+                    `resetMapToVisibleEvents: showing ${markers.length} markers from ${log} events; bounds:`,
+                    bounds
+                )
+                setMapState((prev) => ({
+                    ...prev,
+                    viewport,
+                    bounds,
+                    markers,
+                }))
+
+                // IMPORTANT: Notify parent component about the new bounds for filtering
+                if (bounds && onBoundsChange) {
+                    onBoundsChange(bounds, true)
+                }
+            } else if (options?.mapBounds) {
+                // no markers, but mapBounds are defined, just reset map using provide use mapBounds to setMapState
+                const viewport = calculateViewportFromBounds(options.mapBounds, mapW, mapH)
+                setMapState((prev) => ({
+                    ...prev,
+                    viewport,
+                    bounds: options.mapBounds || null,
+                }))
+            } else {
+                logr.warn('umap', `resetMapToVisibleEvents: doing nothing to show 0 markers (should not be here)`)
+            }
+        },
+        [appState, filtrEvtMgr, mapW, mapH, mapState.bounds, mapState.markers.length, setMapState, onBoundsChange]
+    )
 
     // Log when selected marker changes
     useEffect(() => {

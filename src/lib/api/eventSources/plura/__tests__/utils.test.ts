@@ -5,8 +5,8 @@ import {
     convertUrlToCityName,
     improveLocation,
     parsePluraDateString,
-} from '../utils'
-import { PluraDomain } from '../types'
+} from '@/lib/api/eventSources/plura/utils'
+import { PluraDomain } from '@/lib/api/eventSources/plura/types'
 
 // Mock the logr module
 jest.mock('@/lib/utils/logr', () => ({

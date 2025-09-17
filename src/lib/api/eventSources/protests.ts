@@ -126,6 +126,7 @@ export class ProtestsEventsSource extends BaseEventSourceHandler {
         // Default to 30 days from now if no end date provided
         const endsOn =
             timeMax || format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), "yyyy-MM-dd'T'23:59:59.999'Z'")
+        // TODO: figure out what should do. no Z on end for local time string from format, Z implies UTC
 
         const apiUrl = 'https://events.pol-rev.com/api'
 

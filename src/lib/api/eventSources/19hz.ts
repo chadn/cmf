@@ -1,10 +1,11 @@
 import axios from 'axios'
 import * as cheerio from 'cheerio'
-import { CmfEvent, EventsSourceParams, EventsSourceResponse, EventsSource } from '@/types/events'
+import { CmfEvent, EventsSourceParams, EventsSourceResponse, EventsSource, DateRangeIso } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
 import { BaseEventSourceHandler, registerEventsSource } from './index'
 import { parse19hzDateRange } from '@/lib/utils/date-19hz-parsing'
 import { extractVenueAndCity } from '@/lib/utils/venue-parsing'
+import { applyDateFilter } from '@/lib/events/filters'
 
 interface ParsedEventRow {
     dateTime: string
@@ -59,6 +60,10 @@ export class NineteenHzEventsSource extends BaseEventSourceHandler {
             const cityCode = params.id || 'BayArea'
             const cityInfo = this.getCityInfo(cityCode)
             const url = this.buildEventListingUrl(cityCode)
+            const dateRange: DateRangeIso = {
+                startIso: params.timeMin || new Date().toISOString(),
+                endIso: params.timeMax || new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(), // 90 days from now
+            }
 
             logr.info('api-es-19hz', `Fetching events from ${cityInfo.name} (${url})`)
 
@@ -77,6 +82,10 @@ export class NineteenHzEventsSource extends BaseEventSourceHandler {
                     if (cmfEvent) {
                         // Ensure unique ID by adding suffix if needed
                         cmfEvent.id = this.ensureUniqueId(cmfEvent.id, events)
+                        if (dateRange && !applyDateFilter(cmfEvent, dateRange)) {
+                            logr.info('api-es-19hz', `Skipping event outside date range: ${cmfEvent.id}`)
+                            return
+                        }
                         events.push(cmfEvent)
                     }
                 }
@@ -195,7 +204,6 @@ export class NineteenHzEventsSource extends BaseEventSourceHandler {
 
         logr.info('api-es-19hz', `Built venue cache with ${this.venueCache.size} venues`)
     }
-
 
     /**
      * Parse date/time text into start and end dates

@@ -3,6 +3,7 @@
 import { useRef, useEffect, useState, useCallback } from 'react'
 import Map, { Marker, Popup, NavigationControl, ViewState, MapRef } from 'react-map-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
+import { env } from '@/lib/config/env'
 import { MapViewport, MapBounds, MapMarker } from '@/types/map'
 import { EventsSource } from '@/types/events'
 import MapMarkerComponent from './MapMarker'
@@ -10,6 +11,8 @@ import MapPopup from './MapPopup'
 import { logr } from '@/lib/utils/logr'
 import { roundMapBounds, viewstate2Viewport } from '@/lib/utils/location'
 import { useDebounce } from '@/lib/utils/utils-client'
+import { stringify } from '@/lib/utils/utils-shared'
+
 /**
  * MapContainer handles the display and interaction with the map
  * It manages markers, popups, viewport changes, and user interactions
@@ -55,11 +58,14 @@ const MapContainer: React.FC<MapContainerProps> = ({
         }
         // Only notify parent if dimensions actually changed
         if (mapWidthHeightRef.current.w !== newDimensions.w || mapWidthHeightRef.current.h !== newDimensions.h) {
-            logr.info('mapc', 'updateMapWidthHeight changed:', newDimensions)
+            logr.info(
+                'mapc',
+                `updateMapWidthHeight changed ${JSON.stringify(mapWidthHeightRef.current)} to ${JSON.stringify(newDimensions)}`
+            )
             mapWidthHeightRef.current = newDimensions
             onWidthHeightChange(newDimensions)
         } else {
-            logr.info('mapc', 'updateMapWidthHeight unchanged:', newDimensions)
+            logr.info('mapc', `updateMapWidthHeight unchanged: ${JSON.stringify(newDimensions)}`)
         }
         return newDimensions
     }, [onWidthHeightChange])
@@ -87,12 +93,12 @@ const MapContainer: React.FC<MapContainerProps> = ({
         return ret
     }, [mapRef])
 
-    // TODO: note possible side effects 
+    // TODO: note possible side effects
     const debouncedUpdateBounds = useDebounce(() => {
         const newBounds = getMapBounds()
         logr.info('mapc', 'Bounds updating after debounce', newBounds)
-        onBoundsChange(newBounds, true) // true = from user interaction
-    }, 200)
+        onBoundsChange(newBounds, true) // true = from user interaction (but not necessarily from user, like page load)
+    }, env.MAP_BOUNDS_CHANGE_UPDATE_DELAY)
 
     // Handle viewport change, Map onMove
     const handleViewportChange = useCallback(
@@ -101,8 +107,9 @@ const MapContainer: React.FC<MapContainerProps> = ({
             logr.info(
                 'mapc',
                 'uC: Map onMove: handleViewportChange: updateMapWidthHeight, onViewportChange, debouncedUpdateBounds',
-                vp
+                stringify(vp)
             )
+            // TODO: this function should debounce
             updateMapWidthHeight() // Update dimensions and notify parent if changed
             onViewportChange(vp)
             debouncedUpdateBounds()
@@ -111,6 +118,7 @@ const MapContainer: React.FC<MapContainerProps> = ({
     )
 
     // Handle Map onLoad
+    // TODO: do we need this ? need to say why it exists
     const handleMapLoad = useCallback(() => {
         logr.info('mapc', 'uC: Map onLoad: handleMapLoad')
         setTimeout(() => {
@@ -128,9 +136,8 @@ const MapContainer: React.FC<MapContainerProps> = ({
 
     // Log when viewport changes
     useEffect(() => {
-        const vport = `lat=${viewport.latitude} lon=${viewport.longitude} zoom=${viewport.zoom}`
-        logr.info('mapc', `uE: MapContainer updated viewport, now ${vport}`)
-    }, [viewport.latitude, viewport.longitude, viewport.zoom])
+        logr.info('mapc', `uE: MapContainer updated viewport, now ${stringify(viewport)}`)
+    }, [viewport, viewport.latitude, viewport.longitude, viewport.zoom])
 
     // Close popup when selected marker changes to null
     useEffect(() => {

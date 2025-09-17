@@ -1,4 +1,4 @@
-# ADR-0004: Viewport Parameter Pattern for Map Filtering  
+# ADR-0004: Viewport Parameter Pattern for Map Filtering
 
 ## Status
 
@@ -9,8 +9,9 @@ Accepted ✅ (2025-09-03, v0.2.9)
 Initial map filtering implementation caused "96 of 100 events" bug on page load instead of showing all events. The issue was circular updates between map viewport changes and event filtering.
 
 Problems:
+
 - Storing viewport bounds in filter state caused circular updates
-- No distinction between programmatic vs user-initiated map changes  
+- No distinction between programmatic vs user-initiated map changes
 - Independent chip counts were incorrect
 - "Show all events" vs "filter by viewport" modes were not distinguished
 
@@ -19,7 +20,7 @@ Problems:
 Implement viewport parameter pattern with explicit mode distinction:
 
 1. **FilterEventsManager** accepts `currentViewport` as parameter, never stores it
-2. **Page state** manages `isShowingAllEvents` flag and `currentViewportBounds` 
+2. **Page state** manages `isShowingAllEvents` flag and `currentViewportBounds`
 3. **Conditional viewport passing**: `currentViewport: isShowingAllEvents ? null : currentViewportBounds`
 4. **User interaction detection** via `fromUserInteraction` parameter
 
@@ -32,23 +33,27 @@ Implement viewport parameter pattern with explicit mode distinction:
 ## Consequences
 
 ### Positive
+
 - Eliminated circular update loops
-- Clear distinction between "show all" vs "viewport filtering" modes
+- Clear distinction between "show all" vs "map filtering" modes
 - Independent chip counts work correctly
 - Predictable data flow from user interactions
 
 ### Negative
+
 - Slightly more complex state management in page component
 - Additional `isShowingAllEvents` flag to manage
 - More parameters to pass between components
 
 ### Architecture Impact
-- Single-stage filtering model with domain filters (date, search, location type) 
-- Map viewport filtering applied independently for accurate chip counts
-- Clear separation between persistent domain filters and transient viewport filtering
+
+- Single-stage filtering model with domain filters (date, search, location type)
+- Map filtering applied independently for accurate chip counts
+- Clear separation between persistent domain filters and transient map filtering
 
 ### Affected Components
+
 - `src/lib/events/FilterEventsManager.ts` - Method signature changed
-- `src/app/page.tsx` - Added mode flag and bounds state  
+- `src/app/page.tsx` - Added mode flag and bounds state
 - `src/lib/hooks/useMap.ts` - Enhanced bounds change detection
 - `src/components/map/MapContainer.tsx` - User interaction detection

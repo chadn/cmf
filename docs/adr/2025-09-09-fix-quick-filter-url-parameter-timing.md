@@ -1,5 +1,22 @@
 # Fix Quick Filter URL Parameter Timing Issue
 
+## Table of Contents
+
+- [Status](#status)
+- [Context](#context)
+  - [The Problem](#the-problem)
+  - [Evidence](#evidence)
+- [Decision](#decision)
+- [Alternatives Considered](#alternatives-considered)
+  - [Option B: Modify DateQuickButtons to Work Earlier](#option-b-modify-datequickbuttons-to-work-earlier)
+  - [Option C: Add New State for Filter Application](#option-c-add-new-state-for-filter-application)
+  - [Option D: Force DateQuickButtons to Render in DOM](#option-d-force-datequickbuttons-to-render-in-dom)
+- [Consequences](#consequences)
+  - [Positive](#positive)
+  - [Negative](#negative)
+- [Validation](#validation)
+- [Implementation](#implementation)
+
 ## Status
 
 Accepted
@@ -58,46 +75,46 @@ both DateAndSearchFilters and DateQuickButtons.
 
 ### Option B: Modify DateQuickButtons to Work Earlier
 
--   Change DateQuickButtons to apply filters in `'map-init'` state instead of just `'main-state'`
--   **Rejected**: Component still might not exist, doesn't address root cause
+- Change DateQuickButtons to apply filters in `'map-init'` state instead of just `'main-state'`
+- **Rejected**: Component still might not exist, doesn't address root cause
 
 ### Option C: Add New State for Filter Application
 
--   Add new state `'apply-url-filters'` between events-init and map-init
--   **Rejected**: More complex, larger change, potential for new bugs
+- Add new state `'apply-url-filters'` between events-init and map-init
+- **Rejected**: More complex, larger change, potential for new bugs
 
 ### Option D: Force DateQuickButtons to Render in DOM
 
--   Modify Radix UI Popover implementation to always render DateQuickButtons in DOM but hidden with `display: none`
--   This would allow the useEffect in DateQuickButtons to run during initialization even when popover is closed
--   **Rejected**: While technically feasible, this approach feels less clean than moving the
-    logic to an always-rendered component. It also couples the solution to the specific popover
-    implementation and could have performance implications from rendering hidden components
-    unnecessarily.
+- Modify Radix UI Popover implementation to always render DateQuickButtons in DOM but hidden with `display: none`
+- This would allow the useEffect in DateQuickButtons to run during initialization even when popover is closed
+- **Rejected**: While technically feasible, this approach feels less clean than moving the
+  logic to an always-rendered component. It also couples the solution to the specific popover
+  implementation and could have performance implications from rendering hidden components
+  unnecessarily.
 
 ## Consequences
 
 ### Positive
 
--   Quick filter URLs work correctly on page load
--   Better separation of concerns: URL handling vs manual interactions
--   No breaking changes to existing functionality
+- Quick filter URLs work correctly on page load
+- Better separation of concerns: URL handling vs manual interactions
+- No breaking changes to existing functionality
 
 ### Negative
 
--   Additional complexity in DateAndSearchFilters component
+- Additional complexity in DateAndSearchFilters component
 
 ## Validation
 
 The fix can be tested with URLs like:
 
--   `http://localhost:3000/?es=sf&qf=next7days`
--   `http://localhost:3000/?es=sf&qf=weekend`
--   `http://localhost:3000/?es=sf&qf=today`
+- `http://localhost:3000/?es=sf&qf=next7days`
+- `http://localhost:3000/?es=sf&qf=weekend`
+- `http://localhost:3000/?es=sf&qf=today`
 
 ## Implementation
 
--   **URL Parameter Handling**: New logic in DateAndSearchFilters processes `qf` parameters during `map-init` or `main-state`
--   **Shared Logic**: Created `src/lib/utils/quickFilters.ts` utility with unified filter configurations used by both DateAndSearchFilters and DateQuickButtons
--   **Consistent Boundaries**: Extracted `getStartOfDay()`/`getEndOfDay()` functions to `src/lib/utils/date.ts` ensuring all components use 4:01am-11:59pm day boundaries
--   **Guard Mechanism**: `initialUrlProcessed` ref prevents duplicate filter application
+- **URL Parameter Handling**: New logic in DateAndSearchFilters processes `qf` parameters during `map-init` or `main-state`
+- **Shared Logic**: Created `src/lib/utils/quickFilters.ts` utility with unified filter configurations used by both DateAndSearchFilters and DateQuickButtons
+- **Consistent Boundaries**: Extracted `getStartOfDay()`/`getEndOfDay()` functions to `src/lib/utils/date.ts` ensuring all components use 4:01am-11:59pm day boundaries
+- **Guard Mechanism**: `initialUrlProcessed` ref prevents duplicate filter application

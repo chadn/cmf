@@ -29,6 +29,7 @@ Use Upstash Redis for production geocoding cache with filesystem fallback for de
 ## Consequences
 
 ### Positive
+
 - Serverless-native Redis that integrates seamlessly with Vercel
 - HTTP-based API eliminates connection pooling complexity
 - Free tier (256MB) sufficient for expected cache size (~0.5MB for 1,000 locations)
@@ -36,11 +37,13 @@ Use Upstash Redis for production geocoding cache with filesystem fallback for de
 - Abstraction layer enables easy switching between implementations
 
 ### Negative
+
 - HTTP-based access has slightly higher latency than connection-based Redis
 - Vendor lock-in to Upstash for production cache
 - Additional service dependency
 
 ### Implementation Architecture
+
 - Cache abstraction layer in `src/lib/cache/`
 - Production: Upstash Redis via HTTP API
 - Development: Filesystem cache in `.cache/` directory
@@ -48,6 +51,7 @@ Use Upstash Redis for production geocoding cache with filesystem fallback for de
 - Graceful degradation if cache unavailable
 
 ### Affected Components
+
 - `src/lib/cache/upstash.ts` - Upstash Redis implementation
 - `src/lib/cache/filesystem.ts` - Development filesystem cache
 - `src/lib/api/geocoding.ts` - Geocoding service with cache integration

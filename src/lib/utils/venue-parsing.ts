@@ -1,6 +1,8 @@
 import { getCityStateFromCity } from './timezones'
 import { logr } from './logr'
 
+// This file supports 19hz event source
+
 /**
  * Get state from event source region using timezone data
  * @param regionName - The event source region name (e.g., "Los Angeles", "Bay Area")
@@ -8,12 +10,13 @@ import { logr } from './logr'
  */
 export function getStateFromEventSource(regionName: string): string | null {
     // Try to get state from event source city using existing timezone data
-    const cityState = getCityStateFromCity(`${regionName}, CA`) || 
-                     getCityStateFromCity(`${regionName}, IL`) || 
-                     getCityStateFromCity(`${regionName}, OR`) ||
-                     getCityStateFromCity(`${regionName}, NV`) ||
-                     getCityStateFromCity(regionName)
-    
+    const cityState =
+        getCityStateFromCity(`${regionName}, CA`) ||
+        getCityStateFromCity(`${regionName}, IL`) ||
+        getCityStateFromCity(`${regionName}, OR`) ||
+        getCityStateFromCity(`${regionName}, NV`) ||
+        getCityStateFromCity(regionName)
+
     if (cityState) {
         const stateMatch = cityState.match(/,\s*([A-Z]{2})$/)
         return stateMatch ? stateMatch[1] : null
@@ -62,7 +65,7 @@ export function inferStateFromCityName(cityName: string): string | null {
  * - "Event Name @ Venue (City)"
  * - "Event Name @ Venue (City, ST)" where ST is a 2-letter state code
  * - "Event Name @ TBA (Highland Park)" - uses regional context for ambiguous cities
- * 
+ *
  * @param eventTitle - The full event title containing venue and location info
  * @param defaultState - The default state from the event source region
  * @param eventSourceRegion - The event source region name for regional context
@@ -70,9 +73,9 @@ export function inferStateFromCityName(cityName: string): string | null {
  * @returns Formatted location string (e.g., "Venue, City, ST" or "City, ST")
  */
 export function extractVenueAndCity(
-    eventTitle: string, 
-    defaultState: string, 
-    eventSourceRegion: string, 
+    eventTitle: string,
+    defaultState: string,
+    eventSourceRegion: string,
     venueCache?: Map<string, string>
 ): string {
     // Match pattern: "Event @ Venue (City)" or "Event @ Venue (City, ST)" where ST is 2-letter state
@@ -120,7 +123,10 @@ export function extractVenueAndCity(
                     if (shouldUseRegionalDefault) {
                         state = defaultState
                         useState = true
-                        logr.debug('venue-parsing', `Using regional default state for ${city} from ${eventSourceRegion}: ${state}`)
+                        logr.debug(
+                            'venue-parsing',
+                            `Using regional default state for ${city} from ${eventSourceRegion}: ${state}`
+                        )
                     } else {
                         // Don't use any state to avoid incorrect geocoding
                         logr.debug('venue-parsing', `No state assigned for unknown city: ${city}`)

@@ -1,4 +1,4 @@
-import { FilterEventsManager } from '../FilterEventsManager'
+import { FilterEventsManager } from '@/lib/events/FilterEventsManager'
 import { CmfEvent } from '@/types/events'
 import { MapBounds } from '@/types/map'
 
@@ -21,7 +21,7 @@ describe('FilterEventsManager - new viewport parameter model', () => {
         },
     })
 
-    const viewportBounds: MapBounds = {
+    const mapBounds: MapBounds = {
         north: 37.6,
         south: 37.4,
         east: -122.3,
@@ -35,12 +35,12 @@ describe('FilterEventsManager - new viewport parameter model', () => {
         const mgr = new FilterEventsManager([visible, outside])
 
         // Without viewport parameter - shows all events
-        const resultWithoutViewport = mgr.getFilteredEvents()
+        const resultWithoutViewport = mgr.getCmfEvents()
         expect(resultWithoutViewport.visibleEvents.map((e) => e.id).sort()).toEqual(['outside', 'visible'])
         expect(resultWithoutViewport.hiddenCounts.byMap).toBe(0)
 
         // With viewport parameter - filters both visible events and chip count
-        const resultWithViewport = mgr.getFilteredEvents(viewportBounds)
+        const resultWithViewport = mgr.getCmfEvents(mapBounds)
         expect(resultWithViewport.visibleEvents.map((e) => e.id)).toEqual(['visible'])
         expect(resultWithViewport.hiddenCounts.byMap).toBe(1)
     })
@@ -56,15 +56,15 @@ describe('FilterEventsManager - new viewport parameter model', () => {
         }
 
         const mgr = new FilterEventsManager([eventInDateRange, eventOutOfDateRange])
-        mgr.setDateRange({ start: '2025-01-01', end: '2025-01-31' })
+        mgr.setDateRange({ startIso: '2025-01-01', endIso: '2025-01-31' })
 
-        const result = mgr.getFilteredEvents(viewportBounds)
+        const result = mgr.getCmfEvents(mapBounds)
 
         // Date filter excludes outOfDate from domain results
         expect(result.visibleEvents.map((e) => e.id)).toEqual(['inDate'])
         expect(result.hiddenCounts.byDate).toBe(1)
 
-        // Map chip shows viewport filtering against all events (not just domain results)
+        // Map chip shows map filtering against all events (not just domain results)
         expect(result.hiddenCounts.byMap).toBe(0) // both events are in viewport bounds
     })
 
@@ -77,17 +77,16 @@ describe('FilterEventsManager - new viewport parameter model', () => {
         ]
 
         const mgr = new FilterEventsManager(events)
-        mgr.setDateRange({ start: '2025-01-01', end: '2025-01-31' })
+        mgr.setDateRange({ startIso: '2025-01-01', endIso: '2025-01-31' })
         mgr.setSearchQuery('match')
 
-        const result = mgr.getFilteredEvents(viewportBounds)
-
+        const result = mgr.getCmfEvents(mapBounds)
 
         // Visible events: in viewport + in date range + matches search
         expect(result.visibleEvents.map((e) => e.id)).toEqual(['inViewport'])
 
         // Independent chip counts
-        expect(result.hiddenCounts.byMap).toBe(2) // outViewport + outViewportOutDate (viewport filter against all events)
+        expect(result.hiddenCounts.byMap).toBe(2) // outViewport + outViewportOutDate (map filter against all events)
         expect(result.hiddenCounts.byDate).toBe(2) // inViewportOutDate + outViewportOutDate (date filter against all events)
         expect(result.hiddenCounts.bySearch).toBe(1) // outViewportOutDate (search filter against all events)
     })
@@ -98,10 +97,10 @@ describe('FilterEventsManager - new viewport parameter model', () => {
         const mgr = new FilterEventsManager(events)
         mgr.setSearchQuery('a')
 
-        const result = mgr.getFilteredEvents() // no viewport parameter
+        const result = mgr.getCmfEvents() // no viewport parameter
 
         expect(result.visibleEvents.map((e) => e.id)).toEqual(['a'])
-        expect(result.hiddenCounts.byMap).toBe(0) // no viewport filtering
+        expect(result.hiddenCounts.byMap).toBe(0) // no map filtering
         expect(result.hiddenCounts.bySearch).toBe(1)
     })
 })

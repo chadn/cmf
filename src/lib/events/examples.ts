@@ -50,7 +50,7 @@ export const ExampleEventsSources = [
         id: 'protest:all',
     },
     {
-        name: 'Plura Community Events',
+        name: 'Plura Community Events (slow data load)',
         id: 'plura:all',
     },
     {

@@ -1,8 +1,8 @@
-import { fetcherLogr } from '../utils-client'
-import { logr } from '../logr'
+import { fetcherLogr } from '@/lib/utils/utils-client'
+import { logr } from '@/lib/utils/logr'
 
 // Mock fetch and logr
-jest.mock('../logr', () => ({
+jest.mock('@/lib/utils/logr', () => ({
     logr: {
         info: jest.fn(),
         debug: jest.fn(),
@@ -10,7 +10,7 @@ jest.mock('../logr', () => ({
 }))
 
 // Mock umami.ts
-jest.mock('../umami', () => ({
+jest.mock('@/lib/utils/umami', () => ({
     umamiTrack: jest.fn(),
 }))
 

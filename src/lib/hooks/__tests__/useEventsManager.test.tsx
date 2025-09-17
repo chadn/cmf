@@ -22,14 +22,14 @@ jest.mock('@/lib/events/FilterEventsManager', () => {
             setSearchQuery: jest.fn(),
             setShowUnknownLocationsOnly: jest.fn(),
             resetAllFilters: jest.fn(),
-            getFilteredEvents: jest.fn().mockReturnValue({
+            getCmfEvents: jest.fn().mockReturnValue({
                 shownEvents: [],
                 totalEvents: 0,
                 mapFilteredEvents: [],
                 searchFilteredEvents: [],
                 dateFilteredEvents: [],
                 unknownLocationsFilteredEvents: [],
-                filteredEvents: [],
+                CmfEvents: [],
                 allEvents: [],
                 visibleEvents: [],
             }),
@@ -43,6 +43,8 @@ jest.mock('@/lib/utils/logr', () => ({
     logr: {
         info: jest.fn(),
         debug: jest.fn(),
+        warn: jest.fn(),
+        error: jest.fn(),
     },
 }))
 
@@ -52,7 +54,7 @@ jest.mock('@/lib/utils/utils-client', () => ({
 }))
 
 import { renderHook, act } from '@testing-library/react'
-import { useEventsManager } from '../useEventsManager'
+import { useEventsManager } from '@/lib/hooks/useEventsManager'
 import { CmfEvent } from '@/types/events'
 import { MapBounds } from '@/types/map'
 
@@ -103,8 +105,8 @@ describe('useEventsManager - new viewport parameter model', () => {
         }))
     })
 
-    it('accepts currentViewport parameter and passes it to getFilteredEvents', () => {
-        const currentViewport: MapBounds = {
+    it('accepts currentBounds parameter and passes it to getCmfEvents', () => {
+        const currentBounds: MapBounds = {
             north: 37.8,
             south: 37.7,
             east: -122.4,
@@ -113,20 +115,23 @@ describe('useEventsManager - new viewport parameter model', () => {
 
         const { result } = renderHook(() =>
             useEventsManager({
+                appState: 'user-interactive',
                 eventSourceId: 'test-source',
-                currentViewport,
+                currentBounds,
             })
         )
 
-        expect(result.current.evts).toBeDefined()
+        expect(result.current.cmfEvents).toBeDefined()
 
-        // Verify getFilteredEvents is called with currentViewport
-        const filterManager = result.current.fltrEvtMgr
-        expect(filterManager.getFilteredEvents).toHaveBeenCalledWith(currentViewport)
+        // Verify getCmfEvents is called with currentBounds
+        const filterManager = result.current.filtrEvtMgr
+        expect(filterManager.getCmfEvents).toHaveBeenCalledWith(currentBounds)
     })
 
     it('exposes only domain filter setters (no map bounds setters)', () => {
-        const { result } = renderHook(() => useEventsManager({ eventSourceId: 'test-source' }))
+        const { result } = renderHook(() =>
+            useEventsManager({ appState: 'user-interactive', eventSourceId: 'test-source' })
+        )
 
         expect(result.current.filters).toBeDefined()
         expect(result.current.filters.setSearchQuery).toBeDefined()
@@ -144,11 +149,13 @@ describe('useEventsManager - new viewport parameter model', () => {
             result.current.filters.setDateRange({ start: '2024-01-01', end: '2024-01-02' })
             result.current.filters.setShowUnknownLocationsOnly(true)
         })
-        expect(result.current.evts).toBeDefined()
+        expect(result.current.cmfEvents).toBeDefined()
     })
 
     it('should fetch events when eventSourceId is provided', () => {
-        const { result } = renderHook(() => useEventsManager({ eventSourceId: 'test-source' }))
+        const { result } = renderHook(() =>
+            useEventsManager({ appState: 'user-interactive', eventSourceId: 'test-source' })
+        )
 
         expect(result.current.eventSources?.[0]).toEqual({
             prefix: mockApiResponse.source.prefix,
@@ -156,7 +163,7 @@ describe('useEventsManager - new viewport parameter model', () => {
             name: mockApiResponse.source.name,
             totalCount: mockApiResponse.source.totalCount,
             unknownLocationsCount: mockApiResponse.source.unknownLocationsCount,
-            url: mockApiResponse.source.url
+            url: mockApiResponse.source.url,
         })
     })
 
@@ -169,7 +176,9 @@ describe('useEventsManager - new viewport parameter model', () => {
             mutate: jest.fn(),
         }))
 
-        const { result } = renderHook(() => useEventsManager({ eventSourceId: 'test-source' }))
+        const { result } = renderHook(() =>
+            useEventsManager({ appState: 'user-interactive', eventSourceId: 'test-source' })
+        )
 
         expect(result.current.apiError).toBe(mockError)
     })
@@ -180,6 +189,7 @@ describe('useEventsManager - new viewport parameter model', () => {
 
         const { result } = renderHook(() =>
             useEventsManager({
+                appState: 'user-interactive',
                 eventSourceId: 'test-source',
                 dateRange,
                 searchQuery,
@@ -187,37 +197,38 @@ describe('useEventsManager - new viewport parameter model', () => {
             })
         )
 
-        const filterManager = result.current.fltrEvtMgr
+        const filterManager = result.current.filtrEvtMgr
         expect(filterManager.setDateRange).toHaveBeenCalledWith(dateRange)
         expect(filterManager.setSearchQuery).toHaveBeenCalledWith(searchQuery)
         expect(filterManager.setShowUnknownLocationsOnly).toHaveBeenCalledWith(true)
     })
 
     it('should reset filters when resetAll is called', () => {
-        const { result } = renderHook(() => useEventsManager())
+        const { result } = renderHook(() => useEventsManager({ appState: 'user-interactive' }))
 
         act(() => {
             result.current.filters.resetAll()
         })
 
-        expect(result.current.fltrEvtMgr.resetAllFilters).toHaveBeenCalled()
+        expect(result.current.filtrEvtMgr.resetAllFilters).toHaveBeenCalled()
     })
 
-    it('should re-run filtering when currentViewport changes', () => {
-        const viewport1: MapBounds = { north: 37.8, south: 37.7, east: -122.4, west: -122.5 }
-        const viewport2: MapBounds = { north: 37.9, south: 37.6, east: -122.3, west: -122.6 }
+    it('should re-run filtering when currentBounds changes', () => {
+        const bounds1: MapBounds = { north: 37.8, south: 37.7, east: -122.4, west: -122.5 }
+        const bounds2: MapBounds = { north: 37.9, south: 37.6, east: -122.3, west: -122.6 }
 
         const { result, rerender } = renderHook(
-            ({ currentViewport }) => useEventsManager({ eventSourceId: 'test-source', currentViewport }),
-            { initialProps: { currentViewport: viewport1 } }
+            ({ currentBounds }) =>
+                useEventsManager({ appState: 'user-interactive', eventSourceId: 'test-source', currentBounds }),
+            { initialProps: { currentBounds: bounds1 } }
         )
 
-        const filterManager = result.current.fltrEvtMgr
-        expect(filterManager.getFilteredEvents).toHaveBeenCalledWith(viewport1)
+        const filterManager = result.current.filtrEvtMgr
+        expect(filterManager.getCmfEvents).toHaveBeenCalledWith(bounds1)
 
-        // Change viewport
-        rerender({ currentViewport: viewport2 })
-        expect(filterManager.getFilteredEvents).toHaveBeenCalledWith(viewport2)
+        // Change bounds
+        rerender({ currentBounds: bounds2 })
+        expect(filterManager.getCmfEvents).toHaveBeenCalledWith(bounds2)
     })
 
     describe('Multiple Event Sources', () => {
@@ -232,7 +243,7 @@ describe('useEventsManager - new viewport parameter model', () => {
                         mutate: jest.fn(),
                     }
                 }
-                
+
                 // Handle multiple URLs array
                 if (Array.isArray(url)) {
                     return {
@@ -242,7 +253,7 @@ describe('useEventsManager - new viewport parameter model', () => {
                         mutate: jest.fn(),
                     }
                 }
-                
+
                 return {
                     data: undefined,
                     error: null,
@@ -253,19 +264,25 @@ describe('useEventsManager - new viewport parameter model', () => {
         })
 
         it('should handle multiple event sources', () => {
-            const { result } = renderHook(() => useEventsManager({ 
-                eventSourceId: ['source1', 'source2']
-            }))
+            const { result } = renderHook(() =>
+                useEventsManager({
+                    appState: 'user-interactive',
+                    eventSourceId: ['source1', 'source2'],
+                })
+            )
 
-            expect(result.current.evts).toBeDefined()
+            expect(result.current.cmfEvents).toBeDefined()
         })
 
         it('should construct multiple API URLs correctly', () => {
-            renderHook(() => useEventsManager({ 
-                eventSourceId: ['source1', 'source2'],
-                sd: '2024-01-01',
-                ed: '2024-12-31'
-            }))
+            renderHook(() =>
+                useEventsManager({
+                    appState: 'user-interactive',
+                    eventSourceId: ['source1', 'source2'],
+                    sd: '2024-01-01',
+                    ed: '2024-12-31',
+                })
+            )
 
             // Should call SWR with multiple URLs constructed
             expect(swrMock.default).toHaveBeenCalled()
@@ -282,9 +299,12 @@ describe('useEventsManager - new viewport parameter model', () => {
                 mutate: jest.fn(),
             }))
 
-            const { result } = renderHook(() => useEventsManager({ 
-                eventSourceId: 'gc:calendar@gmail.com'
-            }))
+            const { result } = renderHook(() =>
+                useEventsManager({
+                    appState: 'user-interactive',
+                    eventSourceId: 'gc:calendar@gmail.com',
+                })
+            )
 
             expect(result.current.apiError).toBe(mockError)
         })
@@ -298,9 +318,12 @@ describe('useEventsManager - new viewport parameter model', () => {
                 mutate: jest.fn(),
             }))
 
-            const { result } = renderHook(() => useEventsManager({ 
-                eventSourceId: 'fb:event-page'
-            }))
+            const { result } = renderHook(() =>
+                useEventsManager({
+                    appState: 'user-interactive',
+                    eventSourceId: 'fb:event-page',
+                })
+            )
 
             expect(result.current.apiError).toBe(mockError)
         })
@@ -314,9 +337,12 @@ describe('useEventsManager - new viewport parameter model', () => {
                 mutate: jest.fn(),
             }))
 
-            const { result } = renderHook(() => useEventsManager({ 
-                eventSourceId: 'test-source'
-            }))
+            const { result } = renderHook(() =>
+                useEventsManager({
+                    appState: 'user-interactive',
+                    eventSourceId: 'test-source',
+                })
+            )
 
             expect(result.current.apiError).toBe(mockError)
         })
@@ -330,9 +356,12 @@ describe('useEventsManager - new viewport parameter model', () => {
                 mutate: jest.fn(),
             }))
 
-            const { result } = renderHook(() => useEventsManager({ 
-                eventSourceId: 'test-source'
-            }))
+            const { result } = renderHook(() =>
+                useEventsManager({
+                    appState: 'user-interactive',
+                    eventSourceId: 'test-source',
+                })
+            )
 
             expect(result.current.apiError).toBe(mockError)
         })
@@ -340,9 +369,9 @@ describe('useEventsManager - new viewport parameter model', () => {
         it('should handle non-200 HTTP status responses', () => {
             const mockResponseWith500 = {
                 ...mockApiResponse,
-                httpStatus: 500
+                httpStatus: 500,
             }
-            
+
             swrMock.default.mockImplementation(() => ({
                 data: mockResponseWith500,
                 error: null,
@@ -350,22 +379,28 @@ describe('useEventsManager - new viewport parameter model', () => {
                 mutate: jest.fn(),
             }))
 
-            const { result } = renderHook(() => useEventsManager({ 
-                eventSourceId: 'test-source'
-            }))
+            const { result } = renderHook(() =>
+                useEventsManager({
+                    appState: 'user-interactive',
+                    eventSourceId: 'test-source',
+                })
+            )
 
-            expect(result.current.evts).toBeDefined()
+            expect(result.current.cmfEvents).toBeDefined()
             // Component should handle non-200 status gracefully
         })
     })
 
     describe('URL Date Parameters', () => {
         it('should use sd and ed parameters for API URLs', () => {
-            renderHook(() => useEventsManager({ 
-                eventSourceId: 'test-source',
-                sd: '2024-01-01',
-                ed: '2024-12-31'
-            }))
+            renderHook(() =>
+                useEventsManager({
+                    appState: 'user-interactive',
+                    eventSourceId: 'test-source',
+                    sd: '2024-01-01',
+                    ed: '2024-12-31',
+                })
+            )
 
             // Should have called SWR with properly constructed URL containing date params
             expect(swrMock.default).toHaveBeenCalled()
@@ -374,19 +409,25 @@ describe('useEventsManager - new viewport parameter model', () => {
         })
 
         it('should use default date ranges when sd/ed not provided', () => {
-            renderHook(() => useEventsManager({ 
-                eventSourceId: 'test-source'
-            }))
+            renderHook(() =>
+                useEventsManager({
+                    appState: 'user-interactive',
+                    eventSourceId: 'test-source',
+                })
+            )
 
             expect(swrMock.default).toHaveBeenCalled()
         })
 
         it('should handle invalid date parameters gracefully', () => {
-            renderHook(() => useEventsManager({ 
-                eventSourceId: 'test-source',
-                sd: 'invalid-date',
-                ed: 'another-invalid-date'
-            }))
+            renderHook(() =>
+                useEventsManager({
+                    appState: 'user-interactive',
+                    eventSourceId: 'test-source',
+                    sd: 'invalid-date',
+                    ed: 'another-invalid-date',
+                })
+            )
 
             expect(swrMock.default).toHaveBeenCalled()
             // Should not crash with invalid date parameters
@@ -402,9 +443,12 @@ describe('useEventsManager - new viewport parameter model', () => {
                 mutate: jest.fn(),
             }))
 
-            const { result } = renderHook(() => useEventsManager({ 
-                eventSourceId: 'test-source'
-            }))
+            const { result } = renderHook(() =>
+                useEventsManager({
+                    appState: 'user-interactive',
+                    eventSourceId: 'test-source',
+                })
+            )
 
             expect(result.current.apiIsLoading).toBe(true)
             expect(result.current.eventSources).toBeNull()
@@ -419,9 +463,12 @@ describe('useEventsManager - new viewport parameter model', () => {
                 mutate: jest.fn(),
             }))
 
-            const { result, rerender } = renderHook(() => useEventsManager({ 
-                eventSourceId: 'test-source'
-            }))
+            const { result, rerender } = renderHook(() =>
+                useEventsManager({
+                    appState: 'user-interactive',
+                    eventSourceId: 'test-source',
+                })
+            )
 
             expect(result.current.apiIsLoading).toBe(true)
 
@@ -433,9 +480,9 @@ describe('useEventsManager - new viewport parameter model', () => {
                 isLoading: false,
                 mutate: jest.fn(),
             }))
-            
+
             rerender()
-            
+
             expect(result.current.apiIsLoading).toBe(false)
             expect(result.current.eventSources).toHaveLength(1)
         })
@@ -443,34 +490,40 @@ describe('useEventsManager - new viewport parameter model', () => {
 
     describe('Filter Integration', () => {
         it('should properly integrate with FilterEventsManager', () => {
-            const { result } = renderHook(() => useEventsManager({
-                eventSourceId: 'test-source',
-                dateRange: { start: '2024-01-01', end: '2024-01-31' },
-                searchQuery: 'music',
-                showUnknownLocationsOnly: true,
-            }))
+            const { result } = renderHook(() =>
+                useEventsManager({
+                    appState: 'user-interactive',
+                    eventSourceId: 'test-source',
+                    dateRange: { start: '2024-01-01', end: '2024-01-31' },
+                    searchQuery: 'music',
+                    showUnknownLocationsOnly: true,
+                })
+            )
 
-            const filterManager = result.current.fltrEvtMgr
-            
+            const filterManager = result.current.filtrEvtMgr
+
             // Verify filter manager was called with all filters
             expect(filterManager.setDateRange).toHaveBeenCalledWith({
                 start: '2024-01-01',
-                end: '2024-01-31'
+                end: '2024-01-31',
             })
             expect(filterManager.setSearchQuery).toHaveBeenCalledWith('music')
             expect(filterManager.setShowUnknownLocationsOnly).toHaveBeenCalledWith(true)
         })
 
         it('should handle undefined filter values', () => {
-            const { result } = renderHook(() => useEventsManager({
-                eventSourceId: 'test-source',
-                dateRange: undefined,
-                searchQuery: undefined,
-                showUnknownLocationsOnly: undefined,
-            }))
+            const { result } = renderHook(() =>
+                useEventsManager({
+                    appState: 'user-interactive',
+                    eventSourceId: 'test-source',
+                    dateRange: undefined,
+                    searchQuery: undefined,
+                    showUnknownLocationsOnly: undefined,
+                })
+            )
 
             // Should not crash with undefined filter values
-            expect(result.current.fltrEvtMgr).toBeDefined()
+            expect(result.current.filtrEvtMgr).toBeDefined()
         })
     })
 })

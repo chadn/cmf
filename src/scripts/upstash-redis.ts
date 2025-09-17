@@ -28,7 +28,7 @@ ${ME}
 ${ME} get-key-count 'plura:*'
 ${ME} get-keys 'plura:city:'
 ${ME} get-keys-all  > keys.txt
-${ME} delete-keys 'plura:city:*'
+${ME} delete-keys 'events:19hz:*'
 ${ME} fix-location example  # outputs detailed example 
 ${ME} fix-location 'location:Asiento' 'location:Asiento,sf,ca' 
   Note you create proper location keys using geocode cmd:
@@ -217,7 +217,7 @@ async function deleteKeys(pattern: string): Promise<number> {
         console.log('No keys found matching pattern:', pattern)
         return 0
     }
-    console.log(`Found ${keys.length} keys matching pattern: '${pattern}'\nFirst 10:`, info,vals)
+    console.log(`Found ${keys.length} keys matching pattern: '${pattern}'\nFirst 10:`, info, vals)
 
     if (await confirm('Are you sure you want to delete these keys?')) {
         const pipeline = client.pipeline()

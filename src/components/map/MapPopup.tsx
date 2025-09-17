@@ -59,6 +59,7 @@ const MapPopup: React.FC<MapPopupProps> = ({ marker, selectedEventId, onEventSel
     // Memoized calendar event handlers
     const handleGoogleCalendar = useCallback(() => {
         if (!currentEvent) return
+        // TODO: use https://www.addevent.com/c/documentation/add-to-calendar-button
         const googleUrl = generateGoogleCalendarUrl(currentEvent, eventSources)
         window.open(googleUrl, '_blank', 'noopener,noreferrer')
     }, [currentEvent, eventSources])
@@ -101,10 +102,10 @@ const MapPopup: React.FC<MapPopupProps> = ({ marker, selectedEventId, onEventSel
 
     // Helper: check if start and end times are the same
     // Hack: if end == start, exact start time is not known.
-    const isTimeUnknown = (start: string, end: string) => {
-        if (!end) return true
-        const startDate = new Date(start)
-        const endDate = new Date(end)
+    const isTimeUnknown = (startIso: string, endIso: string) => {
+        if (!endIso) return true
+        const startDate = new Date(startIso)
+        const endDate = new Date(endIso)
         return startDate.getTime() === endDate.getTime()
     }
 

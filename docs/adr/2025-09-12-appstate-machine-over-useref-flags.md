@@ -1,7 +1,7 @@
 # ADR: AppState Machine over useRef Flags
 
 Date: 2025-09-12
-Status: Accepted
+Status: Superseded by [2025-09-23-smart-hook-dumb-component-architecture.md](2025-09-23-smart-hook-dumb-component-architecture.md)
 Supersedes: [2025-09-05-direct-state-over-reducer-pattern.md](2025-09-05-direct-state-over-reducer-pattern.md)
 
 ## Context
@@ -20,16 +20,18 @@ The previous ADR advocated for direct state over reducer patterns, but the initi
 We will implement a comprehensive AppState machine using `useReducer` for application initialization flow, while maintaining direct state management for user interactions.
 
 **AppState Machine Structure:**
+
 ```typescript
-type AppState = 
-    | 'events-init'             // Fetching events from API
-    | 'events-loaded'           // Events ready, start URL processing  
-    | 'url-applied'             // Domain filters applied, ready for viewport
-    | 'viewport-set'            // Viewport configured, ready for interaction
-    | 'main-state'              // Normal user interaction mode
+type AppState =
+    | 'events-init' // Fetching events from API
+    | 'events-loaded' // Events ready, start URL processing
+    | 'url-applied' // Domain filters applied, ready for viewport
+    | 'viewport-set' // Viewport configured, ready for interaction
+    | 'user-interactive' // Normal user interaction mode
 ```
 
 **Key Components:**
+
 - Dedicated `appStateReducer.ts` with action creators and type guards
 - State transitions logged for debugging
 - Parent-to-child callback pattern for cross-component coordination
@@ -38,13 +40,15 @@ type AppState =
 ## Rationale
 
 **Why this doesn't contradict the "direct state" ADR:**
+
 - AppState machine is specifically for **initialization flow**, not user interactions
 - User interactions (map panning, filtering, selections) still use direct state
 - This creates a clear separation: structured initialization vs. reactive interactions
 
 **Benefits over useRef flags:**
+
 - **Single source of truth**: Always know exactly what state the app is in
-- **Explicit transitions**: Clear progression through initialization phases  
+- **Explicit transitions**: Clear progression through initialization phases
 - **Debuggable**: State changes are logged and trackable in React DevTools
 - **Predictable**: Components only act when in appropriate states
 - **Race condition elimination**: State machine enforces valid execution order
@@ -52,23 +56,26 @@ type AppState =
 ## Implementation Details
 
 **State Flow:**
+
 ```
-events-init → events-loaded → url-applied → viewport-set → main-state
+events-init → events-loaded → url-applied → viewport-set → user-interactive
 ```
 
 **Component Coordination:**
+
 - `page.tsx` manages the AppState machine
 - `DateAndSearchFilters` processes URL parameters and signals completion via callback
 - `useMap` provides map functionality but doesn't manage initialization state
 - All components check `appState` to determine when to act
 
 **Action Creators:**
+
 ```typescript
 export const appActions = {
-    eventsLoading: () => ({ type: 'EVENTS_LOADING' } as const),
-    eventsLoaded: (hasEvents: boolean) => ({ type: 'EVENTS_LOADED', hasEvents } as const),
-    urlFiltersApplied: () => ({ type: 'URL_FILTERS_APPLIED' } as const),
-    viewportSet: () => ({ type: 'VIEWPORT_SET' } as const),
+    eventsLoading: () => ({ type: 'EVENTS_LOADING' }) as const,
+    eventsLoaded: (hasEvents: boolean) => ({ type: 'EVENTS_LOADED', hasEvents }) as const,
+    urlFiltersApplied: () => ({ type: 'URL_FILTERS_APPLIED' }) as const,
+    viewportSet: () => ({ type: 'VIEWPORT_SET' }) as const,
 }
 ```
 

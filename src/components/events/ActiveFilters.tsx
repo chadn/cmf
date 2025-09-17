@@ -1,17 +1,17 @@
 'use client'
 
 import React from 'react'
-import { FilteredEvents } from '@/types/events'
+import { CmfEvents } from '@/types/events'
 
 interface ActiveFiltersProps {
-    evts: FilteredEvents
+    cmfEvents: CmfEvents
     onClearMapFilter: () => void
     onClearSearchFilter: () => void
     onClearDateFilter: () => void
 }
 
 export default function ActiveFilters({
-    evts,
+    cmfEvents,
     onClearMapFilter,
     onClearSearchFilter,
     onClearDateFilter,
@@ -19,19 +19,22 @@ export default function ActiveFilters({
     const filterButtons = [
         {
             label: 'Date',
-            numEvents: evts.hiddenCounts.byDate,
+            title: 'Click to clear date filter, possibly increasing visible events.',
+            numEvents: cmfEvents.hiddenCounts.byDate,
             onClick: onClearDateFilter,
             d: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
         },
         {
             label: 'Map',
-            numEvents: evts.hiddenCounts.byMap,
+            title: 'Click to clear map filter. Map zooms to fit all events, currently visible or not.',
+            numEvents: cmfEvents.hiddenCounts.byMap,
             onClick: onClearMapFilter,
             d: 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z',
         },
         {
             label: 'Search',
-            numEvents: evts.hiddenCounts.bySearch,
+            title: 'Click to clear search filter, possibly increasing visible events.',
+            numEvents: cmfEvents.hiddenCounts.bySearch,
             onClick: onClearSearchFilter,
             d: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z',
         },
@@ -55,7 +58,7 @@ export default function ActiveFilters({
                             aria-label={`Clear ${filter.label} filter (${filter.numEvents} events filtered)`}
                             data-umami-event="ClearFilter"
                             data-umami-event-btn={filter.label}
-                            title={`Click to clear ${filter.label} filter`}
+                            title={filter.title}
                         >
                             <svg
                                 xmlns="http://www.w3.org/2000/svg"

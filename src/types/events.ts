@@ -19,7 +19,7 @@ export interface CmfEvent {
     name: string
     original_event_url: string
     description: string // always exists, may be empty
-    description_urls: string[] // always exists, may be empty
+    description_urls: string[] // always exists, may be empty. NOT USED: Consider removing.
     start: string // ISO string
     end: string // ISO string. Hack: if same as start, exact start time is not known. If 1 minute after start, end time is not known.
     startSecs?: number // start time in seconds since epoch
@@ -27,11 +27,20 @@ export interface CmfEvent {
     location: string // always exists, may be empty, matches original_location
     resolved_location?: Location
     note?: string // for internal use, eg 'plura'
-    src?: number // source index for multiple sources: 1 for first source, 2 for second, etc. Only used when 2+ sources
+    src?: number // source index when 2 or more event sources: 1 for first source, 2 for second, etc.
     // Keep any other existing fields
 }
 
-// Removed EventsState and EventsAction - replaced with direct state management
+export interface CmfEvents {
+    allEvents: CmfEvent[]
+    visibleEvents: CmfEvent[] // events that pass all filters
+    hiddenCounts: {
+        byMap: number
+        bySearch: number
+        byDate: number
+        byLocationFilter: number
+    }
+}
 
 export interface EventsSource {
     prefix: string // must be unique, eg 'gc' for 'gc:1234567890'
@@ -56,19 +65,13 @@ export interface EventsSourceResponse {
     httpStatus: number
 }
 
-export interface EventsFilter {
-    dateRange?: { start: string; end: string }
-    searchQuery?: string
-    showUnknownLocationsOnly?: boolean
+export interface DateRangeIso {
+    startIso: string // store as ISO string, use date-fns/format to display in user's local timezone
+    endIso: string // store as ISO string, use date-fns/format to display in user's local timezone
 }
 
-export interface FilteredEvents {
-    allEvents: CmfEvent[]
-    visibleEvents: CmfEvent[] // events that pass all filters
-    hiddenCounts: {
-        byMap: number
-        bySearch: number
-        byDate: number
-        byLocationFilter: number
-    }
+export interface DomainFilters {
+    dateRange?: DateRangeIso
+    searchQuery?: string
+    showUnknownLocationsOnly?: boolean
 }

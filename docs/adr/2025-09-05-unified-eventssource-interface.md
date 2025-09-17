@@ -9,10 +9,11 @@ Accepted ✅ (2025-09-05)
 The type system had redundant interfaces causing maintenance issues and test failures:
 
 - `EventsSourceType` interface for static definitions
-- `EventsSourceResponseMetadata` interface for API responses  
+- `EventsSourceResponseMetadata` interface for API responses
 - Runtime format with different field structure
 
 This created:
+
 - 3-way type inconsistency causing test failures
 - Transformation functions needed in `useEventsManager.ts`
 - API response confusion between `metadata` vs `source` fields
@@ -23,8 +24,8 @@ Consolidate all EventsSource representations into a single unified interface:
 
 ```typescript
 interface EventsSource {
-    prefix: string    // Static definition fields
-    name: string  
+    prefix: string // Static definition fields
+    name: string
     url: string
     // Runtime fields (optional):
     id?: string
@@ -42,16 +43,19 @@ interface EventsSource {
 ## Consequences
 
 ### Positive
+
 - Single source of truth for EventsSource data
-- Eliminated transformation functions 
+- Eliminated transformation functions
 - Fixed test failures from type mismatches
 - Simplified API response structure
 
 ### Negative
+
 - Optional fields require null checks in some places
 - Breaking change required updating 6 event source handlers
 
 ### Affected Components
+
 - `src/types/events.ts` - Type definitions
 - `src/lib/hooks/useEventsManager.ts` - Removed transformations
 - All event source handlers - Updated to unified type

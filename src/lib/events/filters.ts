@@ -1,18 +1,9 @@
-import { CmfEvent } from '@/types/events'
+import { CmfEvent, DateRangeIso, DomainFilters } from '@/types/events'
 import { MapBounds } from '@/types/map'
+import { hasResolvedLocation, isInBounds } from '@/lib/utils/location'
+import { eventInDateRange } from '../utils/date'
 
-/**
- * Check if an event has a resolved location
- * @param event - The event to check
- * @returns Boolean indicating if the event has a resolved location
- */
-export function hasResolvedLocation(event: CmfEvent): boolean {
-    return !!(
-        event.resolved_location?.status === 'resolved' &&
-        event.resolved_location.lat &&
-        event.resolved_location.lng
-    )
-}
+// This file is for domain filters and Map filters logic. Map utilities are in location.ts
 
 /**
  * Apply date range filter to an event
@@ -20,15 +11,9 @@ export function hasResolvedLocation(event: CmfEvent): boolean {
  * @param dateRange - The date range to filter by (optional)
  * @returns Boolean indicating if the event passes the date filter
  */
-export function applyDateFilter(event: CmfEvent, dateRange?: { start: string; end: string }): boolean {
+export function applyDateFilter(event: CmfEvent, dateRange?: DateRangeIso): boolean {
     if (!dateRange) return true
-
-    const eventStart = new Date(event.start)
-    const eventEnd = new Date(event.end)
-    const rangeStart = new Date(dateRange.start)
-    const rangeEnd = new Date(dateRange.end)
-
-    return !(eventEnd < rangeStart || eventStart > rangeEnd)
+    return eventInDateRange(event, dateRange)
 }
 
 /**
@@ -68,16 +53,14 @@ export function applySearchFilter(event: CmfEvent, searchQuery?: string): boolea
  * @returns Boolean indicating if the event passes the map bounds filter
  */
 export function applyMapFilter(
-    event: CmfEvent,
+    cmfEvent: CmfEvent,
     mapBounds?: MapBounds,
     aggregateCenter?: { lat: number; lng: number }
 ): boolean {
     if (!mapBounds) return true
 
-    if (event.resolved_location?.status === 'resolved' && event.resolved_location.lat && event.resolved_location.lng) {
-        const lat = event.resolved_location.lat
-        const lng = event.resolved_location.lng
-        return lat >= mapBounds.south && lat <= mapBounds.north && lng >= mapBounds.west && lng <= mapBounds.east
+    if (hasResolvedLocation(cmfEvent)) {
+        return isInBounds({ mapBounds, cmfEvent })
     }
 
     // For unresolved events, check if their marker (at aggregate center) is within bounds
@@ -85,12 +68,7 @@ export function applyMapFilter(
         return true // If no aggregate center provided, don't filter unresolved events
     }
 
-    return (
-        aggregateCenter.lat >= mapBounds.south &&
-        aggregateCenter.lat <= mapBounds.north &&
-        aggregateCenter.lng >= mapBounds.west &&
-        aggregateCenter.lng <= mapBounds.east
-    )
+    return isInBounds({ mapBounds, lat: aggregateCenter.lat, lng: aggregateCenter.lng })
 }
 
 /**
@@ -103,4 +81,35 @@ export function applyUnknownLocationsFilter(event: CmfEvent, showUnknownLocation
     if (!showUnknownLocationsOnly) return true
 
     return !hasResolvedLocation(event)
+}
+
+/**
+ * Apply all domain filters (search, date, location type) to an event
+ * @param event - The event to filter
+ * @param filters - The domain filters to apply
+ * @returns Boolean indicating if the event passes all domain filters
+ */
+export function applyDomainFilters(event: CmfEvent, filters: DomainFilters): boolean {
+    return (
+        applySearchFilter(event, filters.searchQuery) &&
+        applyDateFilter(event, filters.dateRange) &&
+        applyUnknownLocationsFilter(event, filters.showUnknownLocationsOnly)
+    )
+}
+
+/**
+ * Apply all filters (domain + viewport) to an event
+ * @param event - The event to filter
+ * @param filters - The domain filters to apply
+ * @param viewport - The viewport bounds for map filtering (optional)
+ * @param aggregateCenter - The aggregate center for unresolved events (optional)
+ * @returns Boolean indicating if the event passes all filters
+ */
+export function applyAllFilters(
+    event: CmfEvent,
+    filters: DomainFilters,
+    viewport?: MapBounds,
+    aggregateCenter?: { lat: number; lng: number }
+): boolean {
+    return applyDomainFilters(event, filters) && applyMapFilter(event, viewport, aggregateCenter)
 }

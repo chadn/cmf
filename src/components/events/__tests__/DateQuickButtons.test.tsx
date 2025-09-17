@@ -1,12 +1,12 @@
 import React from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
 import '@testing-library/jest-dom'
-import DateQuickButtons from '../DateQuickButtons'
+import DateQuickButtons from '@/components/events/DateQuickButtons'
 import { dateQuickFilterLabels } from '@/lib/utils/date-constants'
 
 // Mock the DateQuickButtons component's date-dependent behavior
-jest.mock('../DateQuickButtons', () => {
-    const originalModule = jest.requireActual('../DateQuickButtons')
+jest.mock('@/components/events/DateQuickButtons', () => {
+    const originalModule = jest.requireActual('@/components/events/DateQuickButtons')
 
     // Add type for props
     const MockDateQuickButtons = (props: React.ComponentProps<typeof originalModule.default>) => {
@@ -91,8 +91,8 @@ describe('DateQuickButtons', () => {
         expect(mockSetEndValue).toHaveBeenCalledWith(todayValue - 1)
         // onDateRangeChange should be called with correct dates using proper day boundaries
         expect(mockOnDateRangeChange).toHaveBeenCalledWith({
-            start: expect.stringMatching(/^2023-06-14T11:01:00\.000Z$/),
-            end: expect.stringMatching(/^2023-07-14T06:59:59\.999Z$/),
+            startIso: expect.stringMatching(/^2023-06-14T11:01:00\.000Z$/),
+            endIso: expect.stringMatching(/^2023-07-14T06:59:59\.999Z$/),
         })
         // onDateQuickFilterChange should be called with 'past'
         expect(mockOnDateQuickFilterChange).toHaveBeenCalledWith('past')
@@ -119,8 +119,8 @@ describe('DateQuickButtons', () => {
         expect(mockSetStartValue).toHaveBeenCalledWith(todayValue)
         expect(mockSetEndValue).toHaveBeenCalledWith(totalDays)
         expect(mockOnDateRangeChange).toHaveBeenCalledWith({
-            start: expect.stringMatching(/^2023-07-14T11:01:00\.000Z$/),
-            end: expect.stringMatching(/^2023-08-14T06:59:59\.999Z$/),
+            startIso: expect.stringMatching(/^2023-07-14T11:01:00\.000Z$/),
+            endIso: expect.stringMatching(/^2023-08-14T06:59:59\.999Z$/),
         })
         expect(mockOnDateQuickFilterChange).toHaveBeenCalledWith('future')
     })
@@ -147,8 +147,8 @@ describe('DateQuickButtons', () => {
         expect(mockSetStartValue).toHaveBeenCalledWith(todayValue)
         expect(mockSetEndValue).toHaveBeenCalledWith(threeDaysLaterValue)
         expect(mockOnDateRangeChange).toHaveBeenCalledWith({
-            start: expect.stringMatching(/^2023-07-14T11:01:00\.000Z$/),
-            end: expect.stringMatching(/^2023-07-18T06:59:59\.999Z$/),
+            startIso: expect.stringMatching(/^2023-07-14T11:01:00\.000Z$/),
+            endIso: expect.stringMatching(/^2023-07-18T06:59:59\.999Z$/),
         })
         expect(mockOnDateQuickFilterChange).toHaveBeenCalledWith('next3days')
     })
@@ -178,8 +178,8 @@ describe('DateQuickButtons', () => {
         expect(mockSetStartValue).toHaveBeenCalledWith(fridayValue)
         expect(mockSetEndValue).toHaveBeenCalledWith(sundayValue)
         expect(mockOnDateRangeChange).toHaveBeenCalledWith({
-            start: expect.stringMatching(/^2023-07-14T11:01:00\.000Z$/),
-            end: expect.stringMatching(/^2023-07-17T06:59:59\.999Z$/),
+            startIso: expect.stringMatching(/^2023-07-14T11:01:00\.000Z$/),
+            endIso: expect.stringMatching(/^2023-07-17T06:59:59\.999Z$/),
         })
         expect(mockOnDateQuickFilterChange).toHaveBeenCalledWith('weekend')
     })
@@ -211,8 +211,8 @@ describe('DateQuickButtons', () => {
         expect(mockSetStartValue).toHaveBeenCalledWith(fridayValue)
         expect(mockSetEndValue).toHaveBeenCalledWith(sundayValue)
         expect(mockOnDateRangeChange).toHaveBeenCalledWith({
-            start: expect.stringMatching(/^2023-07-14T11:01:00\.000Z$/),
-            end: expect.stringMatching(/^2023-07-17T06:59:59\.999Z$/),
+            startIso: expect.stringMatching(/^2023-07-14T11:01:00\.000Z$/),
+            endIso: expect.stringMatching(/^2023-07-17T06:59:59\.999Z$/),
         })
     })
 
@@ -265,13 +265,13 @@ describe('DateQuickButtons', () => {
         expect(mockSetStartValue).toHaveBeenCalledWith(todayValue)
         expect(mockSetEndValue).toHaveBeenCalledWith(todayValue)
         expect(mockOnDateRangeChange).toHaveBeenCalledWith({
-            start: expect.stringMatching(/^2023-07-14T11:01:00\.000Z$/),
-            end: expect.stringMatching(/^2023-07-15T06:59:59\.999Z$/),
+            startIso: expect.stringMatching(/^2023-07-14T11:01:00\.000Z$/),
+            endIso: expect.stringMatching(/^2023-07-15T06:59:59\.999Z$/),
         })
         expect(mockOnDateQuickFilterChange).toHaveBeenCalledWith('today')
     })
 
-    // Note: URL parameter handling tests removed as this functionality 
+    // Note: URL parameter handling tests removed as this functionality
     // was moved to DateAndSearchFilters component
 
     it('highlights the active filter button', () => {
@@ -345,8 +345,8 @@ describe('DateQuickButtons', () => {
         expect(mockSetStartValue).toHaveBeenCalledWith(todayValue)
         expect(mockSetEndValue).toHaveBeenCalledWith(smallTotalDays)
         expect(mockOnDateRangeChange).toHaveBeenCalledWith({
-            start: expect.stringMatching(/^2023-07-14T11:01:00\.000Z$/),
-            end: expect.stringMatching(/^2023-07-20T06:59:59\.999Z$/),
+            startIso: expect.stringMatching(/^2023-07-14T11:01:00\.000Z$/),
+            endIso: expect.stringMatching(/^2023-07-20T06:59:59\.999Z$/),
         })
     })
 })

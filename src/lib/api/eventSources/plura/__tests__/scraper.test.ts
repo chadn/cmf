@@ -1,4 +1,4 @@
-/* TODO: wait till jest and cheerio can play nicely together 
+/* TODO: wait till jest and cheerio can play nicely together
 
 cheerio@1.x uses native ES module syntax (import, export) only.
 Jest, by default, runs in CommonJS mode and cannot handle ESM dependencies unless explicitly configured.
@@ -166,14 +166,14 @@ jest.mock('@/lib/utils/logr', () => ({
     },
 }))
 
-jest.mock('../cache', () => ({
+jest.mock('@/lib/api/eventSources/plura/cache', () => ({
     getCityListCache: jest.fn(),
     setCityListCache: jest.fn(),
     getCachedEvent: jest.fn(),
 }))
 
 // Mock the parsePluraDateString and other utility functions
-jest.mock('../utils', () => ({
+jest.mock('@/lib/api/eventSources/plura/utils', () => ({
     parsePluraDateString: jest.fn(() => ({
         startDate: new Date('2023-05-15T14:00:00'),
         endDate: new Date('2023-05-15T15:00:00'),

@@ -49,7 +49,7 @@ const fetchAndGeocode = async (
     const eventsWithLocationResolved = events.map((event) => {
         // Always populate startSecs for reliable sorting
         event.startSecs = Math.round(new Date(event.start).getTime() / 1000)
-        
+
         if (event.location && locationMap.has(event.location)) {
             const resolved_location = locationMap.get(event.location)
             if (event.tz === 'LOCAL' && resolved_location) {

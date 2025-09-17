@@ -4,6 +4,7 @@ import { CmfEvent } from './events'
  * Represents the current view state of the map
  * Controls which part of the map is visible to the user
  */
+// prettier-ignore
 export interface MapViewport {
     latitude: number    // Center latitude of the map view
     longitude: number   // Center longitude of the map view
@@ -16,6 +17,7 @@ export interface MapViewport {
  * Represents the geographical bounds of the current map view
  * Used for filtering events that are within the visible area
  */
+// prettier-ignore
 export interface MapBounds {
     north: number   // Northern-most latitude visible on the map
     south: number   // Southern-most latitude visible on the map
@@ -27,11 +29,12 @@ export interface MapBounds {
  * Represents a marker on the map that can contain multiple events at the same location
  * Used to cluster events that occur at the exact same coordinates
  */
+// prettier-ignore
 export interface MapMarker {
-    id: string              // Unique identifier for the marker, typically based on coordinates
-    latitude: number        // Latitude position of the marker
-    longitude: number       // Longitude position of the marker
-    events: CmfEvent[] // Array of events that occur at this location
+    id: string          // Unique identifier for the marker, typically based on coordinates
+    latitude: number    // Latitude position of the marker
+    longitude: number   // Longitude position of the marker
+    events: CmfEvent[]  // Array of events that occur at this location
     // TODO: Consider adding a color or icon property to distinguish different types of events
 }
 

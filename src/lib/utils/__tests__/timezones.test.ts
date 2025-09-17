@@ -1,4 +1,9 @@
-import { getCityStateFromCity, getTimezoneFromCity, convertWallTimeToZone, parseDateString } from '../timezones'
+import {
+    getCityStateFromCity,
+    getTimezoneFromCity,
+    convertWallTimeToZone,
+    parseDateString,
+} from '@/lib/utils/timezones'
 
 describe('timezones utilities', () => {
     describe('getCityStateFromCity', () => {

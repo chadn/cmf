@@ -1,7 +1,7 @@
 import React from 'react'
 import { render, screen, fireEvent, act } from '@testing-library/react'
 import '@testing-library/jest-dom'
-import MapContainer from '../MapContainer'
+import MapContainer from '@/components/map/MapContainer'
 import { CmfEvent } from '@/types/events'
 
 // Mock map instance
@@ -119,7 +119,7 @@ jest.mock('react-map-gl', () => {
 })
 
 // Mock MapPopup component
-jest.mock('../MapPopup', () => {
+jest.mock('@/components/map/MapPopup', () => {
     interface MapPopupProps {
         marker: {
             id: string
@@ -153,7 +153,7 @@ jest.mock('../MapPopup', () => {
 })
 
 // Mock MapMarker component
-jest.mock('../MapMarker', () => {
+jest.mock('@/components/map/MapMarker', () => {
     const MockMapMarker = ({ count, isSelected }: { count: number; isSelected: boolean }) => (
         <div data-testid="map-marker-component" data-count={count} data-selected={isSelected}>
             Marker ({count}) {isSelected ? 'Selected' : ''}

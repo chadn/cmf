@@ -1,0 +1,11 @@
+# Dependencies
+node_modules/
+.next/
+build/
+dist/
+
+# Generated files
+coverage/
+.jest-cache/
+.cache/
+*.logl

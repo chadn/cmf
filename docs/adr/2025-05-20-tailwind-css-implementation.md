@@ -28,6 +28,7 @@ Use Tailwind CSS with component-scoped customizations and CSS variables for them
 ## Consequences
 
 ### Positive
+
 - Utility-first approach enables rapid UI development
 - Consistent design system through Tailwind's design tokens
 - Excellent responsive design support for map/list layout
@@ -35,17 +36,20 @@ Use Tailwind CSS with component-scoped customizations and CSS variables for them
 - CSS variables enable runtime theming if needed
 
 ### Negative
+
 - Initial learning curve for utility-first approach
 - Potential for large class strings in components
 - Build-time dependency for purging unused styles
 
 ### Implementation Details
+
 - Tailwind configured for Next.js with content purging
 - Custom CSS variables in `globals.css` for theme values
 - shadcn/ui components provide consistent base styling
 - Component-specific styles via Tailwind utilities
 
 ### Affected Components
+
 - All UI components use Tailwind utility classes
 - `src/app/globals.css` - Global styles and CSS variables
 - `tailwind.config.js` - Tailwind configuration with custom theme

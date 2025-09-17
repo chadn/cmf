@@ -10,6 +10,11 @@ export interface ParsedIcsEvent {
     url?: string
 }
 
+/**
+ * Parses ICS (iCalendar) content and extracts event information
+ * @param icsContent - Raw ICS file content as string
+ * @returns Array of parsed event objects
+ */
 export function parseIcsContent(icsContent: string): ParsedIcsEvent[] {
     try {
         const jcalData = ICAL.parse(icsContent)

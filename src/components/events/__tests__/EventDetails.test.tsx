@@ -1,6 +1,6 @@
 import React from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
-import EventDetails from '../EventDetails'
+import EventDetails from '@/components/events/EventDetails'
 import '@testing-library/jest-dom'
 import { CmfEvent } from '@/types/events'
 

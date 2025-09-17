@@ -10,6 +10,9 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
     title: 'Calendar Map Filter',
     description: 'View calendar events on a map and filter by location',
+    icons: {
+        icon: '/icons/favicon.ico',
+    },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

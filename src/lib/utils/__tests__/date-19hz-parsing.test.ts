@@ -3,7 +3,7 @@
  * Based on real examples from the 19hz events page
  */
 
-import { parse19hzDateRange } from '../date-19hz-parsing'
+import { parse19hzDateRange } from '@/lib/utils/date-19hz-parsing'
 
 describe('parse19hzDateRange', () => {
     // Helper to check if parsed dates are reasonable

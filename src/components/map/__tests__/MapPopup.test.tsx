@@ -1,7 +1,7 @@
 import React from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
 import '@testing-library/jest-dom'
-import MapPopup from '../MapPopup'
+import MapPopup from '@/components/map/MapPopup'
 import { MapMarker } from '@/types/map'
 import { CmfEvent } from '@/types/events'
 

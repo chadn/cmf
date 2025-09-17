@@ -1,14 +1,21 @@
 {
     "name": "calendar-map-filter",
-    "version": "0.2.17",
+    "version": "0.3.0",
     "private": true,
     "scripts": {
         "dev": "next dev",
         "build": "next build",
         "start": "next start",
         "lint": "next lint",
-        "cache": "node --experimental-transform-types src/scripts/upstash-redis.ts",
-        "test": "jest --coverage && node src/scripts/show-total-loc.mjs && date && echo"
+        "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
+        "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
+        "format:diff": "npx prettier $FN | git --no-pager diff --no-index $FN -",
+        "test": "jest --coverage && node src/scripts/show-total-loc.mjs && date && echo",
+        "test:e2e": "playwright test",
+        "test:console": "TEST_URL=${TEST_URL:-/} playwright test tests/e2e/console-logs.spec.ts --headed",
+        "test:pageload": "playwright test tests/e2e/page-load.spec.ts --headed",
+        "test:url": "TEST_URL=${TEST_URL} playwright test tests/e2e/page-load.spec.ts --headed --reporter=list && echo '\n📊 To view HTML report, run: npm run test:report'",
+        "cache": "node --experimental-transform-types src/scripts/upstash-redis.ts"
     },
     "dependencies": {
         "@math.gl/web-mercator": "^4.1.0",
@@ -43,6 +50,7 @@
         "tz-lookup": "^6.1.25"
     },
     "devDependencies": {
+        "@playwright/test": "^1.55.0",
         "@testing-library/jest-dom": "^6.1.5",
         "@testing-library/react": "^14.1.2",
         "@types/cheerio": "^0.22.35",
@@ -63,6 +71,7 @@
         "jest": "^29.7.0",
         "jest-environment-jsdom": "^29.7.0",
         "postcss": "^8.4.32",
+        "prettier": "^3.6.2",
         "tailwindcss": "^3.3.6",
         "typescript": "^5.3.3"
     }

@@ -6,26 +6,40 @@ import {
     calculateBoundsFromMarkers,
     calculateBoundsFromViewport,
     llzToViewport,
-    parseAsZoom,
-    parseAsLatLon,
-    parseAsEventsSource,
     viewstate2Viewport,
-} from '../location'
+} from '@/lib/utils/location'
 import { MapMarker } from '@/types/map'
 import { CmfEvent } from '@/types/events'
-import { ExampleEventsSources } from '@/lib/events/examples'
 
 // Mock WebMercatorViewport
 jest.mock('@math.gl/web-mercator', () => {
     return class WebMercatorViewport {
-        constructor(options: { width: number; height: number }) {
-            // Store dimensions for potential use
+        constructor(options: {
+            latitude: number
+            longitude: number
+            zoom: number
+            width: number
+            height: number
+            bearing?: number
+            pitch?: number
+        }) {
+            // Store viewport parameters
+            this.latitude = options.latitude
+            this.longitude = options.longitude
+            this.zoom = options.zoom
             this.width = options.width || 800
             this.height = options.height || 600
+            this.bearing = options.bearing || 0
+            this.pitch = options.pitch || 0
         }
 
+        latitude: number
+        longitude: number
+        zoom: number
         width: number
         height: number
+        bearing: number
+        pitch: number
 
         fitBounds(bounds: [[number, number], [number, number]]) {
             // Simple mock implementation that returns the center of the bounds with a fixed zoom
@@ -49,25 +63,27 @@ jest.mock('@math.gl/web-mercator', () => {
                 pitch: 0,
             }
         }
+
+        getBounds() {
+            // Mock implementation that returns bounds based on stored viewport center and zoom
+            // Using simplified calculations for testing
+            const centerLat = this.latitude
+            const centerLng = this.longitude
+            const zoom = this.zoom
+
+            // Calculate approximate bounds based on zoom level
+            // Higher zoom = smaller area visible
+            const scale = Math.pow(2, 14 - zoom)
+            const latOffset = 0.05 * scale
+            const lngOffset = 0.1 * scale
+
+            return [
+                [centerLng - lngOffset, centerLat - latOffset], // [west, south]
+                [centerLng + lngOffset, centerLat + latOffset], // [east, north]
+            ]
+        }
     }
 })
-
-// Mock the exampleEventsSources for parseAsEventsSource tests
-jest.mock('@/lib/events/examples', () => ({
-    ExampleEventsSources: [
-        { id: 'example:123', shortId: 'ex123' },
-        { id: 'example:456', shortId: 'ex456' },
-        { id: 'example:789', shortId: null }, // One without shortId
-    ],
-}))
-
-// Mock the nuqs parser
-jest.mock('nuqs', () => ({
-    createParser: jest.fn().mockImplementation((config) => ({
-        parse: config.parse,
-        serialize: config.serialize,
-    })),
-}))
 
 describe('Location and Map Utilities', () => {
     describe('truncateLocation', () => {
@@ -100,14 +116,14 @@ describe('Location and Map Utilities', () => {
             const result = calculateMapBoundsAndViewport([], 800, 600)
 
             expect(result.bounds).toEqual({
-                north: 79,
-                south: -44,
-                east: -29,
-                west: -208,
+                north: 72.00001,
+                south: -8.00001,
+                east: -79.99999,
+                west: -156.00001,
             })
             expect(result.viewport).toEqual({
-                latitude: 17.5,
-                longitude: -118.5,
+                latitude: 32.0,
+                longitude: -118.0,
                 zoom: expect.any(Number),
                 bearing: 0,
                 pitch: 0,
@@ -231,10 +247,10 @@ describe('Location and Map Utilities', () => {
             const result = calculateBoundsFromMarkers([])
 
             expect(result).toEqual({
-                north: 79,
-                south: -44,
-                east: -29,
-                west: -208,
+                north: 72.00001,
+                south: -8.00001,
+                east: -79.99999,
+                west: -156.00001,
             })
         })
 
@@ -542,7 +558,7 @@ describe('Location and Map Utilities', () => {
                 pitch: 0,
             }
 
-            const result = calculateBoundsFromViewport(viewport)
+            const result = calculateBoundsFromViewport(viewport, 800, 600)
 
             // At zoom level 10, the visible area should be roughly these bounds
             expect(result.north).toBeGreaterThan(viewport.latitude)
@@ -568,8 +584,8 @@ describe('Location and Map Utilities', () => {
                 pitch: 0,
             }
 
-            const lowZoomBounds = calculateBoundsFromViewport(lowZoomViewport)
-            const highZoomBounds = calculateBoundsFromViewport(highZoomViewport)
+            const lowZoomBounds = calculateBoundsFromViewport(lowZoomViewport, 800, 600)
+            const highZoomBounds = calculateBoundsFromViewport(highZoomViewport, 800, 600)
 
             // Calculate the area of each bounds
             const lowZoomArea = (lowZoomBounds.north - lowZoomBounds.south) * (lowZoomBounds.east - lowZoomBounds.west)
@@ -597,8 +613,8 @@ describe('Location and Map Utilities', () => {
                 pitch: 0,
             }
 
-            const minZoomBounds = calculateBoundsFromViewport(minZoomViewport)
-            const maxZoomBounds = calculateBoundsFromViewport(maxZoomViewport)
+            const minZoomBounds = calculateBoundsFromViewport(minZoomViewport, 800, 600)
+            const maxZoomBounds = calculateBoundsFromViewport(maxZoomViewport, 800, 600)
 
             // Min zoom should show a larger area than max zoom
             const minZoomArea = (minZoomBounds.north - minZoomBounds.south) * (minZoomBounds.east - minZoomBounds.west)
@@ -694,91 +710,6 @@ describe('Location and Map Utilities', () => {
                 bearing: 15,
                 pitch: 30,
             })
-        })
-    })
-
-    describe('parseAsZoom', () => {
-        it('should parse valid zoom values', () => {
-            expect(parseAsZoom.parse('10')).toBe(10)
-            expect(parseAsZoom.parse('12.5')).toBe(12.5)
-        })
-
-        it('should return null for invalid zoom values', () => {
-            expect(parseAsZoom.parse('0')).toBeNull() // Below min
-            expect(parseAsZoom.parse('23')).toBeNull() // Above max
-            expect(parseAsZoom.parse('not-a-number')).toBeNull() // Not a number
-        })
-
-        it('should serialize zoom values correctly', () => {
-            expect(parseAsZoom.serialize(10)).toBe('10') // Integer
-            expect(parseAsZoom.serialize(12.5)).toBe('12.5') // Decimal
-        })
-    })
-
-    describe('parseAsLatLon', () => {
-        it('should parse valid latitude/longitude values', () => {
-            expect(parseAsLatLon.parse('37.7749')).toBe(37.7749)
-            expect(parseAsLatLon.parse('-122.4194')).toBe(-122.4194)
-        })
-
-        it('should return null for invalid latitude/longitude values', () => {
-            expect(parseAsLatLon.parse('200')).toBeNull() // Above max
-            expect(parseAsLatLon.parse('-200')).toBeNull() // Below min
-            expect(parseAsLatLon.parse('not-a-number')).toBeNull() // Not a number
-        })
-
-        it('should serialize latitude/longitude values correctly', () => {
-            expect(parseAsLatLon.serialize(37.7749)).toBe('37.77490')
-            expect(parseAsLatLon.serialize(-122.4194)).toBe('-122.41940')
-        })
-    })
-
-    describe('parseAsEventsSource', () => {
-        it('should parse valid event source IDs', () => {
-            expect(parseAsEventsSource.parse('facebook:123')).toBe('facebook:123')
-            expect(parseAsEventsSource.parse('meetup:456')).toBe('meetup:456')
-        })
-
-        it('should parse example event source shortIds', () => {
-            expect(parseAsEventsSource.parse('ex123')).toBe('example:123')
-            expect(parseAsEventsSource.parse('ex456')).toBe('example:456')
-        })
-
-        it('should return null for invalid event source IDs', () => {
-            expect(parseAsEventsSource.parse('invalid-format')).toBeNull()
-            expect(parseAsEventsSource.parse('123')).toBeNull()
-        })
-
-        it('should serialize event source IDs correctly', () => {
-            // Mock the behavior of ExampleEventsSources.find
-            // Setup mock implementations for this test only
-            const originalFind = ExampleEventsSources.find
-            ExampleEventsSources.find = jest.fn((callback) => {
-                // Return mockEventsSource for example:123 and example:456
-                if (callback({ id: 'example:123', shortId: 'ex123' })) {
-                    return { id: 'example:123', shortId: 'ex123' }
-                }
-                if (callback({ id: 'example:456', shortId: 'ex456' })) {
-                    return { id: 'example:456', shortId: 'ex456' }
-                }
-                // Return null for other cases like example:789
-                return null
-            }) as jest.Mock
-
-            try {
-                // Regular IDs should remain unchanged
-                expect(parseAsEventsSource.serialize('facebook:123')).toBe('facebook:123')
-
-                // Example IDs with shortId should be converted to shortIds
-                expect(parseAsEventsSource.serialize('example:123')).toBe('ex123')
-                expect(parseAsEventsSource.serialize('example:456')).toBe('ex456')
-
-                // Example without shortId should return the original ID
-                expect(parseAsEventsSource.serialize('example:789')).toBe('example:789')
-            } finally {
-                // Restore the original find method after the test
-                ExampleEventsSources.find = originalFind
-            }
         })
     })
 })

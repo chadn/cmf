@@ -1,4 +1,4 @@
-import { generateGoogleCalendarUrl, generateIcsContent, downloadIcsFile } from '../calendar'
+import { generateGoogleCalendarUrl, generateIcsContent, downloadIcsFile } from '@/lib/utils/calendar'
 import { CmfEvent, EventsSource } from '@/types/events'
 
 // Mock window.location for the tests

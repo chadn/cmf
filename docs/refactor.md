@@ -4,29 +4,52 @@ This is a template for AI, not for humans, to be update many times during compli
 
 > **📋 Architecture Decisions**: For architectural decisions and rationale, see [Architecture Decision Records (ADR)](adr/README.md)
 
+## Table of Contents
+
+- [Latest Refactor: [Title] (v[X.Y.Z])](#latest-refactor-title-vxyz)
+  - [What Was Accomplished](#what-was-accomplished)
+  - [Implementation Details](#implementation-details)
+    - [[Specific Changes Made]](#specific-changes-made)
+  - [Files Modified ([N] files total)](#files-modified-n-files-total)
+  - [Lessons Learned](#lessons-learned)
+  - [Current Status](#current-status)
+- [Future Improvement Opportunities](#future-improvement-opportunities)
+  - [1. **[Improvement Name]** (Priority: High/Medium/Low)](#1-improvement-name-priority-highmediumlow)
+  - [2. **[Next Improvement]** (Priority: High/Medium/Low)](#2-next-improvement-priority-highmediumlow)
+- [Lessons Learned for Future Refactors](#lessons-learned-for-future-refactors)
+- [Next Refactoring Candidates](#next-refactoring-candidates)
+- [Refactoring Guidelines](#refactoring-guidelines)
+- [React Best Practices Analysis](#react-best-practices-analysis)
+  - [Current Strengths](#current-strengths)
+  - [Missing or Improvable Practices](#missing-or-improvable-practices)
+  - [Performance Opportunities](#performance-opportunities)
+  - [React Best Practices Scorecard](#react-best-practices-scorecard)
+  - [Recommended Implementation Order](#recommended-implementation-order)
+  - [Code Quality Patterns Already Excellent](#code-quality-patterns-already-excellent)
+
 ## Latest Refactor: [Title] (v[X.Y.Z])
 
-### What Was Accomplished ✅
+### What Was Accomplished
 
 **Issue Fixed**: [Brief description of the problem that was solved]
 
 **Key Solutions Implemented**:
 
--   **[Solution 1]**: [Brief description] → See [YYYY-MM-DD-adr-title](adr/YYYY-MM-DD-adr-title.md) if architectural decision
--   **[Solution 2]**: [Brief description] → See [YYYY-MM-DD-adr-title](adr/YYYY-MM-DD-adr-title.md) if architectural decision
+- **[Solution 1]**: [Brief description] → See [YYYY-MM-DD-adr-title](adr/YYYY-MM-DD-adr-title.md) if architectural decision
+- **[Solution 2]**: [Brief description] → See [YYYY-MM-DD-adr-title](adr/YYYY-MM-DD-adr-title.md) if architectural decision
 
 ### Implementation Details
 
 #### [Specific Changes Made]
 
--   [Detailed implementation notes]
--   [Files modified, lines changed, etc.]
+- [Detailed implementation notes]
+- [Files modified, lines changed, etc.]
 
 ### Files Modified ([N] files total)
 
 **[Category]**:
 
--   `path/to/file.ts` - [what changed]
+- `path/to/file.ts` - [what changed]
 
 ### Lessons Learned
 
@@ -40,9 +63,9 @@ This is a template for AI, not for humans, to be update many times during compli
 1. [Challenge 1]
 2. [Challenge 2]
 
-### Current Status: ✅ Complete & Working / 🔄 In Progress / ❌ Needs Work
+### Current Status
 
--   [Status details]
+- [Status details]
 
 ---
 
@@ -80,59 +103,59 @@ This is a template for AI, not for humans, to be update many times during compli
 
 **DO**:
 
--   ✅ Keep commits focused and small
--   ✅ Update tests alongside code changes
--   ✅ Document architectural decisions in ADRs
--   ✅ Prefer explicit state over inferred state
--   ✅ Add comprehensive debugging tools
+- ✅ Keep commits focused and small
+- ✅ Update tests alongside code changes
+- ✅ Document architectural decisions in ADRs
+- ✅ Prefer explicit state over inferred state
+- ✅ Add comprehensive debugging tools
 
 **DON'T**:
 
--   ❌ Change working code without clear benefit
--   ❌ Create large commits that mix concerns
--   ❌ Remove safety mechanisms without replacements
--   ❌ Refactor without understanding current behavior
--   ❌ Skip updating documentation
+- ❌ Change working code without clear benefit
+- ❌ Create large commits that mix concerns
+- ❌ Remove safety mechanisms without replacements
+- ❌ Refactor without understanding current behavior
+- ❌ Skip updating documentation
 
 ## React Best Practices Analysis
 
-### Current Strengths ✅
+### Current Strengths
 
 **Component Architecture**:
 
--   ✅ Clean separation by feature (`events/`, `map/`, `layout/`, `common/`)
--   ✅ Consistent `React.FC` patterns with proper TypeScript interfaces
--   ✅ Single Responsibility Principle - focused components
--   ✅ Well-structured UI component library with Radix UI
+- ✅ Clean separation by feature (`events/`, `map/`, `layout/`, `common/`)
+- ✅ Consistent `React.FC` patterns with proper TypeScript interfaces
+- ✅ Single Responsibility Principle - focused components
+- ✅ Well-structured UI component library with Radix UI
 
 **Custom Hooks**:
 
--   ✅ Excellent separation: `useEventsManager` and `useMap` abstract complex logic
--   ✅ Proper dependency arrays in all `useEffect`, `useCallback`, `useMemo`
--   ✅ Hook composition: combines `useSWR`, `useReducer`, internal logic cleanly
--   ✅ Comprehensive test coverage for custom hooks
+- ✅ Excellent separation: `useEventsManager` and `useMap` abstract complex logic
+- ✅ Proper dependency arrays in all `useEffect`, `useCallback`, `useMemo`
+- ✅ Hook composition: combines `useSWR`, `useReducer`, internal logic cleanly
+- ✅ Comprehensive test coverage for custom hooks
 
 **State Management**:
 
--   ✅ Strategic `useReducer` for complex state transitions
--   ✅ Clear state machine pattern in main page component
--   ✅ URL state synchronization with `nuqs`
--   ✅ No prop drilling - proper state lifting
+- ✅ Strategic `useReducer` for complex state transitions
+- ✅ Clear state machine pattern in main page component
+- ✅ URL state synchronization with `nuqs`
+- ✅ No prop drilling - proper state lifting
 
 **Performance**:
 
--   ✅ Strategic `useCallback` for event handlers (19+ instances)
--   ✅ `useMemo` for expensive calculations (filtering, sorting, markers)
--   ✅ Debounced map bounds updates
--   ✅ Efficient re-renders through proper memoization
+- ✅ Strategic `useCallback` for event handlers (19+ instances)
+- ✅ `useMemo` for expensive calculations (filtering, sorting, markers)
+- ✅ Debounced map bounds updates
+- ✅ Efficient re-renders through proper memoization
 
 **TypeScript Integration**:
 
--   ✅ Strict mode enabled, comprehensive type definitions
--   ✅ No `@ts-ignore` usage - good type discipline
--   ✅ Proper generic usage in utilities and hooks
+- ✅ Strict mode enabled, comprehensive type definitions
+- ✅ No `@ts-ignore` usage - good type discipline
+- ✅ Proper generic usage in utilities and hooks
 
-### Missing or Improvable Practices ⚠️
+### Missing or Improvable Practices
 
 **1. Error Boundaries** ❌ Missing (Priority: High)
 
@@ -174,10 +197,10 @@ const DatePicker = React.lazy(() => import('./DatePicker'))
 
 **Current Excellent Practices**:
 
--   Debounced map bounds updates prevent excessive API calls
--   Pure functions in `FilterEventsManager` enable efficient memoization
--   Smart dependency arrays prevent unnecessary re-renders
--   Unique keys in `EventList` optimize React reconciliation
+- Debounced map bounds updates prevent excessive API calls
+- Pure functions in `FilterEventsManager` enable efficient memoization
+- Smart dependency arrays prevent unnecessary re-renders
+- Unique keys in `EventList` optimize React reconciliation
 
 **Potential Optimizations**:
 
@@ -230,12 +253,12 @@ const ComponentWithPerfMonitor = () => {
 
 ### Code Quality Patterns Already Excellent
 
--   ✅ Consistent naming conventions
--   ✅ Pure functions for business logic
--   ✅ Proper separation of concerns
--   ✅ Comprehensive testing with React Testing Library
--   ✅ Accessibility considerations in tests
--   ✅ No anti-patterns (no direct DOM manipulation, proper keys, etc.)
+- ✅ Consistent naming conventions
+- ✅ Pure functions for business logic
+- ✅ Proper separation of concerns
+- ✅ Comprehensive testing with React Testing Library
+- ✅ Accessibility considerations in tests
+- ✅ No anti-patterns (no direct DOM manipulation, proper keys, etc.)
 
 **Assessment**: CMF demonstrates **mature React development practices** with a solid 85/100 score. The main gaps are in error boundaries and strategic memoization, but the foundation is excellent for scaling and maintenance.
 

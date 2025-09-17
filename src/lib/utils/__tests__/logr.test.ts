@@ -1,7 +1,7 @@
 /**
  * Tests for the logr utility
  */
-import { logr } from '../logr'
+import { logr } from '@/lib/utils/logr'
 
 // Mock console methods
 const originalConsoleLog = console.log

@@ -1,8 +1,8 @@
 import React from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
-import EventList from '../EventList'
+import EventList from '@/components/events/EventList'
 import '@testing-library/jest-dom'
-import { CmfEvent, FilteredEvents } from '@/types/events'
+import { CmfEvent, CmfEvents } from '@/types/events'
 
 // Mock the truncateLocation function to ensure consistent test behavior
 jest.mock('@/lib/utils/location', () => ({
@@ -101,7 +101,7 @@ describe('EventList', () => {
         },
     ]
 
-    const mockEventsManager: FilteredEvents = {
+    const mockEventsManager: CmfEvents = {
         allEvents: mockEvents,
         visibleEvents: mockEvents,
         hiddenCounts: {
@@ -117,7 +117,7 @@ describe('EventList', () => {
 
         render(
             <EventList
-                evts={mockEventsManager}
+                cmfEvents={mockEventsManager}
                 selectedEventId={null}
                 onEventSelect={mockOnEventSelect}
                 apiIsLoading={false}
@@ -142,7 +142,7 @@ describe('EventList', () => {
 
         render(
             <EventList
-                evts={mockEventsManager}
+                cmfEvents={mockEventsManager}
                 selectedEventId={null}
                 onEventSelect={mockOnEventSelect}
                 apiIsLoading={false}
@@ -161,7 +161,7 @@ describe('EventList', () => {
 
         render(
             <EventList
-                evts={mockEventsManager}
+                cmfEvents={mockEventsManager}
                 selectedEventId={null}
                 onEventSelect={mockOnEventSelect}
                 apiIsLoading={true}
@@ -173,7 +173,7 @@ describe('EventList', () => {
 
     it('displays empty state when no events are found', () => {
         const mockOnEventSelect = jest.fn()
-        const emptyEventsManager: FilteredEvents = {
+        const emptyEventsManager: CmfEvents = {
             allEvents: [],
             visibleEvents: [],
             hiddenCounts: {
@@ -186,7 +186,7 @@ describe('EventList', () => {
 
         render(
             <EventList
-                evts={emptyEventsManager}
+                cmfEvents={emptyEventsManager}
                 selectedEventId={null}
                 onEventSelect={mockOnEventSelect}
                 apiIsLoading={false}
@@ -198,7 +198,12 @@ describe('EventList', () => {
 
     it('sorts events by name when name header is clicked', () => {
         render(
-            <EventList evts={mockEventsManager} selectedEventId={null} onEventSelect={jest.fn()} apiIsLoading={false} />
+            <EventList
+                cmfEvents={mockEventsManager}
+                selectedEventId={null}
+                onEventSelect={jest.fn()}
+                apiIsLoading={false}
+            />
         )
 
         // Click on the name column header
@@ -224,7 +229,12 @@ describe('EventList', () => {
 
     it('sorts events by start date when date header is clicked', () => {
         render(
-            <EventList evts={mockEventsManager} selectedEventId={null} onEventSelect={jest.fn()} apiIsLoading={false} />
+            <EventList
+                cmfEvents={mockEventsManager}
+                selectedEventId={null}
+                onEventSelect={jest.fn()}
+                apiIsLoading={false}
+            />
         )
 
         // Click on the start date column header
@@ -253,7 +263,12 @@ describe('EventList', () => {
 
     it('sorts events by duration when duration header is clicked', () => {
         render(
-            <EventList evts={mockEventsManager} selectedEventId={null} onEventSelect={jest.fn()} apiIsLoading={false} />
+            <EventList
+                cmfEvents={mockEventsManager}
+                selectedEventId={null}
+                onEventSelect={jest.fn()}
+                apiIsLoading={false}
+            />
         )
 
         // Click on the duration column header (might show as "Dur." in small screens)
@@ -276,7 +291,12 @@ describe('EventList', () => {
 
     it('sorts events by location when location header is clicked', () => {
         render(
-            <EventList evts={mockEventsManager} selectedEventId={null} onEventSelect={jest.fn()} apiIsLoading={false} />
+            <EventList
+                cmfEvents={mockEventsManager}
+                selectedEventId={null}
+                onEventSelect={jest.fn()}
+                apiIsLoading={false}
+            />
         )
 
         // Click on the location column header
@@ -299,7 +319,12 @@ describe('EventList', () => {
 
     it('expands and collapses long location text when clicked', () => {
         render(
-            <EventList evts={mockEventsManager} selectedEventId={null} onEventSelect={jest.fn()} apiIsLoading={false} />
+            <EventList
+                cmfEvents={mockEventsManager}
+                selectedEventId={null}
+                onEventSelect={jest.fn()}
+                apiIsLoading={false}
+            />
         )
 
         // Find the long location that should be truncated
@@ -329,7 +354,12 @@ describe('EventList', () => {
 
     it('handles keyboard navigation for location expansion', () => {
         render(
-            <EventList evts={mockEventsManager} selectedEventId={null} onEventSelect={jest.fn()} apiIsLoading={false} />
+            <EventList
+                cmfEvents={mockEventsManager}
+                selectedEventId={null}
+                onEventSelect={jest.fn()}
+                apiIsLoading={false}
+            />
         )
 
         // Find the long location element
@@ -354,7 +384,7 @@ describe('EventList', () => {
     it('highlights the selected event', () => {
         render(
             <EventList
-                evts={mockEventsManager}
+                cmfEvents={mockEventsManager}
                 selectedEventId="event2"
                 onEventSelect={jest.fn()}
                 apiIsLoading={false}
@@ -374,7 +404,12 @@ describe('EventList', () => {
 
     it('displays "No location" for events without a location', () => {
         render(
-            <EventList evts={mockEventsManager} selectedEventId={null} onEventSelect={jest.fn()} apiIsLoading={false} />
+            <EventList
+                cmfEvents={mockEventsManager}
+                selectedEventId={null}
+                onEventSelect={jest.fn()}
+                apiIsLoading={false}
+            />
         )
 
         expect(screen.getByText('No location')).toBeInTheDocument()
@@ -383,19 +418,24 @@ describe('EventList', () => {
     it('uses a unique table key when events content changes with same length', () => {
         const mockOnEventSelect = jest.fn()
 
-        const first: FilteredEvents = {
+        const first: CmfEvents = {
             ...mockEventsManager,
             visibleEvents: [mockEvents[0], mockEvents[1]],
             allEvents: [mockEvents[0], mockEvents[1]],
         }
-        const second: FilteredEvents = {
+        const second: CmfEvents = {
             ...mockEventsManager,
             visibleEvents: [mockEvents[2], mockEvents[3]],
             allEvents: [mockEvents[2], mockEvents[3]],
         }
 
         const { rerender, container } = render(
-            <EventList evts={first} selectedEventId={null} onEventSelect={mockOnEventSelect} apiIsLoading={false} />
+            <EventList
+                cmfEvents={first}
+                selectedEventId={null}
+                onEventSelect={mockOnEventSelect}
+                apiIsLoading={false}
+            />
         )
 
         const firstTable = container.querySelector('table.event-list-table')
@@ -403,7 +443,12 @@ describe('EventList', () => {
 
         // Rerender with different events but same count
         rerender(
-            <EventList evts={second} selectedEventId={null} onEventSelect={mockOnEventSelect} apiIsLoading={false} />
+            <EventList
+                cmfEvents={second}
+                selectedEventId={null}
+                onEventSelect={mockOnEventSelect}
+                apiIsLoading={false}
+            />
         )
 
         const secondTable = container.querySelector('table.event-list-table')

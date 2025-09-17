@@ -1,5 +1,4 @@
 // utils-shared.ts for both client and server
-
 //import { logr } from '@/lib/utils/logr'
 
 /**
@@ -60,10 +59,47 @@ export const getSizeOfAny = (
     }
 }
 
-// given a date in string or date object, return a string of the date rounded to the nearest hour in ISO 8601 format
+/**
+ * Rounds a date to the nearest hour in ISO 8601 format
+ * @param date - Date object or string to round, defaults to current date if invalid
+ * @returns ISO 8601 formatted date string rounded to the nearest hour
+ */
 export function roundTimeToNearestHour(date: Date | string = ''): string {
     let roundedDate = new Date(date)
     if (isNaN(roundedDate.getTime())) roundedDate = new Date()
     roundedDate.setMinutes(0, 0, 0)
     return roundedDate.toISOString()
+}
+
+/**
+ * Like JSON.stringify(), but custom strings for certain types
+ * @param data - The data to standardize
+ * @returns A standardized string
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function stringify(data: any): string {
+    if (data == null) return String(data) // handles null + undefined
+    if (typeof data === 'string') return data // handles string
+
+    // TypeScript uses the concept of a discriminated union (also called a tagged union).
+    // For that to work, all members of the union must share a common property whose type is a string (or literal) union
+    // TODO: investigate pros/cons of adding kind property
+    // if ('kind' in data && data.kind === 'CmfEvents') {
+
+    if (data && 'allEvents' in data && 'visibleEvents' in data && 'hiddenCounts' in data) {
+        // CmfEvents type
+        return (
+            `allEvents:${data.allEvents.length} visibleEvents:${data.visibleEvents.length} ` +
+            JSON.stringify(data.hiddenCounts)
+        )
+    }
+    if (data && 'north' in data && 'south' in data && 'east' in data && 'west' in data) {
+        // MapBounds type
+        return `north:${data.north} south:${data.south} east:${data.east} west:${data.west}`
+    }
+    if (data && 'latitude' in data && 'longitude' in data && 'zoom' in data) {
+        // MapViewport type
+        return `lat:${data.latitude} lon:${data.longitude} zoom:${data.zoom}`
+    }
+    return JSON.stringify(data)
 }

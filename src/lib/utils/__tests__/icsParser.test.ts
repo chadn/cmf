@@ -1,4 +1,4 @@
-import { parseIcsContent } from '../icsParser'
+import { parseIcsContent } from '@/lib/utils/icsParser'
 
 // Define interface for mock property values
 interface MockPropertyValues {

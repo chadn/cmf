@@ -17,6 +17,7 @@ dispatch({ type: 'SET_FILTERS', payload: { ...state.filters, dateRange } })
 ```
 
 Issues:
+
 - `FilterEventsManager` already managed events and filters internally
 - Duplicate state management between reducer and FilterEventsManager
 - Added unnecessary complexity for simple state needs
@@ -35,22 +36,25 @@ setError(new Error(userMessage))
 ## Alternatives Considered
 
 1. **Keep useReducer pattern** - Maintain Redux-like state management
-2. **Use Zustand or other state library** - Add external dependency  
+2. **Use Zustand or other state library** - Add external dependency
 3. **Direct useState calls** - Chosen for simplicity and reduced duplication
 
 ## Consequences
 
 ### Positive
+
 - Removed 30+ lines of boilerplate code
 - Single source of truth in FilterEventsManager
 - Eliminated duplicate state tracking
 - Simplified hook interface and testing
 
 ### Negative
+
 - Less structured state updates (but not needed for this use case)
 - Moved away from Redux patterns (acceptable for this scope)
 
 ### Affected Components
+
 - `src/lib/hooks/useEventsManager.ts` - Removed reducer logic
 - `src/types/events.ts` - Removed `EventsState` and `EventsAction` interfaces
 - All dispatch calls replaced with direct FilterEventsManager method calls

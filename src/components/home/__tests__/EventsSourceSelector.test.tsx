@@ -1,6 +1,6 @@
 import React from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
-import EventsSourceSelector from '../EventsSourceSelector'
+import EventsSourceSelector from '@/components/home/EventsSourceSelector'
 import '@testing-library/jest-dom'
 import { useRouter } from 'next/navigation'
 
@@ -171,7 +171,7 @@ describe('EventsSourceSelector', () => {
         expect(link).toBeInTheDocument()
         expect(link.closest('a')).toHaveAttribute(
             'href',
-            'https://github.com/chadn/cmf/blob/main/docs/usage.md#initial-view---pick-event-source'
+            'https://github.com/chadn/cmf/blob/main/docs/usage.md#initial-view-pick-event-source'
         )
         expect(link.closest('a')).toHaveAttribute('target', '_blank')
 

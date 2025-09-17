@@ -1,8 +1,8 @@
 import { Location, LOCATION_KEY_PREFIX, EVENTS_CACHE_PREFIX, EventsSourceResponse } from '@/types/events'
 import * as upstashCache from './upstash'
 import * as filesystemCache from './filesystem'
-import { logr } from '../utils/logr'
-import { getSizeOfAny, roundTimeToNearestHour } from '../utils/utils-shared'
+import { logr } from '@/lib/utils/logr'
+import { getSizeOfAny, roundTimeToNearestHour } from '@/lib/utils/utils-shared'
 import { waitUntil } from '@vercel/functions'
 
 const useFilesystemCache = checkUseFilesystemCache()

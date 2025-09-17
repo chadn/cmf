@@ -1,12 +1,23 @@
+import { MutableRefObject } from 'react'
+import { ViewState as ViewStateType } from 'react-map-gl'
+import WebMercatorViewport from '@math.gl/web-mercator'
 import { MapBounds, MapViewport, MapMarker } from '@/types/map'
 import { CmfEvent } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
-import { createParser } from 'nuqs'
-import { ExampleEventsSources } from '@/lib/events/examples'
-import { ViewState as ViewStateType } from 'react-map-gl'
-import WebMercatorViewport from '@math.gl/web-mercator'
-import { MutableRefObject } from 'react'
-import { fetcherLogr } from './utils-client'
+import { fetcherLogr } from '@/lib/utils/utils-client'
+
+/**
+ * Check if an event has a resolved location
+ * @param event - The event to check
+ * @returns Boolean indicating if the event has a resolved location
+ */
+export function hasResolvedLocation(event: CmfEvent): boolean {
+    return !!(
+        event.resolved_location?.status === 'resolved' &&
+        event.resolved_location.lat &&
+        event.resolved_location.lng
+    )
+}
 
 /**
  * Truncates a location string to a maximum length
@@ -66,12 +77,11 @@ export function calculateAggregateCenter(events: CmfEvent[]): { lat: number; lng
  */
 export function generateMapMarkers(events: CmfEvent[]): MapMarker[] {
     const markersMap = new Map<string, MapMarker>()
-    let eventsWithLocation = 0
     const unresolvedEvents: CmfEvent[] = []
 
     // Ensure events is an array before iterating
     if (!events || !Array.isArray(events)) {
-        logr.info('location', 'No events provided to generate markers', { events })
+        logr.info('location', 'No events provided to generate markers', events)
         return []
     }
 
@@ -81,7 +91,6 @@ export function generateMapMarkers(events: CmfEvent[]): MapMarker[] {
             event.resolved_location.lat &&
             event.resolved_location.lng
         ) {
-            eventsWithLocation++
             // Create a unique ID for the marker based on coordinates
             const id = genMarkerId(event)
 
@@ -122,11 +131,7 @@ export function generateMapMarkers(events: CmfEvent[]): MapMarker[] {
         return 0
     })
 
-    logr.info(
-        'location',
-        `Generated ${markers.length} markers from ${eventsWithLocation} events with locations, ` +
-            `${unresolvedEvents.length} events without resolvable location`
-    )
+    logr.info('location', `generateMapMarkers(${events.length}) ${markers.length} markers`)
 
     return markers
 }
@@ -174,10 +179,10 @@ export function roundMapBounds(bounds: MapBounds): MapBounds {
 }
 
 /**
- * Converts a ViewState object to a MapViewport object, basically 
+ * Converts a ViewState object to a MapViewport object, basically
  *  - dropping padding from the ViewStateType. Not sure this matters?
  *  - rounding latitude and longitude to 6 decimal places, 10 cm or 4 inches accuracy.
- * @param viewport - The ViewState object to convert, basically 
+ * @param viewport - The ViewState object to convert, basically
  * @returns A new MapViewport object with the converted values
  */
 export function viewstate2Viewport(viewport: ViewStateType): MapViewport {
@@ -191,26 +196,73 @@ export function viewstate2Viewport(viewport: ViewStateType): MapViewport {
 }
 
 /**
- * Calculates map bounds from a set of markers
+ * Returns true if latitude/longitude is inside map bounds
+ * @param lat - Latitude to check
+ * @param lng - Longitude to check
+ * @param mapBounds - Map bounds to check against
+ * @returns Boolean indicating if location is inside map bounds
+ */
+export function latLongIsInBounds(lat: number, lng: number, mapBounds: MapBounds): boolean {
+    // TODO: use WebMercatorViewport to do latLongIsInBounds
+    const isInBounds =
+        lat >= mapBounds.south &&
+        lat <= mapBounds.north &&
+        lng >= mapBounds.west && // is this always true?
+        lng <= mapBounds.east
+    return isInBounds
+}
+
+/**
+ * Returns true if location of event or marker is inside map bounds
+ * @param params - Object containing mapBounds, and either cmfEvent, mapMarker, or latitude/longitude
+ * @returns Boolean indicating if location is inside map bounds
+ */
+export function isInBounds(params: {
+    mapBounds: MapBounds
+    cmfEvent?: CmfEvent
+    mapMarker?: MapMarker
+    lat?: number
+    lng?: number
+}): boolean {
+    if (
+        params.cmfEvent &&
+        params.cmfEvent.resolved_location?.status === 'resolved' &&
+        params.cmfEvent.resolved_location.lat &&
+        params.cmfEvent.resolved_location.lng
+    ) {
+        return latLongIsInBounds(
+            params.cmfEvent.resolved_location.lat,
+            params.cmfEvent.resolved_location.lng,
+            params.mapBounds
+        )
+    }
+    if (params.mapMarker && params.mapMarker.latitude && params.mapMarker.longitude) {
+        return latLongIsInBounds(params.mapMarker.latitude, params.mapMarker.longitude, params.mapBounds)
+    }
+    if (params.lat && params.lng) {
+        return latLongIsInBounds(params.lat, params.lng, params.mapBounds)
+    }
+    return false
+}
+
+/**
+ * Calculates map bounds from a set of markers.
  * @param markers - Array of map markers to calculate bounds for
  * @returns MapBounds object representing the bounds of all markers
  */
 export function calculateBoundsFromMarkers(markers: MapMarker[]): MapBounds {
-    if (markers.length === 0) {
-        // Return reasonable default bounds covering most of the world instead of invalid (0,0,0,0)
-        return {
-            north: 79,
-            south: -44,
-            east: -29,
-            west: -208,
-        }
+    // TODO: use WebMercatorViewport to calculateBoundsFromMarkers
+    let ret = {
+        north: 72,
+        south: -8,
+        east: -80,
+        west: -156,
     }
-    // Initialize with the first marker's coordinates
-    const ret = {
-        north: markers[0].latitude,
-        south: markers[0].latitude,
-        east: markers[0].longitude,
-        west: markers[0].longitude,
+    if (markers.length > 0) {
+        ret.north = markers[0].latitude
+        ret.south = markers[0].latitude
+        ret.east = markers[0].longitude
+        ret.west = markers[0].longitude
     }
     // Find the min/max coordinates
     markers.forEach((marker) => {
@@ -223,16 +275,17 @@ export function calculateBoundsFromMarkers(markers: MapMarker[]): MapBounds {
     // Add padding to ensure markers on exact boundaries are included after rounding
     // Plus it looks better to not have markers touching the edges.
     const SMALL_PADDING = 0.00001 // Slightly larger than toFixed(6) precision to handle rounding
-    const LARGE_PADDING = 0.003   // And if just one marker, give it a bit more breathing room.
+    const LARGE_PADDING = 0.003 // And if just one marker, give it a bit more breathing room.
     const PADDING = markers.length === 1 ? LARGE_PADDING : SMALL_PADDING
     ret.north += PADDING
     ret.south -= PADDING
     ret.east += PADDING
     ret.west -= PADDING
 
+    ret = roundMapBounds(ret)
     logr.info('location', 'calculateBoundsFromMarkers return:', ret)
 
-    return roundMapBounds(ret)
+    return ret
 }
 
 /**
@@ -263,40 +316,46 @@ export function calculateViewportFromBounds(bounds: MapBounds, width: number, he
 }
 
 /**
- * Calculates approximate map bounds from a viewport
- * This is a simplified calculation that creates a bounding box around the viewport center
- * based on the zoom level
- *
+ * Calculates accurate map bounds from a viewport using WebMercatorViewport
+ * This provides precise bounds calculation based on actual map dimensions
  * @param viewport - The map viewport
- * @returns MapBounds object representing the approximate bounds
+ * @param mapWidth - Width of the map container in pixels
+ * @param mapHeight - Height of the map container in pixels
+ * @returns MapBounds object representing the accurate bounds
  */
-export function calculateBoundsFromViewport(viewport: MapViewport): MapBounds {
-    // Calculate the approximate degrees of latitude/longitude visible at this zoom level
-    // Higher zoom levels show less area (zoom 1 = whole world, zoom 20 = building level)
-    const zoomFactor = Math.pow(2, viewport.zoom) // Higher zoom = larger factor
-    const latDelta = 180 / zoomFactor // Smaller delta at higher zoom
-    const lonDelta = 360 / zoomFactor // Smaller delta at higher zoom
+export function calculateBoundsFromViewport(viewport: MapViewport, mapWidth: number, mapHeight: number): MapBounds {
+    // Use WebMercatorViewport to calculate accurate bounds
+    const mercatorViewport = new WebMercatorViewport({
+        ...viewport,
+        width: mapWidth,
+        height: mapHeight,
+    })
 
-    // Calculate bounds with reasonable limits
-    const bounds = {
-        north: Math.min(85, viewport.latitude + latDelta / 2), // Web Mercator max latitude
-        south: Math.max(-85, viewport.latitude - latDelta / 2), // Web Mercator min latitude
-        east: Math.min(180, viewport.longitude + lonDelta / 2),
-        west: Math.max(-180, viewport.longitude - lonDelta / 2),
-    }
+    // getBounds returns [[west, south], [east, north]]
+    const bounds = mercatorViewport.getBounds()
+    const [[west, south], [east, north]] = bounds
 
-    // Ensure west < east (handle longitude wraparound)
-    if (bounds.west > bounds.east) {
-        bounds.east += 360
-    }
+    const result = roundMapBounds({
+        north,
+        south,
+        east,
+        west,
+    })
 
-    return roundMapBounds(bounds)
+    logr.info('location', `calculateBoundsFromViewport(w=${mapWidth},h=${mapHeight}) MapBounds:`, result)
+    return result
 }
 
-// Return a valid MapViewport, with default values if invalid
-// url params have a value of  null if they do not or should not exist.
+/**
+ * Converts lat/lon/zoom parameters to MapViewport object with validation
+ * @param lat - Latitude (-180 to 180) or null
+ * @param lon - Longitude (-180 to 180) or null
+ * @param z - Zoom level (1-22) or null
+ * @returns Valid MapViewport object with defaults for invalid values
+ */
 export const llzToViewport = (lat: number | null, lon: number | null, z: number | null): MapViewport => {
     return {
+        // TODO: log if lat or lon is out of bounds
         latitude: lat !== null && lat <= 180 && lat >= -180 ? Number(lat.toFixed(6)) : 0,
         longitude: lon !== null && lon <= 180 && lon >= -180 ? Number(lon.toFixed(6)) : 0,
         zoom: z !== null && z <= 22 && z > 0 ? Number(z.toFixed(2)) : 1, // Use zoom 1 as minimum instead of 0
@@ -305,133 +364,17 @@ export const llzToViewport = (lat: number | null, lon: number | null, z: number 
     }
 }
 
+/**
+ * Converts llz object to MapViewport
+ * @param llz - Object with lat, lon, zoom properties or null
+ * @returns MapViewport object
+ */
+export const llzObjectToViewport = (llz: { lat: number; lon: number; zoom: number } | null): MapViewport => {
+    if (!llz) return llzToViewport(null, null, null)
+    return llzToViewport(llz.lat, llz.lon, llz.zoom)
+}
+
 // Custom parsers to read and write values to the URL
-// url params have a value of  null if they do not or should not exist.
-export const parseAsZoom = createParser({
-    // parse: a function that takes a string and returns the parsed value, or null if invalid.
-    parse(queryValue) {
-        const val = parseFloat(queryValue)
-        if (isNaN(val) || val < 1 || val > 22) return null
-        return val
-    },
-    // serialize: a function that takes the parsed value and returns a string used in the URL.
-    serialize(value) {
-        logr.debug('location', `serialize zoom:${value}`)
-        // if the value is an integer, return it as a string no decimal places
-        if (value === parseInt(value.toString())) {
-            return value.toString()
-        }
-        // otherwise, return it as a string with 1 decimal place
-        return value.toFixed(1)
-    },
-})
-export const parseAsLatLon = createParser({
-    // parse: a function that takes a string and returns the parsed value, or null if invalid.
-    parse(queryValue) {
-        const val = parseFloat(queryValue)
-        if (isNaN(val) || val < -180 || val > 180) return null
-        return val
-    },
-    // serialize: a function that takes the parsed value and returns a string used in the URL.
-    serialize(value) {
-        return value.toFixed(5)
-    },
-})
-export const parseAsEventsSource = createParser({
-    // parse: a function that takes a string and returns the parsed value, or null if invalid.
-    parse(queryValue) {
-        if (typeof queryValue !== 'string') return null
-
-        // Handle comma-separated sources
-        if (queryValue.includes(',')) {
-            const sources = queryValue.split(',').map(s => s.trim()).filter(s => s)
-            const parsedSources: string[] = []
-            
-            for (const source of sources) {
-                // Check for example event sources first
-                const example = ExampleEventsSources.find((es) => es.shortId === source)
-                if (example) {
-                    // Handle new structure with ids object
-                    if (example.ids) {
-                        parsedSources.push(...Object.keys(example.ids))
-                    } else if (example.id) {
-                        // If example contains comma-separated sources, expand them
-                        if (example.id.includes(',')) {
-                            parsedSources.push(...example.id.split(',').map(s => s.trim()))
-                        } else {
-                            parsedSources.push(example.id)
-                        }
-                    }
-                } else {
-                    // Validate individual source format
-                    const regex = /^[a-zA-Z0-9]+:/
-                    if (regex.test(source)) {
-                        parsedSources.push(source)
-                    } else {
-                        return null // Invalid source in list
-                    }
-                }
-            }
-            
-            return parsedSources.length > 0 ? parsedSources : null
-        }
-
-        // Handle single source (existing logic)
-        // check for example event sources first
-        const example = ExampleEventsSources.find((es) => es.shortId === queryValue)
-        if (example) {
-            // Handle new structure with ids object
-            if (example.ids) {
-                const idKeys = Object.keys(example.ids)
-                return idKeys.length === 1 ? idKeys[0] : idKeys
-            } else if (example.id) {
-                // If example contains comma-separated sources, return as array
-                if (example.id.includes(',')) {
-                    return example.id.split(',').map(s => s.trim())
-                }
-                return example.id
-            }
-        }
-
-        // match any string that starts with ascii chars or digits then a colon then any number of digits
-        const regex = /^[a-zA-Z0-9]+:/
-        if (regex.test(queryValue)) return queryValue
-        return null
-    },
-    // serialize: a function that takes the parsed value and returns a string used in the URL.
-    serialize(value) {
-        // Handle array of sources
-        if (Array.isArray(value)) {
-            // Check if this array matches an example shortcut
-            const valueString = value.join(',')
-            const example = ExampleEventsSources?.find?.((es) => es.id === valueString && es.shortId)
-            if (example) return example.shortId as string
-            
-            // Otherwise, serialize each source individually and join with commas
-            const serializedSources = value.map(source => {
-                // Check both id and ids structures
-                const example = ExampleEventsSources?.find?.((es) => {
-                    if (es.id === source && es.shortId) return true
-                    if (es.ids && Object.keys(es.ids).includes(source) && es.shortId) return true
-                    return false
-                })
-                return example ? example.shortId as string : source
-            })
-            return serializedSources.join(',')
-        }
-
-        // Handle single source (existing logic)
-        // Check for example event sources first
-        const example = ExampleEventsSources?.find?.((es) => {
-            if (es.id === value && es.shortId) return true
-            if (es.ids && Object.keys(es.ids).includes(value) && es.shortId) return true
-            return false
-        })
-        if (example) return example.shortId as string
-
-        return value
-    },
-})
 
 export const checkForZipCode = async (
     query: string,

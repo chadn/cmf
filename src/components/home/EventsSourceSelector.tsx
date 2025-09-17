@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import LoadingSpinner from '../common/LoadingSpinner'
-import ErrorMessage from '../common/ErrorMessage'
+import LoadingSpinner from '@/components/common/LoadingSpinner'
+import ErrorMessage from '@/components/common/ErrorMessage'
 import { logr } from '@/lib/utils/logr'
 import { ExampleEventsSources } from '@/lib/events/examples'
 
@@ -48,7 +48,6 @@ const EventsSourceSelector: React.FC = () => {
         }
     }
 
-
     return (
         <div className="max-w-md mx-auto px-8 py-6 bg-white rounded-lg shadow-md border-t border-black">
             <h2 className="text-xl font-bold text-center mb-6 text-blue-600">Welcome to CMF - Calendar Map Filter</h2>
@@ -80,11 +79,9 @@ const EventsSourceSelector: React.FC = () => {
 
             {/* Example event sources */}
             <div className="mt-8">
-                <h3 className="text-sm font-medium text-gray-500 mb-2">
-                    Examples:
-                </h3>
+                <h3 className="text-sm font-medium text-gray-500 mb-2">Examples:</h3>
                 <div className="space-y-2 max-h-72 overflow-y-auto">
-                    <ol className="pl-5 space-y-1" style={{listStyleType: 'decimal'}}>
+                    <ol className="pl-5 space-y-1" style={{ listStyleType: 'decimal' }}>
                         {ExampleEventsSources.map((source, index) => (
                             <li key={index}>
                                 {source.ids ? (
@@ -98,7 +95,10 @@ const EventsSourceSelector: React.FC = () => {
                                                         className="hover:underline text-blue-600 hover:bg-blue-50 rounded"
                                                     >
                                                         {value}
-                                                    </a>{index < array.length - 1 && <span className="text-gray-400">, </span>}
+                                                    </a>
+                                                    {index < array.length - 1 && (
+                                                        <span className="text-gray-400">, </span>
+                                                    )}
                                                 </span>
                                             ))}
                                         </div>
@@ -121,7 +121,7 @@ const EventsSourceSelector: React.FC = () => {
             <div className="mt-8 text-sm text-gray-500">
                 <p className="text-md mt-1">
                     <a
-                        href="https://github.com/chadn/cmf/blob/main/docs/usage.md#initial-view---pick-event-source"
+                        href="https://github.com/chadn/cmf/blob/main/docs/usage.md#initial-view-pick-event-source"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium transition-colors"

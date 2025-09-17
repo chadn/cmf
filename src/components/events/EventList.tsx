@@ -1,20 +1,20 @@
 'use client'
 
 import React, { useState, useRef, useEffect, useMemo } from 'react'
-import { FilteredEvents, SortField, SortDirection } from '@/types/events'
+import { CmfEvents, SortField, SortDirection } from '@/types/events'
 import { formatEventDate, formatEventDuration, extractDateParts } from '@/lib/utils/date'
 import { truncateLocation } from '@/lib/utils/location'
 import LoadingSpinner from '@/components/common/LoadingSpinner'
 import { getComparisonResult } from '@/lib/utils/utils-client'
 
 interface EventListProps {
-    evts: FilteredEvents
+    cmfEvents: CmfEvents
     selectedEventId: string | null
     onEventSelect: (eventId: string | null) => void
     apiIsLoading: boolean
 }
 
-const EventList: React.FC<EventListProps> = ({ evts, selectedEventId, onEventSelect, apiIsLoading }) => {
+const EventList: React.FC<EventListProps> = ({ cmfEvents, selectedEventId, onEventSelect, apiIsLoading }) => {
     const [sortField, setSortField] = useState<SortField>('startDate')
     const [prevSortField, setPrevSortField] = useState<SortField>('location')
     const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
@@ -42,7 +42,7 @@ const EventList: React.FC<EventListProps> = ({ evts, selectedEventId, onEventSel
         }
     }, [selectedEventId])
 
-    const visibleEvents = evts.visibleEvents
+    const visibleEvents = cmfEvents.visibleEvents
 
     const sortedEvents = useMemo(() => {
         return [...visibleEvents].sort((a, b) => {

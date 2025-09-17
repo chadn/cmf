@@ -1,6 +1,8 @@
 import tzlookup from 'tz-lookup'
 import { DateTime } from 'luxon'
 
+// TODO: review what should be in this file vs date.ts
+
 /**
  * Converts a UTC ISO 8601 wall time string to an ISO 8601 string
  * in a specified target timezone, preserving the wall time components.
@@ -71,6 +73,12 @@ export function convertWallTimeToZone(utcTime: string, targetTimeZone: string): 
     return `${formattedDate}T${formattedTime}${formattedOffset}`
 }
 
+/**
+ * Gets the timezone for a given latitude and longitude
+ * @param lat - Latitude
+ * @param lng - Longitude
+ * @returns Timezone string (e.g., 'America/Los_Angeles') or 'UNKNOWN' if not found
+ */
 export const getTimezoneFromLatLng = (lat: number, lng: number): string => {
     return tzlookup(lat, lng) || 'UNKNOWN'
 }
@@ -230,12 +238,22 @@ export const cityToTimezone: Record<string, string> = {
     'Wilton Manors, FL': 'America/New_York',
 }
 
+/**
+ * Gets the timezone for a given city name
+ * @param cityName - City name to look up
+ * @returns Timezone string, defaults to 'America/Los_Angeles' if not found
+ */
 export const getTimezoneFromCity = (cityName: string): string => {
     const key = Object.keys(cityToTimezone).find((key) => key.toLowerCase().includes(cityName.toLowerCase()))
     if (!key) return 'America/Los_Angeles'
     return cityToTimezone[key] || 'America/Los_Angeles'
 }
 
+/**
+ * Gets the formatted city, state string for a given city name
+ * @param cityName - City name to look up
+ * @returns Formatted city, state string (e.g., 'Los Angeles, CA') or original cityName if not found
+ */
 export const getCityStateFromCity = (cityName: string): string => {
     // return key if cityname is in the cityToTimezone object
     let cityTrimmed = cityName.trim()

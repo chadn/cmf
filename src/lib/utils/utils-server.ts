@@ -3,7 +3,9 @@ import axios from 'axios'
 import { getSizeOfAny } from '@/lib/utils/utils-shared'
 import { HttpError } from '@/types/error'
 
-// Axios configuration for requests
+/**
+ * Axios configuration for requests with browser-like User-Agent
+ */
 export const axiosConfig = {
     headers: {
         'User-Agent':
@@ -11,8 +13,13 @@ export const axiosConfig = {
     },
 }
 
-// custom fetcher using axios.get
-// ignore warning about using 'any'
+/**
+ * Custom fetcher using axios.get with logging and error handling
+ * @param url - URL to fetch
+ * @param params - Optional query parameters
+ * @returns Axios response with additional logging
+ * @throws {HttpError} When request fails
+ */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const axiosGet = async (url: string, params?: any) => {
     try {

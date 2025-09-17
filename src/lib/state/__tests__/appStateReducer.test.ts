@@ -4,12 +4,9 @@ import {
     AppState,
     INITIAL_APP_STATE,
     isInitializing,
-    isReadyForUrlParsing,
-    isReadyForViewportSetting,
-    isViewportSet,
     isReadyForInteraction,
-} from '../appStateReducer'
-import type { AppAction } from '../appStateReducer'
+} from '@/lib/state/appStateReducer'
+import type { AppAction } from '@/lib/state/appStateReducer'
 
 // Mock the logr utility
 jest.mock('@/lib/utils/logr', () => ({
@@ -25,63 +22,63 @@ describe('appStateReducer', () => {
 
     describe('Initial state', () => {
         it('should have correct initial state', () => {
-            expect(INITIAL_APP_STATE).toBe('events-init')
+            expect(INITIAL_APP_STATE).toBe('starting-app')
         })
     })
 
     describe('State transitions', () => {
-        it('should transition to events-init on EVENTS_LOADING', () => {
-            const action = appActions.eventsLoading()
-            const result = appStateReducer('main-state', action)
-            expect(result).toBe('events-init')
+        it('should transition to fetching-events on APP_STARTED', () => {
+            const action = appActions.startFetchingEvents()
+            const result = appStateReducer('starting-app', action)
+            expect(result).toBe('fetching-events')
         })
 
-        it('should transition to events-loaded on EVENTS_LOADED with events', () => {
-            const action = appActions.eventsLoaded(true)
-            const result = appStateReducer('events-init', action)
-            expect(result).toBe('events-loaded')
+        it('should transition to processing-events on EVENTS_FETCHED with events', () => {
+            const action = appActions.eventsFetched(true)
+            const result = appStateReducer('fetching-events', action)
+            expect(result).toBe('processing-events')
         })
 
-        it('should stay in current state on EVENTS_LOADED without events', () => {
-            const action = appActions.eventsLoaded(false)
-            const result = appStateReducer('events-init', action)
-            expect(result).toBe('events-init')
+        it('should stay in current state on EVENTS_FETCHED without events', () => {
+            const action = appActions.eventsFetched(false)
+            const result = appStateReducer('fetching-events', action)
+            expect(result).toBe('fetching-events')
         })
 
-        it('should transition to url-applied from events-loaded on URL_FILTERS_APPLIED', () => {
+        it('should transition to parsing-remaining-url from applying-url-filters on URL_FILTERS_APPLIED', () => {
             const action = appActions.urlFiltersApplied()
-            const result = appStateReducer('events-loaded', action)
-            expect(result).toBe('url-applied')
+            const result = appStateReducer('applying-url-filters', action)
+            expect(result).toBe('parsing-remaining-url')
         })
 
-        it('should not transition to url-applied from wrong state', () => {
+        it('should not transition to parsing-remaining-url from wrong state', () => {
             const action = appActions.urlFiltersApplied()
-            const result = appStateReducer('events-init', action)
-            expect(result).toBe('events-init')
+            const result = appStateReducer('starting-app', action)
+            expect(result).toBe('starting-app')
         })
 
-        it('should transition to viewport-set from url-applied on VIEWPORT_SET', () => {
-            const action = appActions.viewportSet()
-            const result = appStateReducer('url-applied', action)
-            expect(result).toBe('viewport-set')
+        it('should transition to user-interactive from finalizing-setup on SETUP_FINALIZED', () => {
+            const action = appActions.setupFinalized()
+            const result = appStateReducer('finalizing-setup', action)
+            expect(result).toBe('user-interactive')
         })
 
-        it('should not transition to viewport-set from wrong state', () => {
-            const action = appActions.viewportSet()
-            const result = appStateReducer('events-loaded', action)
-            expect(result).toBe('events-loaded')
+        it('should not transition to user-interactive from wrong state', () => {
+            const action = appActions.setupFinalized()
+            const result = appStateReducer('processing-events', action)
+            expect(result).toBe('processing-events')
         })
 
-        it('should transition to main-state from viewport-set on READY_FOR_INTERACTION', () => {
+        it('should transition to user-interactive from finalizing-setup on READY_FOR_INTERACTION', () => {
             const action = appActions.readyForInteraction()
-            const result = appStateReducer('viewport-set', action)
-            expect(result).toBe('main-state')
+            const result = appStateReducer('finalizing-setup', action)
+            expect(result).toBe('user-interactive')
         })
 
-        it('should not transition to main-state from wrong state', () => {
+        it('should not transition to user-interactive from wrong state', () => {
             const action = appActions.readyForInteraction()
-            const result = appStateReducer('url-applied', action)
-            expect(result).toBe('url-applied')
+            const result = appStateReducer('applying-url-filters', action)
+            expect(result).toBe('applying-url-filters')
         })
     })
 
@@ -89,61 +86,65 @@ describe('appStateReducer', () => {
         it('should follow the complete initialization flow', () => {
             let state: AppState = INITIAL_APP_STATE
 
-            // Start with events loading
-            state = appStateReducer(state, appActions.eventsLoading())
-            expect(state).toBe('events-init')
+            // Start fetching events
+            state = appStateReducer(state, appActions.startFetchingEvents())
+            expect(state).toBe('fetching-events')
 
-            // Events loaded successfully
-            state = appStateReducer(state, appActions.eventsLoaded(true))
-            expect(state).toBe('events-loaded')
+            // Events fetched successfully
+            state = appStateReducer(state, appActions.eventsFetched(true))
+            expect(state).toBe('processing-events')
+
+            // Events processed
+            state = appStateReducer(state, appActions.eventsProcessed())
+            expect(state).toBe('applying-url-filters')
 
             // URL filters applied
             state = appStateReducer(state, appActions.urlFiltersApplied())
-            expect(state).toBe('url-applied')
+            expect(state).toBe('parsing-remaining-url')
 
-            // Viewport configured
-            state = appStateReducer(state, appActions.viewportSet())
-            expect(state).toBe('viewport-set')
+            // Remaining URL parsed
+            state = appStateReducer(state, appActions.remainingUrlParsed())
+            expect(state).toBe('finalizing-setup')
 
-            // Ready for user interaction
-            state = appStateReducer(state, appActions.readyForInteraction())
-            expect(state).toBe('main-state')
+            // Setup finalized
+            state = appStateReducer(state, appActions.setupFinalized())
+            expect(state).toBe('user-interactive')
         })
 
         it('should handle failed events loading', () => {
             let state: AppState = INITIAL_APP_STATE
 
-            state = appStateReducer(state, appActions.eventsLoading())
-            expect(state).toBe('events-init')
+            state = appStateReducer(state, appActions.startFetchingEvents())
+            expect(state).toBe('fetching-events')
 
             // Events failed to load (no events)
-            state = appStateReducer(state, appActions.eventsLoaded(false))
-            expect(state).toBe('events-init') // Should stay in events-init
+            state = appStateReducer(state, appActions.eventsFetched(false))
+            expect(state).toBe('fetching-events') // Should stay in fetching-events
         })
     })
 
     describe('Invalid actions', () => {
         it('should handle unknown action types', () => {
             const invalidAction = { type: 'UNKNOWN_ACTION' } as unknown as AppAction
-            const result = appStateReducer('main-state', invalidAction)
-            expect(result).toBe('main-state')
+            const result = appStateReducer('user-interactive', invalidAction)
+            expect(result).toBe('user-interactive')
         })
     })
 
     describe('Action creators', () => {
-        it('should create correct EVENTS_LOADING action', () => {
-            const action = appActions.eventsLoading()
-            expect(action).toEqual({ type: 'EVENTS_LOADING' })
+        it('should create correct APP_STARTED action', () => {
+            const action = appActions.startFetchingEvents()
+            expect(action).toEqual({ type: 'APP_STARTED' })
         })
 
-        it('should create correct EVENTS_LOADED action with events', () => {
-            const action = appActions.eventsLoaded(true)
-            expect(action).toEqual({ type: 'EVENTS_LOADED', hasEvents: true })
+        it('should create correct EVENTS_FETCHED action with events', () => {
+            const action = appActions.eventsFetched(true)
+            expect(action).toEqual({ type: 'EVENTS_FETCHED', hasEvents: true })
         })
 
-        it('should create correct EVENTS_LOADED action without events', () => {
-            const action = appActions.eventsLoaded(false)
-            expect(action).toEqual({ type: 'EVENTS_LOADED', hasEvents: false })
+        it('should create correct EVENTS_FETCHED action without events', () => {
+            const action = appActions.eventsFetched(false)
+            expect(action).toEqual({ type: 'EVENTS_FETCHED', hasEvents: false })
         })
 
         it('should create correct URL_FILTERS_APPLIED action', () => {
@@ -151,75 +152,53 @@ describe('appStateReducer', () => {
             expect(action).toEqual({ type: 'URL_FILTERS_APPLIED' })
         })
 
-        it('should create correct VIEWPORT_SET action', () => {
-            const action = appActions.viewportSet()
-            expect(action).toEqual({ type: 'VIEWPORT_SET' })
+        it('should create correct SETUP_FINALIZED action', () => {
+            const action = appActions.setupFinalized()
+            expect(action).toEqual({ type: 'SETUP_FINALIZED' })
         })
 
         it('should create correct READY_FOR_INTERACTION action', () => {
             const action = appActions.readyForInteraction()
-            expect(action).toEqual({ type: 'READY_FOR_INTERACTION' })
+            expect(action).toEqual({ type: 'SETUP_FINALIZED' })
         })
     })
 
     describe('Type guards', () => {
         it('should correctly identify initializing states', () => {
-            expect(isInitializing('events-init')).toBe(true)
-            expect(isInitializing('events-loaded')).toBe(true)
-            expect(isInitializing('url-applied')).toBe(true)
-            expect(isInitializing('viewport-set')).toBe(true)
-            expect(isInitializing('main-state')).toBe(false)
-        })
-
-        it('should correctly identify ready for URL parsing', () => {
-            expect(isReadyForUrlParsing('events-loaded')).toBe(true)
-            expect(isReadyForUrlParsing('events-init')).toBe(false)
-            expect(isReadyForUrlParsing('url-applied')).toBe(false)
-            expect(isReadyForUrlParsing('main-state')).toBe(false)
-        })
-
-        it('should correctly identify ready for viewport setting', () => {
-            expect(isReadyForViewportSetting('url-applied')).toBe(true)
-            expect(isReadyForViewportSetting('events-init')).toBe(false)
-            expect(isReadyForViewportSetting('events-loaded')).toBe(false)
-            expect(isReadyForViewportSetting('main-state')).toBe(false)
-        })
-
-        it('should correctly identify viewport set', () => {
-            expect(isViewportSet('viewport-set')).toBe(true)
-            expect(isViewportSet('events-init')).toBe(false)
-            expect(isViewportSet('url-applied')).toBe(false)
-            expect(isViewportSet('main-state')).toBe(false)
+            expect(isInitializing('starting-app')).toBe(true)
+            expect(isInitializing('fetching-events')).toBe(true)
+            expect(isInitializing('processing-events')).toBe(true)
+            expect(isInitializing('applying-url-filters')).toBe(true)
+            expect(isInitializing('parsing-remaining-url')).toBe(true)
+            expect(isInitializing('finalizing-setup')).toBe(true)
+            expect(isInitializing('user-interactive')).toBe(false)
         })
 
         it('should correctly identify ready for interaction', () => {
-            expect(isReadyForInteraction('main-state')).toBe(true)
-            expect(isReadyForInteraction('events-init')).toBe(false)
-            expect(isReadyForInteraction('viewport-set')).toBe(false)
+            expect(isReadyForInteraction('user-interactive')).toBe(true)
+            expect(isReadyForInteraction('starting-app')).toBe(false)
+            expect(isReadyForInteraction('finalizing-setup')).toBe(false)
         })
     })
 
     describe('Logging behavior', () => {
         it('should log state transitions', () => {
             const { logr } = jest.requireMock('@/lib/utils/logr')
-            
-            appStateReducer('events-init', appActions.eventsLoaded(true))
-            
+
+            appStateReducer('fetching-events', appActions.eventsFetched(true))
+
             expect(logr.info).toHaveBeenCalledWith(
-                'app-state',
-                'EVENTS_LOADED: events-init → events-loaded'
+                'app_state',
+                '⭐⭐ EVENTS_FETCHED changing: fetching-events to processing-events'
             )
         })
 
         it('should log no change when state does not transition', () => {
             const { logr } = jest.requireMock('@/lib/utils/logr')
-            
-            appStateReducer('events-init', appActions.urlFiltersApplied())
-            
-            expect(logr.info).toHaveBeenCalledWith(
-                'app-state',
-                'URL_FILTERS_APPLIED: events-init, no change'
-            )
+
+            appStateReducer('starting-app', appActions.urlFiltersApplied())
+
+            expect(logr.info).toHaveBeenCalledWith('app_state', 'URL_FILTERS_APPLIED: starting-app, no change')
         })
     })
 })

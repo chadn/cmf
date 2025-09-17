@@ -5,7 +5,11 @@ import { umamiTrack } from '@/lib/utils/umami'
 import { CmfEvent, SortField, SortDirection } from '@/types/events'
 import { useRef, useCallback } from 'react'
 
-// Custom fetcher function, basically a wrapper to log API requests and responses
+/**
+ * Custom fetcher function that wraps fetch with logging and analytics
+ * @param url - URL to fetch
+ * @returns Response data with added httpStatus property
+ */
 export const fetcherLogr = async (url: string) => {
     try {
         const startTime = performance.now()

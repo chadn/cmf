@@ -1,23 +1,24 @@
 'use client'
 
-import { CmfEvent, EventsFilter, FilteredEvents } from '@/types/events'
+import { CmfEvent, CmfEvents, DateRangeIso, DomainFilters } from '@/types/events'
 import { MapBounds } from '@/types/map'
 import { logr } from '@/lib/utils/logr'
-import { calculateAggregateCenter } from '@/lib/utils/location'
+import { stringify } from '@/lib/utils/utils-shared'
+import { hasResolvedLocation, calculateAggregateCenter } from '@/lib/utils/location'
 import {
-    hasResolvedLocation,
     applyDateFilter,
     applySearchFilter,
     applyMapFilter,
     applyUnknownLocationsFilter,
+    applyDomainFilters,
 } from './filters'
 
 /**
- * Class for managing calendar events and applying filters
+ * Class for managing filters for events
  */
 export class FilterEventsManager {
     private allEvents: CmfEvent[]
-    private filters: EventsFilter
+    private filters: DomainFilters
     private aggregateCenter: { lat: number; lng: number } | null = null
 
     constructor(events: CmfEvent[] = []) {
@@ -77,30 +78,36 @@ export class FilterEventsManager {
 
     /**
      * Get filtered events
-     * @param currentViewport - Current map viewport bounds for map filtering. If not provided, no map filtering will be applied.
+     * @param mapBounds - Current map bounds for map filtering. If not provided, no map filtering will be applied.
      *
      * Single-stage filtering model:
      * - Domain filters: dateRange, searchQuery, showUnknownLocationsOnly determine core result set
-     * - Viewport filter: currentViewport (passed as parameter) determines what's currently visible
+     * - Map Bounds filter: mapBounds (passed as parameter) determines what's currently visible
      * - Map chip count = total events - events located in current viewport (including those they may be filtered out)
      */
-    getFilteredEvents(currentViewport?: MapBounds): FilteredEvents {
-        const hiddenCounts = {
-            byMap: 0,
-            bySearch: 0,
-            byDate: 0,
-            byLocationFilter: 0,
+    getCmfEvents(mapBounds?: MapBounds): CmfEvents {
+        const result: CmfEvents = {
+            allEvents: this.allEvents,
+            visibleEvents: this.allEvents,
+            hiddenCounts: {
+                byMap: 0,
+                bySearch: 0,
+                byDate: 0,
+                byLocationFilter: 0,
+            },
+        }
+        const debugHidden = {
+            byMap: [] as string[],
+            bySearch: [] as string[],
+            byDate: [] as string[],
+            byLocationFilter: [] as string[],
         }
 
         // Check if any filters have actual values (not just undefined)
         const hasActiveFilters = Object.values(this.filters).some((value) => value !== undefined)
-        if (!hasActiveFilters && !currentViewport) {
-            logr.debug('fltr_evts_mgr', 'getFilteredEvents returning all events, no active filters and no viewport')
-            return {
-                allEvents: this.allEvents,
-                visibleEvents: this.allEvents,
-                hiddenCounts,
-            }
+        if (!hasActiveFilters && !mapBounds) {
+            logr.info('fltr_evts_mgr', `getCmfEvents return counts ${stringify(result)} no filters no bounds`)
+            return result
         }
 
         // Ensure aggregate center is available for map filtering
@@ -108,70 +115,46 @@ export class FilterEventsManager {
             this.updateAggregateCenter()
         }
 
-        // Apply domain filters (date, search, location type) and viewport filter independently
-        const domainFilteredEvents: CmfEvent[] = []
-
+        // Calculate independent chip counts - each filter checks against ALL events
         this.allEvents.forEach((event) => {
-            let domainFiltered = false
-
-            // Calculate independent chip counts - each filter checks against ALL events
-            // Count events hidden by each filter (checking against ALL events for accurate counts)
             if (!applySearchFilter(event, this.filters.searchQuery) && this.filters.searchQuery) {
-                hiddenCounts.bySearch++
+                result.hiddenCounts.bySearch++
+                debugHidden.bySearch.push(event.id)
             }
             if (!applyDateFilter(event, this.filters.dateRange) && this.filters.dateRange) {
-                hiddenCounts.byDate++
+                result.hiddenCounts.byDate++
+                debugHidden.byDate.push(event.id)
             }
             if (
                 !applyUnknownLocationsFilter(event, this.filters.showUnknownLocationsOnly) &&
                 this.filters.showUnknownLocationsOnly
             ) {
-                hiddenCounts.byLocationFilter++
+                result.hiddenCounts.byLocationFilter++
+                debugHidden.byLocationFilter.push(event.id)
             }
-
-            // Count events hidden by viewport filter independently
-            if (currentViewport && !applyMapFilter(event, currentViewport, this.aggregateCenter || undefined)) {
-                hiddenCounts.byMap++
-            }
-
-            // Check if event passes all domain filters
-            if (!applySearchFilter(event, this.filters.searchQuery) && this.filters.searchQuery) {
-                domainFiltered = true
-            }
-            if (!applyDateFilter(event, this.filters.dateRange) && this.filters.dateRange) {
-                domainFiltered = true
-            }
-            if (
-                !applyUnknownLocationsFilter(event, this.filters.showUnknownLocationsOnly) &&
-                this.filters.showUnknownLocationsOnly
-            ) {
-                domainFiltered = true
-            }
-
-            if (!domainFiltered) {
-                domainFilteredEvents.push(event)
+            if (mapBounds && !applyMapFilter(event, mapBounds, this.aggregateCenter || undefined)) {
+                result.hiddenCounts.byMap++
+                debugHidden.byMap.push(event.id)
             }
         })
 
-        // Apply viewport filter to determine what's currently visible
-        const visibleEvents: CmfEvent[] = []
-        if (currentViewport) {
-            domainFilteredEvents.forEach((event) => {
-                const passesViewportFilter = applyMapFilter(event, currentViewport, this.aggregateCenter || undefined)
-                if (passesViewportFilter) {
-                    visibleEvents.push(event)
-                }
-            })
-        } else {
-            // No viewport filter, show all domain-filtered events
-            visibleEvents.push(...domainFilteredEvents)
-        }
+        // Apply domain filters to get events that pass all domain filters
+        const domainFilteredEvents = this.allEvents.filter((event) => applyDomainFilters(event, this.filters))
+        logr.info('fltr_evts_mgr', `getCmfEvents ${domainFilteredEvents.length} visibleEvents before map`, mapBounds)
 
-        return {
-            allEvents: this.allEvents,
-            visibleEvents,
-            hiddenCounts,
+        // Apply map filter to determine what's currently visible
+        if (mapBounds) {
+            result.visibleEvents = domainFilteredEvents.filter((event) =>
+                applyMapFilter(event, mapBounds, this.aggregateCenter || undefined)
+            )
+        } else {
+            // No map filter, show all domain-filtered events
+            result.visibleEvents = domainFilteredEvents
         }
+        logr.info('fltr_evts_mgr', `getCmfEvents return counts ${stringify(result)}`)
+        logr.debug('fltr_evts_mgr', `getCmfEvents debug hidden events ${stringify(debugHidden)}`)
+
+        return result
     }
 
     /**
@@ -179,13 +162,17 @@ export class FilterEventsManager {
      * @param filterName Name of the filter being updated
      * @param value New filter value
      */
-    private setFilter<K extends keyof EventsFilter>(filterName: K, value: EventsFilter[K]) {
+    private setFilter<K extends keyof DomainFilters>(filterName: K, value: DomainFilters[K]) {
         this.filters[filterName] = value
-        logr.info('fltr_evts_mgr', `Filter updated: ${filterName}`, value)
+        const fValue =
+            filterName === 'dateRange' && value && typeof value === 'object' && 'startIso' in value
+                ? `${value.startIso} to ${value.endIso}`
+                : `${value}`
+        logr.info('fltr_evts_mgr', `setFilter: ${filterName}: ${fValue}`)
     }
 
     // Set date range filter
-    setDateRange(dateRange?: { start: string; end: string }) {
+    setDateRange(dateRange?: DateRangeIso) {
         this.setFilter('dateRange', dateRange)
     }
 
@@ -194,7 +181,7 @@ export class FilterEventsManager {
         this.setFilter('searchQuery', searchQuery)
     }
 
-    // Note: Map bounds are now passed as parameter to getFilteredEvents()
+    // Note: Map bounds are now passed as parameter to getCmfEvents()
     // No longer stored in filter state
 
     // Set unknown locations filter

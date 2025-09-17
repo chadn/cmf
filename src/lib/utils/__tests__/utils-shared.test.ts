@@ -1,4 +1,4 @@
-import { getSizeOfAny } from '../utils-shared'
+import { getSizeOfAny } from '@/lib/utils/utils-shared'
 
 describe('utils-shared', () => {
     describe('getSizeOfAny', () => {

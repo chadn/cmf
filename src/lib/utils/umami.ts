@@ -1,8 +1,12 @@
 import { logr } from '@/lib/utils/logr'
 
-// wrapper for umami.track
-// https://umami.is/docs/track-events
-// https://www.npmjs.com/package/@types/umami
+/**
+ * Wrapper for umami.track to track analytics events
+ * @see https://umami.is/docs/track-events
+ * @see https://www.npmjs.com/package/@types/umami
+ * @param eventName - Name of the event to track
+ * @param event_data - Optional event data properties
+ */
 export const umamiTrack = (
     eventName: string,
     event_data?: { [key: string]: string | number | boolean | undefined }
@@ -30,6 +34,11 @@ if (typeof window !== 'undefined') {
         domain = 'cmf-chad.vercel.app'
     }
 }
+
+/**
+ * Gets the Umami website ID for the current domain
+ * @returns Umami website ID string
+ */
 export const umamiWebsiteId = sessionIds[domain as keyof typeof sessionIds] || sessionIds['cmf-chad.vercel.app']
 
 // just get the first 8 characters of the sha

@@ -5,7 +5,7 @@ import {
     updateResolvedLocation,
     geocodeLocation,
     batchGeocodeLocations,
-} from '../geocoding'
+} from '@/lib/api/geocoding'
 import { logr } from '@/lib/utils/logr'
 import axios from 'axios'
 import { getCachedLocation, setCacheLocation } from '@/lib/cache'
@@ -271,13 +271,13 @@ describe('geocoding', () => {
 
     describe('batchGeocodeLocations', () => {
         // Create a mock for geocodeLocation
-        const originalModule = jest.requireActual('../geocoding')
+        const originalModule = jest.requireActual('@/lib/api/geocoding')
 
         beforeEach(() => {
             process.env.GOOGLE_MAPS_API_KEY = 'test-key'
 
             // Mock geocodeLocation directly with jest.mock at the module level
-            jest.mock('../geocoding', () => ({
+            jest.mock('@/lib/api/geocoding', () => ({
                 ...originalModule,
                 geocodeLocation: jest.fn().mockImplementation((location: string) => {
                     if (location === 'cached') {

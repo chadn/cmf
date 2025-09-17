@@ -1,0 +1,8 @@
+# .prettierrc or .prettierrc.yaml
+# https://medium.com/@aleksej.gudkov/prettier-configuration-understanding-prettierrc-with-examples-4bf6f94b7f61
+trailingComma: "es5"
+tabWidth: 4
+semi: false
+singleQuote: true
+printWidth: 120
+

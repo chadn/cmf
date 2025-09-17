@@ -16,8 +16,8 @@ Event sources are identified using a string with the format: `{prefix}:{id}`
 
 For example:
 
--   `gc:my-google-calendar-id` for Google Calendar
--   `fb:my-facebook-event-id` for Facebook Events (when implemented)
+- `gc:my-google-calendar-id` for Google Calendar
+- `fb:my-facebook-event-id` for Facebook Events (when implemented)
 
 ## Core Components
 

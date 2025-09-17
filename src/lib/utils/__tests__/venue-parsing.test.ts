@@ -3,16 +3,16 @@ import {
     getStateFromEventSource,
     shouldUseDefaultState,
     inferStateFromCityName,
-} from '../venue-parsing'
-import { getCityStateFromCity } from '../timezones'
+} from '@/lib/utils/venue-parsing'
+import { getCityStateFromCity } from '@/lib/utils/timezones'
 
 // Mock the timezones module
-jest.mock('../timezones', () => ({
+jest.mock('@/lib/utils/timezones', () => ({
     getCityStateFromCity: jest.fn(),
 }))
 
 // Mock the logr module
-jest.mock('../logr', () => ({
+jest.mock('@/lib/utils/logr', () => ({
     logr: {
         debug: jest.fn(),
         info: jest.fn(),
@@ -24,7 +24,7 @@ const mockGetCityStateFromCity = getCityStateFromCity as jest.MockedFunction<typ
 describe('venue-parsing utilities', () => {
     beforeEach(() => {
         jest.clearAllMocks()
-        
+
         // Set up common mock responses
         mockGetCityStateFromCity.mockImplementation((cityName: string) => {
             const cityMap: Record<string, string> = {
@@ -114,11 +114,7 @@ describe('venue-parsing utilities', () => {
                     return null
                 })
 
-                const result = extractVenueAndCity(
-                    'Awesome Party @ TBA (Highland Park)',
-                    'CA',
-                    'Los Angeles'
-                )
+                const result = extractVenueAndCity('Awesome Party @ TBA (Highland Park)', 'CA', 'Los Angeles')
                 expect(result).toBe('Highland Park, CA')
             })
 
@@ -129,11 +125,7 @@ describe('venue-parsing utilities', () => {
                     return null
                 })
 
-                const result = extractVenueAndCity(
-                    'Jazz Night @ TBA (Highland Park)',
-                    'IL',
-                    'Chicago'
-                )
+                const result = extractVenueAndCity('Jazz Night @ TBA (Highland Park)', 'IL', 'Chicago')
                 expect(result).toBe('Highland Park, IL')
             })
 
@@ -144,20 +136,14 @@ describe('venue-parsing utilities', () => {
                     return null
                 })
 
-                const result = extractVenueAndCity(
-                    'Tech Meetup @ TBA (Highland Park)',
-                    'CA',
-                    'Bay Area'
-                )
+                const result = extractVenueAndCity('Tech Meetup @ TBA (Highland Park)', 'CA', 'Bay Area')
                 expect(result).toBe('Highland Park, CA')
             })
         })
 
         describe('venue cache handling', () => {
             it('should return cached address when venue is found', () => {
-                const venueCache = new Map([
-                    ['the fillmore', 'The Fillmore, San Francisco, CA 94115'],
-                ])
+                const venueCache = new Map([['the fillmore', 'The Fillmore, San Francisco, CA 94115']])
 
                 const result = extractVenueAndCity(
                     'Concert @ The Fillmore (San Francisco)',
@@ -176,31 +162,19 @@ describe('venue-parsing utilities', () => {
                     return null
                 })
 
-                const result = extractVenueAndCity(
-                    'Concert @ The Fillmore (San Francisco)',
-                    'CA',
-                    'Bay Area'
-                )
+                const result = extractVenueAndCity('Concert @ The Fillmore (San Francisco)', 'CA', 'Bay Area')
                 expect(result).toBe('The Fillmore, San Francisco, CA')
             })
         })
 
         describe('explicit state handling', () => {
             it('should use explicit state when provided', () => {
-                const result = extractVenueAndCity(
-                    'Event @ Venue Name (Chicago, IL)',
-                    'CA',
-                    'Los Angeles'
-                )
+                const result = extractVenueAndCity('Event @ Venue Name (Chicago, IL)', 'CA', 'Los Angeles')
                 expect(result).toBe('Venue Name, Chicago, IL')
             })
 
             it('should handle explicit state for TBA venues', () => {
-                const result = extractVenueAndCity(
-                    'Event @ TBA (Portland, OR)',
-                    'CA',
-                    'Los Angeles'
-                )
+                const result = extractVenueAndCity('Event @ TBA (Portland, OR)', 'CA', 'Los Angeles')
                 expect(result).toBe('Portland, OR')
             })
         })
@@ -228,11 +202,7 @@ describe('venue-parsing utilities', () => {
                     return null
                 })
 
-                const result = extractVenueAndCity(
-                    'Event @ Venue (Springfield)',
-                    'IL',
-                    'Chicago'
-                )
+                const result = extractVenueAndCity('Event @ Venue (Springfield)', 'IL', 'Chicago')
                 expect(result).toBe('Venue, Springfield, MA')
             })
 
@@ -243,53 +213,33 @@ describe('venue-parsing utilities', () => {
                     return null
                 })
 
-                const result = extractVenueAndCity(
-                    'Event @ Venue (Albany)',
-                    'CA',
-                    'Los Angeles'
-                )
+                const result = extractVenueAndCity('Event @ Venue (Albany)', 'CA', 'Los Angeles')
                 expect(result).toBe('Venue, Albany, CA')
             })
         })
 
         describe('fallback patterns', () => {
             it('should handle fallback city in parentheses', () => {
-                const result = extractVenueAndCity(
-                    'Event Title (San Diego)',
-                    'CA',
-                    'Los Angeles'
-                )
+                const result = extractVenueAndCity('Event Title (San Diego)', 'CA', 'Los Angeles')
                 expect(result).toBe('San Diego, CA')
             })
 
             it('should return empty string for unrecognized patterns', () => {
-                const result = extractVenueAndCity(
-                    'No venue or city info',
-                    'CA',
-                    'Los Angeles'
-                )
+                const result = extractVenueAndCity('No venue or city info', 'CA', 'Los Angeles')
                 expect(result).toBe('')
             })
         })
 
         describe('edge cases', () => {
             it('should handle events with no parentheses', () => {
-                const result = extractVenueAndCity(
-                    'Event @ Some Venue',
-                    'CA',
-                    'Los Angeles'
-                )
+                const result = extractVenueAndCity('Event @ Some Venue', 'CA', 'Los Angeles')
                 expect(result).toBe('Some Venue, , USA')
             })
 
             it('should handle TBA venue without state context', () => {
                 mockGetCityStateFromCity.mockReturnValue(null)
 
-                const result = extractVenueAndCity(
-                    'Event @ TBA (Unknown City)',
-                    'CA',
-                    'Unknown Region'
-                )
+                const result = extractVenueAndCity('Event @ TBA (Unknown City)', 'CA', 'Unknown Region')
                 expect(result).toBe('Unknown City')
             })
         })

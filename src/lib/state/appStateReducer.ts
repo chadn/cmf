@@ -6,45 +6,60 @@
  */
 
 import { logr } from '@/lib/utils/logr'
+import { stringify } from '../utils/utils-shared'
 
-// Application state representing the initialization flow
+export const INITIAL_APP_STATE: AppState = 'starting-app'
+
+// Application state representing the initialization flow.
+// Names should be present tense, unique enough to grep, following FSM best practices.
 export type AppState =
-    | 'events-init' // Fetching events from eventSource
-    | 'events-loaded' // Events loaded, ready to process URL filters
-    | 'url-applied' // URL filters applied, ready to set viewport
-    | 'viewport-set' // Viewport configured, ready for user interaction
-    | 'main-state' // Normal user interaction mode
+    | 'starting-app' // When successfully parses es, before fetching events, should transition to fetching-events
+    | 'fetching-events' // SWR fetching events from API
+    | 'processing-events' // resetMapToVisibleEvents, header setup
+    | 'applying-url-filters' // DateAndSearchFilters processes date/search URL params
+    | 'parsing-remaining-url' // Handle se, llz, auto-resize logic
+    | 'finalizing-setup' // Final transition before interaction (placeholder for tracking)
+    | 'user-interactive' // Normal user interaction mode, was 'main-state'
 
 // Actions that can transition between states
+// Names should ideally describe what happened (past tense) or only if need be, what is happening (present tense)
+// Started: [THING]_STARTED
+// Completed: [THING]_COMPLETED or [THING]_FINISHED (past tense)
+// Succeeded/Failed (if needed): [THING]_SUCCEEDED / [THING]_FAILED
+// Ready states: [THING]_READY
 export type AppAction =
-    | { type: 'EVENTS_LOADING' }
-    | { type: 'EVENTS_LOADED'; hasEvents: boolean }
+    | { type: 'APP_STARTED' }
+    | { type: 'EVENTS_FETCHED'; hasEvents: boolean }
+    | { type: 'EVENTS_PROCESSED' }
     | { type: 'URL_FILTERS_APPLIED' }
-    | { type: 'VIEWPORT_SET' }
-    | { type: 'READY_FOR_INTERACTION' }
+    | { type: 'REMAINING_URL_PARSED' }
+    | { type: 'SETUP_FINALIZED' }
 
 /**
  * State machine reducer with explicit transitions and logging
  *
- * State flow: events-init → events-loaded → url-applied → viewport-set → main-state
+ * State flow: starting-app → fetching-events → processing-events → applying-url-filters → parsing-remaining-url → finalizing-setup → user-interactive
  */
 export function appStateReducer(state: AppState, action: AppAction): AppState {
     const nextState = (() => {
         switch (action.type) {
-            case 'EVENTS_LOADING':
-                return 'events-init'
+            case 'APP_STARTED':
+                return state === 'starting-app' ? 'fetching-events' : state
 
-            case 'EVENTS_LOADED':
-                return action.hasEvents ? 'events-loaded' : state
+            case 'EVENTS_FETCHED':
+                return action.hasEvents ? 'processing-events' : state
+
+            case 'EVENTS_PROCESSED':
+                return state === 'processing-events' ? 'applying-url-filters' : state
 
             case 'URL_FILTERS_APPLIED':
-                return state === 'events-loaded' ? 'url-applied' : state
+                return state === 'applying-url-filters' ? 'parsing-remaining-url' : state
 
-            case 'VIEWPORT_SET':
-                return state === 'url-applied' ? 'viewport-set' : state
+            case 'REMAINING_URL_PARSED':
+                return state === 'parsing-remaining-url' ? 'finalizing-setup' : state
 
-            case 'READY_FOR_INTERACTION':
-                return state === 'viewport-set' ? 'main-state' : state
+            case 'SETUP_FINALIZED':
+                return state === 'finalizing-setup' ? 'user-interactive' : state
 
             default:
                 return state
@@ -53,40 +68,36 @@ export function appStateReducer(state: AppState, action: AppAction): AppState {
 
     // Log state transitions for debugging
     if (nextState !== state) {
-        logr.info('app-state', `${action.type}: ${state} → ${nextState}`)
+        logr.info('app_state', `⭐⭐ ${action.type} changing: ${state} to ${nextState}`)
     } else {
-        logr.info('app-state', `${action.type}: ${state}, no change`)
+        logr.info('app_state', `${action.type}: ${state}, no change`)
     }
+    logr.info('app_state', `window.cmfEvents: ${window?.cmfEvents ? stringify(window.cmfEvents) : 'none'}`)
 
     return nextState
 }
 
 /**
  * Type guards for checking specific states
- * TODO: make? these like appActions.viewportSet() - appStateIs.initializing(), appStateIs.readyForUrlParsing(), etc
+ *
+ * Note: Best practices for large state machines or public API is to create type guards for each state.
+ *       Since that is not us, keep it simple and just check appState in code, since we make appState strings easily greppable.
  */
-export const isInitializing = (state: AppState): boolean => state !== 'main-state'
-
-export const isReadyForUrlParsing = (state: AppState): boolean => state === 'events-loaded'
-
-export const isReadyForViewportSetting = (state: AppState): boolean => state === 'url-applied'
-
-export const isViewportSet = (state: AppState): boolean => state === 'viewport-set'
-
-export const isReadyForInteraction = (state: AppState): boolean => state === 'main-state'
-
-/**
- * Initial state for the application
- */
-export const INITIAL_APP_STATE: AppState = 'events-init'
+export const isInitializing = (state: AppState): boolean => state !== 'user-interactive'
+export const isReadyForInteraction = (state: AppState): boolean => state === 'user-interactive'
 
 /**
  * Action creators for type safety
  */
 export const appActions = {
-    eventsLoading: (): AppAction => ({ type: 'EVENTS_LOADING' }),
-    eventsLoaded: (hasEvents: boolean): AppAction => ({ type: 'EVENTS_LOADED', hasEvents }),
+    startFetchingEvents: (): AppAction => ({ type: 'APP_STARTED' }),
+    eventsFetched: (hasEvents: boolean): AppAction => ({ type: 'EVENTS_FETCHED', hasEvents }),
+    eventsProcessed: (): AppAction => ({ type: 'EVENTS_PROCESSED' }),
     urlFiltersApplied: (): AppAction => ({ type: 'URL_FILTERS_APPLIED' }),
-    viewportSet: (): AppAction => ({ type: 'VIEWPORT_SET' }),
-    readyForInteraction: (): AppAction => ({ type: 'READY_FOR_INTERACTION' }),
+    remainingUrlParsed: (): AppAction => ({ type: 'REMAINING_URL_PARSED' }),
+    setupFinalized: (): AppAction => ({ type: 'SETUP_FINALIZED' }),
+    readyForInteraction: (): AppAction => ({ type: 'SETUP_FINALIZED' }),
+
+    // Legacy compatibility actions
+    urlProcessed: (): AppAction => ({ type: 'REMAINING_URL_PARSED' }), // delete after deleting appStateService.ts and appState.ts
 }

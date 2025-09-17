@@ -10,7 +10,7 @@
  */
 
 import { CmfEvent, EventsSourceParams, EventsSourceResponse, EventsSource } from '@/types/events'
-import { BaseEventSourceHandler, registerEventsSource } from '../index'
+import { BaseEventSourceHandler, registerEventsSource } from '@/lib/api/eventSources/index'
 import { logr } from '@/lib/utils/logr'
 import { PluraEventScrapeStats } from './types'
 import { getCachedEvents, getCityEventsCache, setCachedCityMap, setCachedEvents, setCityEventsCache } from './cache'
