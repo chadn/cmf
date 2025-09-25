@@ -5,7 +5,7 @@
  * Contains all three phases of URL processing as separate useEffect blocks
  */
 
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { differenceInCalendarDays, parseISO, subMonths, addMonths } from 'date-fns'
 import { CmfEvents, DateRangeIso } from '@/types/events'
 import { MapBounds, MapViewport } from '@/types/map'
@@ -82,23 +82,80 @@ export function useUrlProcessor(config: UrlProcessorConfig): UrlProcessorResult 
         handlers,
     } = config
 
+    // State for initial URL filter processing (from quick filters like 'weekend' during page load)
+    // ONLY used during 'applying-url-filters' state, ignored during 'user-interactive'
+    const [initialUrlFilterRange, setInitialUrlFilterRange] = useState<{ start: Date; end: Date } | null>(null)
+
+    // Memoize parsed dateSliderRange to avoid expensive parseISO calls on every dateConfig calculation
+    const parsedDateSliderRange = useMemo(() => {
+        if (!urlParams.dateSliderRange) return null
+        return {
+            start: parseISO(urlParams.dateSliderRange.startIso),
+            end: parseISO(urlParams.dateSliderRange.endIso),
+        }
+    }, [urlParams.dateSliderRange])
+
     const dateConfig = useMemo(() => {
         const now = new Date()
         const min = getDateFromUrlDateString(urlParams.sd) || subMonths(now, 1)
         const max = getDateFromUrlDateString(urlParams.ed) || addMonths(now, 3)
-        const fsd = urlParams.fsd ? getDateFromUrlDateString(urlParams.fsd) || min : min
-        const fed = urlParams.fed ? getDateFromUrlDateString(urlParams.fed) || max : max
+
+        // State-aware priority: initialization vs user-interactive
+        let activeStart: Date, activeEnd: Date
+        let source: string
+
+        if (appState === 'applying-url-filters') {
+            if (initialUrlFilterRange) {
+                // URL processing: use initial filter results (like qf=weekend)
+                activeStart = initialUrlFilterRange.start
+                activeEnd = initialUrlFilterRange.end
+                source = 'initialUrlFilterRange'
+            } else {
+                // URL processing fallback: fsd/fed params or defaults
+                activeStart = urlParams.fsd ? getDateFromUrlDateString(urlParams.fsd) || min : min
+                activeEnd = urlParams.fed ? getDateFromUrlDateString(urlParams.fed) || max : max
+                source = 'URL params'
+            }
+        } else {
+            // user-interactive state
+            if (parsedDateSliderRange) {
+                // User interactions: use pre-parsed slider range
+                activeStart = parsedDateSliderRange.start
+                activeEnd = parsedDateSliderRange.end
+                source = 'dateSliderRange'
+            } else {
+                // Default to full range if no user interactions yet
+                activeStart = min
+                activeEnd = max
+                source = 'defaults'
+            }
+        }
+
         const totalDays = differenceInCalendarDays(max, min)
-        const fsdDays = differenceInCalendarDays(fsd, min)
-        const fedDays = differenceInCalendarDays(fed, min)
-        return {
+        const isFiltered = activeStart.getTime() !== min.getTime() || activeEnd.getTime() !== max.getTime()
+
+        const result = {
             minDate: min,
             maxDate: max,
             totalDays,
-            fsdDays,
-            fedDays,
+            activeRange: {
+                start: activeStart,
+                end: activeEnd,
+            },
+            isFiltered,
         }
-    }, [urlParams.sd, urlParams.ed, urlParams.fsd, urlParams.fed])
+        logr.debug('url_filters', `dateConfig useMemo source: ${source}`, result)
+
+        return result
+    }, [
+        urlParams.sd,
+        urlParams.ed,
+        urlParams.fsd,
+        urlParams.fed,
+        parsedDateSliderRange,
+        initialUrlFilterRange,
+        appState,
+    ])
 
     // URL parameter processing is now tracked via app state transitions:
     // 'applying-url-filters' → 'parsing-remaining-url' → 'user-interactive'
@@ -134,23 +191,17 @@ export function useUrlProcessor(config: UrlProcessorConfig): UrlProcessorResult 
         if (domainFilterResult.dateRange) {
             logr.info('url_filters', `Service processed date range: ${stringify(domainFilterResult.dateRange)}`)
 
-            // Calculate days from the processed ISO dates
-            const startDays = differenceInCalendarDays(
-                parseISO(domainFilterResult.dateRange.startIso),
-                dateConfig.minDate
-            )
-            const endDays = differenceInCalendarDays(parseISO(domainFilterResult.dateRange.endIso), dateConfig.minDate)
+            // Set initial URL filter range (only used during applying-url-filters state)
+            const start = parseISO(domainFilterResult.dateRange.startIso)
+            const end = parseISO(domainFilterResult.dateRange.endIso)
+            setInitialUrlFilterRange({ start, end })
 
-            //
-            // TODO: can we just use dateConfig.fsdDays instead of startDays and dateConfig.fedDays instead of endDays
-            //
-            logr.info(
-                'url_filters',
-                `Replace startDays,endDays with dateConfig: ${stringify({ startDays, endDays, dateConfig })}`
-            )
-
-            handlers.setStartDays(startDays)
-            handlers.setEndDays(endDays)
+            /* Commented out for performance reasons
+            logr.debug('url_filters', `Set initial URL filter range`, {
+                start: start.toISOString(),
+                end: end.toISOString()
+            })
+            */
             handlers.onDateRangeChange(domainFilterResult.dateRange)
             filtersApplied = true
         }

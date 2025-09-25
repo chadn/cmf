@@ -128,7 +128,7 @@ export function useAppController(): UseAppControllerReturn {
     })
     const [appState, dispatch] = useReducer(appStateReducer, INITIAL_APP_STATE)
     const [headerName, setHeaderName] = useState('Calendar Map Filter')
-    const [mapHookWidthHeight, setMapHookWidthHeight] = useState({ w: 999, h: 999 }) // in pixels
+    const [mapHookWidthHeight, setMapHookWidthHeight] = useState({ w: 999, h: 999 }) // in pixels, set 1001 elsewhere
     const [llzChecked, setLlzChecked] = useState(false)
     const [preferQfChecked, setPreferQfChecked] = useState(true) // Prefer qf over fsd & fed (default checked)
     // Ref for the events sidebar container - currently unused but available for future use
@@ -138,6 +138,16 @@ export function useAppController(): UseAppControllerReturn {
 
     // Local state for filters
     const [dateSliderRange, setDateSliderRange] = useState<DateRangeIso | undefined>(undefined)
+
+    /* Commented out for performance reasons
+    // Track when dateSliderRange changes
+    useEffect(() => {
+        logr.debug('app', 'STATE CHANGE: dateSliderRange updated', {
+            dateSliderRange,
+            appState
+        })
+    }, [dateSliderRange, appState])
+    */
 
     // Local state for current viewport bounds (from map)
     const [currentBounds, setCurrentBounds] = useState<MapBounds | null>(null)
@@ -270,8 +280,9 @@ export function useAppController(): UseAppControllerReturn {
 
     // handleDateRangeChange - update date filter and slider
     const handleDateRangeChange = useCallback(
+        // start and end iso strings should be getStartOfDay and getEndOfDay results
         (newDateRange: DateRangeIso | undefined) => {
-            logr.info('app', 'handleDateRangeChange', newDateRange)
+            // logr.debug('app', 'handleDateRangeChange - USER INTERACTION', newDateRange)
             setDateSliderRange(newDateRange)
             filters.setDateRange(newDateRange)
             // TODO: if url has fsd or fed, remove it - we don't keep them updated like qf or se.
@@ -279,7 +290,7 @@ export function useAppController(): UseAppControllerReturn {
             // FIX BUG: when fsd and fed from url are processed, this function gets called.
             // TODO: update fsd/fed days that go to DateAndSearchFilters
         },
-        [filters]
+        [filters, dateSliderRange]
     )
 
     // Handle map filter removal
@@ -394,6 +405,19 @@ export function useAppController(): UseAppControllerReturn {
         llz: llzUrl,
         dateSliderRange: dateSliderRange,
     }
+
+    /* Commented out for performance reasons
+    // Track when currentUrlState changes
+    useEffect(() => {
+        logr.debug('app', 'PASSING currentUrlState to useUrlProcessor:', {
+            dateSliderRange: currentUrlState.dateSliderRange,
+            fsd: currentUrlState.fsd,
+            fed: currentUrlState.fed,
+            qf: currentUrlState.qf,
+            appState
+        })
+    }, [currentUrlState.dateSliderRange, currentUrlState.fsd, currentUrlState.fed, currentUrlState.qf, appState])
+    */
 
     // useUrlProcessor handles processing url query params while isInitializing() and during 'user-interactive'
 

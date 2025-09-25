@@ -159,6 +159,11 @@ export interface DateConfig {
     minDate: Date
     maxDate: Date
     totalDays: number
-    fsdDays: number
-    fedDays: number
+    // Current active filter range (the single source of truth)
+    activeRange: {
+        start: Date
+        end: Date
+    }
+    // Whether the current range is filtered (not the full range)
+    isFiltered: boolean
 }

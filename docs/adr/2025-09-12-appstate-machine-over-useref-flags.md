@@ -1,7 +1,7 @@
 # ADR: AppState Machine over useRef Flags
 
 Date: 2025-09-12
-Status: Superseded by [2025-09-23-smart-hook-dumb-component-architecture.md](2025-09-23-smart-hook-dumb-component-architecture.md)
+Status: Deprecated ❌ - Superseded by [2025-09-23-smart-hook-dumb-component-architecture.md](2025-09-23-smart-hook-dumb-component-architecture.md)
 Supersedes: [2025-09-05-direct-state-over-reducer-pattern.md](2025-09-05-direct-state-over-reducer-pattern.md)
 
 ## Context

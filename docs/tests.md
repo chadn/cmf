@@ -52,6 +52,35 @@ Note:
 - Remember Longitudes can go to 180, _longer_ than latitudes that only go up to 90.
   Another way is longitudes cover full 360 around earth (-180 to +180), latitudes only go from
 
+### Testing Date Changes
+
+**Date Changes can be triggered by:**
+
+- **URL processing during page load** (only during `applying-url-filters` state) - `sd`+`ed` determine fullRange (`minDate`, `maxDate`), `qf` and `fsd`+`fed` determine initial `activeRange`
+- **Component: Sidebar** (only during `user-interactive` state) - clearing date chip resets `activeRange` to entire range
+- **Component: DateAndSearchFilters** (only during `user-interactive` state) - Clicking on slider, calendar, or quick filters change `activeRange` (during `user-interactive` state)
+
+**Data Flow Priority:**
+
+- During `applying-url-filters`: `initialUrlFilterRange` (from qf=weekend) > URL params (fsd/fed) > defaults
+- During `user-interactive`: `dateSliderRange` (from user clicks) > defaults
+    - URL params are **write-only** during user-interactive (updated but not read)
+
+**Date Changes Need to propagate to:**
+
+- **URL** - `qf=xx` parameter can be changed or cleared. `fsd`+`fed` maybe same in future, for now they should be cleared after initial processing.
+- **Filters (functions)** - update via `FilterEventsManager.setDateRange()`
+- **Component: Sidebar** - X of Y Visible, date chip
+- **Component: DateAndSearchFilters** - slider position, calendar selection, quick filter buttons, dropdown labels
+
+**Key Test Scenarios:**
+
+1. Load `/?qf=weekend` - should show weekend dates in all UI components
+2. User drags slider - should immediately update dropdown labels and event counts
+3. User clicks calendar - should immediately update all UI components
+4. User clicks quick filter - should override any previous selections
+5. User clicks "Filtered by Date" chip to reset dates.
+
 ### Testing Different URLs
 
 Background in [Implementation.md: URL Parsing](Implementation.md#url-parsing)
@@ -125,8 +154,15 @@ If tests fail, then playwright reports are available to see details - make sure 
 **Available E2E commands:**
 
 - `npm run test:e2e` - Run all E2E tests headlessly
-- `npm run test:e2e-ui` - Run tests with interactive UI
-- `npm run test:console` - Run console log debugging test with visible browser
+- `npm run test:e2e:console` - Run console log debugging test with visible browser
+
+```
+# Run the new interactive test:
+npm run test:e2e -- tests/e2e/interactive.spec.ts --headed
+
+# Run specific test within the file:
+npm run test:e2e -- tests/e2e/interactive.spec.ts -g "filter chip interaction" --headed
+```
 
 #### Playwright Directory Structure
 
@@ -176,6 +212,7 @@ src/features/cart/__tests__/Cart.integration.test.tsx
 **Command:** `npm test` runs Jest with coverage for all unit and component tests.
 
 **Test Types:**
+
 - **Unit Tests**: Test individual functions and utilities (e.g., date calculations, URL parsing)
 - **Component Tests**: Test React components using React Testing Library (e.g., EventList, DateFilters, MapContainer)
 - **Hook Tests**: Test custom React hooks in isolation
@@ -194,19 +231,19 @@ src/components/events/__tests__/EventList.test.tsx  # Component tests with RTL
 
 ```
 npm test
-> calendar-map-filter@0.3.0 test
+> calendar-map-filter@0.3.1 test
 > jest --coverage && node src/scripts/show-total-loc.mjs && date && echo
 ...
-----------------------------|---------|----------|---------|---------|---------------------------------------
+----------------------------|---------|----------|---------|---------|-----------------------------------------------
 File                        | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
-----------------------------|---------|----------|---------|---------|---------------------------------------
-All files                   |   72.33 |    65.47 |   75.13 |   72.74 |
+----------------------------|---------|----------|---------|---------|-----------------------------------------------
+All files                   |   70.89 |    63.73 |   73.38 |   71.25 |
  components/common          |     100 |      100 |     100 |     100 |
   ErrorMessage.tsx          |     100 |      100 |     100 |     100 |
   LoadingSpinner.tsx        |     100 |      100 |     100 |     100 |
- components/events          |   68.52 |    60.64 |      75 |   68.78 |
-  DateAndSearchFilters.tsx  |   47.72 |    33.33 |   56.25 |   48.19 | 90-153,172,191-213,250-328
-  DateQuickButtons.tsx      |   91.66 |       75 |     100 |   91.66 | 47-48
+ components/events          |   78.48 |    68.46 |   76.19 |   79.19 |
+  DateAndSearchFilters.tsx  |    64.7 |     42.1 |   57.14 |   66.66 | 64,94-222
+  DateQuickButtons.tsx      |    90.9 |       75 |     100 |    90.9 | 43-44
   EventDetails.tsx          |     100 |      100 |     100 |     100 |
   EventList.tsx             |   82.05 |    78.04 |   80.95 |   81.57 | 38-39,134-136,161-163,188-190,217-219
  components/home            |   80.55 |    66.66 |     100 |      80 |
@@ -215,12 +252,12 @@ All files                   |   72.33 |    65.47 |   75.13 |   72.74 |
   Footer.tsx                |     100 |      100 |     100 |     100 |
   Header.tsx                |     100 |      100 |     100 |     100 |
  components/map             |   91.56 |    79.51 |   93.93 |   93.95 |
-  MapContainer.tsx          |   89.88 |    78.94 |      90 |   90.58 | 95-96,143,169-171,262-264
+  MapContainer.tsx          |   89.88 |    78.94 |      90 |   90.58 | 98-99,146,172-174,265-267
   MapMarker.tsx             |   94.44 |    81.81 |     100 |     100 | 15,35
   MapPopup.tsx              |   93.22 |    79.41 |     100 |   98.07 | 78
- components/ui              |   94.11 |    61.11 |      90 |     100 |
+ components/ui              |   94.11 |    66.66 |      90 |     100 |
   button.tsx                |     100 |    66.66 |     100 |     100 | 41
-  calendar.tsx              |    87.5 |    66.66 |   85.71 |     100 | 71,138-148
+  calendar.tsx              |    87.5 |       75 |   85.71 |     100 | 71,138-148
   slider.tsx                |     100 |    33.33 |     100 |     100 | 13
  lib                        |     100 |      100 |     100 |     100 |
   utils.ts                  |     100 |      100 |     100 |     100 |
@@ -235,25 +272,26 @@ All files                   |   72.33 |    65.47 |   75.13 |   72.74 |
   FilterEventsManager.ts    |   72.58 |    79.31 |   55.55 |   72.88 | 42-44,58-74,115,132-133,189-207
   examples.ts               |     100 |      100 |     100 |     100 |
   filters.ts                |   73.33 |       70 |   71.42 |   73.07 | 32,43,67-71,83,108-114
- lib/hooks                  |   38.05 |    34.97 |   50.57 |   37.08 |
-  useAppController.ts       |    8.92 |        0 |       0 |    9.43 | 120-552
+ lib/hooks                  |   34.43 |    28.08 |   46.39 |   33.48 |
+  useAppController.ts       |   12.21 |        0 |       0 |    12.8 | 117-529
   useBreakpoint.ts          |    7.69 |        0 |       0 |      10 | 11-22
   useEventsManager.ts       |   53.84 |    49.03 |   63.63 |   52.06 | 115-134,144-192,210-234,245-270
-  useMap.ts                 |   73.62 |    40.62 |   79.31 |   75.67 | 21-28,121-127,138-142,185-186,219-230
- lib/services               |     3.7 |        0 |       0 |    3.75 |
-  urlProcessingService.ts   |     3.7 |        0 |       0 |    3.75 | 28-226
+  useMap.ts                 |      71 |    39.47 |   77.41 |   72.83 | 21-28,116-127,144-150,161-165,208-209,242-253
+  useUrlProcessor.ts        |     7.4 |        0 |       0 |    7.84 | 72-347
+ lib/services               |    6.81 |        0 |       0 |    6.89 |
+  urlProcessingService.ts   |    6.81 |        0 |       0 |    6.89 | 25-237
  lib/state                  |   97.14 |     82.6 |   91.66 |   96.55 |
   appStateReducer.ts        |   97.14 |     82.6 |   91.66 |   96.55 | 102
- lib/utils                  |    83.8 |    77.73 |   86.55 |   84.69 |
+ lib/utils                  |    83.5 |    77.43 |   86.55 |   84.35 |
   calendar.ts               |   85.52 |     72.5 |     100 |   85.52 | 28-29,45,55,75,81,127-128,133-134,150
-  date-19hz-parsing.ts      |   93.63 |    87.09 |     100 |   93.51 | 67-68,75-76,289-291
+  date-19hz-parsing.ts      |   93.63 |    85.48 |     100 |   93.51 | 67-68,75-76,289-291
   date-constants.ts         |     100 |      100 |     100 |     100 |
   date.ts                   |   86.66 |    87.17 |   91.66 |   86.73 | 45-54,73-74,113-114,209
   headerNames.ts            |       0 |        0 |       0 |       0 | 14-46
   icsParser.ts              |     100 |      100 |     100 |     100 |
   location.ts               |   76.51 |       72 |   86.95 |   77.86 | 205,239-245,298,373-374,383-414
   logr.ts                   |   71.18 |    67.44 |   91.66 |   70.17 | 39,68-93,113,160
-  quickFilters.ts           |     100 |      100 |     100 |     100 |
+  quickFilters.ts           |   97.72 |      100 |     100 |   97.43 | 149
   timezones.ts              |   90.38 |    61.53 |   85.71 |   93.18 | 83,122-123
   umami.ts                  |   41.17 |     37.5 |       0 |   46.66 | 14-18,31-34
   url-utils.ts              |   92.78 |    81.45 |   88.88 |    95.7 | 76-77,267,284,288,318,329
@@ -262,17 +300,16 @@ All files                   |   72.33 |    65.47 |   75.13 |   72.74 |
   venue-parsing.ts          |     100 |    86.66 |     100 |     100 | 22,59,85,145-149
  types                      |      75 |      100 |     100 |     100 |
   events.ts                 |      75 |      100 |     100 |     100 |
-----------------------------|---------|----------|---------|---------|---------------------------------------
+----------------------------|---------|----------|---------|---------|-----------------------------------------------
 
 Test Suites: 1 skipped, 31 passed, 31 of 32 total
 Tests:       10 skipped, 476 passed, 486 total
 Snapshots:   0 total
-Time:        2.939 s
+Time:        3.251 s
 Ran all test suites.
-Total Lines of Code: 2143
-Wed Sep 24 13:43:32 PDT 2025
+Total Lines of Code: 2171
+Fri Sep 26 10:09:51 PDT 2025
 ```
-
 
 ## Next Steps for Testing
 

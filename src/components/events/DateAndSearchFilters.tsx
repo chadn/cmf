@@ -34,24 +34,22 @@ export default function DateAndSearchFilters({
     const { sq: searchQuery, dateSliderRange } = urlState
     const [showDateSliders, setShowDateSliders] = useState(false)
 
-    // Date calculations now centralized in useUrlProcessor hook via dateConfig prop
-    const { minDate, maxDate, totalDays, fsdDays, fedDays } = dateConfig
+    // Extract from simplified dateConfig - single source of truth
+    const { minDate, maxDate, totalDays, activeRange } = dateConfig
     const now = useMemo(() => new Date(), [])
-    const [startDays, setStartDays] = useState(fsdDays)
-    const [endDays, setEndDays] = useState(fedDays)
 
-    logr.debug('date-and-search-filters', `dateConfig: ${stringify({ startDays, endDays, dateConfig })}`)
-    useEffect(() => {
-        logr.debug('date-and-search-filters', `new startDays=${startDays}, endDays=${endDays} ${stringify(dateConfig)}`)
-    }, [startDays, endDays])
+    // Calculate current slider positions from actual dates (eliminates redundant state)
+    const startDays = useMemo(() => differenceInCalendarDays(activeRange.start, minDate), [activeRange.start, minDate])
+    const endDays = useMemo(() => differenceInCalendarDays(activeRange.end, minDate), [activeRange.end, minDate])
 
-    useEffect(() => {
-        if (!dateSliderRange) {
-            setStartDays(0)
-            setEndDays(totalDays)
-        }
-    }, [dateSliderRange, totalDays])
-
+    /* Commmented out for performance reasons
+    logr.info('date-and-search-filters', `RECEIVED dateConfig: ${stringify({
+        startDays,
+        endDays,
+        activeRange: {start: activeRange.start.toISOString(), end: activeRange.end.toISOString()},
+        isFiltered: dateConfig.isFiltered
+    })}`)
+    */
     useEffect(() => {
         if (showDateSliders) {
             umamiTrack('showDateSliders')
@@ -67,43 +65,53 @@ export default function DateAndSearchFilters({
         return format(date, "yyyy-MM-dd'T'HH:mm:ss") // no Z on end for local time string, Z implies UTC
     }
 
-    // Compute current start/end as Date objects
+    // Use active range directly (eliminates addDays calculations)
     const { startDate, endDate } = useMemo(() => {
-        return { startDate: addDays(minDate, startDays), endDate: addDays(minDate, endDays) }
-    }, [startDays, endDays, minDate])
+        const result = { startDate: activeRange.start, endDate: activeRange.end }
+        logr.info(
+            'date-and-search-filters',
+            `Using active range: ${stringify({ start: result.startDate.toISOString(), end: result.endDate.toISOString() })}`
+        )
+        return result
+    }, [activeRange.start, activeRange.end])
+
+    // Memoized formatted date strings to avoid expensive format() calls on every render
+    const formattedDates = useMemo(
+        () => ({
+            startButton: format(startDate, 'MMM d EEE'),
+            endButton: format(endDate, 'MMM d EEE'),
+            startSlider: format(startDate, 'MMM d, yyyy'),
+            endSlider: format(endDate, 'MMM d, yyyy'),
+        }),
+        [startDate, endDate]
+    )
 
     // Helper: check if two dates are in the same month and year
     const isSameMonthBoolean = !!startDate && !!endDate && isSameMonth(startDate, endDate)
 
-    // Handler for calendar selection
+    // Handler for calendar selection - simplified to work directly with dates
     const handleCalendarSelect = (date: Date | undefined, which: 'start' | 'end') => {
         if (!date) return
+
+        // Determine if we should update start or end based on selection
         const selectedDays = differenceInCalendarDays(date, minDate)
-        // Update the start date by default. Update the end date if
-        // - the selected date is after the end date
-        // - the selected date is after the start AND which is 'end'
         let updateWhich = selectedDays > endDays ? 'end' : 'start'
         if (selectedDays > startDays && which === 'end') {
             updateWhich = 'end'
         }
+
         if (updateWhich === 'start') {
-            setStartDays(selectedDays)
             onDateRangeChange({
                 startIso: getStartOfDay(selectedDays, minDate),
                 endIso: getEndOfDay(endDays, minDate),
             })
         } else {
-            setEndDays(selectedDays)
             onDateRangeChange({
                 startIso: getStartOfDay(startDays, minDate),
                 endIso: getEndOfDay(selectedDays, minDate),
             })
         }
         if (onDateQuickFilterChange) onDateQuickFilterChange(null)
-    }
-
-    const formatDateForButton = (date: Date) => {
-        return format(date, 'MMM d EEE')
     }
     return (
         <div className="relative">
@@ -116,7 +124,7 @@ export default function DateAndSearchFilters({
                                     className="w-full text-left text-sm md:text-md p-1 transition-colors bg-blue-100 text-blue-800 rounded cursor-pointer hover:bg-blue-200  duration-150"
                                     data-testid="date-range-dropdown"
                                 >
-                                    {formatDateForButton(startDate)} - {formatDateForButton(endDate)}{' '}
+                                    {formattedDates.startButton} - {formattedDates.endButton}{' '}
                                     {showDateSliders ? '↑' : '↓'}
                                 </button>
                             </div>
@@ -128,16 +136,13 @@ export default function DateAndSearchFilters({
                                 {/* Single range slider for start and end */}
                                 <div className="mb-4">
                                     <label className="block text-md md:text-lg text-gray-600 mb-0.5 text-center">
-                                        Date Range: {format(startDate, 'MMM d, yyyy')} -{' '}
-                                        {format(endDate, 'MMM d, yyyy')}
+                                        Date Range: {formattedDates.startSlider} - {formattedDates.endSlider}
                                     </label>
                                     <Slider
                                         min={0}
                                         max={totalDays}
                                         value={[startDays, endDays]}
                                         onValueChange={([newStart, newEnd]) => {
-                                            setStartDays(newStart)
-                                            setEndDays(newEnd)
                                             onDateRangeChange({
                                                 startIso: getStartOfDay(newStart, minDate),
                                                 endIso: getEndOfDay(newEnd, minDate),
@@ -247,8 +252,6 @@ export default function DateAndSearchFilters({
                                             now={now}
                                             minDate={minDate}
                                             totalDays={totalDays}
-                                            setStartValue={setStartDays}
-                                            setEndValue={setEndDays}
                                             getDateFromDays={getDateFromDays}
                                             onDateRangeChange={onDateRangeChange}
                                             onDateQuickFilterChange={onDateQuickFilterChange}

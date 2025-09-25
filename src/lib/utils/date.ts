@@ -322,3 +322,5 @@ export function getEndOfDay(days: number, minDate: Date): string {
     date.setHours(23, 59, 59, 999)
     return date.toISOString()
 }
+
+// if you don't need to be at start or end of day, just use addDays(Date, numDays).

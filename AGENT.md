@@ -47,7 +47,7 @@ Review the latest git commit. Ensure the following are true — fix if not - and
     - If related to this commit, update as needed
     - If unrelated but clearly improvable, suggest improvements with reasoning (do not modify yet)
 
-Do not commit or push until all items are verified.
+Do not commit or push until all items are verified by user.
 
 # General Project Preferences
 

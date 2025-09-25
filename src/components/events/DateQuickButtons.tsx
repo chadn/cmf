@@ -12,8 +12,6 @@ interface DateQuickButtonsProps {
     now: Date
     minDate: Date
     totalDays: number
-    setStartValue: (value: number) => void
-    setEndValue: (value: number) => void
     getDateFromDays: (value: number) => string
     onDateRangeChange: (range: DateRangeIso) => void
     dateQuickFilterUrl?: string | null
@@ -26,8 +24,6 @@ export default function DateQuickButtons({
     now,
     minDate,
     totalDays,
-    setStartValue,
-    setEndValue,
     getDateFromDays,
     onDateRangeChange,
     dateQuickFilterUrl,
@@ -47,9 +43,6 @@ export default function DateQuickButtons({
             logr.error('date-buttons', `No range calculated for filter: ${filterId}`)
             return
         }
-
-        setStartValue(range.start)
-        setEndValue(range.end)
 
         onDateRangeChange({
             startIso: getStartOfDay(range.start, minDate),

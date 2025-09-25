@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted ✅ (2025-09-05)
+Deprecated ❌ (2025-09-12) - Superseded by [2025-09-12-appstate-machine-over-useref-flags.md](2025-09-12-appstate-machine-over-useref-flags.md)
 
 ## Context
 

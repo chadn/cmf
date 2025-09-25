@@ -25,11 +25,10 @@ Done items in [CHANGELOG](../CHANGELOG.md)
 1. Upgrade from next 14 to next 15
 1. Change marker id 'unresolved' to 'unresolvedMarkerId', revisit how unresolved works with filters and related data structures
 1. Currently some url params are type `string`, some are `string | null` - seems like null is not necessary.
-1. refactor to follow React best practice of 
+1. refactor to follow React best practice of
     - UI components → as dumb as possible, just render props.
     - Hooks → wrap stateful or React-specific logic.
     - Services (lib/utils) → pure functions for business logic and data processing.
-
 
 (thanks https://euangoddard.github.io/clipboard2markdown/)
 
@@ -39,7 +38,6 @@ Consider features from original version https://chadnorwood.com/projects/gcm/
 
 Working on fixing these:
 
-1. Double check to ensure using date-fns/format to compute day boundaries and to display in user's local timezone
 1. On mobile, map container cannot get much bigger than the US. So if events occur in Hawaii and NYC, map cannot fit them both. Buggy behavior.
 1. If user enters bad string on home page, it gets stuck, no error messages, no console logs.
 1. if url has llz in it, it is not obeyed exactly - it will show visible events then adjust slightly. ex: /?es=sf&sq=midway&llz=37.75108,-122.38569,15

@@ -44,7 +44,7 @@ const MapContainer: React.FC<MapContainerProps> = ({
 }) => {
     const mapRef = useRef<MapRef>(null)
     const [popupMarker, setPopupMarker] = useState<MapMarker | null>(null)
-    const mapWidthHeightRef = useRef({ w: 1001, h: 1001 })
+    const mapWidthHeightRef = useRef({ w: 1001, h: 1001 }) // set to 999 x 999 elsewhere
 
     // Get map dimensions and update parent component if dimensions have changed
     const updateMapWidthHeight = useCallback(() => {

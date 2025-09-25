@@ -32,8 +32,6 @@ describe('DateQuickButtons', () => {
     const now = new Date('2023-07-15') // This is a Saturday
     const minDate = new Date('2023-06-15') // 30 days before now
     const totalDays = 60 // Total days in the range
-    const mockSetStartValue = jest.fn()
-    const mockSetEndValue = jest.fn()
     const mockOnDateRangeChange = jest.fn()
     const mockOnDateQuickFilterChange = jest.fn()
 
@@ -53,8 +51,6 @@ describe('DateQuickButtons', () => {
                 now={now}
                 minDate={minDate}
                 totalDays={totalDays}
-                setStartValue={mockSetStartValue}
-                setEndValue={mockSetEndValue}
                 getDateFromDays={getDateFromDays}
                 onDateRangeChange={mockOnDateRangeChange}
             />
@@ -72,23 +68,14 @@ describe('DateQuickButtons', () => {
                 now={now}
                 minDate={minDate}
                 totalDays={totalDays}
-                setStartValue={mockSetStartValue}
-                setEndValue={mockSetEndValue}
                 getDateFromDays={getDateFromDays}
                 onDateRangeChange={mockOnDateRangeChange}
                 onDateQuickFilterChange={mockOnDateQuickFilterChange}
             />
         )
 
-        // The today value is 30 (days since minDate)
-        const todayValue = 30
-
         fireEvent.click(screen.getByText('Past'))
 
-        // Start value should be 0 (beginning of range)
-        expect(mockSetStartValue).toHaveBeenCalledWith(0)
-        // End value should be todayValue - 1 (29) for Past filter
-        expect(mockSetEndValue).toHaveBeenCalledWith(todayValue - 1)
         // onDateRangeChange should be called with correct dates using proper day boundaries
         expect(mockOnDateRangeChange).toHaveBeenCalledWith({
             startIso: expect.stringMatching(/^2023-06-14T11:01:00\.000Z$/),
@@ -104,20 +91,14 @@ describe('DateQuickButtons', () => {
                 now={now}
                 minDate={minDate}
                 totalDays={totalDays}
-                setStartValue={mockSetStartValue}
-                setEndValue={mockSetEndValue}
                 getDateFromDays={getDateFromDays}
                 onDateRangeChange={mockOnDateRangeChange}
                 onDateQuickFilterChange={mockOnDateQuickFilterChange}
             />
         )
 
-        const todayValue = 30
-
         fireEvent.click(screen.getByText('Future'))
 
-        expect(mockSetStartValue).toHaveBeenCalledWith(todayValue)
-        expect(mockSetEndValue).toHaveBeenCalledWith(totalDays)
         expect(mockOnDateRangeChange).toHaveBeenCalledWith({
             startIso: expect.stringMatching(/^2023-07-14T11:01:00\.000Z$/),
             endIso: expect.stringMatching(/^2023-08-14T06:59:59\.999Z$/),
@@ -131,21 +112,14 @@ describe('DateQuickButtons', () => {
                 now={now}
                 minDate={minDate}
                 totalDays={totalDays}
-                setStartValue={mockSetStartValue}
-                setEndValue={mockSetEndValue}
                 getDateFromDays={getDateFromDays}
                 onDateRangeChange={mockOnDateRangeChange}
                 onDateQuickFilterChange={mockOnDateQuickFilterChange}
             />
         )
 
-        const todayValue = 30
-        const threeDaysLaterValue = todayValue + 3
-
         fireEvent.click(screen.getByText('Next 3 days'))
 
-        expect(mockSetStartValue).toHaveBeenCalledWith(todayValue)
-        expect(mockSetEndValue).toHaveBeenCalledWith(threeDaysLaterValue)
         expect(mockOnDateRangeChange).toHaveBeenCalledWith({
             startIso: expect.stringMatching(/^2023-07-14T11:01:00\.000Z$/),
             endIso: expect.stringMatching(/^2023-07-18T06:59:59\.999Z$/),
@@ -160,8 +134,6 @@ describe('DateQuickButtons', () => {
                 now={now} // Saturday
                 minDate={minDate}
                 totalDays={totalDays}
-                setStartValue={mockSetStartValue}
-                setEndValue={mockSetEndValue}
                 getDateFromDays={getDateFromDays}
                 onDateRangeChange={mockOnDateRangeChange}
                 onDateQuickFilterChange={mockOnDateQuickFilterChange}
@@ -175,8 +147,6 @@ describe('DateQuickButtons', () => {
         const sundayValue = 32 // Sunday is 2 days after Friday
 
         // Should set to current weekend (Friday to Sunday)
-        expect(mockSetStartValue).toHaveBeenCalledWith(fridayValue)
-        expect(mockSetEndValue).toHaveBeenCalledWith(sundayValue)
         expect(mockOnDateRangeChange).toHaveBeenCalledWith({
             startIso: expect.stringMatching(/^2023-07-14T11:01:00\.000Z$/),
             endIso: expect.stringMatching(/^2023-07-17T06:59:59\.999Z$/),
@@ -193,8 +163,6 @@ describe('DateQuickButtons', () => {
                 now={wednesday}
                 minDate={minDate}
                 totalDays={totalDays}
-                setStartValue={mockSetStartValue}
-                setEndValue={mockSetEndValue}
                 getDateFromDays={getDateFromDays}
                 onDateRangeChange={mockOnDateRangeChange}
                 onDateQuickFilterChange={mockOnDateQuickFilterChange}
@@ -203,13 +171,7 @@ describe('DateQuickButtons', () => {
 
         fireEvent.click(screen.getByText('Weekend'))
 
-        // Wednesday is day 27, Friday is day 29 (2 days later)
-        const fridayValue = 30
-        const sundayValue = 32 // Sunday is 2 days after Friday
-
         // Should set to upcoming weekend (Friday to Sunday)
-        expect(mockSetStartValue).toHaveBeenCalledWith(fridayValue)
-        expect(mockSetEndValue).toHaveBeenCalledWith(sundayValue)
         expect(mockOnDateRangeChange).toHaveBeenCalledWith({
             startIso: expect.stringMatching(/^2023-07-14T11:01:00\.000Z$/),
             endIso: expect.stringMatching(/^2023-07-17T06:59:59\.999Z$/),
@@ -225,8 +187,6 @@ describe('DateQuickButtons', () => {
                 now={sunday}
                 minDate={minDate}
                 totalDays={totalDays}
-                setStartValue={mockSetStartValue}
-                setEndValue={mockSetEndValue}
                 getDateFromDays={getDateFromDays}
                 onDateRangeChange={mockOnDateRangeChange}
                 onDateQuickFilterChange={mockOnDateQuickFilterChange}
@@ -235,13 +195,7 @@ describe('DateQuickButtons', () => {
 
         fireEvent.click(screen.getByText('Weekend'))
 
-        // Sunday is day 31, next Friday is day 36 (5 days later)
-        const fridayValue = 31
-        const sundayValue = 33 // Sunday is 2 days after Friday
-
         // Should set to next weekend (Friday to Sunday)
-        expect(mockSetStartValue).toHaveBeenCalledWith(fridayValue)
-        expect(mockSetEndValue).toHaveBeenCalledWith(sundayValue)
     })
 
     it('selects Today correctly', () => {
@@ -250,20 +204,14 @@ describe('DateQuickButtons', () => {
                 now={now}
                 minDate={minDate}
                 totalDays={totalDays}
-                setStartValue={mockSetStartValue}
-                setEndValue={mockSetEndValue}
                 getDateFromDays={getDateFromDays}
                 onDateRangeChange={mockOnDateRangeChange}
                 onDateQuickFilterChange={mockOnDateQuickFilterChange}
             />
         )
 
-        const todayValue = 30
-
         fireEvent.click(screen.getByText('Today'))
 
-        expect(mockSetStartValue).toHaveBeenCalledWith(todayValue)
-        expect(mockSetEndValue).toHaveBeenCalledWith(todayValue)
         expect(mockOnDateRangeChange).toHaveBeenCalledWith({
             startIso: expect.stringMatching(/^2023-07-14T11:01:00\.000Z$/),
             endIso: expect.stringMatching(/^2023-07-15T06:59:59\.999Z$/),
@@ -280,8 +228,6 @@ describe('DateQuickButtons', () => {
                 now={now}
                 minDate={minDate}
                 totalDays={totalDays}
-                setStartValue={mockSetStartValue}
-                setEndValue={mockSetEndValue}
                 getDateFromDays={getDateFromDays}
                 onDateRangeChange={mockOnDateRangeChange}
                 dateQuickFilterUrl="today" // Today is active
@@ -306,8 +252,6 @@ describe('DateQuickButtons', () => {
                 now={now}
                 minDate={minDate}
                 totalDays={totalDays}
-                setStartValue={mockSetStartValue}
-                setEndValue={mockSetEndValue}
                 getDateFromDays={getDateFromDays}
                 onDateRangeChange={mockOnDateRangeChange}
                 onDateQuickFilterChange={mockOnDateQuickFilterChange}
@@ -329,8 +273,6 @@ describe('DateQuickButtons', () => {
                 now={now}
                 minDate={minDate}
                 totalDays={smallTotalDays}
-                setStartValue={mockSetStartValue}
-                setEndValue={mockSetEndValue}
                 getDateFromDays={getDateFromDays}
                 onDateRangeChange={mockOnDateRangeChange}
             />
@@ -339,11 +281,7 @@ describe('DateQuickButtons', () => {
         // Click Next 7 days, but total days is only 5 days after today
         fireEvent.click(screen.getByText('Next 7 days'))
 
-        const todayValue = 30
-
-        // End value should be capped at totalDays
-        expect(mockSetStartValue).toHaveBeenCalledWith(todayValue)
-        expect(mockSetEndValue).toHaveBeenCalledWith(smallTotalDays)
+        // Should call onDateRangeChange with the capped range
         expect(mockOnDateRangeChange).toHaveBeenCalledWith({
             startIso: expect.stringMatching(/^2023-07-14T11:01:00\.000Z$/),
             endIso: expect.stringMatching(/^2023-07-20T06:59:59\.999Z$/),

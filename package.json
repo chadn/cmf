@@ -1,6 +1,6 @@
 {
     "name": "calendar-map-filter",
-    "version": "0.3.0",
+    "version": "0.3.1",
     "private": true,
     "scripts": {
         "dev": "next dev",
@@ -12,9 +12,9 @@
         "format:diff": "npx prettier $FN | git --no-pager diff --no-index $FN -",
         "test": "jest --coverage && node src/scripts/show-total-loc.mjs && date && echo",
         "test:e2e": "playwright test",
-        "test:console": "TEST_URL=${TEST_URL:-/} playwright test tests/e2e/console-logs.spec.ts --headed",
-        "test:pageload": "playwright test tests/e2e/page-load.spec.ts --headed",
-        "test:url": "TEST_URL=${TEST_URL} playwright test tests/e2e/page-load.spec.ts --headed --reporter=list && echo '\n📊 To view HTML report, run: npm run test:report'",
+        "test:e2e:console": "TEST_URL=${TEST_URL:-/} playwright test tests/e2e/console-logs.spec.ts --headed",
+        "test:e2e:pageload": "playwright test tests/e2e/page-load.spec.ts --headed",
+        "test:e2e:interactive": "playwright test tests/e2e/interactive.spec.ts --headed",
         "cache": "node --experimental-transform-types src/scripts/upstash-redis.ts"
     },
     "dependencies": {
