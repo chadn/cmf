@@ -192,11 +192,20 @@ export const getEventsCache = async (
     if (cachedResponse) return cachedResponse
 
     // try again for the previous hour (in case it is 1 minute into a new hour)
-    const timeMin2 = new Date(new Date(timeMin).getTime() - 59 * 60 * 1000).toISOString()
-    const timeMax2 = new Date(new Date(timeMax).getTime() - 59 * 60 * 1000).toISOString()
-    fetchKey = `${eventSourceId}-${roundTimeToNearestHour(timeMin2)}-${roundTimeToNearestHour(timeMax2)}`
-    const cachedResponse2 = await getCache<EventsSourceResponse>(fetchKey, EVENTS_CACHE_PREFIX)
-    return cachedResponse2
+    // Only do this if we have valid dates
+    if (timeMin && timeMax) {
+        const timeMinDate = new Date(timeMin)
+        const timeMaxDate = new Date(timeMax)
+        if (!isNaN(timeMinDate.getTime()) && !isNaN(timeMaxDate.getTime())) {
+            const timeMin2 = new Date(timeMinDate.getTime() - 59 * 60 * 1000).toISOString()
+            const timeMax2 = new Date(timeMaxDate.getTime() - 59 * 60 * 1000).toISOString()
+            fetchKey = `${eventSourceId}-${roundTimeToNearestHour(timeMin2)}-${roundTimeToNearestHour(timeMax2)}`
+            const cachedResponse2 = await getCache<EventsSourceResponse>(fetchKey, EVENTS_CACHE_PREFIX)
+            return cachedResponse2
+        }
+    }
+
+    return null
 }
 
 export const setEventsCache = async (

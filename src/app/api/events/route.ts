@@ -9,6 +9,7 @@ import { convertWallTimeToZone, getTimezoneFromLatLng } from '@/lib/utils/timezo
 
 // Import event source handlers to ensure they're registered (alphabetical order)
 import '@/lib/api/eventSources/facebookEvents'
+import '@/lib/api/eventSources/foopee'
 import '@/lib/api/eventSources/19hz'
 import '@/lib/api/eventSources/googleCalendar'
 import '@/lib/api/eventSources/plura/index'
@@ -119,20 +120,24 @@ export async function GET(request: NextRequest) {
         // Get optional date range parameters
         const timeMin = request.nextUrl.searchParams.get('timeMin') || ''
         const timeMax = request.nextUrl.searchParams.get('timeMax') || ''
+        const useCache = !(request.nextUrl.searchParams.get('skipCache') || false)
 
-        // Fetch events from the cache if available
-        const startTime = performance.now()
-        const cachedResponse = await getEventsCache(eventSourceId, timeMin, timeMax)
-        const fetchTime = Math.round(performance.now() - startTime)
-        if (cachedResponse) {
-            logr.info(
-                'api-events',
-                `Cache hit in ${fetchTime}ms, returning ${cachedResponse.events.length} events for ${eventSourceId}`
-            )
-            return NextResponse.json(cachedResponse)
+        if (useCache) {
+            // Fetch events from the cache if available
+            const startTime = performance.now()
+            const cachedResponse = await getEventsCache(eventSourceId, timeMin, timeMax)
+            const fetchTime = Math.round(performance.now() - startTime)
+            if (cachedResponse) {
+                logr.info(
+                    'api-events',
+                    `Cache hit in ${fetchTime}ms, returning ${cachedResponse.events.length} events for ${eventSourceId}`
+                )
+                return NextResponse.json(cachedResponse)
+            }
+            logr.info('api-events', `Cache miss, ${fetchTime}ms. Calling fetchAndGeocode for ${eventSourceId}`)
+        } else {
+            logr.info('api-events', `skipCache true, not using cache. Calling fetchAndGeocode for ${eventSourceId}`)
         }
-        logr.info('api-events', `Cache miss, ${fetchTime}ms. Calling fetchAndGeocode for ${eventSourceId}`)
-
         // Fetch and process events
         const response = await fetchAndGeocode(eventSourceId, timeMin, timeMax)
         setEventsCache(response, eventSourceId, timeMin, timeMax)

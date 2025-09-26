@@ -38,6 +38,11 @@ export const ExampleEventsSources = [
         shortId: 'chadrock', // can just do es=chadrock in the url
     },
     {
+        name: 'Punk Shows from Foopee',
+        id: 'foopee:default',
+        shortId: 'foopee', // can just do es=foopee in the url
+    },
+    {
         name: 'Geocaching in Spain',
         id: 'gc:geocachingspain@gmail.com',
     },
