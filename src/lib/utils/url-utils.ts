@@ -105,7 +105,7 @@ export function buildShareUrl(params: ShareUrlParams): string {
         } catch (error) {
             // Fallback to qf if conversion fails
             urlParams.set('qf', currentUrlState.qf)
-            logr.warn('url-utils', 'Error converting qf to fsd/fed:', error)
+            logr.warn('url-utils', `Error converting qf to fsd/fed. params=${JSON.stringify(currentUrlState)}`, error)
         }
     } else {
         // No qf, but add fsd/fed if date filters are active
@@ -261,71 +261,62 @@ export const parseAsLlz = createParser({
     },
 })
 
-/**
- * Parses event source IDs from URL parameters with support for shortcuts
- */
-export function parseAsEventsSourceParse(queryValue: string): string | string[] | null {
-    if (typeof queryValue !== 'string') return null
-
-    // Handle comma-separated sources
-    if (queryValue.includes(',')) {
-        const sources = queryValue
-            .split(',')
-            .map((s) => s.trim())
-            .filter((s) => s)
-        const parsedSources: string[] = []
-
-        for (const source of sources) {
-            // Check for example event sources first
-            const example = ExampleEventsSources.find((es) => es.shortId === source)
-            if (example) {
-                // Handle new structure with ids object
-                if (example.ids) {
-                    parsedSources.push(...Object.keys(example.ids))
-                } else if (example.id) {
-                    // If example contains comma-separated sources, expand them
-                    if (example.id.includes(',')) {
-                        parsedSources.push(...example.id.split(',').map((s) => s.trim()))
-                    } else {
-                        parsedSources.push(example.id)
-                    }
-                }
-            } else {
-                // Validate individual source format
-                const regex = /^[a-zA-Z0-9]+:/
-                if (regex.test(source)) {
-                    parsedSources.push(source)
-                } else {
-                    return null // Invalid source in list
-                }
-            }
-        }
-
-        return parsedSources.length > 0 ? parsedSources : null
+function validateSource(source: string): string {
+    if (/^[a-zA-Z0-9]+:/.test(source)) {
+        return source
+    } else if (/^[a-zA-Z0-9]+$/.test(source)) {
+        return source + ':all'
     }
-
-    // Handle single source (existing logic)
-    // check for example event sources first
-    const example = ExampleEventsSources.find((es) => es.shortId === queryValue)
-    if (example) {
-        // Handle new structure with ids object
-        if (example.ids) {
-            const idKeys = Object.keys(example.ids)
-            return idKeys.length === 1 ? idKeys[0] : idKeys
-        } else if (example.id) {
-            // If example contains comma-separated sources, return as array
-            if (example.id.includes(',')) {
-                return example.id.split(',').map((s) => s.trim())
-            }
-            return example.id
-        }
-    }
-
-    // match any string that starts with ascii chars or digits then a colon then any number of digits
-    const regex = /^[a-zA-Z0-9]+:/
-    if (regex.test(queryValue)) return queryValue
-    return null
+    return ''
 }
+
+function addExampleEventsSources(source: string): string[] {
+    const result: string[] = []
+    const incoming: string[] = [source]
+    const visited = new Set<string>()
+
+    while (incoming.length > 0) {
+        const curSource = incoming.pop()
+        if (!curSource) continue
+        if (visited.has(curSource)) continue
+        visited.add(curSource)
+
+        if (curSource.includes(',')) {
+            const rawSources = curSource
+                .split(',')
+                .map((s) => s.trim())
+                .filter((s) => s)
+            incoming.push(...rawSources)
+            continue
+        }
+        const shortIdExample = ExampleEventsSources.find((es) => es.shortId === curSource)
+        if (shortIdExample && shortIdExample.ids) {
+            logr.info('url-utils', `addExampleEventsSources: found match in example ids[]:${curSource}`)
+            incoming.push(...Object.keys(shortIdExample.ids))
+        } else if (shortIdExample && shortIdExample.id) {
+            logr.info('url-utils', `addExampleEventsSources: found match in example id:${curSource}`)
+            incoming.push(shortIdExample.id)
+        } else {
+            const validatedSource = validateSource(curSource)
+            if (validatedSource) result.push(validatedSource)
+        }
+    }
+    return result
+}
+
+/**
+ * Parses event source IDs from URL parameters with support for ExampleEventsSources shortcuts
+ * @param queryValue The query parameter value to parse
+ * @returns An array of event source IDs or an empty array if no valid sources are found
+ */
+export function parseAsEventsSourceParse(queryValue: string): string[] | null {
+    if (typeof queryValue !== 'string') return []
+
+    const parsedSources = addExampleEventsSources(queryValue)
+    logr.info('url-utils', `parseAsEventsSourceParse: found ${parsedSources.length} valid sources`, parsedSources)
+    return parsedSources.length > 0 ? parsedSources : null
+}
+
 export function parseAsEventsSourceSerialize(value: unknown): string {
     // Handle array of sources
     if (Array.isArray(value)) {

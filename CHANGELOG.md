@@ -5,6 +5,18 @@ All notable changes to Calendar Map Filter (CMF) will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.3] - 2025-09-29
+
+### Fixed
+
+- Timezones and times are now being proplerly managed in 19hz.
+- Example event sources properly processed.
+
+### Added
+
+- **testSource** - New Event Source with fake test events for E2E testing
+- Marker Popup with event details now shows Timezone (PST/PDT) next to time.
+
 ## [0.3.2] - 2025-09-25
 
 ### Added
@@ -15,12 +27,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.3.1] - 2025-09-25
 
 ### Fixed
+
 - **Date Filter Display Bug** - Fixed date filters from URL parameters (qf, fsd, fed) not updating calendar UI properly
 - **Performance Issues** - Optimized expensive date formatting and parsing operations that were causing forced reflows
 - **Test Interface Compatibility** - Updated DateQuickButtons and DateAndSearchFilters tests to match current component interfaces
 - **State Synchronization** - Resolved redundant state management between URL processing and user interactions
 
 ### Changed
+
 - **Smart Hook Architecture** - Improved useUrlProcessor with state-aware priority logic separating initialization from user-interactive states
 - **Date Operations Optimization** - Memoized date formatting and pre-parsed date objects to eliminate render-blocking operations
 - **Component Interface Cleanup** - Simplified DateQuickButtons interface by removing deprecated setStartValue/setEndValue props

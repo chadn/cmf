@@ -40,10 +40,10 @@ const RELATIVE_REGEX = /^(-?\d+)([dwm])$/
 
 /**
  * Get browser timezone information.  Used for display in About popup.
- * @returns Object with browser timezone and offset
+ * @returns Object with browser timezone, offset, and abbreviation
  */
-export function timezoneInfo(): { browserTz: string; tzOffset: string } {
-    if (typeof Intl === 'undefined') return { browserTz: 'Unknown', tzOffset: '' }
+export function timezoneInfo(): { browserTz: string; tzOffset: string; tzAbbrev: string } {
+    if (typeof Intl === 'undefined') return { browserTz: 'Unknown', tzOffset: '', tzAbbrev: '' }
 
     const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone
     const offsetMin = new Date().getTimezoneOffset()
@@ -51,7 +51,16 @@ export function timezoneInfo(): { browserTz: string; tzOffset: string } {
     const sign = offsetHr >= 0 ? '+' : '-'
     const tzOffset = ` UTC${sign}${Math.abs(offsetHr)}`
 
-    return { browserTz, tzOffset }
+    // Get timezone abbreviation (like PDT, PST, EDT, EST, etc.)
+    const tzAbbrev =
+        new Intl.DateTimeFormat('en', {
+            timeZoneName: 'short',
+            timeZone: browserTz,
+        })
+            .formatToParts(new Date())
+            .find((part) => part.type === 'timeZoneName')?.value || ''
+
+    return { browserTz, tzOffset, tzAbbrev }
 }
 
 /**
@@ -69,6 +78,31 @@ export function formatEventDate(dateString: string, includeTime: boolean = true)
         // date-fns/format automatically converts to local timezone for display
         // aaa is 'am' or 'pm'
         return includeTime ? format(date, 'M/d EEE h:mmaaa') : format(date, 'M/d EEE')
+    } catch (error) {
+        logr.warn('date', 'Error formatting date:', error)
+        return 'Invalid date'
+    }
+}
+
+/**
+ * Formats a date for display in the UI with Timezone
+ * TIMEZONE BEHAVIOR: Uses local timezone for display (date-fns handles timezone conversion)
+ * @param dateString - ISO date string (stored without timezone knowledge, typically in UTC)
+ * @param tz - IANA timezone string (e.g., "America/Los_Angeles")
+ * @returns Formatted date string: MM/DD Day hh:mm[am|pm] in specified timezone. Ex: "9/25 Thu 3:15PM PDT"
+ */
+export function formatEventDateTz(dateString: string, tz: string | undefined, includeTime: boolean = true): string {
+    try {
+        const date = DateTime.fromISO(dateString, { zone: 'utc' }).setZone(tz || 'America/Los_Angeles')
+        if (!date.isValid) {
+            logr.info('date', `formatEventDateTz() invalid date: ${dateString}, tz=${tz}`)
+            return 'Invalid date'
+        }
+        // date-fns/format automatically converts to local timezone for display
+        // aaa is 'am' or 'pm'
+        return includeTime
+            ? date.toFormat('M/d EEE h:mm') + date.toFormat('a').toLowerCase() + date.toFormat(' ZZZZ')
+            : date.toFormat('M/d EEE')
     } catch (error) {
         logr.warn('date', 'Error formatting date:', error)
         return 'Invalid date'

@@ -4,9 +4,38 @@
  */
 
 import { logr } from './logr'
+import { DateTime } from 'luxon'
 
 // Month names for parsing
 const MONTH_NAMES = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
+
+// Target timezone for 19hz events (Bay Area)
+const TARGET_TIMEZONE = 'America/Los_Angeles'
+
+/**
+ * Create a Date object in the specified timezone
+ * @param year Year
+ * @param month Month (0-11, JavaScript convention)
+ * @param day Day of month
+ * @param hour Hour (0-23)
+ * @param minute Minute (0-59)
+ * @param timezone IANA timezone identifier (e.g., 'America/Los_Angeles', 'America/New_York')
+ * @returns Date object representing the time in UTC, but originally specified in target timezone
+ */
+function createDateInTargetTimezone(
+    year: number,
+    month: number,
+    day: number,
+    hour: number,
+    minute: number,
+    timezone: string = TARGET_TIMEZONE
+): Date {
+    const dt = DateTime.fromObject(
+        { year, month: month + 1, day, hour, minute }, // Luxon uses 1-12 for months
+        { zone: timezone }
+    )
+    return dt.toJSDate()
+}
 
 /**
  * Convert 12-hour format to 24-hour format
@@ -98,13 +127,19 @@ function findNextMonthlyOccurrence(
  * - "Mondays (9:30pm-2:30am)" - recurring events
  * - "2nd/4th Wednesdays (8pm-12am)" - specific recurring patterns
  *
+ * Example
+ * "Fri: Aug 30 (9pm-2am)" + 'America/New_York' timezone ====> start is 9pm EDT, 6pm PDT
+ * "Fri: Aug 30 (9pm-2am)" + 'America/Los_Angeles' timezone => start is 12am EDT, 9pm PDT
+ *
  * @param dateTimeText The date/time string to parse
  * @param recurringStart The reference date for recurring events (defaults to now)
+ * @param timezone The IANA timezone identifier to interpret times in (defaults to TARGET_TIMEZONE)
  * @returns Object with start, end dates and recurring flag
  */
 export function parse19hzDateRange(
     dateTimeText: string,
-    recurringStart: Date = new Date()
+    recurringStart: Date = new Date(),
+    timezone: string = TARGET_TIMEZONE
 ): { start: string; end: string; recurring: boolean } {
     // Input validation
     if (!dateTimeText || typeof dateTimeText !== 'string' || dateTimeText.trim() === '') {
@@ -155,9 +190,15 @@ export function parse19hzDateRange(
                         targetDay.setTime(nextOccurrence.getTime())
                     }
 
-                    // Set the time (will be interpreted as PST/PDT by timezone setting)
-                    const startDate = new Date(targetDay)
-                    startDate.setHours(startHour24, startMinute, 0, 0)
+                    // Set the time in target timezone
+                    const startDate = createDateInTargetTimezone(
+                        targetDay.getFullYear(),
+                        targetDay.getMonth(),
+                        targetDay.getDate(),
+                        startHour24,
+                        startMinute,
+                        timezone
+                    )
 
                     let endDate: Date
                     if (endHour && endAmPm) {
@@ -165,13 +206,20 @@ export function parse19hzDateRange(
                         const endHour24 = convertToHour24(endHour, endAmPm)
                         const endMinute = parseInt(endMin || '0')
 
-                        endDate = new Date(targetDay)
-                        endDate.setHours(endHour24, endMinute, 0, 0)
+                        let endYear = targetDay.getFullYear()
+                        let endMonth = targetDay.getMonth()
+                        let endDay = targetDay.getDate()
 
                         // Handle overnight events
                         if (endHour24 < startHour24 || (endHour24 === startHour24 && endMinute < startMinute)) {
-                            endDate.setDate(endDate.getDate() + 1)
+                            const nextDay = new Date(targetDay)
+                            nextDay.setDate(nextDay.getDate() + 1)
+                            endYear = nextDay.getFullYear()
+                            endMonth = nextDay.getMonth()
+                            endDay = nextDay.getDate()
                         }
+
+                        endDate = createDateInTargetTimezone(endYear, endMonth, endDay, endHour24, endMinute, timezone)
                     } else {
                         // Single time, default to 4-hour duration
                         endDate = new Date(startDate.getTime() + 4 * 60 * 60 * 1000)
@@ -210,10 +258,22 @@ export function parse19hzDateRange(
                 const startMonthIndex = MONTH_NAMES.indexOf(startMonth.toLowerCase())
                 const endMonthIndex = MONTH_NAMES.indexOf(endMonth.toLowerCase())
 
-                const startDate = new Date(eventYear, startMonthIndex, parseInt(startDay), startHour24, startMinute, 0)
-                const endDate = new Date(eventYear, endMonthIndex, parseInt(endDay), endHour24, endMinute, 0)
-
-                // Leave as local time, will be interpreted as PST/PDT
+                const startDate = createDateInTargetTimezone(
+                    eventYear,
+                    startMonthIndex,
+                    parseInt(startDay),
+                    startHour24,
+                    startMinute,
+                    timezone
+                )
+                const endDate = createDateInTargetTimezone(
+                    eventYear,
+                    endMonthIndex,
+                    parseInt(endDay),
+                    endHour24,
+                    endMinute,
+                    timezone
+                )
 
                 return {
                     start: startDate.toISOString(),
@@ -242,9 +302,14 @@ export function parse19hzDateRange(
                 // Create date objects
                 const monthIndex = MONTH_NAMES.indexOf(month.toLowerCase())
 
-                const startDate = new Date(eventYear, monthIndex, parseInt(day), startHour24, startMinute, 0)
-
-                // Leave as local time, will be interpreted as PST/PDT
+                const startDate = createDateInTargetTimezone(
+                    eventYear,
+                    monthIndex,
+                    parseInt(day),
+                    startHour24,
+                    startMinute,
+                    timezone
+                )
 
                 let endDate: Date
 
@@ -253,14 +318,19 @@ export function parse19hzDateRange(
                     const endHour24 = convertToHour24(endHour, endAmPm)
                     const endMinute = parseInt(endMin || '0')
 
-                    endDate = new Date(eventYear, monthIndex, parseInt(day), endHour24, endMinute, 0)
+                    let endYear = eventYear
+                    let endMonth = monthIndex
+                    let endDay = parseInt(day)
 
                     // Handle overnight events (end time before start time)
                     if (endHour24 < startHour24 || (endHour24 === startHour24 && endMinute < startMinute)) {
-                        endDate.setDate(endDate.getDate() + 1)
+                        const nextDay = new Date(eventYear, monthIndex, parseInt(day) + 1)
+                        endYear = nextDay.getFullYear()
+                        endMonth = nextDay.getMonth()
+                        endDay = nextDay.getDate()
                     }
 
-                    // Leave as local time, will be interpreted as PST/PDT
+                    endDate = createDateInTargetTimezone(endYear, endMonth, endDay, endHour24, endMinute, timezone)
                 } else {
                     // Single time, default to 4-hour duration
                     endDate = new Date(startDate.getTime() + 4 * 60 * 60 * 1000)
@@ -294,4 +364,40 @@ export function parse19hzDateRange(
             recurring: false,
         }
     }
+}
+
+/**
+ * Get city information for known cities, with fallbacks for unknown ones
+ */
+export function getCityInfo(cityCode: string): { name: string; timezone: string; state: string } {
+    // Ideally we don't have any of this city data hardcoded, but need timezone, so this was born.
+    if (cityCode in knownCities) {
+        return knownCities[cityCode]
+    }
+    logr.warn('date-19hz-parsing', `Unknown city code: ${cityCode}, using default America/Los_Angeles`)
+    return {
+        name: cityCode,
+        timezone: 'America/Los_Angeles', // Default timezone
+        state: 'CA', // Default state
+    }
+}
+// Should match https://19hz.info/ and ExampleEventsSources
+const knownCities: { [key: string]: { name: string; timezone: string; state: string } } = {
+    BayArea: { name: 'Bay Area', timezone: 'America/Los_Angeles', state: 'CA' },
+    LosAngeles: { name: 'Los Angeles', timezone: 'America/Los_Angeles', state: 'CA' },
+    Seattle: { name: 'Seattle', timezone: 'America/Los_Angeles', state: 'WA' },
+    Atlanta: { name: 'Atlanta', timezone: 'America/New_York', state: 'GA' },
+    DC: { name: 'Washington DC', timezone: 'America/New_York', state: 'DC' },
+    Texas: { name: 'Texas', timezone: 'America/Chicago', state: 'TX' },
+    PHL: { name: 'Philadelphia', timezone: 'America/New_York', state: 'PA' },
+    Toronto: { name: 'Toronto', timezone: 'America/Toronto', state: 'ON' },
+    Iowa: { name: 'Iowa', timezone: 'America/Chicago', state: 'IA' },
+    Denver: { name: 'Denver', timezone: 'America/Denver', state: 'CO' },
+    CHI: { name: 'Chicago', timezone: 'America/Chicago', state: 'IL' },
+    Detroit: { name: 'Detroit', timezone: 'America/New_York', state: 'MI' },
+    Massachusetts: { name: 'Massachusetts', timezone: 'America/New_York', state: 'MA' },
+    LasVegas: { name: 'Las Vegas', timezone: 'America/Los_Angeles', state: 'NV' },
+    Phoenix: { name: 'Phoenix', timezone: 'America/Phoenix', state: 'AZ' },
+    ORE: { name: 'Oregon', timezone: 'America/Los_Angeles', state: 'OR' },
+    BC: { name: 'Vancouver', timezone: 'America/Vancouver', state: 'BC' },
 }

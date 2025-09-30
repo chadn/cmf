@@ -1,13 +1,5 @@
 import type { EventsSource } from '@/types/events'
-
-// Use the actual type from ExampleEventsSources
-type ExampleEventSource = {
-    name: string
-    id?: string
-    shortId?: string
-    ids?: Record<string, string>
-}
-
+import { ExampleEventSource } from '@/lib/events/examples'
 /**
  * Determines the appropriate header name based on event source configuration
  */

@@ -166,7 +166,7 @@ export function useAppController(): UseAppControllerReturn {
 
     const { cmfEvents, filters, eventSources, apiIsLoading, apiError, filtrEvtMgr } = useEventsManager({
         appState,
-        eventSourceId: eventSourceId,
+        eventSourceId,
         currentBounds: isShowingAllEvents ? null : currentBounds,
         sd: datesUrl.sd, // TODO: should use urlDateToIsoString to convert to ISO string, rename sdIso?
         ed: datesUrl.ed, // TODO: should use urlDateToIsoString to convert to ISO string, rename edIso?
@@ -290,7 +290,7 @@ export function useAppController(): UseAppControllerReturn {
             // FIX BUG: when fsd and fed from url are processed, this function gets called.
             // TODO: update fsd/fed days that go to DateAndSearchFilters
         },
-        [filters, dateSliderRange]
+        [filters]
     )
 
     // Handle map filter removal

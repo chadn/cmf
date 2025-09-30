@@ -1,9 +1,4 @@
-import {
-    getCityStateFromCity,
-    getTimezoneFromCity,
-    convertWallTimeToZone,
-    parseDateString,
-} from '@/lib/utils/timezones'
+import { getCityStateFromCity, getTimezoneFromCity, convertUtcToTimeZone, parseDateString } from '@/lib/utils/timezones'
 
 describe('timezones utilities', () => {
     describe('getCityStateFromCity', () => {
@@ -55,34 +50,34 @@ describe('timezones utilities', () => {
         })
     })
 
-    describe('convertWallTimeToZone', () => {
+    describe('convertUtcToTimeZone', () => {
         it('should preserve wall time when converting between timezones', () => {
             // Test converting from UTC to Pacific Time
             const utcTime = '2024-06-10T17:00:00.000Z' // output Date().toISOString()
-            const result = convertWallTimeToZone(utcTime, 'America/Los_Angeles')
+            const result = convertUtcToTimeZone(utcTime, 'America/Los_Angeles')
             expect(result).toBe('2024-06-10T17:00:00-07:00')
 
             // Test converting from UTC to Eastern Time
-            const result2 = convertWallTimeToZone(utcTime, 'America/New_York')
+            const result2 = convertUtcToTimeZone(utcTime, 'America/New_York')
             expect(result2).toBe('2024-06-10T17:00:00-04:00')
         })
 
         it('should handle different times of day correctly', () => {
             // Test early morning
             const earlyMorning = '2024-06-10T05:00:00Z'
-            const result = convertWallTimeToZone(earlyMorning, 'America/Los_Angeles')
+            const result = convertUtcToTimeZone(earlyMorning, 'America/Los_Angeles')
             expect(result).toBe('2024-06-10T05:00:00-07:00')
 
             // Test late night
             const lateNight = '2024-06-10T23:00:00Z'
-            const result2 = convertWallTimeToZone(lateNight, 'America/Los_Angeles')
+            const result2 = convertUtcToTimeZone(lateNight, 'America/Los_Angeles')
             expect(result2).toBe('2024-06-10T23:00:00-07:00')
         })
 
         it('should handle different dates correctly', () => {
             // Test a date in winter (different DST)
             const winterDate = '2024-01-10T17:00:00Z'
-            const result = convertWallTimeToZone(winterDate, 'America/Los_Angeles')
+            const result = convertUtcToTimeZone(winterDate, 'America/Los_Angeles')
             expect(result).toBe('2024-01-10T17:00:00-08:00')
         })
     })

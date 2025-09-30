@@ -6,8 +6,6 @@ import { Button } from '@/components/ui/button'
 import { X } from 'lucide-react'
 import packageJson from '@/../package.json'
 import { EventsSource } from '@/types/events'
-import { useQueryState } from 'nuqs'
-import { parseAsEventsSource } from '@/lib/utils/url-utils'
 import { buildShareUrl, ShareUrlParams } from '@/lib/utils/url-utils'
 import { timezoneInfo } from '@/lib/utils/date'
 
@@ -43,7 +41,6 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(
         ref
     ) => {
         // Only get current es parameter when eventSources exist (optimization)
-        const [currentEventSourceId] = useQueryState('es', parseAsEventsSource)
 
         // Memoize timezone calculation (expensive operations)
         const timezoneInfoData = useMemo(() => timezoneInfo(), [])
@@ -173,6 +170,7 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(
                                             <span className="font-mono text-xs bg-gray-100 rounded px-2 py-0.5">
                                                 {timezoneInfoData.browserTz}
                                                 {timezoneInfoData.tzOffset}
+                                                {timezoneInfoData.tzAbbrev && ` (${timezoneInfoData.tzAbbrev})`}
                                             </span>
                                         </div>
                                         <div className="flex items-center gap-2 mt-2">
@@ -231,8 +229,7 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(
                                                             )}{' '}
                                                             Events:{' '}
                                                             <span className="font-medium">{source.totalCount}</span>{' '}
-                                                            {currentEventSourceId !==
-                                                                `${source.prefix}:${source.id}` && (
+                                                            {eventSources.length > 1 && (
                                                                 <a
                                                                     href={`/?es=${source.prefix}:${source.id}`}
                                                                     title="Click to reload with just this event source"

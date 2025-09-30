@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { MapMarker } from '@/types/map'
 import { EventsSource } from '@/types/events'
-import { formatEventDate, formatEventDuration } from '@/lib/utils/date'
+import { formatEventDateTz, formatEventDuration } from '@/lib/utils/date'
 import { logr } from '@/lib/utils/logr'
 import { LOCATION_KEY_PREFIX } from '@/types/events'
 import { generateGoogleCalendarUrl, downloadIcsFile } from '@/lib/utils/calendar'
@@ -104,6 +104,7 @@ const MapPopup: React.FC<MapPopupProps> = ({ marker, selectedEventId, onEventSel
     // Hack: if end == start, exact start time is not known.
     const isTimeUnknown = (startIso: string, endIso: string) => {
         if (!endIso) return true
+        // TODO: Performance Optimization: can hack be to check identical strings for startIso and endIso?
         const startDate = new Date(startIso)
         const endDate = new Date(endIso)
         return startDate.getTime() === endDate.getTime()
@@ -117,7 +118,11 @@ const MapPopup: React.FC<MapPopupProps> = ({ marker, selectedEventId, onEventSel
 
             {/* Event date and duration */}
             <p className="text-sm mb-1 text-gray-700">
-                {formatEventDate(currentEvent.start, !isTimeUnknown(currentEvent.start, currentEvent.end))}
+                {formatEventDateTz(
+                    currentEvent.start,
+                    currentEvent.tz,
+                    !isTimeUnknown(currentEvent.start, currentEvent.end)
+                )}
                 {isTimeUnknown(currentEvent.start, currentEvent.end) ? (
                     <span className="ml-2 italic text-gray-500">See event for Time</span>
                 ) : (

@@ -122,10 +122,11 @@ CMF now implements a **complete separation of business logic from UI rendering**
 - **Filters** defined in [types/events.ts](../src/types/events.ts), on client
     - `DomainFilters` - current date and search filters
     - No separate map filter, just uses `MapBounds` object
+- **Timezones** can be tricky since some sources have times for events without timezone information.  In general, your browser knows your timezone, and web site can display times correctly for your timezone.  However, occasionally when scraping event data the event start time is the local time for that location.
+    - Note [timezones.ts](../src/lib/utils/timezones.ts) has functions for server, uses luxon for timezones
+    - All client date parsing and converting should be done via [date-fns library](https://github.com/date-fns/date-fns) or functions in [date.ts](../src/lib/utils/date.ts), where dates are converted to local timezone when calculating what day an isoTime is.
 - **Other** on client
     - URL definitions in [types/urlparams.d.ts](../src/types/urlparams.d.ts) and parsing in [url-utils.ts](../src/lib/utils/url-utils.ts)
-    - All client date parsing and converting should be done via functions in [date.ts](../src/lib/utils/date.ts), where dates are converted to local timezone when calculating what day an isoTime is.
-      Note [timezones.ts](../src/lib/utils/timezones.ts) has functions for server.
 
 ```typescript
 export interface CmfEvent {
@@ -136,7 +137,7 @@ export interface CmfEvent {
     description_urls: string[] // always exists, may be empty. NOT USED: Consider removing.
     start: string // ISO string
     end: string // ISO string. Hack: if same as start, exact start time is not known. If 1 minute after start, end time is not known.
-    tz?: string // ex: 'America/Los_Angeles'; 'UNKNOWN' if location not found, 'LOCAL' if using UTC but time is actually local.
+    tz?: string // ex: 'America/Los_Angeles'; 'UNKNOWN' if location not found, 'LOCAL' as temp timezone till can look up location
     location: string // always exists, may be empty, matches original_location
     src?: number // source index when 2 or more event sources: 1 for first source, 2 for second, etc.
     resolved_location?: Location {

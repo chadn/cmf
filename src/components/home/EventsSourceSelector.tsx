@@ -15,7 +15,7 @@ const EventsSourceSelector: React.FC = () => {
 
     // Log component mount - this will only run in the browser
     useEffect(() => {
-        logr.info('component', 'EventsSourceSelector component mounted')
+        logr.info('component', 'uE: EventsSourceSelector component mounted')
     }, [])
 
     const handleSubmit = async (e: React.FormEvent) => {

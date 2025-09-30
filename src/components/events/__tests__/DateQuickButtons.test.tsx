@@ -143,8 +143,6 @@ describe('DateQuickButtons', () => {
         fireEvent.click(screen.getByText('Weekend'))
 
         // Today is Saturday, so Friday is today (no days to add)
-        const fridayValue = 30 // Today (Saturday) is already day 30
-        const sundayValue = 32 // Sunday is 2 days after Friday
 
         // Should set to current weekend (Friday to Sunday)
         expect(mockOnDateRangeChange).toHaveBeenCalledWith({

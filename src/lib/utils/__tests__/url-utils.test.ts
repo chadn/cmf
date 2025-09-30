@@ -279,18 +279,19 @@ describe('parseAsLatLon', () => {
 
 describe('parseAsEventsSource', () => {
     it('should parse valid event source IDs', () => {
-        expect(parseAsEventsSource.parse('facebook:123')).toBe('facebook:123')
-        expect(parseAsEventsSource.parse('meetup:456')).toBe('meetup:456')
+        expect(parseAsEventsSource.parse('facebook:123')).toEqual(['facebook:123'])
+        expect(parseAsEventsSource.parse('meetup:456')).toEqual(['meetup:456'])
     })
 
     it('should parse example event source shortIds', () => {
-        expect(parseAsEventsSource.parse('ex123')).toBe('example:123')
-        expect(parseAsEventsSource.parse('ex456')).toBe('example:456')
+        expect(parseAsEventsSource.parse('ex123')).toEqual(['example:123'])
+        expect(parseAsEventsSource.parse('ex456')).toEqual(['example:456'])
     })
 
     it('should return null for invalid event source IDs', () => {
         expect(parseAsEventsSource.parse('invalid-format')).toBeNull()
-        expect(parseAsEventsSource.parse('123')).toBeNull()
+        // Note: '123' now gets processed as '123:all' which is valid
+        expect(parseAsEventsSource.parse('123')).toEqual(['123:all'])
     })
 
     it('should serialize event source IDs correctly', () => {
@@ -397,8 +398,8 @@ describe('parseAsLlz', () => {
 
 describe('parseAsEventsSource', () => {
     it('should parse single valid event source IDs', () => {
-        expect(parseAsEventsSource.parse('custom:123')).toBe('custom:123')
-        expect(parseAsEventsSource.parse('facebook:456')).toBe('facebook:456')
+        expect(parseAsEventsSource.parse('custom:123')).toEqual(['custom:123'])
+        expect(parseAsEventsSource.parse('facebook:456')).toEqual(['facebook:456'])
     })
 
     it('should parse comma-separated event sources', () => {
@@ -417,13 +418,16 @@ describe('parseAsEventsSource', () => {
 
     it('should return null for invalid event source formats', () => {
         expect(parseAsEventsSource.parse('invalid-format')).toBeNull()
-        expect(parseAsEventsSource.parse('123')).toBeNull()
+        // Note: '123' now gets processed as '123:all' which is valid
+        expect(parseAsEventsSource.parse('123')).toEqual(['123:all'])
         expect(parseAsEventsSource.parse('')).toBeNull()
-        expect(parseAsEventsSource.parse(123 as unknown as string)).toBeNull()
+        expect(parseAsEventsSource.parse(123 as unknown as string)).toEqual([])
     })
 
-    it('should return null if any source in comma-separated list is invalid', () => {
-        expect(parseAsEventsSource.parse('facebook:123,invalid-format')).toBeNull()
+    it('should handle mixed valid and invalid sources', () => {
+        // The function now filters out invalid sources and returns valid ones
+        const result = parseAsEventsSource.parse('facebook:123,invalid-format')
+        expect(result).toEqual(['facebook:123'])
     })
 
     it('should handle example sources with ids object structure', () => {
@@ -439,7 +443,9 @@ describe('parseAsEventsSource', () => {
         try {
             const result = parseAsEventsSource.parse('multi')
             expect(Array.isArray(result)).toBe(true)
-            expect(result).toEqual(['source1:123', 'source2:456'])
+            expect(result).toHaveLength(2)
+            expect(result).toContain('source1:123')
+            expect(result).toContain('source2:456')
         } finally {
             ExampleEventsSources.find = originalFind
         }

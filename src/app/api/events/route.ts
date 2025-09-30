@@ -5,16 +5,17 @@ import { getEventsCache, setEventsCache } from '@/lib/cache'
 import { EventsSourceResponse } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
 import { HttpError } from '@/types/error'
-import { convertWallTimeToZone, getTimezoneFromLatLng } from '@/lib/utils/timezones'
+import { convertUtcToTimeZone, getTimezoneFromLatLng } from '@/lib/utils/timezones'
 
 // Import event source handlers to ensure they're registered (alphabetical order)
+import '@/lib/api/eventSources/19hz'
+import '@/lib/api/eventSources/dissent-google-sheets'
 import '@/lib/api/eventSources/facebookEvents'
 import '@/lib/api/eventSources/foopee'
-import '@/lib/api/eventSources/19hz'
 import '@/lib/api/eventSources/googleCalendar'
 import '@/lib/api/eventSources/plura/index'
 import '@/lib/api/eventSources/protests'
-import '@/lib/api/eventSources/dissent-google-sheets'
+import '@/lib/api/eventSources/testSource'
 
 // Export config to make this a dynamic API route
 export const dynamic = 'force-dynamic'
@@ -56,8 +57,8 @@ const fetchAndGeocode = async (
             if (event.tz === 'LOCAL' && resolved_location) {
                 event.tz = getTimezoneFromLatLng(resolved_location.lat, resolved_location.lng)
                 if (event.tz != 'UNKNOWN') {
-                    event.start = convertWallTimeToZone(event.start, event.tz)
-                    event.end = convertWallTimeToZone(event.end, event.tz)
+                    event.start = convertUtcToTimeZone(event.start, event.tz)
+                    event.end = convertUtcToTimeZone(event.end, event.tz)
                     // Recalculate startSecs after timezone conversion
                     event.startSecs = Math.round(new Date(event.start).getTime() / 1000)
                 }

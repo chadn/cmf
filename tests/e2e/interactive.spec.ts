@@ -38,7 +38,8 @@ test.describe('User Interactive State Tests', () => {
         console.log('🔍 Verifying initial filtered state...')
 
         // Check that date filter chip exists
-        const dateFilterChip = page.locator('button[aria-label*="Clear Date filter"]')
+        const dateFilterChip = page.locator('button[data-testid="date-filter-chip"]')
+        const mapFilterChip = page.locator('button[data-testid="map-filter-chip"]')
         await expect(dateFilterChip).toBeVisible()
 
         // Get initial "X of Y Visible" counts
@@ -60,6 +61,9 @@ test.describe('User Interactive State Tests', () => {
         // Step 4: Click the date filter chip to clear it
         console.log('🖱️  Clicking date filter chip to clear filter...')
         await dateFilterChip.click()
+        if (mapFilterChip) {
+            await mapFilterChip.click()
+        }
 
         // Step 5: Wait for filter to clear and verify results
         console.log('⏳ Waiting for filter to clear...')
@@ -128,7 +132,7 @@ test.describe('User Interactive State Tests', () => {
         console.log(`📊 Initial event list count: ${initialEventCount}`)
 
         // Clear the date filter
-        const dateFilterChip = page.locator('button[aria-label*="Clear Date filter"]')
+        const dateFilterChip = page.locator('button[data-testid="date-filter-chip"]')
         await expect(dateFilterChip).toBeVisible()
         await dateFilterChip.click()
 

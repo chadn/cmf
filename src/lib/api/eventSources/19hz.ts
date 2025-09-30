@@ -3,7 +3,7 @@ import * as cheerio from 'cheerio'
 import { CmfEvent, EventsSourceParams, EventsSourceResponse, EventsSource, DateRangeIso } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
 import { BaseEventSourceHandler, registerEventsSource } from './index'
-import { parse19hzDateRange } from '@/lib/utils/date-19hz-parsing'
+import { parse19hzDateRange, getCityInfo } from '@/lib/utils/date-19hz-parsing'
 import { extractVenueAndCity } from '@/lib/utils/venue-parsing'
 import { applyDateFilter } from '@/lib/events/filters'
 
@@ -33,32 +33,11 @@ export class NineteenHzEventsSource extends BaseEventSourceHandler {
         return `https://19hz.info/eventlisting_${cityCode}.php`
     }
 
-    /**
-     * Get city information for known cities, with fallbacks for unknown ones
-     */
-    private getCityInfo(cityCode: string): { name: string; timezone: string; state: string } {
-        // Ideally we don't have any of this city data hardcoded, but need timezone, so this was born.
-        const knownCities: { [key: string]: { name: string; timezone: string; state: string } } = {
-            BayArea: { name: 'Bay Area', timezone: 'America/Los_Angeles', state: 'CA' },
-            LasVegas: { name: 'Las Vegas', timezone: 'America/Los_Angeles', state: 'NV' },
-            CHI: { name: 'Chicago', timezone: 'America/Chicago', state: 'IL' },
-            ORE: { name: 'Oregon', timezone: 'America/Los_Angeles', state: 'OR' },
-        }
-
-        return (
-            knownCities[cityCode] || {
-                name: cityCode,
-                timezone: 'America/Los_Angeles', // Default timezone
-                state: 'CA', // Default state
-            }
-        )
-    }
-
     async fetchEvents(params: EventsSourceParams): Promise<EventsSourceResponse> {
         try {
             // Determine which city page to fetch from
             const cityCode = params.id || 'BayArea'
-            const cityInfo = this.getCityInfo(cityCode)
+            const cityInfo = getCityInfo(cityCode)
             const url = this.buildEventListingUrl(cityCode)
             const dateRange: DateRangeIso = {
                 startIso: params.timeMin || new Date().toISOString(),
@@ -206,10 +185,25 @@ export class NineteenHzEventsSource extends BaseEventSourceHandler {
     }
 
     /**
-     * Parse date/time text into start and end dates
+     * Parse date/time text into start and end dates.
+     *
+     * Time & Timezone Notes:
+     * - Many event sources (like 19hz) do **not** include timezone information next to start times.
+     * - This is normally fine because most events are in the same local timezone.
+     * However:
+     * - Some events may actually be in a different timezone.
+     * - In these cases, we currently assume the event times follow the **same timezone
+     *   as the majority of events**, rather than the event’s actual local timezone. So using cityInfo.timezone
+     * Result:
+     * - This approach works for now but is not ideal long-term.
+     * - Code should manage this on the event source side, since each source may be different.
+     *
+     * @param dateTimeText
+     * @param timezone
+     * @returns
      */
-    private parseDateRange(dateTimeText: string): { start: string; end: string; recurring: boolean } {
-        const { start, end, recurring } = parse19hzDateRange(dateTimeText)
+    private parseDateRange(dateTimeText: string, timezone: string): { start: string; end: string; recurring: boolean } {
+        const { start, end, recurring } = parse19hzDateRange(dateTimeText, new Date(), timezone)
         if (recurring) {
             logr.debug('api-es-19hz', `Recurring event detected: ${dateTimeText}: ${start} - ${end}`)
         }
@@ -239,7 +233,7 @@ export class NineteenHzEventsSource extends BaseEventSourceHandler {
         cityInfo: { name: string; timezone: string; state: string }
     ): CmfEvent | null {
         try {
-            const { start, end } = this.parseDateRange(parsed.dateTime)
+            const { start, end } = this.parseDateRange(parsed.dateTime, cityInfo.timezone)
 
             // Build description from all columns as requested
             const descriptionParts = [

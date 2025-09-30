@@ -31,7 +31,7 @@ export default function DateAndSearchFilters({
     dateConfig,
 }: DateAndSearchFiltersProps) {
     // Extract values from consolidated URL state
-    const { sq: searchQuery, dateSliderRange } = urlState
+    const { sq: searchQuery } = urlState
     const [showDateSliders, setShowDateSliders] = useState(false)
 
     // Extract from simplified dateConfig - single source of truth

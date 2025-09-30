@@ -4,6 +4,7 @@
  */
 
 import { parse19hzDateRange } from '@/lib/utils/date-19hz-parsing'
+import { DateTime } from 'luxon'
 
 describe('parse19hzDateRange', () => {
     // Helper to check if parsed dates are reasonable
@@ -280,6 +281,150 @@ describe('parse19hzDateRange', () => {
             const startSame = new Date(sameDayResult.start)
             const endSame = new Date(sameDayResult.end)
             expect(endSame.getDate()).toBe(startSame.getDate()) // Same day
+        })
+    })
+
+    describe('timezone handling', () => {
+        it('demonstrates timezone differences correctly - different moments in time', () => {
+            const input = 'Fri: Aug 30 (9pm-2am)'
+
+            // Parse same input in different timezones - these should be different moments
+            const resultLA = parse19hzDateRange(input, new Date(), 'America/Los_Angeles')
+            const resultNY = parse19hzDateRange(input, new Date(), 'America/New_York')
+
+            // Convert to UTC to compare the actual moments
+            const startLA_UTC = DateTime.fromISO(resultLA.start).toUTC()
+            const startNY_UTC = DateTime.fromISO(resultNY.start).toUTC()
+
+            // These should be different moments - 3 hours apart
+            const diffHours = startNY_UTC.diff(startLA_UTC, 'hours').hours
+            expect(diffHours).toBe(-3) // NY event is 3 hours earlier than LA event
+
+            // Verify the local times
+            const startLA_Local = DateTime.fromISO(resultLA.start, { zone: 'America/Los_Angeles' })
+            const startNY_Local = DateTime.fromISO(resultNY.start, { zone: 'America/New_York' })
+
+            // Both should show 9pm in their respective timezones
+            expect(startLA_Local.hour).toBe(21) // 9pm PDT
+            expect(startNY_Local.hour).toBe(21) // 9pm EDT
+
+            // But the UTC times should be different
+            expect(startLA_UTC.hour).toBe(4) // 9pm PDT = 4am UTC (next day)
+            expect(startNY_UTC.hour).toBe(1) // 9pm EDT = 1am UTC (next day)
+
+            // Verify end times too
+            const endLA_UTC = DateTime.fromISO(resultLA.end).toUTC()
+            const endNY_UTC = DateTime.fromISO(resultNY.end).toUTC()
+
+            const endDiffHours = endNY_UTC.diff(endLA_UTC, 'hours').hours
+            expect(endDiffHours).toBe(-3) // End times also 3 hours apart
+        })
+
+        it('works with UTC timezone parameter', () => {
+            const input = 'Fri: Aug 30 (9pm-2am)'
+            const resultUTC = parse19hzDateRange(input, new Date(), 'UTC')
+
+            // When parsing in UTC, 9pm should be 9pm UTC
+            const startUTC = DateTime.fromISO(resultUTC.start).toUTC()
+            expect(startUTC.hour).toBe(21) // 9pm UTC
+
+            // Compare with LA timezone
+            const resultLA = parse19hzDateRange(input, new Date(), 'America/Los_Angeles')
+            const startLA_UTC = DateTime.fromISO(resultLA.start).toUTC()
+
+            // UTC event should be different from LA event
+            const diffHours = startUTC.diff(startLA_UTC, 'hours').hours
+            expect(diffHours).toBe(-7) // UTC 9pm is 7 hours earlier than LA 9pm (9pm PDT = 4am UTC next day)
+        })
+
+        it('handles PST vs PDT correctly for different dates', () => {
+            // Test date in PST (January)
+            const winterResult = parse19hzDateRange('Fri: Jan 15 (9pm-2am)')
+            const winterStart = DateTime.fromISO(winterResult.start, { zone: 'America/Los_Angeles' })
+            expect(winterStart.hour).toBe(21) // 9pm PST
+            expect(winterStart.month).toBe(1) // January
+            expect(winterStart.day).toBe(15)
+
+            // Test date in PDT (August)
+            const summerResult = parse19hzDateRange('Fri: Aug 15 (9pm-2am)')
+            const summerStart = DateTime.fromISO(summerResult.start, { zone: 'America/Los_Angeles' })
+            expect(summerStart.hour).toBe(21) // 9pm PDT
+            expect(summerStart.month).toBe(8) // August
+            expect(summerStart.day).toBe(15)
+        })
+
+        it('produces different UTC times for PST vs PDT', () => {
+            // January (PST = UTC-8)
+            const winterResult = parse19hzDateRange('Fri: Jan 15 (9pm-2am)')
+            const winterStartUTC = DateTime.fromISO(winterResult.start).toUTC()
+            expect(winterStartUTC.hour).toBe(5) // 9pm PST = 5am UTC next day
+
+            // August (PDT = UTC-7)
+            const summerResult = parse19hzDateRange('Fri: Aug 15 (9pm-2am)')
+            const summerStartUTC = DateTime.fromISO(summerResult.start).toUTC()
+            expect(summerStartUTC.hour).toBe(4) // 9pm PDT = 4am UTC next day
+        })
+
+        it('demonstrates what the old broken implementation would produce', () => {
+            // This test shows what WOULD happen with the old broken implementation
+            // vs what happens with our timezone-aware implementation
+
+            const input = 'Fri: Aug 30 (9pm-2am)'
+
+            // Our fixed implementation: always creates dates in America/Los_Angeles
+            const fixedResult = parse19hzDateRange(input)
+            const fixedStartUTC = DateTime.fromISO(fixedResult.start).toUTC()
+
+            // Should be 4am UTC (9pm PDT = 4am UTC next day)
+            expect(fixedStartUTC.hour).toBe(4)
+
+            // Simulate what the OLD broken implementation would produce in different system timezones
+            const brokenBehaviorSimulation = {
+                // System in UTC: new Date(2025, 7, 30, 21, 0) would create 9pm UTC
+                UTC: DateTime.fromObject({ year: 2025, month: 8, day: 30, hour: 21 }, { zone: 'UTC' }).toUTC(),
+
+                // System in LA: new Date(2025, 7, 30, 21, 0) would create 9pm PDT
+                'America/Los_Angeles': DateTime.fromObject(
+                    { year: 2025, month: 8, day: 30, hour: 21 },
+                    { zone: 'America/Los_Angeles' }
+                ).toUTC(),
+
+                // System in NY: new Date(2025, 7, 30, 21, 0) would create 9pm EDT
+                'America/New_York': DateTime.fromObject(
+                    { year: 2025, month: 8, day: 30, hour: 21 },
+                    { zone: 'America/New_York' }
+                ).toUTC(),
+            }
+
+            // The broken implementation would give DIFFERENT UTC results depending on system timezone:
+            expect(brokenBehaviorSimulation['UTC'].hour).toBe(21) // 9pm UTC
+            expect(brokenBehaviorSimulation['America/Los_Angeles'].hour).toBe(4) // 9pm PDT = 4am UTC next day
+            expect(brokenBehaviorSimulation['America/New_York'].hour).toBe(1) // 9pm EDT = 1am UTC next day
+
+            // Our fixed implementation always gives the LA result (4am UTC) regardless of system timezone
+            expect(fixedStartUTC.hour).toBe(brokenBehaviorSimulation['America/Los_Angeles'].hour)
+
+            // Demonstrate that broken behavior in UTC would give wrong time
+            expect(brokenBehaviorSimulation['UTC'].hour).not.toBe(fixedStartUTC.hour)
+
+            // Demonstrate that broken behavior in NY would give wrong time
+            expect(brokenBehaviorSimulation['America/New_York'].hour).not.toBe(fixedStartUTC.hour)
+        })
+
+        it('handles recurring events with correct timezone', () => {
+            const result = parse19hzDateRange('Mondays (9pm-2am)')
+
+            // Should be Monday 9pm in America/Los_Angeles
+            const startInLA = DateTime.fromISO(result.start, { zone: 'America/Los_Angeles' })
+            expect(startInLA.weekday).toBe(1) // Monday
+            expect(startInLA.hour).toBe(21) // 9pm
+
+            // End should be Tuesday 2am in America/Los_Angeles
+            const endInLA = DateTime.fromISO(result.end, { zone: 'America/Los_Angeles' })
+            expect(endInLA.weekday).toBe(2) // Tuesday
+            expect(endInLA.hour).toBe(2) // 2am
+
+            expect(result.recurring).toBe(true)
         })
     })
 })

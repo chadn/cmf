@@ -64,8 +64,11 @@ npm run dev
 
 Make sure [tests](tests.md) pass, both unit and e2e (pageload)
 
-```
-npm test && npm run test:pageload
+```bash
+npm test && npm run test:e2e  # run all tests
+
+# Run just parseAsEventsSource tests from url-utils test file, url-utils.test.ts
+npx jest --testPathPattern=url-utils --testNamePattern="parseAsEventsSource"
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.

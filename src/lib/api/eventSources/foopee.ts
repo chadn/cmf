@@ -43,7 +43,7 @@ export class FoopeeEventsSource extends BaseEventSourceHandler {
                 events,
                 source: {
                     ...this.type,
-                    id: params.id || 'default',
+                    id: params.id || 'all',
                     totalCount: events.length,
                     unknownLocationsCount: 0,
                 },
@@ -204,7 +204,7 @@ export class FoopeeEventsSource extends BaseEventSourceHandler {
      * - "a/a" → "a/a[all ages]"
      * - "$" (not part of price) → "$[will probably sell out]"
      * - "#" (not part of venue) → "#[no ins/outs]"
-     
+
         '*': 'recommendable shows',
         '$': 'will probably sell out',
         '^': 'under 21 must buy drink tickets',

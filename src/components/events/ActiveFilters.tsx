@@ -58,6 +58,7 @@ export default function ActiveFilters({
                             aria-label={`Clear ${filter.label} filter (${filter.numEvents} events filtered)`}
                             data-umami-event="ClearFilter"
                             data-umami-event-btn={filter.label}
+                            data-testid={filter.label.toLowerCase() + '-filter-chip'} // used for e2e tests
                             title={filter.title}
                         >
                             <svg
