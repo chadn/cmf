@@ -3,15 +3,9 @@
 import { CmfEvent, CmfEvents, DateRangeIso, DomainFilters } from '@/types/events'
 import { MapBounds } from '@/types/map'
 import { logr } from '@/lib/utils/logr'
-import { stringify } from '@/lib/utils/utils-shared'
+import { getMyCallers, stringify } from '@/lib/utils/utils-shared'
 import { hasResolvedLocation, calculateAggregateCenter } from '@/lib/utils/location'
-import {
-    applyDateFilter,
-    applySearchFilter,
-    applyMapFilter,
-    applyUnknownLocationsFilter,
-    applyDomainFilters,
-} from './filters'
+import { applyDateFilter, applySearchFilter, applyMapFilter, applyUnknownLocationsFilter } from './filters'
 
 /**
  * Class for managing filters for events
@@ -86,6 +80,10 @@ export class FilterEventsManager {
      * - Map chip count = total events - events located in current viewport (including those they may be filtered out)
      */
     getCmfEvents(mapBounds?: MapBounds): CmfEvents {
+        const perfStart = performance.now()
+        const caller = new Error().stack?.split('\n')[2]?.trim() || 'unknown'
+        const callers = getMyCallers()
+
         const result: CmfEvents = {
             allEvents: this.allEvents,
             visibleEvents: this.allEvents,
@@ -115,43 +113,52 @@ export class FilterEventsManager {
             this.updateAggregateCenter()
         }
 
-        // Calculate independent chip counts - each filter checks against ALL events
-        this.allEvents.forEach((event) => {
-            if (!applySearchFilter(event, this.filters.searchQuery) && this.filters.searchQuery) {
+        // Single-pass filtering: calculate counts AND filter events simultaneously
+        const visibleEvents: CmfEvent[] = []
+
+        for (const event of this.allEvents) {
+            // Check each filter independently
+            const passesSearch = applySearchFilter(event, this.filters.searchQuery)
+            const passesDate = applyDateFilter(event, this.filters.dateRange)
+            const passesLocationFilter = applyUnknownLocationsFilter(event, this.filters.showUnknownLocationsOnly)
+            const passesMap = !mapBounds || applyMapFilter(event, mapBounds, this.aggregateCenter || undefined)
+
+            // Update hidden counts for chip display
+            if (!passesSearch && this.filters.searchQuery) {
                 result.hiddenCounts.bySearch++
                 debugHidden.bySearch.push(event.id)
             }
-            if (!applyDateFilter(event, this.filters.dateRange) && this.filters.dateRange) {
+            if (!passesDate && this.filters.dateRange) {
                 result.hiddenCounts.byDate++
                 debugHidden.byDate.push(event.id)
             }
-            if (
-                !applyUnknownLocationsFilter(event, this.filters.showUnknownLocationsOnly) &&
-                this.filters.showUnknownLocationsOnly
-            ) {
+            if (!passesLocationFilter && this.filters.showUnknownLocationsOnly) {
                 result.hiddenCounts.byLocationFilter++
                 debugHidden.byLocationFilter.push(event.id)
             }
-            if (mapBounds && !applyMapFilter(event, mapBounds, this.aggregateCenter || undefined)) {
+            if (!passesMap) {
                 result.hiddenCounts.byMap++
                 debugHidden.byMap.push(event.id)
             }
-        })
 
-        // Apply domain filters to get events that pass all domain filters
-        const domainFilteredEvents = this.allEvents.filter((event) => applyDomainFilters(event, this.filters))
-        logr.info('fltr_evts_mgr', `getCmfEvents ${domainFilteredEvents.length} visibleEvents before map`, mapBounds)
-
-        // Apply map filter to determine what's currently visible
-        if (mapBounds) {
-            result.visibleEvents = domainFilteredEvents.filter((event) =>
-                applyMapFilter(event, mapBounds, this.aggregateCenter || undefined)
-            )
-        } else {
-            // No map filter, show all domain-filtered events
-            result.visibleEvents = domainFilteredEvents
+            // Include in visible events if passes ALL filters
+            if (passesSearch && passesDate && passesLocationFilter && passesMap) {
+                visibleEvents.push(event)
+            }
         }
-        logr.info('fltr_evts_mgr', `getCmfEvents return counts ${stringify(result)}`)
+
+        result.visibleEvents = visibleEvents
+        logr.info('fltr_evts_mgr', `getCmfEvents ${visibleEvents.length} visibleEvents`, mapBounds)
+        const perfEnd = performance.now()
+        const duration = perfEnd - perfStart
+        if (duration > 20) {
+            logr.warn(
+                'performance',
+                `⚠️ getCmfEvents SLOW: ${duration.toFixed(0)}ms for ${this.allEvents.length} events - ${callers.length} callers, Called from: ${caller}`,
+                callers
+            )
+        }
+        logr.info('fltr_evts_mgr', `getCmfEvents return counts ${stringify(result)} (${duration.toFixed(1)}ms)`)
         logr.debug('fltr_evts_mgr', `getCmfEvents debug hidden events ${stringify(debugHidden)}`)
 
         return result

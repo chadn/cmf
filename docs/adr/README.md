@@ -4,6 +4,7 @@ This directory contains Architecture Decision Records for the Calendar Map Filte
 
 ## Index
 
+- ✅ [2025-10-01-single-pass-filtering-optimization](2025-10-01-single-pass-filtering-optimization.md) - Single-Pass Filtering Optimization for Performance
 - ✅ [2025-09-23-smart-hook-dumb-component-architecture](2025-09-23-smart-hook-dumb-component-architecture.md) - Smart Hook/Dumb Component Architecture with Enhanced State Machine
 - ✅ [2025-09-17-centralized-url-parsing-and-env-configuration](2025-09-17-centralized-url-parsing-and-env-configuration.md) - Centralized URL Parsing and Environment Configuration
 - ❌ [2025-09-12-appstate-machine-over-useref-flags](2025-09-12-appstate-machine-over-useref-flags.md) - AppState Machine Over useRef Flags

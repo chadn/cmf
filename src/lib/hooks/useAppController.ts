@@ -113,6 +113,9 @@ export interface UseAppControllerReturn {
  * Smart Container Hook - Contains all business logic from page.tsx
  */
 export function useAppController(): UseAppControllerReturn {
+    const renderCountRef = useRef(0)
+    const lastRenderTime = useRef(performance.now())
+
     // URL query state parameters - consolidated in CurrentUrlState
     const [eventSourceId] = useQueryState('es', parseAsEventsSource) // replaced gc calendarId
     const [selectedEventIdUrl, setSelectedEventIdUrl] = useQueryState('se', { defaultValue: '' })
@@ -126,6 +129,39 @@ export function useAppController(): UseAppControllerReturn {
         fsd: parseAsCmfDate,
         fed: parseAsCmfDate,
     })
+
+    // Track useAppController renders and what changed
+    const lastUrlState = useRef({
+        eventSourceId,
+        selectedEventIdUrl,
+        searchQueryUrl,
+        dateQuickFilterUrl,
+        llzUrl,
+        datesUrl,
+    })
+
+    renderCountRef.current++
+    const currentRenderTime = performance.now()
+    const timeSinceLastRender = currentRenderTime - lastRenderTime.current
+
+    // Check what URL params changed
+    const urlChanges = []
+    if (lastUrlState.current.eventSourceId !== eventSourceId) urlChanges.push('es')
+    if (lastUrlState.current.selectedEventIdUrl !== selectedEventIdUrl) urlChanges.push('se')
+    if (lastUrlState.current.searchQueryUrl !== searchQueryUrl) urlChanges.push('sq')
+    if (lastUrlState.current.dateQuickFilterUrl !== dateQuickFilterUrl) urlChanges.push('qf')
+    if (lastUrlState.current.llzUrl !== llzUrl) urlChanges.push('llz')
+    if (lastUrlState.current.datesUrl !== datesUrl) urlChanges.push('dates')
+
+    if (renderCountRef.current > 1) {
+        logr.info(
+            'performance',
+            `useAppController render #${renderCountRef.current} (+${timeSinceLastRender.toFixed(0)}ms) - URL changes: ${urlChanges.length > 0 ? urlChanges.join(', ') : 'NONE'}`
+        )
+    }
+    lastRenderTime.current = currentRenderTime
+    lastUrlState.current = { eventSourceId, selectedEventIdUrl, searchQueryUrl, dateQuickFilterUrl, llzUrl, datesUrl }
+
     const [appState, dispatch] = useReducer(appStateReducer, INITIAL_APP_STATE)
     const [headerName, setHeaderName] = useState('Calendar Map Filter')
     const [mapHookWidthHeight, setMapHookWidthHeight] = useState({ w: 999, h: 999 }) // in pixels, set 1001 elsewhere
@@ -152,6 +188,15 @@ export function useAppController(): UseAppControllerReturn {
     // Local state for current viewport bounds (from map)
     const [currentBounds, setCurrentBounds] = useState<MapBounds | null>(null)
     const [isShowingAllEvents, setIsShowingAllEvents] = useState<boolean>(true)
+
+    // Track currentBounds changes
+    const lastCurrentBoundsRef = useRef(currentBounds)
+    useEffect(() => {
+        if (lastCurrentBoundsRef.current !== currentBounds) {
+            logr.info('performance', `currentBounds changed: ${stringify(currentBounds)}`)
+            lastCurrentBoundsRef.current = currentBounds
+        }
+    }, [currentBounds])
 
     // Use our new EventsManager hook to get events and filter methods
     // Only apply map filtering when not in "show all" mode
@@ -180,15 +225,36 @@ export function useAppController(): UseAppControllerReturn {
             // Update viewport bounds for filtering if this is from user interaction
             // OR if we're not showing all events (e.g., after llz URL parsing)
             if (fromUserInteraction || !isShowingAllEvents) {
-                setCurrentBounds(bounds)
-                setIsShowingAllEvents(false)
+                // Check if bounds actually changed to avoid unnecessary state updates
+                const boundsChanged =
+                    !currentBounds ||
+                    currentBounds.north !== bounds.north ||
+                    currentBounds.south !== bounds.south ||
+                    currentBounds.east !== bounds.east ||
+                    currentBounds.west !== bounds.west
+
+                if (boundsChanged) {
+                    logr.info('performance', `Bounds actually changed, updating state`)
+                    setCurrentBounds(bounds)
+                    if (isShowingAllEvents) {
+                        logr.info('performance', `Setting isShowingAllEvents to false`)
+                        setIsShowingAllEvents(false)
+                    }
+                } else {
+                    logr.info('performance', `Bounds unchanged, skipping setState`)
+                    // Still need to disable "show all" mode if it was on
+                    if (isShowingAllEvents) {
+                        logr.info('performance', `Setting isShowingAllEvents to false (bounds unchanged)`)
+                        setIsShowingAllEvents(false)
+                    }
+                }
             }
             logr.info('app', `handleBoundsChangeForFilters: ${stringify(bounds)}`, {
                 fromUserInteraction,
                 isShowingAllEvents,
             })
         },
-        [isShowingAllEvents]
+        [isShowingAllEvents, currentBounds]
     )
 
     const { viewport, setViewport, markers, selectedMarkerId, setSelectedMarkerId, resetMapToVisibleEvents } = useMap(

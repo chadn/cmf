@@ -203,13 +203,24 @@ export function viewstate2Viewport(viewport: ViewStateType): MapViewport {
  * @returns Boolean indicating if location is inside map bounds
  */
 export function latLongIsInBounds(lat: number, lng: number, mapBounds: MapBounds): boolean {
-    // TODO: use WebMercatorViewport to do latLongIsInBounds
-    const isInBounds =
-        lat >= mapBounds.south &&
-        lat <= mapBounds.north &&
-        lng >= mapBounds.west && // is this always true?
-        lng <= mapBounds.east
-    return isInBounds
+    const { north, south, east, west } = mapBounds
+    // TODO: use WebMercatorViewport? Not now cuz its 10x heavier.
+    // 🚀 When to use WebMercatorViewport.contains()
+    // If you need to be pixel-accurate (e.g. polygons, tilted projections, non-rectangular clipping),
+    // then yes, use Deck.gl’s WebMercatorViewport. That converts lat/lng to screen XY and checks inside bounds.
+    // But that’s ~10x heavier than this simple math, and usually unnecessary unless you’re doing advanced viewport logic.
+
+    // Latitude check (simple)
+    if (lat < south || lat > north) return false
+
+    // Longitude check (handle wraparound at ±180°)
+    if (west <= east) {
+        // Normal case (no wraparound)
+        return lng >= west && lng <= east
+    } else {
+        // Bounds cross the antimeridian (e.g. west=170, east=-170), aka International Date Line.
+        return lng >= west || lng <= east
+    }
 }
 
 /**

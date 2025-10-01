@@ -220,6 +220,7 @@ export function useEventsManager({
     } = useSWR(shouldFetchData ? singleApiUrl : null, fetcherLogr, {
         revalidateOnFocus: false,
         onSuccess: (data: EventsSourceResponse) => {
+            const perfStart = performance.now()
             if (!(data && data.httpStatus)) {
                 dispatchNot200(`HTTP 500: onSuccess should have data.httpStatus`)
                 return
@@ -242,6 +243,8 @@ export function useEventsManager({
             filtrEvtMgr.setEvents(data.events)
             // Events are now managed by FilterEventsManager only
             logr.debug('use_evts_mgr', `After filtrEvtMgr.cmf_events_all=${filtrEvtMgr.cmf_events_all.length}`)
+            const perfEnd = performance.now()
+            logr.info('performance', `SWR onSuccess (single) took ${(perfEnd - perfStart).toFixed(2)}ms`)
         },
         onError: (err) => {
             dispatchNot200(err)
@@ -259,6 +262,7 @@ export function useEventsManager({
         {
             revalidateOnFocus: false,
             onSuccess: ({ aggregatedData, sources }) => {
+                const perfStart = performance.now()
                 const data = aggregatedData
                 logr.info('use_evts_mgr', `Multiple sources events data fetched: "${data.source.name}"`, {
                     sourceId: data.source.id,
@@ -278,6 +282,8 @@ export function useEventsManager({
                 filtrEvtMgr.setEvents(data.events)
                 // Events are now managed by FilterEventsManager only
                 logr.debug('use_evts_mgr', `After filtrEvtMgr.cmf_events_all=${filtrEvtMgr.cmf_events_all.length}`)
+                const perfEnd = performance.now()
+                logr.info('performance', `SWR onSuccess (multi) took ${(perfEnd - perfStart).toFixed(2)}ms`)
             },
             onError: (err) => {
                 dispatchNot200(err.message || err)

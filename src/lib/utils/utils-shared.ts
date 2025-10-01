@@ -103,3 +103,41 @@ export function stringify(data: any): string {
     }
     return JSON.stringify(data)
 }
+
+/**
+ * Get the call stack of the current function, returning only calls from our source code (/src/)
+ * Usually the first 2 or 3 strings from array are useful for debugging
+ *
+ * For debugging with chrome devtools, just do this instead:
+ * console.trace('Tracing call stack, clickable in Chrome DevTools')
+ *
+ * @param params.nonSrcToo - if true, include calls from non-src code. Default is false, only include src lines
+ * @param params.keepOldest - if true, keep the oldest non-src lines. Default is false, only include src lines
+ * @returns string array
+ */
+export function getMyCallers(params?: { nonSrcToo?: boolean; keepOldest?: boolean }): string[] {
+    // TODO: consider using https://www.npmjs.com/package/stacktrace-js
+
+    const stack = new Error().stack
+    if (!stack) return []
+
+    // Replace everything before and including "(webpack-internal:///(app-pages-browser)/./src/" with "src/"
+    let lines = stack
+        .split('\n')
+        .map((line) => line.trim())
+        .map((line) => line.replace(/^.*\(app-pages-browser\)\/\.\/src\//, '/src/'))
+        .slice(1) // remove first element (getMyCallers)
+
+    const lastSrcIdx = lines.findLastIndex((line) => line.includes('/src/'))
+    const oldestNonSrcLines = lastSrcIdx >= 0 ? lines.slice(lastSrcIdx + 1) : []
+
+    if (!params?.nonSrcToo) {
+        // only include src lines ... and also add the oldest non-src lines to identify original call
+        lines = lines.filter((line) => line.includes('/src/'))
+        if (params?.keepOldest) {
+            lines = [...lines, ...oldestNonSrcLines]
+        }
+    }
+    console.trace('Tracing call stack, clickable in Chrome DevTools')
+    return lines
+}

@@ -45,6 +45,31 @@ const MapContainer: React.FC<MapContainerProps> = ({
     const mapRef = useRef<MapRef>(null)
     const [popupMarker, setPopupMarker] = useState<MapMarker | null>(null)
     const mapWidthHeightRef = useRef({ w: 1001, h: 1001 }) // set to 999 x 999 elsewhere
+    const renderCountRef = useRef(0)
+    const lastRenderTime = useRef(performance.now())
+    const lastPropsRef = useRef({ viewport, markers: markers.length, selectedMarkerId, selectedEventId })
+
+    // Track component renders
+    renderCountRef.current++
+    const currentRenderTime = performance.now()
+    const timeSinceLastRender = currentRenderTime - lastRenderTime.current
+
+    // Detect what changed
+    const changes = []
+    if (lastPropsRef.current.viewport !== viewport) changes.push('viewport')
+    if (lastPropsRef.current.markers !== markers.length)
+        changes.push(`markers(${lastPropsRef.current.markers}→${markers.length})`)
+    if (lastPropsRef.current.selectedMarkerId !== selectedMarkerId) changes.push('selectedMarkerId')
+    if (lastPropsRef.current.selectedEventId !== selectedEventId) changes.push('selectedEventId')
+
+    if (renderCountRef.current > 1) {
+        logr.info(
+            'performance',
+            `MapContainer render #${renderCountRef.current} (+${timeSinceLastRender.toFixed(0)}ms) - ${markers.length} markers - Changed: ${changes.length > 0 ? changes.join(', ') : 'NONE (unnecessary render!)'}`
+        )
+    }
+    lastRenderTime.current = currentRenderTime
+    lastPropsRef.current = { viewport, markers: markers.length, selectedMarkerId, selectedEventId }
 
     // Get map dimensions and update parent component if dimensions have changed
     const updateMapWidthHeight = useCallback(() => {
@@ -59,13 +84,13 @@ const MapContainer: React.FC<MapContainerProps> = ({
         // Only notify parent if dimensions actually changed
         if (mapWidthHeightRef.current.w !== newDimensions.w || mapWidthHeightRef.current.h !== newDimensions.h) {
             logr.info(
-                'mapc',
-                `updateMapWidthHeight changed ${JSON.stringify(mapWidthHeightRef.current)} to ${JSON.stringify(newDimensions)}`
+                'performance',
+                `Map dimensions changed ${JSON.stringify(mapWidthHeightRef.current)} → ${JSON.stringify(newDimensions)}`
             )
             mapWidthHeightRef.current = newDimensions
             onWidthHeightChange(newDimensions)
         } else {
-            logr.info('mapc', `updateMapWidthHeight unchanged: ${JSON.stringify(newDimensions)}`)
+            logr.info('performance', `Map dimensions unchanged: ${JSON.stringify(newDimensions)} - skipping setState`)
         }
         return newDimensions
     }, [onWidthHeightChange])
@@ -131,12 +156,22 @@ const MapContainer: React.FC<MapContainerProps> = ({
 
     // Log when markers length changes
     useEffect(() => {
+        const perfStart = performance.now()
         logr.info('mapc', `uE: MapContainer updated num markers, now ${markers.length}`)
+        const perfEnd = performance.now()
+        if (perfEnd - perfStart > 10) {
+            logr.warn('performance', `⚠️ Markers update effect: ${(perfEnd - perfStart).toFixed(0)}ms`)
+        }
     }, [markers.length])
 
     // Log when viewport changes
     useEffect(() => {
+        const perfStart = performance.now()
         logr.info('mapc', `uE: MapContainer updated viewport, now ${stringify(viewport)}`)
+        const perfEnd = performance.now()
+        if (perfEnd - perfStart > 10) {
+            logr.warn('performance', `⚠️ Viewport update effect: ${(perfEnd - perfStart).toFixed(0)}ms`)
+        }
     }, [viewport, viewport.latitude, viewport.longitude, viewport.zoom])
 
     // Close popup when selected marker changes to null

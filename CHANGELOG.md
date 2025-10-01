@@ -5,18 +5,25 @@ All notable changes to Calendar Map Filter (CMF) will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.5] - 2025-10-1
+
+### Technical
+
+- Added Performance improvements and monitoring, see [adr/2025-10-01-single-pass-filtering-optimization.md](docs/adr/2025-10-01-single-pass-filtering-optimization.md)
+- Updated to latest `npx update-browserslist-db@latest`
+
 ## [0.3.4] - 2025-10-1
 
 ### Fixed
 
 - Improved 19hz defaultState logic so Cambrige Mass is chosen over Cambrige Great Britain.
-- foopee stable - parsing event improved, date times are fixed, and /api/events for foopee now properly supports timeMin, timeMax.
+- Made foopee stable - parsing event improved, date times are fixed, and /api/events for foopee now properly supports timeMin, timeMax.
 - "Skipping duplicate events", like when 19hz has same event under multiple cities. Fixes warnings in chrome.
 
 ### Added
 
-- ability to "Report Incorrect Location" in the marker popup's "Add To Cal" mini popup
-- react-toastify to replace alert() with non-blocking alerts.
+- Ability to "Report Incorrect Location" in the marker popup's "Add To Cal" mini popup
+- `react-toastify` to replace alert() with non-blocking alerts.
 
 ## [0.3.3] - 2025-09-29
 

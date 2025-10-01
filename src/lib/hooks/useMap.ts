@@ -45,6 +45,18 @@ export function useMap(
     mapH: number,
     onBoundsChange?: (bounds: MapBounds, fromUserInteraction?: boolean) => void
 ): UseMapReturn {
+    const renderCountRef = useRef(0)
+    const lastRenderTime = useRef(performance.now())
+
+    // Track useMap renders
+    renderCountRef.current++
+    const currentRenderTime = performance.now()
+    const timeSinceLastRender = currentRenderTime - lastRenderTime.current
+    if (renderCountRef.current > 1) {
+        logr.info('performance', `useMap render #${renderCountRef.current} (+${timeSinceLastRender.toFixed(0)}ms)`)
+    }
+    lastRenderTime.current = currentRenderTime
+
     // Flag to track internal updates to prevent loops
     const isInternalUpdate = useRef(false)
 
@@ -175,12 +187,27 @@ export function useMap(
         // Skip if this is an internal update
         if (isInternalUpdate.current) return
 
-        setMapState((prev) => ({
-            ...prev,
-            viewport: newViewport,
-            // Note: bounds will be updated by page.tsx via onBoundsChange from MapContainer
-            // This keeps the actual map bounds in sync with the viewport
-        }))
+        setMapState((prev) => {
+            // Only update if viewport actually changed
+            if (
+                prev.viewport.latitude === newViewport.latitude &&
+                prev.viewport.longitude === newViewport.longitude &&
+                prev.viewport.zoom === newViewport.zoom &&
+                prev.viewport.bearing === newViewport.bearing &&
+                prev.viewport.pitch === newViewport.pitch
+            ) {
+                logr.info('performance', 'Viewport unchanged, skipping setState')
+                return prev
+            }
+
+            logr.info('performance', 'Viewport changed, updating state')
+            return {
+                ...prev,
+                viewport: newViewport,
+                // Note: bounds will be updated by page.tsx via onBoundsChange from MapContainer
+                // This keeps the actual map bounds in sync with the viewport
+            }
+        })
     }, [])
 
     /**
