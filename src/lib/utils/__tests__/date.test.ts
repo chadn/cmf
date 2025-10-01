@@ -9,6 +9,8 @@ import {
     getStartOfDay,
     getEndOfDay,
     eventInDateRange,
+    extractEventTimes,
+    parseMonthDayRange,
 } from '@/lib/utils/date'
 import { format } from 'date-fns'
 import type { CmfEvent } from '@/types/events'
@@ -236,9 +238,9 @@ describe('Date Utilities', () => {
 
         test('should return UTC ISO string for various inputs', () => {
             const testCases = [
-                { input: '2023-07-15', expectedPattern: /^2023-07-15T\d{2}:00:00\.000Z$/ },
-                { input: '1d', expectedPattern: /^2023-07-16T\d{2}:00:00\.000Z$/ },
-                { input: '2023-07-15T12:00:00Z', expected: '2023-07-15T12:00:00.000Z' },
+                { input: '2023-07-15', expectedPattern: /^2023-07-15T\d{2}:00:00Z$/ },
+                { input: '1d', expectedPattern: /^2023-07-16T\d{2}:00:00Z$/ },
+                { input: '2023-07-15T12:00:00Z', expected: '2023-07-15T12:00:00Z' },
             ]
 
             testCases.forEach(({ input, expected, expectedPattern }) => {
@@ -817,6 +819,88 @@ describe('Date Utilities', () => {
 
                 expect(eventInDateRange(event, dateRange)).toBe(true)
             })
+        })
+    })
+
+    describe('parseMonthDayRange', () => {
+        it('parses date range within same year', () => {
+            const result = parseMonthDayRange('Oct 27 - Nov 3')
+            expect(result.startDate.getMonth()).toBe(9) // Oct
+            expect(result.startDate.getDate()).toBe(27)
+            expect(result.endDate.getMonth()).toBe(10) // Nov
+            expect(result.endDate.getDate()).toBe(3)
+            expect(result.endDate.getTime()).toBeGreaterThan(result.startDate.getTime())
+        })
+
+        it('handles year wrap-around when end is before start', () => {
+            const result = parseMonthDayRange('Dec 28 - Jan 5')
+            expect(result.startDate.getMonth()).toBe(11) // Dec
+            expect(result.startDate.getDate()).toBe(28)
+            expect(result.endDate.getMonth()).toBe(0) // Jan (next year)
+            expect(result.endDate.getDate()).toBe(5)
+            expect(result.endDate.getTime()).toBeGreaterThan(result.startDate.getTime())
+        })
+
+        it('parses single digit days', () => {
+            const result = parseMonthDayRange('Jan 1 - Jan 9')
+            expect(result.startDate.getMonth()).toBe(0)
+            expect(result.startDate.getDate()).toBe(1)
+            expect(result.endDate.getDate()).toBe(9)
+        })
+    })
+
+    describe('extractEventTimes', () => {
+        const testDate = new Date('2023-07-15T00:00:00')
+
+        it('extracts start and end times from "til" format', () => {
+            const result = extractEventTimes('7pm til 11:30pm', testDate)
+            expect(result.startStr).toContain('2023-07-15')
+            expect(result.startStr).toContain('19:00')
+            expect(result.endStr).toContain('23:30')
+        })
+
+        it('extracts time with minutes in start time', () => {
+            const result = extractEventTimes('7:30pm til 11pm', testDate)
+            expect(result.startStr).toContain('19:30')
+            expect(result.endStr).toContain('23:00')
+        })
+
+        it('defaults to +4 hours when no end time provided', () => {
+            const result = extractEventTimes('8pm', testDate)
+            expect(result.startStr).toContain('20:00')
+            expect(result.endStr).toContain('2023-07-16') // next day
+            expect(result.endStr).toContain('00:00') // midnight
+        })
+
+        it('extracts with non-date text before and after', () => {
+            const result = extractEventTimes('a/a $32.50+ 7pm/8pm #', testDate)
+            expect(result.startStr).toContain('19:00')
+            expect(result.endStr).toContain('2023-07-15')
+            expect(result.endStr).toContain('23:00')
+        })
+
+        it('extracts with non-date text before and after from "til" format', () => {
+            const result = extractEventTimes('12+ (under 16 with adult) 2pm til 2am (overnight camping)', testDate)
+            expect(result.startStr).toContain('14:00')
+            expect(result.endStr).toContain('2023-07-16')
+            expect(result.endStr).toContain('02:00')
+        })
+
+        it('uses default 8:01pm when no time found', () => {
+            const result = extractEventTimes('some event description', testDate)
+            expect(result.startStr).toContain('20:01')
+        })
+
+        it('handles case-insensitive "til"', () => {
+            const result = extractEventTimes('7pm TIL 9pm', testDate)
+            expect(result.startStr).toContain('19:00')
+            expect(result.endStr).toContain('21:00')
+        })
+
+        it('returns ISO strings with America/Los_Angeles timezone', () => {
+            const result = extractEventTimes('7pm til 9pm', testDate)
+            expect(result.startStr).toMatch(/-07:00|-08:00/) // PDT or PST
+            expect(result.endStr).toMatch(/-07:00|-08:00/)
         })
     })
 })

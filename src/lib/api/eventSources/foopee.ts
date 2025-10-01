@@ -1,13 +1,22 @@
 import axios from 'axios'
 import * as cheerio from 'cheerio'
+import { format, addYears, subDays, parse } from 'date-fns'
 import { CmfEvent, EventsSourceParams, EventsSourceResponse, EventsSource } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
 import { BaseEventSourceHandler, registerEventsSource } from './index'
+import { extractEventTimes, parseMonthDayRange } from '@/lib/utils/date'
+
+interface DatePageInfo {
+    url: string
+    linkText: string
+    startDate: Date | null
+    endDate: Date | null
+}
 
 export class FoopeeEventsSource extends BaseEventSourceHandler {
     public readonly type: EventsSource = {
         prefix: 'foopee',
-        name: 'Foopee Punk Shows',
+        name: 'Foopee Concerts by Steve Koepke',
         url: 'http://www.foopee.com/punk/the-list/',
     }
 
@@ -20,19 +29,28 @@ export class FoopeeEventsSource extends BaseEventSourceHandler {
             const $ = cheerio.load(response.data)
 
             const events: CmfEvent[] = []
-            const datePageUrls = this.extractDatePageUrls($)
+            const datePages = this.extractDatePageUrls($)
+            logr.info('api-es-foopee', `Found ${datePages.length} date pages to process`)
 
-            logr.info('api-es-foopee', `Found ${datePageUrls.length} date pages to process`)
-
-            // Process each date page (limit to first 5 for testing)
-            const urlsToProcess = datePageUrls.slice(0, 5)
-            for (const datePageUrl of urlsToProcess) {
+            // Process each date page with time filtering
+            const pagesToProcess = this.filterDatePagesByTimeRange(datePages, params.timeMin, params.timeMax)
+            for (const datePage of pagesToProcess) {
                 try {
-                    const pageEvents = await this.processDatePage(datePageUrl)
-                    events.push(...pageEvents)
-                    logr.info('api-es-foopee', `Processed ${datePageUrl}, found ${pageEvents.length} events`)
+                    const pageEvents = await this.processDatePage(datePage.url)
+                    const filteredEvents = this.filterEventsByTimeRange(pageEvents, params.timeMin, params.timeMax)
+                    events.push(...filteredEvents)
+                    logr.info(
+                        'api-es-foopee',
+                        `Processed ${datePage.linkText} (${datePage.url}), found ${pageEvents.length} events, ${filteredEvents.length} after time filtering`
+                    )
+
+                    // Stop processing if we're past timeMax to optimize performance
+                    if (params.timeMax && this.isPagePastTimeMax(datePage, params.timeMax)) {
+                        logr.info('api-es-foopee', 'Reached timeMax, stopping page processing')
+                        break
+                    }
                 } catch (error) {
-                    logr.warn('api-es-foopee', `Failed to process date page ${datePageUrl}: ${error}`)
+                    logr.warn('api-es-foopee', `Failed to process date page ${datePage.url}: ${error}`)
                 }
             }
 
@@ -72,6 +90,7 @@ export class FoopeeEventsSource extends BaseEventSourceHandler {
         $('li').each((_, element) => {
             const $li = $(element)
             const liText = $li.text().trim()
+            const liHtml = $li.html() || ''
 
             // Check if this <li> contains a date (like "Mon Oct 6")
             const dateMatch = liText.match(
@@ -80,32 +99,41 @@ export class FoopeeEventsSource extends BaseEventSourceHandler {
             if (dateMatch) {
                 // This is a date header - extract and store the current date
                 const [, , monthName, dayStr] = dateMatch
-                const monthNum = this.getMonthNumber(monthName)
-                const day = parseInt(dayStr)
-                const currentYear = new Date().getFullYear()
+                const dateStr = `${monthName} ${dayStr}`
 
-                currentDate = new Date(currentYear, monthNum - 1, day)
+                currentDate = parse(dateStr, 'MMM d', new Date())
 
                 // If the date is more than 14 days in the past, assume it's next year
-                const today = new Date()
-                const fourteenDaysAgo = new Date(today.getTime() - 14 * 24 * 60 * 60 * 1000)
-
+                const fourteenDaysAgo = subDays(new Date(), 14)
                 if (currentDate < fourteenDaysAgo) {
-                    currentDate.setFullYear(currentYear + 1)
+                    currentDate = addYears(currentDate, 1)
                 }
 
-                logr.debug('api-es-foopee', `Found date: ${currentDate.toISOString().split('T')[0]}`)
+                logr.info('api-es-foopee', `Found date: ${currentDate.toISOString()}`)
                 return // Continue to next <li>
             }
 
             // Check if this <li> contains event data (has links)
-            const $firstLink = $li.find('a').first()
-            if ($firstLink.length > 0 && currentDate) {
-                // This is an event - extract location from first link and use everything as description
-                const location = $firstLink.text().trim()
-                const description = this.applyLegendReplacements(liText)
+            // Parse structure: <b><a>location</a></b> <a>band1</a>, <a>band2</a>, ... description
+            const $allLinks = $li.find('a')
+            if ($allLinks.length > 0 && currentDate) {
+                // First link (in <b>) is the location
+                const location = $allLinks.first().text().trim()
 
-                const event = this.parseEventFromLi(location, description, currentDate, eventIndex)
+                // Extract band names from remaining links (those with by-band.* hrefs)
+                const bands: string[] = []
+                $allLinks.each((index, link) => {
+                    if (index === 0) return // Skip location link
+                    const href = $(link).attr('href')
+                    if (href && href.includes('by-band.')) {
+                        bands.push($(link).text().trim())
+                    }
+                })
+
+                // TODO: extract description, everything after the last </a>
+                const description = liHtml.split(/<\/a>/).pop()?.trim() || ''
+
+                const event = this.parseEventFromLi(location, bands, description, currentDate, eventIndex)
                 if (event) {
                     events.push(event)
                     eventIndex++
@@ -120,58 +148,36 @@ export class FoopeeEventsSource extends BaseEventSourceHandler {
     /**
      * Parse event data from <li> element into a CmfEvent
      */
-    private parseEventFromLi(location: string, description: string, eventDate: Date, index: number): CmfEvent | null {
+    private parseEventFromLi(
+        location: string,
+        bands: string[],
+        description: string,
+        eventDate: Date,
+        index: number
+    ): CmfEvent | null {
         try {
-            // Extract bands from description (everything after the location link)
-            // Remove the location text from the description to get band names
-            const locationPattern = new RegExp(location.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i')
-            const afterLocation = description.replace(locationPattern, '').trim()
-
-            // Find band names before show details like a/a, $, times, etc.
-            const bandSection = afterLocation.split(/\s+(?=a\/a|\$\d|\d+:\d{2}|\d+pm|\d+am|#)/i)[0]
-            const bands = this.extractBandNames(bandSection)
-
             // Create event title from bands
             const title = bands.length > 0 ? bands.join(', ') : 'Punk Show'
 
-            // Extract time if available
-            const timeMatch = description.match(/(\d{1,2}):?(\d{2})?\s*(pm|am)/i)
-            let startTime = '20:00' // Default to 8 PM
-            if (timeMatch) {
-                let hour = parseInt(timeMatch[1])
-                const minute = timeMatch[2] ? parseInt(timeMatch[2]) : 0
-                const ampm = timeMatch[3]?.toLowerCase()
-
-                if (ampm === 'pm' && hour !== 12) hour += 12
-                if (ampm === 'am' && hour === 12) hour = 0
-
-                startTime = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`
-            }
-
-            // Calculate end time (4 hours after start)
-            const startHour = parseInt(startTime.split(':')[0])
-            const startMinute = parseInt(startTime.split(':')[1])
-            const endHour = (startHour + 4) % 24
-            const endTime = `${endHour.toString().padStart(2, '0')}:${startMinute.toString().padStart(2, '0')}`
-
-            // Format date with timezone
-            const dateStr = eventDate.toISOString().split('T')[0]
-            const startDateTime = `${dateStr}T${startTime}:00`
-            const endDateTime = `${dateStr}T${endTime}:00`
+            // Extract time, ex: "7pm til 11:30pm" or "7pm/8pm" or "8pm"
+            const { startStr, endStr } = extractEventTimes(description, eventDate)
 
             // Append CA, USA to location
-            const fullLocation = location.includes(', CA, USA') ? location : `${location}, CA, USA`.replace(/,,/g, ',')
+            const fullLocation = location.includes(', CA, USA')
+                ? location
+                : `${location}, CA, USA`.replace(/,\s*,/g, ',')
 
             // Generate unique ID
-            const id = `foopee-${fullLocation.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}-${dateStr}-${index}`
+            const dateStr = format(eventDate, 'yyyy-MM-dd')
+            const id = `${this.type.prefix}-${fullLocation.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}-${dateStr}-${index}`
 
             return {
                 id,
                 name: title,
-                description,
+                description: this.applyLegendReplacements(description),
                 description_urls: this.extractUrls(description),
-                start: startDateTime,
-                end: endDateTime,
+                start: startStr,
+                end: endStr,
                 tz: 'America/Los_Angeles',
                 location: fullLocation,
                 original_event_url: this.type.url,
@@ -180,22 +186,6 @@ export class FoopeeEventsSource extends BaseEventSourceHandler {
             logr.warn('api-es-foopee', `Error parsing event from li: ${description} - ${error}`)
             return null
         }
-    }
-
-    /**
-     * Extract band names from the band section of the line
-     */
-    private extractBandNames(bandSection: string): string[] {
-        if (!bandSection) return []
-
-        // Split by commas and clean up each band name
-        const bands = bandSection
-            .split(',')
-            .map((band) => band.trim())
-            .filter((band) => band && band.length > 0)
-            .slice(0, 4) // Take up to 4 band names
-
-        return bands
     }
 
     /**
@@ -233,35 +223,14 @@ export class FoopeeEventsSource extends BaseEventSourceHandler {
     }
 
     /**
-     * Extract date page URLs from the main page
+     * Extract date page URLs from the main page with date information
      */
-    private extractDatePageUrls($: cheerio.Root): string[] {
-        const urls: string[] = []
+    private extractDatePageUrls($: cheerio.Root): DatePageInfo[] {
+        const datePages: DatePageInfo[] = []
 
         logr.info('api-es-foopee', 'Extracting date page URLs from main page')
 
-        // Debug: Log all text content first to see the structure
-        const pageText = $('body').text()
-        logr.info('api-es-foopee', `Page contains "Concerts By Date": ${pageText.includes('Concerts By Date')}`)
-        logr.info('api-es-foopee', `Page contains "Concerts By Band": ${pageText.includes('Concerts By Band')}`)
-
-        // Debug: Log all links found
-        const allLinks: string[] = []
-        $('a').each((_, element) => {
-            const $link = $(element)
-            const linkText = $link.text().trim()
-            const href = $link.attr('href')
-            if (linkText && href) {
-                allLinks.push(`"${linkText}" -> "${href}"`)
-            }
-        })
-        logr.info('api-es-foopee', `Total links found: ${allLinks.length}`)
-        if (allLinks.length > 0) {
-            logr.info('api-es-foopee', `First 10 links: ${allLinks.slice(0, 10).join(', ')}`)
-        }
-
-        // Alternative approach: find all date range links directly since we know the pattern
-        // The date range links are visible in the debug output: "Sep 22 - Sep 28" -> "by-date.0.html"
+        // Find all date range links and parse their dates
         let dateLinksFound = 0
 
         $('a').each((_, element) => {
@@ -280,16 +249,31 @@ export class FoopeeEventsSource extends BaseEventSourceHandler {
                         fullUrl = `http://www.foopee.com/punk/the-list/${href}`
                     }
                 }
-                urls.push(fullUrl)
+
+                // Parse dates from link text
+                // const { startDate, endDate } = this.parseDateRangeFromLinkText(linkText)
+                const { startDate, endDate } = parseMonthDayRange(linkText)
+
+                const datePageInfo: DatePageInfo = {
+                    url: fullUrl,
+                    linkText,
+                    startDate,
+                    endDate,
+                }
+
+                datePages.push(datePageInfo)
                 dateLinksFound++
-                logr.info('api-es-foopee', `Found date range link: "${linkText}" -> ${fullUrl}`)
+                const startDateStr = startDate ? format(startDate, 'yyyy-MM-dd') : 'null'
+                const endDateStr = endDate ? format(endDate, 'yyyy-MM-dd') : 'null'
+                logr.info(
+                    'api-es-foopee',
+                    `Found date range link: "${linkText}" -> ${fullUrl} (${startDateStr} to ${endDateStr})`
+                )
             }
         })
 
         logr.info('api-es-foopee', `Found ${dateLinksFound} date range links`)
-
-        logr.info('api-es-foopee', `Found ${urls.length} date page URLs`)
-        return urls
+        return datePages
     }
 
     /**
@@ -303,24 +287,73 @@ export class FoopeeEventsSource extends BaseEventSourceHandler {
     }
 
     /**
-     * Convert month abbreviation to number
+     * Filter date page URLs by time range to optimize processing
      */
-    private getMonthNumber(monthAbbr: string): number {
-        const months: { [key: string]: number } = {
-            Jan: 1,
-            Feb: 2,
-            Mar: 3,
-            Apr: 4,
-            May: 5,
-            Jun: 6,
-            Jul: 7,
-            Aug: 8,
-            Sep: 9,
-            Oct: 10,
-            Nov: 11,
-            Dec: 12,
+    private filterDatePagesByTimeRange(datePages: DatePageInfo[], timeMin?: string, timeMax?: string): DatePageInfo[] {
+        if (!timeMin && !timeMax) return datePages
+
+        return datePages.filter((datePage) => {
+            // If we can't parse dates, include the page to be safe
+            if (!datePage.startDate || !datePage.endDate) return true
+
+            // Check if the page date range overlaps with the requested time range
+            return this.isDateRangeOverlapping(datePage.startDate, datePage.endDate, timeMin, timeMax)
+        })
+    }
+
+    /**
+     * Filter events by time range
+     */
+    private filterEventsByTimeRange(events: CmfEvent[], timeMin?: string, timeMax?: string): CmfEvent[] {
+        if (!timeMin && !timeMax) return events
+
+        return events.filter((event) => {
+            const eventDate = new Date(event.start)
+            return this.isDateInRange(eventDate, timeMin, timeMax)
+        })
+    }
+
+    /**
+     * Check if a date falls within the specified time range
+     */
+    private isDateInRange(date: Date, timeMin?: string, timeMax?: string): boolean {
+        if (timeMin) {
+            const minDate = new Date(timeMin)
+            if (date < minDate) return false
         }
-        return months[monthAbbr] || 1
+        if (timeMax) {
+            const maxDate = new Date(timeMax)
+            if (date > maxDate) return false
+        }
+        return true
+    }
+
+    /**
+     * Check if two date ranges overlap
+     */
+    private isDateRangeOverlapping(startDate: Date, endDate: Date, timeMin?: string, timeMax?: string): boolean {
+        if (timeMin) {
+            const minDate = new Date(timeMin)
+            // Check if the page ends before our time range starts
+            if (endDate < minDate) return false
+        }
+        if (timeMax) {
+            const maxDate = new Date(timeMax)
+            // Check if the page starts after our time range ends
+            if (startDate > maxDate) return false
+        }
+        return true
+    }
+
+    /**
+     * Check if we've passed the timeMax based on the page's date range
+     */
+    private isPagePastTimeMax(datePage: DatePageInfo, timeMax: string): boolean {
+        if (!datePage.startDate) return false
+
+        const maxDate = new Date(timeMax)
+        // If the page starts after timeMax, we've gone too far
+        return datePage.startDate > maxDate
     }
 }
 

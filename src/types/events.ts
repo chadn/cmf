@@ -47,7 +47,7 @@ export interface EventsSource {
     name: string
     url: string
     // Runtime fields added when processing API responses:
-    id?: string
+    id?: string // the '1234567890' in 'gc:1234567890'
     totalCount?: number
     unknownLocationsCount?: number
 }

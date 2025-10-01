@@ -13,11 +13,11 @@ function formatCalendarDate(date: Date): string {
 function buildDescription(event: CmfEvent, eventSources?: EventsSource[], forIcs: boolean = false): string {
     //  Add URLs even if description was empty
     let description = event.description || ''
-    const separator = forIcs ? ' ' : '\n\n'
+    const separator = forIcs ? ' ' : '\n'
 
     // Add original event URL
     if (event.original_event_url) {
-        description += `${separator}Original event: ${event.original_event_url}`
+        description += `${separator}${separator}Original event:${separator}${event.original_event_url}`
     }
 
     // Add event source URL
@@ -31,8 +31,9 @@ function buildDescription(event: CmfEvent, eventSources?: EventsSource[], forIcs
     }
 
     if (sourceUrl) {
-        description += `${separator}Event Source: ${sourceUrl}`
+        description += `${separator}${separator}Event Source:${separator}${sourceUrl}`
     }
+    description += `${separator}${separator}Calendar Event Created By CMF:${separator}${window.location.href}`
 
     return description
 }

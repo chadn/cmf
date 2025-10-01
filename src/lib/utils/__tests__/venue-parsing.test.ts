@@ -233,7 +233,7 @@ describe('venue-parsing utilities', () => {
         describe('edge cases', () => {
             it('should handle events with no parentheses', () => {
                 const result = extractVenueAndCity('Event @ Some Venue', 'CA', 'Los Angeles')
-                expect(result).toBe('Some Venue, , USA')
+                expect(result).toBe('Some Venue, CA, USA')
             })
 
             it('should handle TBA venue without state context', () => {

@@ -144,8 +144,11 @@ export function extractVenueAndCity(
         if (venue && city) {
             return useState && state ? `${venue}, ${city}, ${state}` : `${venue}, ${city}`
         }
+        if (venue) {
+            return `${venue}, ${defaultState}, USA`
+        }
 
-        logr.info('venue-parsing', `Unexpected venue and city for event: ${eventTitle}`)
+        logr.info('venue-parsing', `Unexpected venue and city for event: ${eventTitle}\n${JSON.stringify(match)}`)
         return useState && state ? `${venue}, ${city}, ${state}, USA` : `${venue}, ${city}, USA`
     }
 

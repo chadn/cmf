@@ -23,10 +23,11 @@ export function determineHeaderName(
         if (exampleSource) {
             headerName = exampleSource.name
         }
-        // If no matching example and multiple sources, keep the default 'Calendar Map Filter Sources'
+        // No matching example and multiple sources
+        headerName = 'Various Event Sources'
     } else if (eventSources && eventSources.length > 1) {
         // Multiple sources but not an array eventSourceId - keep default name
-        headerName = 'Calendar Map Filter Sources'
+        headerName = 'Various Event Sources2'
     } else {
         // Handle single event source
         const exampleSource = exampleEventsSources.find((es) => es.id === eventSourceId)

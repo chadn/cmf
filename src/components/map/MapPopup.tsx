@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import { toast } from 'react-toastify'
 import { MapMarker } from '@/types/map'
 import { EventsSource } from '@/types/events'
 import { formatEventDateTz, formatEventDuration } from '@/lib/utils/date'
@@ -8,6 +9,7 @@ import { logr } from '@/lib/utils/logr'
 import { LOCATION_KEY_PREFIX } from '@/types/events'
 import { generateGoogleCalendarUrl, downloadIcsFile } from '@/lib/utils/calendar'
 import * as Popover from '@radix-ui/react-popover'
+import { umamiTrack } from '@/lib/utils/umami'
 
 interface MapPopupProps {
     marker: MapMarker
@@ -68,6 +70,18 @@ const MapPopup: React.FC<MapPopupProps> = ({ marker, selectedEventId, onEventSel
         if (!currentEvent) return
         downloadIcsFile(currentEvent, eventSources)
     }, [currentEvent, eventSources])
+
+    const handleReportLocation = useCallback(() => {
+        if (!currentEvent) return
+        // TODO: close "Add To Cal" popup
+        const locationInfo = currentEvent.resolved_location
+            ? ` ll=${currentEvent.resolved_location.lat},${currentEvent.resolved_location.lng}`
+            : ''
+        umamiTrack('reportLocation', { badLocation: currentEvent.location + locationInfo })
+        toast.success('Thank you for reporting an incorrect location. We will review and update it as needed.', {
+            autoClose: 3000, // disappears after 3s
+        })
+    }, [currentEvent])
 
     // Early returns after all hooks
     if (!events || events.length === 0) {
@@ -200,6 +214,14 @@ const MapPopup: React.FC<MapPopupProps> = ({ marker, selectedEventId, onEventSel
                                 >
                                     • Apple (iCal) Calendar
                                 </button>
+                                <br />
+                                <button
+                                    onClick={handleReportLocation}
+                                    className="text-left text-sm text-blue-600 hover:underline focus:outline-none"
+                                >
+                                    Report Incorrect Location:
+                                </button>
+                                <span className="text-xs text-gray-500 mt-1">{currentEvent.location}</span>
                             </div>
                             <Popover.Arrow className="fill-white" />
                         </Popover.Content>

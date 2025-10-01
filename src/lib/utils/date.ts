@@ -3,14 +3,17 @@ import { CmfEvent, DateRangeIso } from '@/types/events'
 import {
     format,
     formatDistance,
+    parse,
     parseISO,
     isValid,
+    addHours,
     addDays,
     addWeeks,
     addMonths,
     differenceInMinutes,
     differenceInHours,
     differenceInDays,
+    setYear,
 } from 'date-fns'
 import { DateTime } from 'luxon'
 
@@ -93,6 +96,7 @@ export function formatEventDate(dateString: string, includeTime: boolean = true)
  */
 export function formatEventDateTz(dateString: string, tz: string | undefined, includeTime: boolean = true): string {
     try {
+        logr.info('date', `formatEventDateTz(${dateString}, tz=${tz}, includeTime=${includeTime})`)
         const date = DateTime.fromISO(dateString, { zone: 'utc' }).setZone(tz || 'America/Los_Angeles')
         if (!date.isValid) {
             logr.info('date', `formatEventDateTz() invalid date: ${dateString}, tz=${tz}`)
@@ -183,7 +187,7 @@ export function formatDateForUrl(dateIso: string): string {
  * RFC3339 date string, YYYY-MM-DD, or a relative time string like 1d, -7d, 2w, 3m
  * TIMEZONE BEHAVIOR: Returns UTC ISO string for storage (always includes 'Z' suffix)
  * @param urlDateString - Date string in various formats.
- * @returns ISO string or empty string if invalid
+ * @returns ISO 8601 string (remove ms) or empty string if invalid
  */
 export function urlDateToIsoString(urlDateString: string): string {
     const date = getDateFromUrlDateString(urlDateString)
@@ -193,7 +197,7 @@ export function urlDateToIsoString(urlDateString: string): string {
         return ''
     }
     // Always return UTC ISO string for storage (with 'Z' suffix)
-    return date.toISOString()
+    return date.toISOString().replace(/\.\d\d\dZ$/, 'Z') // remove msec
 }
 
 /**
@@ -306,6 +310,70 @@ export function extractDateParts(dateString: string): { dateDay: string; time: s
     return {
         dateDay: fullDate,
         time: '',
+    }
+}
+
+/**
+ * Originally for foopee
+ * @param range string like "Oct 27 - Nov 3"
+ * @param year
+ * @returns  date objects for startDate and endDate
+ */
+export function parseMonthDayRange(range: string): { startDate: Date; endDate: Date } {
+    const [startStr, endStr] = range.split('-').map((s) => s.trim())
+
+    let startDate = parse(startStr, 'MMM d', new Date())
+    let endDate = parse(endStr, 'MMM d', new Date())
+
+    // If end is before start, assume it's next year
+    if (endDate < startDate) {
+        endDate = addMonths(endDate, 12)
+    }
+
+    return { startDate, endDate }
+}
+
+/**
+ * Extract start/end times from a description string, originally for foopee
+ * - Supports "7pm til 11:30pm" or "8pm" or "7pm/8pm" (which should be 7pm)
+ * - Ignores extra text before/after times
+ * - "7pm til 11:30pm" → start=7pm, end=11:30pm
+ * - "7pm/8pm" → start=7pm, end=+4h
+ * - "8pm" → start=8pm, end=+4h
+ * - Defaults to 20:01–00:01 (4h span) if no time found
+ *
+ * @param description - The event description containing time information
+ * @param eventDate - The date of the event (used for parsing times)
+ * @returns An object containing start and end time strings in ISO format
+ */
+export function extractEventTimes(description: string, eventDate: Date) {
+    const timeRegex = /(\d{1,2}(?::\d{2})?\s*(?:am|pm))/gi
+    const matches = [...description.matchAll(timeRegex)].map((m) => m[1])
+
+    let start: Date
+    let end: Date
+
+    if (/til/i.test(description) && matches.length >= 2) {
+        // Case: explicit range "X til Y"
+        const [startMatch, endMatch] = matches
+        start = parse(startMatch, startMatch.includes(':') ? 'h:mmaaa' : 'haaa', eventDate)
+        end = parse(endMatch, endMatch.includes(':') ? 'h:mmaaa' : 'haaa', eventDate)
+        if (start > end) {
+            end = addDays(end, 1)
+        }
+    } else if (matches.length >= 1) {
+        // Case: single time OR slash-separated (e.g. "7pm/8pm")
+        const startMatch = matches[0]
+        start = parse(startMatch, startMatch.includes(':') ? 'h:mmaaa' : 'haaa', eventDate)
+        end = addHours(start, 4) // fallback
+    } else {
+        // Default fallback
+        start = parse('8:01pm', 'h:mmaaa', eventDate)
+        end = addHours(start, 4)
+    }
+    return {
+        startStr: DateTime.fromJSDate(start).setZone('America/Los_Angeles').toISO() || '',
+        endStr: DateTime.fromJSDate(end).setZone('America/Los_Angeles').toISO() || '',
     }
 }
 

@@ -39,8 +39,10 @@ describe('Calendar utilities', () => {
             expect(url).toContain('dates=20230101T143000Z%2F20230101T160000Z')
             expect(url).toContain('location=Test+Location')
             expect(url).toContain('details=Test+Description+for+the+event')
-            expect(url).toContain('Original+event%3A+https%3A%2F%2Fexample.com%2Fevent%2F123')
-            expect(url).toContain('Event+Source%3A+https%3A%2F%2F19hz.info%2Feventlisting_BayArea.php')
+            expect(url).toContain('Original+event%3A%0A')
+            expect(url).toContain('https%3A%2F%2Fexample.com%2Fevent%2F123')
+            expect(url).toContain('Event+Source%3A%0A')
+            expect(url).toContain('https%3A%2F%2F19hz.info%2Feventlisting_BayArea.php')
         })
 
         it('handles event without description', () => {
@@ -50,7 +52,8 @@ describe('Calendar utilities', () => {
             expect(url).toContain('https://calendar.google.com/calendar/render?action=TEMPLATE')
             expect(url).toContain('text=Test+Event')
             expect(url).toContain('details=')
-            expect(url).toContain('Original+event%3A+https%3A%2F%2Fexample.com%2Fevent%2F123')
+            expect(url).toContain('Original+event%3A%0A')
+            expect(url).toContain('https%3A%2F%2Fexample.com%2Fevent%2F123')
         })
 
         it('handles event without location', () => {
@@ -67,7 +70,8 @@ describe('Calendar utilities', () => {
 
             expect(url).toContain('https://calendar.google.com/calendar/render?action=TEMPLATE')
             expect(url).toContain('text=Test+Event')
-            expect(url).toContain('Original+event%3A+https%3A%2F%2Fexample.com%2Fevent%2F123')
+            expect(url).toContain('Original+event%3A%0A')
+            expect(url).toContain('https%3A%2F%2Fexample.com%2Fevent%2F123')
             expect(url).not.toContain('Event+Source%3A')
         })
 
@@ -87,7 +91,8 @@ describe('Calendar utilities', () => {
             const eventFromSecondSource = { ...mockEvent, src: 2 }
             const url = generateGoogleCalendarUrl(eventFromSecondSource, multipleEventSources)
 
-            expect(url).toContain('Event+Source%3A+https%3A%2F%2Fcalendar.google.com%2F')
+            expect(url).toContain('Event+Source%3A%0A')
+            expect(url).toContain('https%3A%2F%2Fcalendar.google.com%2F')
         })
     })
 
@@ -104,7 +109,7 @@ describe('Calendar utilities', () => {
             expect(icsContent).toContain('DTEND:20230101T160000Z')
             expect(icsContent).toContain('SUMMARY:Test Event')
             expect(icsContent).toContain(
-                'DESCRIPTION:Test Description for the event Original event: https://example.com/event/123 Event Source: https://19hz.info/eventlisting_BayArea.php'
+                'DESCRIPTION:Test Description for the event  Original event: https://example.com/event/123  Event Source: https://19hz.info/eventlisting_BayArea.php'
             )
             expect(icsContent).toContain('LOCATION:Test Location')
             expect(icsContent).toContain('URL:https://example.com/event/123')
@@ -136,7 +141,7 @@ describe('Calendar utilities', () => {
             expect(icsContent).toContain('BEGIN:VCALENDAR')
             expect(icsContent).toContain('SUMMARY:Test Event')
             expect(icsContent).toContain(
-                'DESCRIPTION:Test Description for the event Original event: https://example.com/event/123'
+                'DESCRIPTION:Test Description for the event  Original event: https://example.com/event/123'
             )
             expect(icsContent).not.toContain('Event Source:')
         })

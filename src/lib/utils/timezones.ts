@@ -55,7 +55,11 @@ export function convertUtcToTimeZoneAtCoords(utcTime: string, lat: number, lon: 
  * @returns Timezone string (e.g., 'America/Los_Angeles') or 'UNKNOWN' if not found
  */
 export const getTimezoneFromLatLng = (lat: number, lng: number): string => {
-    return tzlookup(lat, lng) || 'UNKNOWN'
+    try {
+        return tzlookup(lat, lng) || 'UNKNOWN'
+    } catch {
+        return 'UNKNOWN'
+    }
 }
 
 /**
@@ -111,6 +115,7 @@ export const cityToTimezone: Record<string, string> = {
     'Brooklyn, NY': 'America/New_York',
     'Cabo Bello, BCS, MX': 'America/Mazatlan',
     'Cabo San Lucas, BCS, MX': 'America/Mazatlan',
+    'Cambridge, MA': 'America/New_York',
     'Cambridge, England, GB': 'Europe/London',
     'Carlsbad, CA': 'America/Los_Angeles',
     'Caryville, NY': 'America/New_York',
@@ -234,6 +239,8 @@ export const getCityStateFromCity = (cityName: string): string => {
     let cityTrimmed = cityName.trim()
     if (cityTrimmed === '') return ''
     cityTrimmed = cityTrimmed.toLowerCase()
+
+    // TODO: handle case where cityName='cambridge' and we want to match correct one (MA vs GB)
     const key = Object.keys(cityToTimezone).find((key) => key.toLowerCase().includes(cityTrimmed))
     return key || ''
 }

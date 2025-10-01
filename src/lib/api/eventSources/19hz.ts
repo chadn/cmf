@@ -79,7 +79,7 @@ export class NineteenHzEventsSource extends BaseEventSourceHandler {
                     ...this.type,
                     name: `${this.type.name} - ${cityInfo.name}`,
                     url: url,
-                    id: params.id || 'BayArea',
+                    id: cityCode,
                     totalCount: events.length,
                     unknownLocationsCount: 0, // Will be computed after geocoding
                 },

@@ -164,7 +164,20 @@ export function useEventsManager({
                 ? result.events.map((event) => ({ ...event, src: index + 1 }))
                 : result.events
 
-            allEvents.push(...eventsWithSrc)
+            // Check for duplicates by comparing event IDs
+            const existingIds = new Set(allEvents.map((e) => e.id))
+            const duplicates = eventsWithSrc.filter((event) => existingIds.has(event.id))
+            const eventsNoDuplicates = eventsWithSrc.filter((event) => !existingIds.has(event.id))
+            if (duplicates.length > 0) {
+                const evtSrc = result.source.prefix + ':' + result.source.id
+                logr.info(
+                    'use_evts_mgr',
+                    `Skipping duplicate events, ${duplicates.length} in source ${index + 1} (${evtSrc}):`,
+                    duplicates.map((e) => e.id)
+                    //duplicates.map((e) => ({ id: e.id, title: e.title }))
+                )
+            }
+            allEvents.push(...eventsNoDuplicates)
             totalCount += result.source.totalCount || 0
             totalUnknownLocations += result.source.unknownLocationsCount || 0
 

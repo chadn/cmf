@@ -8,6 +8,7 @@ import packageJson from '@/../package.json'
 import { EventsSource } from '@/types/events'
 import { buildShareUrl, ShareUrlParams } from '@/lib/utils/url-utils'
 import { timezoneInfo } from '@/lib/utils/date'
+import { toast } from 'react-toastify'
 
 interface SidebarProps {
     headerName?: string
@@ -54,10 +55,15 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(
                     llzChecked,
                     baseUrl: window.location.href,
                 })
+                //throw new Error('Test error')
                 await navigator.clipboard.writeText(shareUrl)
-                alert('Link copied to clipboard!')
+                toast.success('Link copied to clipboard!', {
+                    autoClose: 3000, // disappears after 3s
+                })
             } catch {
-                alert('Failed to copy link.')
+                toast.error('Failed to copy link.', {
+                    autoClose: 3000, // disappears after 3s
+                })
             }
         }
 

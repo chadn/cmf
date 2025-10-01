@@ -9,12 +9,13 @@ export type ExampleEventSource = {
 export const ExampleEventsSources: ExampleEventSource[] = [
     {
         name: 'SF Bay Music + FB Events',
-        id: '19hz:BayArea,gc:aabe6c219ee2af5b791ea6719e04a92990f9ccd1e68a3ff0d89bacd153a0b36d@group.calendar.google.com',
+        id: '19hz:BayArea,foopee:all,gc:aabe6c219ee2af5b791ea6719e04a92990f9ccd1e68a3ff0d89bacd153a0b36d@group.calendar.google.com',
         shortId: 'sf', // can just do es=sf in the url for 2 sources
     },
     {
         name: 'Other Music Events (19hz.info)',
         // id: is ignored if ids: is present
+        // if you add to this list, also update knownCities
         ids: {
             '19hz:BayArea': 'SF Bay Area',
             '19hz:LosAngeles': 'Los Angeles',
@@ -34,6 +35,8 @@ export const ExampleEventsSources: ExampleEventSource[] = [
             '19hz:Massachusetts': 'Massachusetts',
             '19hz:BayArea,19hz:LosAngeles': 'California',
             '19hz:BayArea,19hz:LosAngeles,19hz:LasVegas,19hz:ORE,19hz:Seattle,19hz:BC': 'West Coast',
+            '19hz:BayArea,19hz:LosAngeles,19hz:Seattle,19hz:Atlanta,19hz:DC,19hz:Texas,19hz:PHL,19hz:Toronto,19hz:Iowa,19hz:Denver,19hz:CHI,19hz:Detroit,19hz:Massachusetts,19hz:LasVegas,19hz:Phoenix,19hz:ORE,19hz:BC':
+                'ALL',
         },
         shortId: '19hz:all',
     },
@@ -43,7 +46,7 @@ export const ExampleEventsSources: ExampleEventSource[] = [
         shortId: 'chadrock', // can just do es=chadrock in the url
     },
     {
-        name: 'Punk Shows from Foopee',
+        name: 'Concerts from Foopee',
         id: 'foopee:all',
     },
     {
