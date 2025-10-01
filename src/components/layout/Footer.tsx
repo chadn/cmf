@@ -2,6 +2,7 @@
 
 import React from 'react'
 import Link from 'next/link'
+import packageJson from '@/../package.json'
 
 const Footer: React.FC = () => {
     const sha = (process.env.GIT_COMMIT_SHA || '').substring(0, 7)
@@ -11,7 +12,7 @@ const Footer: React.FC = () => {
                 <div className="flex flex-col md:flex-row justify-between items-center">
                     <div className="mb-4 md:mb-0">
                         <p className="text-sm text-gray-500">
-                            &copy; {new Date().getFullYear()} Calendar Map Filter {sha}
+                            &copy; {new Date().getFullYear()} Calendar Map Filter {packageJson.version} {sha}
                         </p>
                     </div>
 

@@ -13,7 +13,6 @@ import {
     differenceInMinutes,
     differenceInHours,
     differenceInDays,
-    setYear,
 } from 'date-fns'
 import { DateTime } from 'luxon'
 
@@ -322,7 +321,7 @@ export function extractDateParts(dateString: string): { dateDay: string; time: s
 export function parseMonthDayRange(range: string): { startDate: Date; endDate: Date } {
     const [startStr, endStr] = range.split('-').map((s) => s.trim())
 
-    let startDate = parse(startStr, 'MMM d', new Date())
+    const startDate = parse(startStr, 'MMM d', new Date())
     let endDate = parse(endStr, 'MMM d', new Date())
 
     // If end is before start, assume it's next year

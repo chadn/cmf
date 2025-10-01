@@ -3,9 +3,10 @@
 import { CmfEvent, CmfEvents, DateRangeIso, DomainFilters } from '@/types/events'
 import { MapBounds } from '@/types/map'
 import { logr } from '@/lib/utils/logr'
-import { getMyCallers, stringify } from '@/lib/utils/utils-shared'
+import { stringify } from '@/lib/utils/utils-shared'
 import { hasResolvedLocation, calculateAggregateCenter } from '@/lib/utils/location'
 import { applyDateFilter, applySearchFilter, applyMapFilter, applyUnknownLocationsFilter } from './filters'
+import { env } from '@/lib/config/env'
 
 /**
  * Class for managing filters for events
@@ -80,9 +81,7 @@ export class FilterEventsManager {
      * - Map chip count = total events - events located in current viewport (including those they may be filtered out)
      */
     getCmfEvents(mapBounds?: MapBounds): CmfEvents {
-        const perfStart = performance.now()
-        const caller = new Error().stack?.split('\n')[2]?.trim() || 'unknown'
-        const callers = getMyCallers()
+        const perfStart = env.ENABLE_PERFORMANCE_MONITORING ? performance.now() : 0
 
         const result: CmfEvents = {
             allEvents: this.allEvents,
@@ -148,17 +147,21 @@ export class FilterEventsManager {
         }
 
         result.visibleEvents = visibleEvents
-        logr.info('fltr_evts_mgr', `getCmfEvents ${visibleEvents.length} visibleEvents`, mapBounds)
-        const perfEnd = performance.now()
-        const duration = perfEnd - perfStart
-        if (duration > 20) {
-            logr.warn(
-                'performance',
-                `⚠️ getCmfEvents SLOW: ${duration.toFixed(0)}ms for ${this.allEvents.length} events - ${callers.length} callers, Called from: ${caller}`,
-                callers
-            )
+
+        if (env.ENABLE_PERFORMANCE_MONITORING) {
+            const perfEnd = performance.now()
+            const duration = perfEnd - perfStart
+            if (duration > 20) {
+                logr.warn(
+                    'performance',
+                    `⚠️ getCmfEvents SLOW: ${duration.toFixed(0)}ms for ${this.allEvents.length} events`
+                )
+            }
+            logr.info('fltr_evts_mgr', `getCmfEvents return counts ${stringify(result)} (${duration.toFixed(1)}ms)`)
+        } else {
+            logr.info('fltr_evts_mgr', `getCmfEvents ${visibleEvents.length} visibleEvents`, mapBounds)
+            logr.info('fltr_evts_mgr', `getCmfEvents return counts ${stringify(result)}`)
         }
-        logr.info('fltr_evts_mgr', `getCmfEvents return counts ${stringify(result)} (${duration.toFixed(1)}ms)`)
         logr.debug('fltr_evts_mgr', `getCmfEvents debug hidden events ${stringify(debugHidden)}`)
 
         return result

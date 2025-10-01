@@ -6,7 +6,6 @@ import Script from 'next/script'
 import { NuqsAdapter } from 'nuqs/adapters/next/app'
 import { ToastContainer } from 'react-toastify'
 import { umamiWebsiteId } from '@/lib/utils/umami'
-import { PerformanceMonitor } from '@/components/PerformanceMonitor'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -29,7 +28,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 />
             </head>
             <body className={inter.className}>
-                <PerformanceMonitor />
                 <NuqsAdapter>{children}</NuqsAdapter>
                 <ToastContainer />
             </body>

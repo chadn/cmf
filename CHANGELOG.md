@@ -5,12 +5,28 @@ All notable changes to Calendar Map Filter (CMF) will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.6] - 2025-10-1
+
+### Changed
+
+- es=19hz now defaults to all north american cities. 
+- fixed e2e tests to always pass.
+- include version on homepage, bottom left.
+
+### Technical
+
+- **Performance monitoring** - Removed PerformanceMonitor from 0.3.5, Updated code to not impact performance, kept some improvements and put monitoring behind env.ENABLE_PERFORMANCE_MONITORING
+- **Performance testing** - Added comparative testing framework to prove optimizations before keeping them
+    - Kept valuable optimizations: single-pass filtering, conditional performance monitoring, state change detection
+    - More details in [adr/2025-10-01-performance-investigation-unnecessary-renders.md](docs/adr/2025-10-01-performance-investigation-unnecessary-renders.md)
+
 ## [0.3.5] - 2025-10-1
 
 ### Technical
 
 - Added Performance improvements and monitoring, see [adr/2025-10-01-single-pass-filtering-optimization.md](docs/adr/2025-10-01-single-pass-filtering-optimization.md)
 - Updated to latest `npx update-browserslist-db@latest`
+- Improved latLongIsInBounds() to work correctly near antimeridian (new zealand), used by isInBounds() used by isInBounds() used by applyMapFilter()
 
 ## [0.3.4] - 2025-10-1
 

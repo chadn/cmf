@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    reactStrictMode: true,
+    reactStrictMode: true, // set to false to more closely imitate production
     images: {
         domains: ['maps.googleapis.com'],
     },

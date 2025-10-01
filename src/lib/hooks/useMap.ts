@@ -7,6 +7,7 @@ import { calculateMapBoundsAndViewport, calculateViewportFromBounds, generateMap
 import { AppState } from '@/lib/state/appStateReducer'
 import { FilterEventsManager } from '@/lib/events/FilterEventsManager'
 import { stringify } from '@/lib/utils/utils-shared'
+import { env } from '@/lib/config/env'
 
 interface UseMapReturn {
     viewport: MapViewport
@@ -48,14 +49,16 @@ export function useMap(
     const renderCountRef = useRef(0)
     const lastRenderTime = useRef(performance.now())
 
-    // Track useMap renders
-    renderCountRef.current++
-    const currentRenderTime = performance.now()
-    const timeSinceLastRender = currentRenderTime - lastRenderTime.current
-    if (renderCountRef.current > 1) {
-        logr.info('performance', `useMap render #${renderCountRef.current} (+${timeSinceLastRender.toFixed(0)}ms)`)
+    // Performance monitoring (conditional)
+    if (env.ENABLE_PERFORMANCE_MONITORING) {
+        renderCountRef.current++
+        const currentRenderTime = performance.now()
+        const timeSinceLastRender = currentRenderTime - lastRenderTime.current
+        if (renderCountRef.current > 1) {
+            logr.info('performance', `useMap render #${renderCountRef.current} (+${timeSinceLastRender.toFixed(0)}ms)`)
+        }
+        lastRenderTime.current = currentRenderTime
     }
-    lastRenderTime.current = currentRenderTime
 
     // Flag to track internal updates to prevent loops
     const isInternalUpdate = useRef(false)
@@ -196,11 +199,15 @@ export function useMap(
                 prev.viewport.bearing === newViewport.bearing &&
                 prev.viewport.pitch === newViewport.pitch
             ) {
-                logr.info('performance', 'Viewport unchanged, skipping setState')
+                if (env.ENABLE_PERFORMANCE_MONITORING) {
+                    logr.info('performance', 'Viewport unchanged, skipping setMapState')
+                }
                 return prev
             }
 
-            logr.info('performance', 'Viewport changed, updating state')
+            if (env.ENABLE_PERFORMANCE_MONITORING) {
+                logr.info('performance', 'Viewport changed, updating setMapState')
+            }
             return {
                 ...prev,
                 viewport: newViewport,

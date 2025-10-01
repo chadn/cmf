@@ -136,7 +136,9 @@ E2E tests are performed by Playwright. Tests live in [/tests/e2e](../tests/e2e/)
 
 ```bash
 # Test specific URL with parameters
-TEST_URL="/?es=sf" npm run test:console
+(TEST_URL="/?es=sf" npm run test:e2e:console) &> dev-perf-browser-logs.txt   # AI can use this to iterate on testing its changes
+(TEST_URL="/?es=sf" npm run test:e2e:console) 2>&1 |tee dev-perf-browser-logs.txt
+
 ```
 
 Run page-load tests, which automate some of the manual tests listed above in [Testing Different URLs](#testing-different-urls)
@@ -146,7 +148,7 @@ Run page-load tests, which automate some of the manual tests listed above in [Te
 time npm run test:pageload
 
 # Run tests with names that contain "Quick Filter"
-TEST_NAME="Quick Filter" time npm run test:pageload
+TEST_NAME="Quick Filter" time npm run test:e2e:pageload
 ```
 
 If tests fail, then playwright reports are available to see details - make sure you view stdout under Attachments to figure out why it failed.
@@ -156,7 +158,7 @@ If tests fail, then playwright reports are available to see details - make sure 
 - `npm run test:e2e` - Run all E2E tests headlessly
 - `npm run test:e2e:console` - Run console log debugging test with visible browser
 
-```
+```bash
 # Run the new interactive test:
 npm run test:e2e -- tests/e2e/interactive.spec.ts --headed
 
@@ -181,19 +183,34 @@ npm run test:e2e -- tests/e2e/interactive.spec.ts -g "filter chip interaction" -
 
 #### E2E Example
 
-```
-time npm run test:pageload
+```bash
+time npm run test:e2e
 
-> calendar-map-filter@0.3.0 test:pageload
-> playwright test tests/e2e/page-load.spec.ts --headed
+> calendar-map-filter@0.3.6 test:e2e
+> playwright test
 ...
-  6 passed (18.7s)
+  10 passed (29.7s)
 
 To open last HTML report run:
 
   npx playwright show-report
 
-real 19.511	user 19.103	sys 10.020	pcpu 100.00
+real 30.503	user 37.604	sys 11.050	pcpu 100.00
+```
+
+```bash
+time npm run test:e2e:pageload
+
+> calendar-map-filter@0.3.5 test:e2e:pageload
+> playwright test tests/e2e/page-load.spec.ts --headed
+...
+  6 passed (18.4s)
+
+To open last HTML report run:
+
+  npx playwright show-report
+
+real 19.169	user 23.509	sys 9.991	pcpu 100.00
 ```
 
 ### Integration Tests
@@ -229,15 +246,15 @@ src/components/events/__tests__/EventList.test.tsx  # Component tests with RTL
 
 **Test Coverage:** This document makes it easy to see test coverage and compare against the [Directory Structure in Implementation.md](Implementation.md#directory-structure)
 
-```
+```bash
 npm test
-> calendar-map-filter@0.3.4 test
+> calendar-map-filter@0.3.6 test
 > jest --coverage && node src/scripts/show-total-loc.mjs && date && echo
 ...
-----------------------------|---------|----------|---------|---------|-----------------------------------------------
+----------------------------|---------|----------|---------|---------|-----------------------------------------------------------------
 File                        | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
-----------------------------|---------|----------|---------|---------|-----------------------------------------------
-All files                   |   70.14 |    63.33 |   72.54 |   70.51 |
+----------------------------|---------|----------|---------|---------|-----------------------------------------------------------------
+All files                   |   68.62 |    61.57 |   71.17 |   68.95 |
  components/common          |     100 |      100 |     100 |     100 |
   ErrorMessage.tsx          |     100 |      100 |     100 |     100 |
   LoadingSpinner.tsx        |     100 |      100 |     100 |     100 |
@@ -250,8 +267,8 @@ All files                   |   70.14 |    63.33 |   72.54 |   70.51 |
  components/layout          |     100 |      100 |     100 |     100 |
   Footer.tsx                |     100 |      100 |     100 |     100 |
   Header.tsx                |     100 |      100 |     100 |     100 |
- components/map             |   89.08 |    76.74 |   91.17 |   91.66 |
-  MapContainer.tsx          |   89.88 |    78.94 |      90 |   90.58 | 98-99,146,172-174,265-267
+ components/map             |    85.4 |    73.33 |   91.17 |   87.42 |
+  MapContainer.tsx          |      83 |    71.42 |      90 |   83.33 | 53-62,78,87,121-122,169,195-197,288-290
   MapMarker.tsx             |   94.44 |    81.81 |     100 |     100 | 15,35
   MapPopup.tsx              |   86.56 |    72.97 |    90.9 |   91.52 | 75-81,92
  components/ui              |   94.11 |    66.66 |      90 |     100 |
@@ -267,47 +284,47 @@ All files                   |   70.14 |    63.33 |   72.54 |   70.51 |
   utils.ts                  |      75 |    76.92 |      60 |      75 | 71,91-92,100,148,157-191
  lib/config                 |   33.33 |    22.22 |     100 |   23.07 |
   env.ts                    |   33.33 |    22.22 |     100 |   23.07 | 3-8,13-17
- lib/events                 |    73.4 |    75.51 |      60 |   73.25 |
-  FilterEventsManager.ts    |   72.58 |    79.31 |   55.55 |   72.88 | 42-44,58-74,115,132-133,189-207
+ lib/events                 |   69.23 |    69.09 |      50 |   69.07 |
+  FilterEventsManager.ts    |   69.44 |    77.14 |   46.66 |      70 | 37-39,53-69,112,135-136,152-160,199-217
   examples.ts               |     100 |      100 |     100 |     100 |
-  filters.ts                |   73.33 |       70 |   71.42 |   73.07 | 32,43,67-71,83,108-114
- lib/hooks                  |   33.73 |    27.96 |   44.55 |   32.95 |
-  useAppController.ts       |   12.21 |        0 |       0 |    12.8 | 117-529
+  filters.ts                |   66.66 |       55 |   57.14 |   65.38 | 32,43,67-71,83-114
+ lib/hooks                  |   32.69 |    25.86 |   44.55 |   32.01 |
+  useAppController.ts       |   10.73 |        0 |       0 |   11.18 | 116-570
   useBreakpoint.ts          |    7.69 |        0 |       0 |      10 | 11-22
   useEventsManager.ts       |      50 |    48.57 |   56.75 |   49.21 | 115-134,144-205,223-247,258-283
-  useMap.ts                 |      71 |    39.47 |   77.41 |   72.83 | 21-28,116-127,144-150,161-165,208-209,242-253
+  useMap.ts                 |   66.37 |    33.33 |   77.41 |   67.34 | 22-29,54-60,131-142,159-165,176-180,202-205,209,242-243,276-287
   useUrlProcessor.ts        |     7.4 |        0 |       0 |    7.84 | 72-347
  lib/services               |    6.81 |        0 |       0 |    6.89 |
   urlProcessingService.ts   |    6.81 |        0 |       0 |    6.89 | 25-237
  lib/state                  |   97.14 |     82.6 |   91.66 |   96.55 |
   appStateReducer.ts        |   97.14 |     82.6 |   91.66 |   96.55 | 102
- lib/utils                  |   82.26 |    76.65 |   86.61 |   82.84 |
+ lib/utils                  |   80.89 |    75.68 |   83.33 |   81.59 |
   calendar.ts               |   85.71 |     72.5 |     100 |   85.71 | 28-29,46,56,76,82,128-129,134-135,151
   date-19hz-parsing.ts      |   86.25 |    81.53 |   83.33 |   86.04 | 101-115,359-378
   date-constants.ts         |     100 |      100 |     100 |     100 |
-  date.ts                   |   85.71 |       80 |   88.88 |   85.49 | 48-66,85-86,102-103,111-112,151-152,247
+  date.ts                   |   85.71 |       80 |   88.88 |   85.49 | 47-65,84-85,101-102,110-111,150-151,246
   headerNames.ts            |       0 |        0 |       0 |       0 | 6-39
   icsParser.ts              |     100 |      100 |     100 |     100 |
-  location.ts               |   76.51 |       72 |   86.95 |   77.86 | 205,239-245,298,373-374,383-414
+  location.ts               |   76.47 |       70 |   86.95 |    77.6 | 205,222,250-256,309,384-385,394-425
   logr.ts                   |   71.18 |    67.44 |   91.66 |   70.17 | 39,68-93,113,160
   quickFilters.ts           |   97.72 |      100 |     100 |   97.43 | 149
   timezones.ts              |    75.6 |    53.33 |      75 |   75.75 | 41-44,58-61,101-102
   umami.ts                  |   41.17 |     37.5 |       0 |   46.66 | 14-18,31-34
   url-utils.ts              |   94.87 |    84.29 |   96.15 |   97.57 | 76-77,312,320
   utils-client.ts           |   52.94 |     64.7 |      60 |   53.06 | 14-45,63,67,98,117-118
-  utils-shared.ts           |   76.19 |    84.21 |      75 |    77.5 | 26,45,47,49,67-71
+  utils-shared.ts           |   54.23 |    74.41 |   33.33 |    57.4 | 26,45,47,49,67-71,118-142
   venue-parsing.ts          |   96.87 |     82.6 |     100 |   96.82 | 151-152
  types                      |      75 |      100 |     100 |     100 |
   events.ts                 |      75 |      100 |     100 |     100 |
-----------------------------|---------|----------|---------|---------|-----------------------------------------------
+----------------------------|---------|----------|---------|---------|-----------------------------------------------------------------
 
 Test Suites: 1 skipped, 30 passed, 30 of 31 total
 Tests:       10 skipped, 489 passed, 499 total
 Snapshots:   0 total
-Time:        2.765 s
+Time:        2.681 s, estimated 5 s
 Ran all test suites.
-Total Lines of Code: 2228
-Wed Oct  1 09:14:18 PDT 2025
+Total Lines of Code: 2303
+Wed Oct  1 21:03:58 PDT 2025
 ```
 
 ## Next Steps for Testing

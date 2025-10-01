@@ -130,37 +130,19 @@ export function useAppController(): UseAppControllerReturn {
         fed: parseAsCmfDate,
     })
 
-    // Track useAppController renders and what changed
-    const lastUrlState = useRef({
-        eventSourceId,
-        selectedEventIdUrl,
-        searchQueryUrl,
-        dateQuickFilterUrl,
-        llzUrl,
-        datesUrl,
-    })
-
-    renderCountRef.current++
-    const currentRenderTime = performance.now()
-    const timeSinceLastRender = currentRenderTime - lastRenderTime.current
-
-    // Check what URL params changed
-    const urlChanges = []
-    if (lastUrlState.current.eventSourceId !== eventSourceId) urlChanges.push('es')
-    if (lastUrlState.current.selectedEventIdUrl !== selectedEventIdUrl) urlChanges.push('se')
-    if (lastUrlState.current.searchQueryUrl !== searchQueryUrl) urlChanges.push('sq')
-    if (lastUrlState.current.dateQuickFilterUrl !== dateQuickFilterUrl) urlChanges.push('qf')
-    if (lastUrlState.current.llzUrl !== llzUrl) urlChanges.push('llz')
-    if (lastUrlState.current.datesUrl !== datesUrl) urlChanges.push('dates')
-
-    if (renderCountRef.current > 1) {
-        logr.info(
-            'performance',
-            `useAppController render #${renderCountRef.current} (+${timeSinceLastRender.toFixed(0)}ms) - URL changes: ${urlChanges.length > 0 ? urlChanges.join(', ') : 'NONE'}`
-        )
+    // Performance monitoring (conditional)
+    if (env.ENABLE_PERFORMANCE_MONITORING) {
+        renderCountRef.current++
+        const currentRenderTime = performance.now()
+        const timeSinceLastRender = currentRenderTime - lastRenderTime.current
+        if (renderCountRef.current > 1) {
+            logr.info(
+                'performance',
+                `useAppController render #${renderCountRef.current} (+${timeSinceLastRender.toFixed(0)}ms)`
+            )
+        }
+        lastRenderTime.current = currentRenderTime
     }
-    lastRenderTime.current = currentRenderTime
-    lastUrlState.current = { eventSourceId, selectedEventIdUrl, searchQueryUrl, dateQuickFilterUrl, llzUrl, datesUrl }
 
     const [appState, dispatch] = useReducer(appStateReducer, INITIAL_APP_STATE)
     const [headerName, setHeaderName] = useState('Calendar Map Filter')
@@ -188,15 +170,6 @@ export function useAppController(): UseAppControllerReturn {
     // Local state for current viewport bounds (from map)
     const [currentBounds, setCurrentBounds] = useState<MapBounds | null>(null)
     const [isShowingAllEvents, setIsShowingAllEvents] = useState<boolean>(true)
-
-    // Track currentBounds changes
-    const lastCurrentBoundsRef = useRef(currentBounds)
-    useEffect(() => {
-        if (lastCurrentBoundsRef.current !== currentBounds) {
-            logr.info('performance', `currentBounds changed: ${stringify(currentBounds)}`)
-            lastCurrentBoundsRef.current = currentBounds
-        }
-    }, [currentBounds])
 
     // Use our new EventsManager hook to get events and filter methods
     // Only apply map filtering when not in "show all" mode
@@ -234,17 +207,19 @@ export function useAppController(): UseAppControllerReturn {
                     currentBounds.west !== bounds.west
 
                 if (boundsChanged) {
-                    logr.info('performance', `Bounds actually changed, updating state`)
+                    if (env.ENABLE_PERFORMANCE_MONITORING) {
+                        logr.info('performance', `Bounds actually changed, updating setCurrentBounds`)
+                    }
                     setCurrentBounds(bounds)
                     if (isShowingAllEvents) {
-                        logr.info('performance', `Setting isShowingAllEvents to false`)
                         setIsShowingAllEvents(false)
                     }
                 } else {
-                    logr.info('performance', `Bounds unchanged, skipping setState`)
+                    if (env.ENABLE_PERFORMANCE_MONITORING) {
+                        logr.info('performance', `Bounds unchanged, skipping setCurrentBounds`)
+                    }
                     // Still need to disable "show all" mode if it was on
                     if (isShowingAllEvents) {
-                        logr.info('performance', `Setting isShowingAllEvents to false (bounds unchanged)`)
                         setIsShowingAllEvents(false)
                     }
                 }
@@ -360,7 +335,7 @@ export function useAppController(): UseAppControllerReturn {
     )
 
     // Handle map filter removal
-    const handleClearMapFilter = () => {
+    const handleClearMapFilter = useCallback(() => {
         if (appState !== 'user-interactive') {
             logr.info('app', 'handleClearMapFilter: Ignoring when appState is not user-interactive')
             return
@@ -376,14 +351,14 @@ export function useAppController(): UseAppControllerReturn {
 
         // Use resetMapToVisibleEvents to properly reset the map to show all domain-filtered events
         resetMapToVisibleEvents({ useBounds: false })
-    }
+    }, [appState, setCurrentBounds, setSelectedMarkerId, setSelectedEventIdUrl, resetMapToVisibleEvents])
 
-    const handleResetMapToVisibleEvents = () => {
+    const handleResetMapToVisibleEvents = useCallback(() => {
         logr.info('app', 'handleResetMapToVisibleEvents - calling resetMapToVisibleEvents')
         // Use resetMapToVisibleEvents to properly reset the map to show all domain-filtered events
         const mapBounds = calculateBoundsFromMarkers(markers)
         resetMapToVisibleEvents({ useBounds: true, mapBounds: mapBounds })
-    }
+    }, [markers, resetMapToVisibleEvents])
 
     // Properly memoize to avoid recreating function on each render
     // TODO: move this to another file, maybe new file like src/lib/utils/eventSelection.ts

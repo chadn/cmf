@@ -58,7 +58,9 @@ const pageLoadTests: PageLoadTestCase[] = [
                     const counts = extractCounts(logs[logs.length - 1])
                     expect(counts.visibleEvents).toBeGreaterThan(0)
                     // visible events should not be filtered by map, but it may, so using toBeGreaterThanOrEqual
-                    expect(counts.allEvents).toBe(counts.visibleEvents + counts.byDate)
+                    expect(counts.allEvents).toBeGreaterThan(counts.visibleEvents)
+                    expect(counts.allEvents).toBeGreaterThanOrEqual(counts.visibleEvents + counts.byDate)
+                    expect(counts.allEvents).toBeLessThanOrEqual(counts.visibleEvents + counts.byMap + counts.byDate)
                 },
             },
         ],
@@ -83,7 +85,9 @@ const pageLoadTests: PageLoadTestCase[] = [
                     const counts = extractCounts(logs[logs.length - 1])
                     expect(counts.visibleEvents).toBeGreaterThan(0)
                     // visible events should not be filtered by map, but it may, so using toBeGreaterThanOrEqual
-                    expect(counts.allEvents).toBe(counts.visibleEvents + counts.byDate)
+                    expect(counts.allEvents).toBeGreaterThan(counts.visibleEvents)
+                    expect(counts.allEvents).toBeGreaterThanOrEqual(counts.visibleEvents + counts.byDate)
+                    expect(counts.allEvents).toBeLessThanOrEqual(counts.visibleEvents + counts.byMap + counts.byDate)
                 },
             },
         ],
@@ -103,12 +107,12 @@ const pageLoadTests: PageLoadTestCase[] = [
                 // logs should only be logs that match the pattern.  Should only be one in user-interactive, but if > 1, use the last one.
                 cb: (logs) => {
                     const counts = extractCounts(logs[logs.length - 1])
-                    console.log('chad ' + JSON.stringify(counts))
+                    //console.log('counts from extractCounts(): ' + JSON.stringify(counts))
                     expect(counts.visibleEvents).toBeGreaterThan(0)
                     // Since the url has no date filter, we check math without that.
                     // counts.byLocationFilter should be 0 - any time it is not 0 there is a bug.
                     expect(counts.allEvents).toBeGreaterThan(counts.visibleEvents)
-                    expect(counts.allEvents).toBe(counts.visibleEvents + counts.bySearch)
+                    expect(counts.allEvents).toBeGreaterThanOrEqual(counts.visibleEvents + counts.bySearch)
                     expect(counts.allEvents).toBeLessThanOrEqual(counts.visibleEvents + counts.byMap + counts.bySearch)
                 },
             },

@@ -73,4 +73,9 @@ export const ExampleEventsSources: ExampleEventSource[] = [
         name: 'Test Events',
         id: 'test:all',
     },
+    {
+        name: 'All 19hz in North America',
+        id: '19hz:BayArea,19hz:LosAngeles,19hz:Seattle,19hz:Atlanta,19hz:DC,19hz:Texas,19hz:PHL,19hz:Toronto,19hz:Iowa,19hz:Denver,19hz:CHI,19hz:Detroit,19hz:Massachusetts,19hz:LasVegas,19hz:Phoenix,19hz:ORE,19hz:BC',
+        shortId: '19hz', // can just do es=sf in the url for 2 sources
+    },
 ]
