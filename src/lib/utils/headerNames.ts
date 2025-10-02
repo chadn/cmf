@@ -1,40 +1,36 @@
 import type { EventsSource } from '@/types/events'
 import { ExampleEventSource } from '@/lib/events/examples'
+
 /**
  * Determines the appropriate header name based on event source configuration
  */
 export function determineHeaderName(
-    eventSourceId: string | string[] | null,
     eventSources: EventsSource[] | null,
     exampleEventsSources: ExampleEventSource[]
 ): string {
-    // Default name for multiple sources (common) and for single source with no name (shouldn't happen)
-    let headerName = 'Calendar Map Filter Sources'
+    // First lets see if we match a shortId, then use that
+    // Note that we must use window.location.search to get es value before it is changed by parseAsEventsSource
+    const matches = window.location.search.match(/(?:[?&]es=)([^&]+)/)
+    if (matches && matches[1]) {
+        const shortId = matches[1]
+        const exampleSource = exampleEventsSources.find((es) => es.shortId === shortId)
+        if (exampleSource) {
+            return exampleSource.name
+        }
+    }
 
+    // if not matching shortId, check for single event source
     if (eventSources && eventSources.length === 1 && eventSources[0].name) {
-        headerName = eventSources[0].name
+        // Trim long names
+        let headerName = eventSources[0].name.replace(/Google Calendar:/, '').trim()
+        console.log('CHAD', headerName)
+        headerName = headerName.length > 22 ? headerName.slice(0, 20) + '...' : headerName
+        return headerName
     }
 
-    // Handle array of event sources (when using shortId that expands to multiple sources)
-    if (Array.isArray(eventSourceId)) {
-        // Check if this array matches an example shortcut
-        const eventSourceIdString = eventSourceId.join(',')
-        const exampleSource = exampleEventsSources.find((es) => es.id === eventSourceIdString)
-        if (exampleSource) {
-            headerName = exampleSource.name
-        }
-        // No matching example and multiple sources
-        headerName = 'Various Event Sources'
-    } else if (eventSources && eventSources.length > 1) {
-        // Multiple sources but not an array eventSourceId - keep default name
-        headerName = 'Various Event Sources2'
-    } else {
-        // Handle single event source
-        const exampleSource = exampleEventsSources.find((es) => es.id === eventSourceId)
-        if (exampleSource) {
-            headerName = exampleSource.name
-        }
+    if (eventSources && eventSources.length > 1) {
+        return 'Various Event Sources'
     }
-
-    return headerName
+    // default name - should not happen since called only during processing-events state and all event sources should have a name
+    return 'Calendar Map Filter Sources'
 }

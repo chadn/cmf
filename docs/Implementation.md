@@ -44,6 +44,10 @@ More details in [Development Guide](development.md).
 
 ## Architecture Overview
 
+Basically this a single page web app, where client retrieves list of events from server, maintains a list of visibleEvents, and constantly updates UI when number of visibleEvents changes. visibleEvents change when user does actions that trigger search filter, date filter, or map filter.
+
+The challenge in implementation is when a UI element like the map, is both an input (filtering events) and output (updated with visibleEvents)
+
 The application follows a hybrid Next.js architecture.
 
 The trickiest part is how the client React app loads and runs.
@@ -122,9 +126,6 @@ CMF now implements a **complete separation of business logic from UI rendering**
 - **Filters** defined in [types/events.ts](../src/types/events.ts), on client
     - `DomainFilters` - current date and search filters
     - No separate map filter, just uses `MapBounds` object
-- **Timezones** can be tricky since some sources have times for events without timezone information.  In general, your browser knows your timezone, and web site can display times correctly for your timezone.  However, occasionally when scraping event data the event start time is the local time for that location.
-    - Note [timezones.ts](../src/lib/utils/timezones.ts) has functions for server, uses luxon for timezones
-    - All client date parsing and converting should be done via [date-fns library](https://github.com/date-fns/date-fns) or functions in [date.ts](../src/lib/utils/date.ts), where dates are converted to local timezone when calculating what day an isoTime is.
 - **Other** on client
     - URL definitions in [types/urlparams.d.ts](../src/types/urlparams.d.ts) and parsing in [url-utils.ts](../src/lib/utils/url-utils.ts)
 
@@ -137,7 +138,7 @@ export interface CmfEvent {
     description_urls: string[] // always exists, may be empty. NOT USED: Consider removing.
     start: string // ISO string
     end: string // ISO string. Hack: if same as start, exact start time is not known. If 1 minute after start, end time is not known.
-    tz?: string // ex: 'America/Los_Angeles'; 'UNKNOWN' if location not found, 'LOCAL' as temp timezone till can look up location
+    tz?: string // ex: 'America/Los_Angeles'; 'UNKNOWN_TZ' if location not found, 'CONVERT_UTC_TO_LOCAL' as temp timezone till can look up location
     location: string // always exists, may be empty, matches original_location
     src?: number // source index when 2 or more event sources: 1 for first source, 2 for second, etc.
     resolved_location?: Location {
@@ -184,6 +185,23 @@ export interface DomainFilters {
     showUnknownLocationsOnly?: boolean
 }
 ```
+
+### Timezones
+
+Managing timezones can be tricky since some sources have times for events without timezone information. Specifically websites can display times local to event or based on browsers timezone. For example, if you are in NYC looking at a show in SF that starts at 8pm, most likely that is 8pm SF time, which is 11pm NYC time.
+
+Logic
+
+- If no timezone is specified in source, assume time is local time to the location.
+
+Code
+
+- Special temporary timezone constants are used to let the code know the state of the start and end times
+    - `UNKNOWN_TZ` if location not found after lat/lng has been resolved.
+    - `CONVERT_UTC_TO_LOCAL` means source did not have timezone, stored as UTC, and will need to convert to LOCAL timezone after lat/lng are figured out.
+    - `UNKNOWN_TZ|CONVERT_UTC_TO_LOCAL` if using UTC but time is actually local.
+- Note [timezones.ts](../src/lib/utils/timezones.ts) has functions for server, uses luxon for timezones
+- All client date parsing and converting should be done via [date-fns library](https://github.com/date-fns/date-fns) or functions in [date.ts](../src/lib/utils/date.ts), where dates are converted to local timezone when calculating what day an isoTime is.
 
 ### Data Flow: Application State Machine
 

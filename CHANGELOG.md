@@ -5,6 +5,22 @@ All notable changes to Calendar Map Filter (CMF) will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.7] - 2025-10-3
+
+### Changed
+
+- Events Sources popup now has scroll bar, needed for es=19hz
+- Festival support: Duration can be in mins
+- Timezones - better organized and explained in docs, special temporary timezone constants UNKNOWN_TZ, CONVERT_UTC_TO_LOCAL are more clear.
+- Fixed headerNames, enforced max length of 22 chars on event sources (can still click to view full length)
+- date slider on mobile was too close to edge, gave a little padding (mx-2)
+- better error logging if axios.isAxiosError() when fetching from event sources
+
+### Added
+
+- `es=dissent:oct18nokings` for Oct 18 No Kings WeThePeopleDissent.net
+- `update-location` to `npm run cache` in order to edit lat/lng (and more) for a location.  
+
 ## [0.3.6] - 2025-10-1
 
 ### Changed
@@ -17,8 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Performance monitoring** - Removed PerformanceMonitor from 0.3.5, Updated code to not impact performance, kept some improvements and put monitoring behind env.ENABLE_PERFORMANCE_MONITORING
 - **Performance testing** - Added comparative testing framework to prove optimizations before keeping them
-    - Kept valuable optimizations: single-pass filtering, conditional performance monitoring, state change detection
-    - More details in [adr/2025-10-01-performance-investigation-unnecessary-renders.md](docs/adr/2025-10-01-performance-investigation-unnecessary-renders.md)
+    - Kept valuable optimizations: single-pass filtering in getCmfEvents, conditional performance monitoring, state change detection
 
 ## [0.3.5] - 2025-10-1
 

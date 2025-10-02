@@ -14,6 +14,7 @@ export interface Location {
     types?: string[] // google maps location types: bars, night_club, point_of_interest, restaurant, etc.
 }
 
+// CmfEvent attributes are all strings for json export compatibility
 export interface CmfEvent {
     id: string
     name: string
@@ -23,12 +24,12 @@ export interface CmfEvent {
     start: string // ISO string
     end: string // ISO string. Hack: if same as start, exact start time is not known. If 1 minute after start, end time is not known.
     startSecs?: number // start time in seconds since epoch
-    tz?: string // ex: 'America/Los_Angeles'; 'UNKNOWN' if location not found, 'LOCAL' if using UTC but time is actually local.
+    tz?: string // ex: 'America/Los_Angeles'; 'UNKNOWN_TZ' if location not found.  'UNKNOWN_TZ|CONVERT_UTC_TO_LOCAL' if using UTC but time is actually local.
     location: string // always exists, may be empty, matches original_location
     resolved_location?: Location
     note?: string // for internal use, eg 'plura'
     src?: number // source index when 2 or more event sources: 1 for first source, 2 for second, etc.
-    // Keep any other existing fields
+    // TODO: add CmfEvent.timeKnown (2=start+end time known, 1=start known, end unknown, 0=start and end times unknown)
 }
 
 export interface CmfEvents {

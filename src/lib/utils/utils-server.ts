@@ -55,6 +55,28 @@ export const axiosGet = async (url: string, params?: any) => {
         return response
     } catch (error) {
         if (axios.isAxiosError(error)) {
+            if (error.response) {
+                // The request was made and the server responded with a status code
+                // that falls out of the range of 2xx
+                logr.info('utils-server', `isAxiosError error.response.data: ${JSON.stringify(error.response.data)}`)
+                logr.info(
+                    'utils-server',
+                    `isAxiosError error.response.status: ${JSON.stringify(error.response.status)}`
+                )
+                logr.debug(
+                    'utils-server',
+                    `isAxiosError error.response.headers: ${JSON.stringify(error.response.headers)}`
+                )
+            } else if (error.request) {
+                // The request was made but no response was received
+                // `error.request` is an instance of XMLHttpRequest in the browser
+                // and an instance of http.ClientRequest in node.js
+                logr.info('utils-server', `isAxiosError error.request: ${JSON.stringify(error.request)}`)
+            } else {
+                // Something happened in setting up the request that triggered an Error
+                logr.info('utils-server', `isAxiosError error.message: ${JSON.stringify(error.message)}`)
+            }
+
             logr.warn('utils-server', `axiosGet returning 503 isAxiosError ${error.response?.statusText} ${url}`)
             throw new HttpError(503, error.response?.statusText || 'Service Unavailable')
         }

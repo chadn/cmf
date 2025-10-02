@@ -14,6 +14,7 @@ This document covers manual and automated tests.
         - [E2E Example](#e2e-example)
     - [Integration Tests](#integration-tests)
     - [Unit and Component Tests](#unit-and-component-tests)
+    - [Jest Coverage](#jest-coverage)
 - [Next Steps for Testing](#next-steps-for-testing)
     - [Priority 1: Improve Map Component Testing](#priority-1-improve-map-component-testing)
     - [Priority 2: Complete Hook Testing](#priority-2-complete-hook-testing)
@@ -244,17 +245,19 @@ src/components/events/EventList.tsx          # React component
 src/components/events/__tests__/EventList.test.tsx  # Component tests with RTL
 ```
 
-**Test Coverage:** This document makes it easy to see test coverage and compare against the [Directory Structure in Implementation.md](Implementation.md#directory-structure)
+### Jest Coverage
+
+**Test Coverage:** The following output from `npm test` makes it easy to see test coverage and compare against the [Directory Structure in Implementation.md](Implementation.md#directory-structure)
 
 ```bash
 npm test
-> calendar-map-filter@0.3.6 test
+> calendar-map-filter@0.3.7 test
 > jest --coverage && node src/scripts/show-total-loc.mjs && date && echo
 ...
 ----------------------------|---------|----------|---------|---------|-----------------------------------------------------------------
 File                        | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
 ----------------------------|---------|----------|---------|---------|-----------------------------------------------------------------
-All files                   |   68.62 |    61.57 |   71.17 |   68.95 |
+All files                   |    68.9 |    61.66 |   71.42 |   69.22 |
  components/common          |     100 |      100 |     100 |     100 |
   ErrorMessage.tsx          |     100 |      100 |     100 |     100 |
   LoadingSpinner.tsx        |     100 |      100 |     100 |     100 |
@@ -298,19 +301,19 @@ All files                   |   68.62 |    61.57 |   71.17 |   68.95 |
   urlProcessingService.ts   |    6.81 |        0 |       0 |    6.89 | 25-237
  lib/state                  |   97.14 |     82.6 |   91.66 |   96.55 |
   appStateReducer.ts        |   97.14 |     82.6 |   91.66 |   96.55 | 102
- lib/utils                  |   80.89 |    75.68 |   83.33 |   81.59 |
+ lib/utils                  |   81.33 |    75.63 |   84.09 |   81.96 |
   calendar.ts               |   85.71 |     72.5 |     100 |   85.71 | 28-29,46,56,76,82,128-129,134-135,151
-  date-19hz-parsing.ts      |   86.25 |    81.53 |   83.33 |   86.04 | 101-115,359-378
+  date-19hz-parsing.ts      |   86.25 |       80 |   83.33 |   86.04 | 101-115,359-378
   date-constants.ts         |     100 |      100 |     100 |     100 |
-  date.ts                   |   85.71 |       80 |   88.88 |   85.49 | 47-65,84-85,101-102,110-111,150-151,246
-  headerNames.ts            |       0 |        0 |       0 |       0 | 6-39
+  date.ts                   |   92.54 |     86.3 |     100 |   92.15 | 59-60,76-77,85-86,129-130,225,443,490-491
+  headerNames.ts            |       0 |        0 |       0 |       0 | 7-35
   icsParser.ts              |     100 |      100 |     100 |     100 |
   location.ts               |   76.47 |       70 |   86.95 |    77.6 | 205,222,250-256,309,384-385,394-425
   logr.ts                   |   71.18 |    67.44 |   91.66 |   70.17 | 39,68-93,113,160
   quickFilters.ts           |   97.72 |      100 |     100 |   97.43 | 149
-  timezones.ts              |    75.6 |    53.33 |      75 |   75.75 | 41-44,58-61,101-102
+  timezones.ts              |   53.65 |    35.29 |   55.55 |      50 | 41-73,83-86
   umami.ts                  |   41.17 |     37.5 |       0 |   46.66 | 14-18,31-34
-  url-utils.ts              |   94.87 |    84.29 |   96.15 |   97.57 | 76-77,312,320
+  url-utils.ts              |   94.87 |    84.29 |   96.15 |   97.57 | 76-77,317,325
   utils-client.ts           |   52.94 |     64.7 |      60 |   53.06 | 14-45,63,67,98,117-118
   utils-shared.ts           |   54.23 |    74.41 |   33.33 |    57.4 | 26,45,47,49,67-71,118-142
   venue-parsing.ts          |   96.87 |     82.6 |     100 |   96.82 | 151-152
@@ -319,12 +322,12 @@ All files                   |   68.62 |    61.57 |   71.17 |   68.95 |
 ----------------------------|---------|----------|---------|---------|-----------------------------------------------------------------
 
 Test Suites: 1 skipped, 30 passed, 30 of 31 total
-Tests:       10 skipped, 489 passed, 499 total
+Tests:       10 skipped, 503 passed, 513 total
 Snapshots:   0 total
-Time:        2.681 s, estimated 5 s
+Time:        2.615 s, estimated 3 s
 Ran all test suites.
-Total Lines of Code: 2303
-Wed Oct  1 21:03:58 PDT 2025
+Total Lines of Code: 2323
+Fri Oct  3 13:52:57 PDT 2025
 ```
 
 ## Next Steps for Testing

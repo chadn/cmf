@@ -19,9 +19,8 @@ Done items in [CHANGELOG](../CHANGELOG.md)
 1. batchGeocodeLocations() calls getCachedLocation() for each location. Instead, it should call a new function, getCachedLocations(), with many locations.
 1. Plura event end time is hardcoded to 1 hr after start, since only start time is shown on city pages. TODO: scrape event page itself for correct end time, and description (which is empty on city page)
 1. Update AGENT.md with CI and related stuff
-1. When page loads to only show events for today, the map should automatically resize after applying filter, zoom in as much as possible but still have all markers shown. This may get tricky, since if you remove the only current filter , "filtered by date" chip, then not all events may on map, so "filtered by map" chip would have to appear. Maybe a better idea is to have a button or link that zooms map in to show only events in event list.
 1. Enable parsing and showing plura's ever evolving site categories, similar to 19hz:DC. So plura:sf-bay-area-polyamory should load https://heyplura.com/sf-bay-area-polyamory
-1. Prepare for case where 2 different event sources have similar event ids. setSelectedEventIdUrl(eventId) may highlight event from wrong source. Right now id's are unique per event source.
+1. Prepare for case where 2 different event sources have similar event ids. setSelectedEventIdUrl(eventId) may highlight event from wrong source. Right now id's are unique per event source. Low priority now that "Skipping duplicate events" fixes real issue - events with same id are just duplicates and we don't want them.
 1. Upgrade from next 14 to next 15
 1. Change marker id 'unresolved' to 'unresolvedMarkerId', revisit how unresolved works with filters and related data structures
 1. Currently some url params are type `string`, some are `string | null` - seems like null is not necessary.
@@ -29,6 +28,20 @@ Done items in [CHANGELOG](../CHANGELOG.md)
     - UI components → as dumb as possible, just render props.
     - Hooks → wrap stateful or React-specific logic.
     - Services (lib/utils) → pure functions for business logic and data processing.
+1. when clicking on event, map centers and zooms. Currently its always same zoom level. Improvement: if marker is already on screen, just move map without changing zoom. Benefit: identifying
+1. better error handling of HTTP 500 from /api/events
+1. Add new field CmfEvent.timeKnown instead of "Hack: if same as start, exact start time is not known. If 1 minute after start, end time is not known.
+1. Performance improvements
+    1. Create new state, `user-updating` which is triggered by `user-updating-event`. When in `user-updating` state, don't recalculate visible events or chip counts (which leads to re-renders).  
+       Note debouncing is a technique that will delay the execution of a function until an event stops firing for a specified time period.
+       So basically debounce after user-updating-event (USER_UPDATING_TIMEOUT=100 ms) then change from `user-updating` to `user-interactive`.
+       Examples of `user-updating-event`: when user starts dragging date slider, or map, or typing search box.
+    1. Current code has allEvents and visibleEvents, both array of CmfEvent[]. Every time visibleEvents changes, it recalculates event list and markers. Instead, make visibleEvents just list of eventIds, allEvents a record of Id:CmfEvent, event list can just change display:none for tr on events that are not visible.
+1. support `skipCache=1` in react url to force server to pull fresh data from event source.
+1. Festival support
+    1. quick filter for next 3 (?) hrs.
+    1. Click on event will not zoom out
+1. Support No Kings from from https://www.mobilize.us/?tag_ids=27849&tag_ids=26436 via https://github.com/mobilizeamerica/api - Get all public events (organization_id = 1 for public events) for Oct 18.
 
 (thanks https://euangoddard.github.io/clipboard2markdown/)
 

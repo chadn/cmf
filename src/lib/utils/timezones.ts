@@ -49,57 +49,41 @@ export function convertUtcToTimeZoneAtCoords(utcTime: string, lat: number, lon: 
 }
 
 /**
- * Gets the timezone for a given latitude and longitude
- * @param lat - Latitude
- * @param lng - Longitude
- * @returns Timezone string (e.g., 'America/Los_Angeles') or 'UNKNOWN' if not found
+ * Get browser timezone information.  Used for display in About popup.
+ * @returns Object with browser timezone, offset, and abbreviation
  */
-export const getTimezoneFromLatLng = (lat: number, lng: number): string => {
-    try {
-        return tzlookup(lat, lng) || 'UNKNOWN'
-    } catch {
-        return 'UNKNOWN'
-    }
+export function timezoneInfo(): { browserTz: string; tzOffset: string; tzAbbrev: string } {
+    if (typeof Intl === 'undefined') return { browserTz: 'Unknown', tzOffset: '', tzAbbrev: '' }
+
+    const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone
+    const offsetMin = new Date().getTimezoneOffset()
+    const offsetHr = -offsetMin / 60
+    const sign = offsetHr >= 0 ? '+' : '-'
+    const tzOffset = ` UTC${sign}${Math.abs(offsetHr)}`
+
+    // Get timezone abbreviation (like PDT, PST, EDT, EST, etc.)
+    const tzAbbrev =
+        new Intl.DateTimeFormat('en', {
+            timeZoneName: 'short',
+            timeZone: browserTz,
+        })
+            .formatToParts(new Date())
+            .find((part) => part.type === 'timeZoneName')?.value || ''
+
+    return { browserTz, tzOffset, tzAbbrev }
 }
 
 /**
- * Parses a date string in various formats into a JavaScript Date object.
- * Supports formats like:
- * - "6/14/2025 1:30 PM"
- * - "6/14/2025 1 PM"
- * - "6/14/2025" (defaults to midnight)
- * - "6/14/2025 1:30PM" (no space before AM/PM)
- * - "6/14/25 1:30 PM" (2-digit year)
+ * Gets the timezone for a given latitude and longitude
+ * @param lat - Latitude
+ * @param lng - Longitude
+ * @returns Timezone string (e.g., 'America/Los_Angeles') or 'UNKNOWN_TZ' if not found
  */
-export function parseDateString(dateStr: string): Date | null {
+export const getTimezoneFromLatLng = (lat: number, lng: number): string => {
     try {
-        // Try formats in order of probable occurrence
-        const formats = [
-            'M/d/yyyy h:mm a', // 6/14/2025 1:30 PM
-            'M/d/yyyy h a', // 6/14/2025 1 PM
-            'M/d/yyyy', // 6/14/2025 (no time, defaults to midnight)
-            'M/d/yyyy h:mma', // 6/14/2025 1:30PM (no space before AM/PM)
-            'M/d/yyyy ha', // 6/14/2025 1PM (no space before AM/PM)
-            'M/d/yy h:mm a', // 6/14/25 1:30 PM
-            'M/d/yy h a', // 6/14/25 1 PM
-            'M/d/yy h:mma', // 6/14/25 1:30PM
-            'M/d/yy ha', // 6/14/25 1PM
-            'M/d/yy', // 6/14/25 (no time)
-        ]
-
-        for (const format of formats) {
-            const date = DateTime.fromFormat(dateStr, format, { zone: 'UTC' })
-            if (date.isValid) {
-                return date.toJSDate()
-            }
-        }
-
-        // If strict parsing fails, try lenient parsing
-        const lenientDate = DateTime.fromString(dateStr, 'M/d/yyyy h:mm a', { zone: 'UTC' })
-        return lenientDate.isValid ? lenientDate.toJSDate() : null
-    } catch (error) {
-        console.error('Failed to parse date:', error)
-        return null
+        return tzlookup(lat, lng) || 'UNKNOWN_TZ'
+    } catch {
+        return 'UNKNOWN_TZ'
     }
 }
 

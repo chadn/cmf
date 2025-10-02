@@ -21,6 +21,7 @@ get-key-count <pattern> - Output count of keys matching pattern
 get-value <key>         - Output value for a specific key
 get-prefixes            - Output list counts for each prefix
 delete-keys <pattern>   - Delete keys matching pattern. Confirmation required.
+update-location <k1> <json>  - updates the value of k1 based on json string. Also sets k1's TTL to never expire. Create using curl.
 fix-location <k1> <k2>  - updates the value of k1 to be just like the k2's value while preseriving k1's original_location. Also sets k1's TTL to never expire.
 
   Examples:
@@ -29,6 +30,7 @@ ${ME} get-key-count 'plura:*'
 ${ME} get-keys 'plura:city:'
 ${ME} get-keys-all  > keys.txt
 ${ME} delete-keys 'events:19hz:*'
+${ME} update-location 'location:Swan Stage @ HSB, SF, CA' '{"lat":37.770657,"lng":-122.489955}'
 ${ME} fix-location example  # outputs detailed example 
 ${ME} fix-location 'location:Asiento' 'location:Asiento,sf,ca' 
   Note you create proper location keys using geocode cmd:
@@ -340,6 +342,23 @@ async function fixLocation(k1: string, k2: string): Promise<void> {
     await client.persist(k1) // Remove any existing TTL
 }
 
+// Update location k1 with jsonString data
+async function updateLocation(k1: string, jsonString: string): Promise<void> {
+    const client = getRedisClient()
+    const v1 = await client.get(k1)
+    if (!v1) {
+        throw new Error(`Key ${k1} not found`)
+    }
+
+    // Parse the new value and the original value
+    const newVal = JSON.parse(jsonString)
+    const originalVal = typeof v1 === 'string' ? JSON.parse(v1) : v1
+
+    // Update the location
+    await client.set(k1, JSON.stringify({ ...originalVal, ...newVal }))
+    await client.persist(k1) // Remove any existing TTL
+}
+
 // Main function to handle commands
 async function main() {
     const args = process.argv.slice(2)
@@ -406,6 +425,19 @@ async function main() {
                 }
                 const deleted = await deleteKeys(pattern)
                 console.log(`Deleted ${deleted} keys`)
+                break
+            }
+            case 'update-location': {
+                const k1 = args[1]
+                const k1Data = args[2]
+                if (!k1 || !k1Data) {
+                    console.error('Error: key and json string are required.')
+                    process.exit(1)
+                }
+                await updateLocation(k1, k1Data)
+                console.log(`Updated location for ${k1} using value from ${k1Data}`)
+                const value = await getValue(k1)
+                console.log(`Value for key ${k1}\n${JSON.stringify(value)}\n${JSON.stringify(value, null, 2)}`)
                 break
             }
             case 'fix-location': {

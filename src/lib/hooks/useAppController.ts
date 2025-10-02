@@ -284,7 +284,7 @@ export function useAppController(): UseAppControllerReturn {
     // Handle transition from processing-events
     useEffect(() => {
         if (appState === 'processing-events' && cmfEvents.allEvents.length > 0) {
-            const headerName = determineHeaderName(eventSourceId, eventSources, ExampleEventsSources)
+            const headerName = determineHeaderName(eventSources, ExampleEventsSources)
             setHeaderName(headerName)
             logr.info('app', 'Processing events: calling resetMapToVisibleEvents and then transitioning state')
             resetMapToVisibleEvents({ useBounds: false })

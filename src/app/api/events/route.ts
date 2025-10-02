@@ -54,9 +54,12 @@ const fetchAndGeocode = async (
 
         if (event.location && locationMap.has(event.location)) {
             const resolved_location = locationMap.get(event.location)
-            if (event.tz === 'LOCAL' && resolved_location) {
+            if (event.tz === 'CONVERT_UTC_TO_LOCAL' && resolved_location) {
                 event.tz = getTimezoneFromLatLng(resolved_location.lat, resolved_location.lng)
-                if (event.tz != 'UNKNOWN') {
+                if (event.tz == 'UNKNOWN_TZ') {
+                    // TODO: try another way - get or guess timezone from address?
+                }
+                if (event.tz != 'UNKNOWN_TZ') {
                     event.start = convertUtcToTimeZone(event.start, event.tz)
                     event.end = convertUtcToTimeZone(event.end, event.tz)
                     // Recalculate startSecs after timezone conversion

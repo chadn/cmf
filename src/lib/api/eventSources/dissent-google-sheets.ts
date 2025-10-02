@@ -3,18 +3,22 @@ import { logr } from '@/lib/utils/logr'
 import { BaseEventSourceHandler, registerEventsSource } from './index'
 import { axiosGet } from '@/lib/utils/utils-server'
 import { HttpError } from '@/types/error'
-import { parseDateString } from '@/lib/utils/timezones'
+import { parseDateFromDissent } from '@/lib/utils/date'
 
 const API_KEY = process.env.GOOGLE_CALENDAR_API_KEY
 const SHEET_BASE_URL = 'https://sheets.googleapis.com/v4/spreadsheets/'
 const SHEET_ID = '1f-30Rsg6N_ONQAulO-yVXTKpZxXchRRB2kD3Zhkpe_A'
 // https://sheets.googleapis.com/v4/spreadsheets/<SHEET_ID>?fields=sheets.properties.title&key=API_KEY
-const sheetTabs = {
+const idToSheetTabs = {
     june14protests: 'June 14 Protests ',
     'june14-no-kings': 'June 14 Protests ',
     june6protests: 'June 6 Protests ',
     oct18protests: 'No Kings - October 18 ',
+    oct18nokings: 'No Kings - October 18',
 }
+
+// parse counts?
+// https://docs.google.com/spreadsheets/d/1hQzNbsbupLqtijfQywpmZs6nKSNLmEbugaYl6HWbyvA/edit?gid=468285823#gid=468285823
 
 export class DissentGoogleSheetsSource extends BaseEventSourceHandler {
     public readonly type: EventsSource = {
@@ -23,16 +27,23 @@ export class DissentGoogleSheetsSource extends BaseEventSourceHandler {
         url: 'https://www.wethepeopledissent.net/',
     }
     async fetchEvents(params: EventsSourceParams): Promise<EventsSourceResponse> {
-        const sheetTab =
-            params.id in sheetTabs ? sheetTabs[params.id as keyof typeof sheetTabs] : sheetTabs.june14protests
+        if (!(params.id in idToSheetTabs)) {
+            logr.info(
+                'api-es-gsheet',
+                `Unknown sheet id: ${params.id}. Known ids: ${Object.keys(idToSheetTabs).join(', ')}`
+            )
+            throw new HttpError(404, `id "${params.id}" not found in idToSheetTabs`)
+            // TODO: fetch current sheet tab data and log it
+        }
+        const sheetTab = idToSheetTabs[params.id as keyof typeof idToSheetTabs]
         const sheetUrl = `${SHEET_BASE_URL}${SHEET_ID}/values/${encodeURIComponent(sheetTab)}`
-        const sheetName = sheetTab.startsWith('June 14') ? 'June 14 No Kings' : sheetTab
 
-        logr.info('api-es-gsheet', `Fetching events from Google Sheets: ${sheetUrl}`)
+        logr.info('api-es-gsheet', `Fetching events from Google Sheets "${sheetTab}" ${sheetUrl}`)
         try {
             const response = await axiosGet(sheetUrl, { key: API_KEY })
             const { values } = response.data
             if (!values || values.length < 2) {
+                logr.info('api-es-gsheet', `No data found in Google Sheet: ${JSON.stringify(response)}`)
                 throw new HttpError(503, 'No data found in Google Sheet')
             }
             // Row 7 (index 6) is the header row
@@ -48,23 +59,9 @@ export class DissentGoogleSheetsSource extends BaseEventSourceHandler {
                 const location = [rowObj['Address'], rowObj['City'], rowObj['State'], rowObj['Zip'], rowObj['Country']]
                     .filter(Boolean)
                     .join(', ')
-                // Parse date
-                let startIso = ''
-                let endIso = ''
-                if (rowObj['Date']) {
-                    const startDate = parseDateString(rowObj['Date'] + ' ' + rowObj['Time'])
-                    if (startDate && !isNaN(startDate.getTime())) {
-                        startIso = startDate.toISOString()
-                        if ('Time' in rowObj && rowObj['Time']) {
-                            // Hack: Set end to be 1 minute after start for when end time is not known
-                            endIso = new Date(startDate.getTime() + 1000 * 60).toISOString()
-                        } else {
-                            // Hack: Set end to be same as start for when exact start time is not known
-                            endIso = startIso
-                        }
-                    } else {
-                        logr.info('api-es-gsheet', `NO DATE: "${rowObj['Date']} ${rowObj['Time']}"`)
-                    }
+                const { startIso, endIso } = parseDateFromDissent(rowObj['Date'], rowObj['Time'])
+                if (!(startIso && endIso)) {
+                    logr.info('api-es-gsheet', `NO DATE: "${rowObj['Date']} ${rowObj['Time']}"`)
                 }
                 const startSecs = startIso ? new Date(startIso).getTime() / 1000 : undefined
                 // Extract URLs from Info
@@ -80,12 +77,12 @@ export class DissentGoogleSheetsSource extends BaseEventSourceHandler {
                 events.push({
                     id: newId,
                     name: rowObj['Name'] || '',
-                    description: rowObj['Info'] || '',
+                    description: `${rowObj['Date']} ${rowObj['Time']} ${rowObj['Info']}`,
                     description_urls,
                     start: startIso,
                     end: endIso,
                     startSecs,
-                    tz: 'LOCAL', // TODO: get timezone from lat/lng
+                    tz: 'CONVERT_UTC_TO_LOCAL', // TODO: get timezone from lat/lng
                     original_event_url: rowObj['Link'] || '',
                     location,
                     note: rowObj['ADA Accessible'] ? `ADA: ${rowObj['ADA Accessible']}` : undefined,
@@ -98,7 +95,7 @@ export class DissentGoogleSheetsSource extends BaseEventSourceHandler {
                 source: {
                     ...this.type,
                     id: params.id || '',
-                    name: this.type.name + ' ' + sheetName,
+                    name: this.type.name + ' ' + sheetTab,
                     totalCount: events.length,
                     unknownLocationsCount: events.filter((e) => !e.location).length,
                 },

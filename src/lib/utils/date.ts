@@ -41,31 +41,6 @@ const LOCAL_DATE_REGEX = /^(\d{4})-(\d{1,2})-(\d{1,2})$/
 const RELATIVE_REGEX = /^(-?\d+)([dwm])$/
 
 /**
- * Get browser timezone information.  Used for display in About popup.
- * @returns Object with browser timezone, offset, and abbreviation
- */
-export function timezoneInfo(): { browserTz: string; tzOffset: string; tzAbbrev: string } {
-    if (typeof Intl === 'undefined') return { browserTz: 'Unknown', tzOffset: '', tzAbbrev: '' }
-
-    const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone
-    const offsetMin = new Date().getTimezoneOffset()
-    const offsetHr = -offsetMin / 60
-    const sign = offsetHr >= 0 ? '+' : '-'
-    const tzOffset = ` UTC${sign}${Math.abs(offsetHr)}`
-
-    // Get timezone abbreviation (like PDT, PST, EDT, EST, etc.)
-    const tzAbbrev =
-        new Intl.DateTimeFormat('en', {
-            timeZoneName: 'short',
-            timeZone: browserTz,
-        })
-            .formatToParts(new Date())
-            .find((part) => part.type === 'timeZoneName')?.value || ''
-
-    return { browserTz, tzOffset, tzAbbrev }
-}
-
-/**
  * Formats a date for display in the UI
  * TIMEZONE BEHAVIOR: Uses local timezone for display (date-fns handles timezone conversion)
  * @param dateString - ISO date string (stored without timezone knowledge, typically in UTC)
@@ -122,7 +97,7 @@ export function formatEventDateTz(dateString: string, tz: string | undefined, in
  *
  * @param startDateString - ISO start date string (no timezone stored)
  * @param endDateString - ISO end date string (no timezone stored)
- * @returns Formatted duration string (e.g., "2 hrs", "3 days", "??", or "0")
+ * @returns Formatted duration string (e.g., "15 min", "2 hrs", "3 days", "??", or "0")
  */
 export function formatEventDuration(startDateString: string, endDateString: string): string {
     try {
@@ -138,6 +113,10 @@ export function formatEventDuration(startDateString: string, endDateString: stri
 
         // Hack case: very small duration
         if (minutes < 6) return '??'
+
+        if (minutes < 100) {
+            return `${minutes} min`
+        }
 
         if (minutes < 60 * 24) {
             const hours = differenceInHours(end, start)
@@ -252,13 +231,13 @@ export function getDateFromUrlDateString(dateString: string): Date | null {
 /**
  * Helper to parse event date + tz and convert to UTC
  * If tz is valid, use luxon to parse the date and convert to UTC
- * If tz is invalid/missing/LOCAL/UNKNOWN, fallback to UTC
+ * If tz is invalid/missing/CONVERT_UTC_TO_LOCAL/UNKNOWN_TZ, fallback to UTC
  * @param iso - The event's start/end ISO strings
  * @param tz - timezone
  * @returns Date
  */
 const parseEventDate = (iso: string, tz?: string): Date => {
-    if (tz && tz !== 'UNKNOWN' && tz !== 'LOCAL') {
+    if (tz && tz !== 'UNKNOWN_TZ' && tz !== 'CONVERT_UTC_TO_LOCAL') {
         const dt = DateTime.fromISO(iso, { zone: tz })
         if (dt.isValid) return dt.toUTC().toJSDate()
         logr.warn('date', 'Invalid date with tz, falling back to UTC', { iso, tz })
@@ -271,7 +250,7 @@ const parseEventDate = (iso: string, tz?: string): Date => {
  *
  * TIMEZONE BEHAVIOR:
  * - If event has a valid tz, parse start/end in that timezone and convert to UTC.
- * - If tz is missing/invalid/LOCAL/UNKNOWN, treat start/end as UTC ISO strings.
+ * - If tz is missing/invalid/CONVERT_UTC_TO_LOCAL/UNKNOWN_TZ, treat start/end as UTC ISO strings.
  * - Range boundaries are assumed to be ISO UTC strings.
  *
  * @param event - The event with start/end ISO strings and optional tz
@@ -392,7 +371,7 @@ export function extractEventTimes(description: string, eventDate: Date) {
 /**
  * Helper to get start of day (04:01:00) for UI date filtering
  *
- * BUSINESS LOGIC: Uses 4:01am LOCAL time (not midnight) because users think of
+ * BUSINESS LOGIC: Uses 4:01am CONVERT_UTC_TO_LOCAL time (not midnight) because users think of
  * 2-3am as "last night" rather than "today". When a user selects "Saturday"
  * in the date filter, they expect Friday night events (2-3am Saturday) to be
  * excluded from Saturday's results.
@@ -411,7 +390,7 @@ export function getStartOfDay(days: number, minDate: Date): string {
 }
 
 /**
- * Helper to get end of day (23:59:59.999) for a given day offset from a minimum date in LOCAL timezone
+ * Helper to get end of day (23:59:59.999) for a given day offset from a minimum date in CONVERT_UTC_TO_LOCAL timezone
  * TIMEZONE BEHAVIOR: Returns local timezone time for UI date selection
  * As documented: "11:59pm of end day in correct timezone"
  * @param days - Number of days from the minimum date
@@ -424,4 +403,91 @@ export function getEndOfDay(days: number, minDate: Date): string {
     return date.toISOString()
 }
 
-// if you don't need to be at start or end of day, just use addDays(Date, numDays).
+/**
+ * Parses date and time strings from dissent spreadsheet columns. Returns UTC ISO strings (assume UTC timezone).
+ * Therefore caller should call convertUtcToTimeZone() to convert to local timezone.
+ * Examples
+ * "10/18/2025 8:00 AM-10:00 AM"
+ * "10/18/2025 12:00 AM-12:00 PM"
+ * "10/18 8:30 Am"
+ * "10/18 12:00 PM-2:00 PM"
+ * "10/18/25 11am - 1pm"
+ *
+ * Example return values:
+ * "10/18/25 11am - 1pm" startIso 2025-10-18T11:00:00.000Z,
+ * "10/18/25 11am - 1pm"  endIso  2025-10-18T13:00:00.000Z
+ *
+ * @param dateString  from dissent spreadsheet column. Ex: "10/18/25"
+ * @param timeString  from dissent spreadsheet column. Ex: "8:00 AM-10:00 AM"
+ * @returns start and end ISO strings, empty strings if not found. Caller should call convertUtcToTimeZone()
+ */
+export function parseDateFromDissent(dateString: string, timeString: string): { startIso: string; endIso: string } {
+    let startIso = ''
+    let endIso = ''
+
+    const matches = timeString.split('-')
+    const startDate = parseDateString(dateString + (matches[0] ? ' ' + matches[0].trim() : ''))
+
+    if (startDate && !isNaN(startDate.getTime())) {
+        startIso = startDate.toISOString()
+        if (!timeString.trim()) {
+            // Hack: Set end to be same as start for when exact start time is not known
+            endIso = startIso
+        } else if (matches[1]) {
+            // end time is known
+            const endDate = parseDateString(dateString + ' ' + matches[1].trim())
+            if (endDate) {
+                endIso = endDate.toISOString()
+            } else {
+                // Hack: Set end to be 1 minute after start for when end time is not known
+                endIso = new Date(startDate.getTime() + 1000 * 60).toISOString()
+            }
+        } else {
+            // Hack: Set end to be 1 minute after start for when end time is not known (no matches[1])
+            endIso = new Date(startDate.getTime() + 1000 * 60).toISOString()
+        }
+    }
+
+    return { startIso, endIso }
+}
+
+/**
+ * Parses a date string in various formats into a JavaScript Date object.
+ * Supports formats like:
+ * - "6/14/2025 1:30 PM"
+ * - "6/14/2025 1 PM"
+ * - "6/14/2025" (defaults to midnight)
+ * - "6/14/2025 1:30PM" (no space before AM/PM)
+ * - "6/14/25 1:30 PM" (2-digit year)
+ */
+export function parseDateString(dateStr: string): Date | null {
+    try {
+        const normalized = dateStr.trim().toLowerCase()
+        // Try formats in order of probable occurrence
+        const dateFormats = [
+            'M/d/yyyy', // 6/14/2025
+            'M/d/yy', // 6/14/25
+            'M/d', // 6/14
+        ]
+        const timeFormats = [
+            ' h:mm a', // 1:30 PM
+            ' h a', //    1 PM
+            ' h:mma', //  1:30PM (no space before AM/PM)
+            ' ha', //     1PM (no space before AM/PM)
+            '', //        (no time, defaults to midnight)
+        ]
+        for (const d of dateFormats) {
+            for (const t of timeFormats) {
+                const format = d + t
+                const date = DateTime.fromFormat(normalized, format, { zone: 'UTC' })
+                if (date.isValid) {
+                    return date.toJSDate()
+                }
+            }
+        }
+        return null
+    } catch (error) {
+        logr.warn('date', `parseDateString(${dateStr}) error:`, error)
+        return null
+    }
+}

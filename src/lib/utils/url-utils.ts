@@ -270,6 +270,11 @@ function validateSource(source: string): string {
     return ''
 }
 
+/**
+ * Used to turn value of 'es' parameter into array of valid event sources, expands shortId from ExampleEventsSources
+ * @param source The input event source string from URL parameter
+ * @returns Array of strings, each representing a valid event source
+ */
 function addExampleEventsSources(source: string): string[] {
     const result: string[] = []
     const incoming: string[] = [source]

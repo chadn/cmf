@@ -33,7 +33,7 @@ export class GoogleCalendarEventsSource extends BaseEventSourceHandler {
                 name: gcEvt.summary,
                 start: startDate,
                 end: endDate,
-                location: gcEvt.location || '',
+                location: gcEvt.location?.trim() || '',
                 description: gcEvt.description || '',
                 description_urls: this.extractUrls(gcEvt.description || ''),
                 original_event_url: gcEvt.htmlLink,

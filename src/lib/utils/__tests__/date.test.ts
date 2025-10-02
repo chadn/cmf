@@ -11,6 +11,7 @@ import {
     eventInDateRange,
     extractEventTimes,
     parseMonthDayRange,
+    parseDateFromDissent,
 } from '@/lib/utils/date'
 import { format } from 'date-fns'
 import type { CmfEvent } from '@/types/events'
@@ -40,7 +41,7 @@ const createTestEvent = (overrides: Partial<CmfEvent> = {}) => ({
     start: '2023-07-15T12:00:00Z',
     end: '2023-07-15T14:00:00Z',
     location: 'Test Location',
-    tz: 'UNKNOWN',
+    tz: 'UNKNOWN_TZ',
     ...overrides,
 })
 
@@ -75,7 +76,7 @@ describe('Date Utilities', () => {
 
         it('handles singular hour correctly', () => {
             const result = formatEventDuration('2025-03-15T14:00:00Z', '2025-03-15T15:00:00Z')
-            expect(result).toBe('1 hr')
+            expect(result).toBe('60 min')
         })
 
         it('handles singular day correctly', () => {
@@ -639,7 +640,7 @@ describe('Date Utilities', () => {
                 const event = createTestEvent({
                     start: '2023-07-15T14:00:00Z',
                     end: '2023-07-15T16:00:00Z',
-                    tz: 'UNKNOWN',
+                    tz: 'UNKNOWN_TZ',
                 })
 
                 const dateRange = {
@@ -650,11 +651,11 @@ describe('Date Utilities', () => {
                 expect(eventInDateRange(event, dateRange)).toBe(true)
             })
 
-            test('event with LOCAL timezone should be treated as UTC', () => {
+            test('event with CONVERT_UTC_TO_LOCAL timezone should be treated as UTC', () => {
                 const event = createTestEvent({
                     start: '2023-07-15T14:00:00Z',
                     end: '2023-07-15T16:00:00Z',
-                    tz: 'LOCAL',
+                    tz: 'CONVERT_UTC_TO_LOCAL',
                 })
 
                 const dateRange = {
@@ -788,7 +789,7 @@ describe('Date Utilities', () => {
                 }).not.toThrow()
             })
 
-            test('event with missing timezone should be treated as UNKNOWN', () => {
+            test('event with missing timezone should be treated as UNKNOWN_TZ', () => {
                 const event = createTestEvent({
                     start: '2023-07-15T14:00:00Z',
                     end: '2023-07-15T16:00:00Z',
@@ -805,7 +806,7 @@ describe('Date Utilities', () => {
                 expect(eventInDateRange(eventWithoutTz, dateRange)).toBe(true)
             })
 
-            test('event with empty timezone string should be treated as UNKNOWN', () => {
+            test('event with empty timezone string should be treated as UNKNOWN_TZ', () => {
                 const event = createTestEvent({
                     start: '2023-07-15T14:00:00Z',
                     end: '2023-07-15T16:00:00Z',
@@ -901,6 +902,109 @@ describe('Date Utilities', () => {
             const result = extractEventTimes('7pm til 9pm', testDate)
             expect(result.startStr).toMatch(/-07:00|-08:00/) // PDT or PST
             expect(result.endStr).toMatch(/-07:00|-08:00/)
+        })
+    })
+
+    describe('parseDateFromDissent', () => {
+        it('parses date with time range "10/18/2025 8:00 AM-10:00 AM"', () => {
+            const result = parseDateFromDissent('10/18/2025', '8:00 AM-10:00 AM')
+            expect(result.startIso).toContain('2025-10-18')
+            expect(result.startIso).toContain('08:00')
+            expect(result.endIso).toContain('2025-10-18')
+            expect(result.endIso).toContain('10:00')
+            expect(result.startIso).toMatch(/Z$/)
+            expect(result.endIso).toMatch(/Z$/)
+        })
+
+        it('parses date with time range "10/18/2025 12:00 AM-12:00 PM"', () => {
+            const result = parseDateFromDissent('10/18/2025', '12:00 AM-12:00 PM')
+            expect(result.startIso).toContain('2025-10-18')
+            expect(result.startIso).toContain('00:00')
+            expect(result.endIso).toContain('2025-10-18')
+            expect(result.endIso).toContain('12:00')
+        })
+
+        it('parses date with single time "10/18 8:30 Am"', () => {
+            const result = parseDateFromDissent('10/18', '8:30 Am')
+            expect(result.startIso).toContain('08:30')
+            // When no end time, should be 1 minute after start
+            const startDate = new Date(result.startIso)
+            const endDate = new Date(result.endIso)
+            expect(endDate.getTime() - startDate.getTime()).toBe(60000) // 1 minute in ms
+        })
+
+        it('parses date with time range "10/18 12:00 PM-2:00 PM"', () => {
+            const result = parseDateFromDissent('10/18', '12:00 PM-2:00 PM')
+            expect(result.startIso).toContain('12:00')
+            expect(result.endIso).toContain('14:00')
+        })
+
+        it('parses date with time range "10/18/25 11am - 1pm"', () => {
+            const result = parseDateFromDissent('10/18/25', '11am - 1pm')
+            expect(result.startIso).toContain('2025-10-18')
+            expect(result.startIso).toContain('11:00')
+            expect(result.endIso).toContain('13:00')
+        })
+
+        it('handles empty time string - sets end equal to start', () => {
+            const result = parseDateFromDissent('10/18/2025', '')
+            expect(result.startIso).toContain('2025-10-18')
+            expect(result.startIso).toContain('00:00')
+            // When time is empty, end should equal start
+            expect(result.endIso).toBe(result.startIso)
+        })
+
+        it('handles whitespace-only time string - sets end equal to start', () => {
+            const result = parseDateFromDissent('10/18/2025', '   ')
+            expect(result.startIso).toContain('2025-10-18')
+            // When time is whitespace, end should equal start
+            expect(result.endIso).toBe(result.startIso)
+        })
+
+        it('handles date without year', () => {
+            const result = parseDateFromDissent('6/14', '1:30 PM')
+            expect(result.startIso).toContain('13:30')
+            // Should parse successfully and create valid ISO strings
+            expect(result.startIso).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/)
+            expect(result.endIso).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/)
+        })
+
+        it('handles time without space before AM/PM "10/18/2025 1:30PM"', () => {
+            const result = parseDateFromDissent('10/18/2025', '1:30PM-3:30PM')
+            expect(result.startIso).toContain('13:30')
+            expect(result.endIso).toContain('15:30')
+        })
+
+        it('handles invalid date string - returns empty strings', () => {
+            const result = parseDateFromDissent('invalid-date', '8:00 AM')
+            expect(result.startIso).toBe('')
+            expect(result.endIso).toBe('')
+        })
+
+        it('handles invalid time format - returns empty strings', () => {
+            const result = parseDateFromDissent('10/18/2025', 'not-a-time')
+            // parseDateString should fail to parse this
+            expect(result.startIso).toBe('')
+            expect(result.endIso).toBe('')
+        })
+
+        it('returns valid ISO strings with Z suffix', () => {
+            const result = parseDateFromDissent('10/18/2025', '8:00 AM-10:00 AM')
+            expect(result.startIso).toMatch(/Z$/)
+            expect(result.endIso).toMatch(/Z$/)
+        })
+
+        it('handles single time without range - end is 1 minute after start', () => {
+            const result = parseDateFromDissent('10/18/2025', '2:00 PM')
+            const startDate = new Date(result.startIso)
+            const endDate = new Date(result.endIso)
+            expect(endDate.getTime() - startDate.getTime()).toBe(60000) // 1 minute
+        })
+
+        it('handles time range with extra whitespace', () => {
+            const result = parseDateFromDissent('10/18/2025', '  8:00 AM  -  10:00 AM  ')
+            expect(result.startIso).toContain('08:00')
+            expect(result.endIso).toContain('10:00')
         })
     })
 })

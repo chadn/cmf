@@ -76,7 +76,8 @@ Images coming soon
 - Explore using map, visible events, and filters. As you filter, either by moving map, changing dates, or search terms,
   the number of visible events can reduce to only a handful.
 - Clicking on Visible button will zoom and center on remaining visible events.
-- Clicking on map chip (X Filtered by Map) will zoom out again and remove chip. Remove all chips to view all events.
+- Clicking on map chip (X Filtered by Map) will zoom out again and remove chip. 
+- Remove all chips to view all events.
 
 ### Real-Time Data Updates
 

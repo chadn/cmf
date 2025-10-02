@@ -133,8 +133,8 @@ export default function DateAndSearchFilters({
                     <Popover.Portal>
                         <Popover.Content className="z-50 w-[95vw] max-w-[480px] sm:w-[480px] p-0 bg-white rounded-md shadow-lg border mt-2 overflow-x-auto popover-content">
                             <div className="p-2 border-t border-gray-100 bg-white shadow-md">
-                                {/* Single range slider for start and end */}
-                                <div className="mb-4">
+                                {/* Single range slider for start and end. Need left+right margin to make easier on mobile, left margin >= right) */}
+                                <div className="mb-4 mx-2">
                                     <label className="block text-md md:text-lg text-gray-600 mb-0.5 text-center">
                                         Date Range: {formattedDates.startSlider} - {formattedDates.endSlider}
                                     </label>

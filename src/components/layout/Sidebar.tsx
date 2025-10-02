@@ -7,7 +7,7 @@ import { X } from 'lucide-react'
 import packageJson from '@/../package.json'
 import { EventsSource } from '@/types/events'
 import { buildShareUrl, ShareUrlParams } from '@/lib/utils/url-utils'
-import { timezoneInfo } from '@/lib/utils/date'
+import { timezoneInfo } from '@/lib/utils/timezones'
 import { toast } from 'react-toastify'
 
 interface SidebarProps {
@@ -149,7 +149,7 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(
                                                     className="text-sm cursor-pointer"
                                                     title="LLZ is Lat,Long,Zoom. Recommend no llz in URL to let map auto zoom to show visible events"
                                                 >
-                                                    Add llz in URL
+                                                    Add llz in URL (Remember map view)
                                                 </label>
                                             </div>
                                         )}
@@ -213,9 +213,11 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(
                                             </button>
                                         </Popover.Close>
                                         <div className="p-4 space-y-3">
-                                            <div className="font-semibold text-lg mb-3">Events Sources</div>
+                                            <div className="font-semibold items-center text-lg mb-3">
+                                                {eventSources.length} Events Sources:
+                                            </div>
 
-                                            <div className="space-y-3">
+                                            <div className="space-y-3 max-h-80 overflow-y-auto">
                                                 {eventSources.map((source, index) => (
                                                     <div key={source.id} className="border-b pb-2 last:border-b-0">
                                                         <div className="font-medium text-gray-900">

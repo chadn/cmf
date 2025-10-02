@@ -6,6 +6,7 @@ export type ExampleEventSource = {
 }
 
 // Example event sources for demonstration
+// Any entries with shortId will use name as headerName in app, so keep name < 22 chars.
 export const ExampleEventsSources: ExampleEventSource[] = [
     {
         name: 'SF Bay Music + FB Events',
@@ -52,6 +53,7 @@ export const ExampleEventsSources: ExampleEventSource[] = [
     {
         name: 'Protests 2025',
         ids: {
+            'dissent:oct18nokings': 'Oct 18 No Kings WeThePeopleDissent.net',
             'dissent:june14-no-kings': 'June 14 No Kings WeThePeopleDissent.net',
             'protest:all': 'pol-rev.com',
         },
