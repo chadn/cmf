@@ -53,6 +53,8 @@ export const ExampleEventsSources: ExampleEventSource[] = [
     {
         name: 'Protests 2025',
         ids: {
+            'mobilize:nokings': 'NoKings from Mobilize',
+            'nokings:all': 'NoKings.org',
             'dissent:oct18nokings': 'Oct 18 No Kings WeThePeopleDissent.net',
             'dissent:june14-no-kings': 'June 14 No Kings WeThePeopleDissent.net',
             'protest:all': 'pol-rev.com',

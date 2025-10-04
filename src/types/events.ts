@@ -7,12 +7,17 @@ export type SortDirection = 'asc' | 'desc'
 export interface Location {
     status: EventStatus
     original_location: string
-    // the rest of these are only if status === 'resolved'
+    // the rest of these are only if resolved by geocoder API, status === 'resolved'
     formatted_address?: string
-    lat?: number // latitude
-    lng?: number // longitude
+    lat?: number // latitude, -90 to +90 North Pole, at most 6 decimal places (4.3 inches at equator, less if closer to poles).
+    lng?: number // longitude, -180 to +180, at most 6 decimal places (4.3 inches).
     types?: string[] // google maps location types: bars, night_club, point_of_interest, restaurant, etc.
 }
+// more on latitude and longitude accuracy - 6 decimals (4 inches) is more accurate than GPS usually gives (2 feet).
+// "On April 20, 2021, the global average URE across all satellites was ≤0.643 m (2.1 ft.), 95% of the time.
+// To be clear, URE is not user accuracy. User accuracy depends on a combination of satellite geometry, URE, and local factors such as
+// signal blockage (buildings, bridges, trees, indoors), atmospheric conditions, and receiver design features/quality.
+//  https://www.gps.gov/index.php/gps-accuracy-0
 
 // CmfEvent attributes are all strings for json export compatibility
 export interface CmfEvent {

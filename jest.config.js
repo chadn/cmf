@@ -12,6 +12,8 @@ const customJestConfig = {
     moduleNameMapper: {
         // Handle module aliases (this will be automatically configured for you soon)
         '^@/(.*)$': '<rootDir>/src/$1',
+        // Mock axios-curlirize since it's ESM-only and only used in development
+        '^axios-curlirize$': '<rootDir>/src/__mocks__/axios-curlirize.ts',
     },
     testPathIgnorePatterns: ['<rootDir>/node_modules/', '<rootDir>/.next/', '<rootDir>/tests/e2e/'],
     resolver: `${__dirname}/jest-resolver.js`,

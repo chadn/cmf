@@ -1,5 +1,5 @@
-import axios from 'axios'
-import { GeocodeResponse, GoogleGeocodeResult } from '@/types/googleApi'
+import { axiosGet } from '@/lib/utils/utils-server'
+import { GoogleGeocodeResult } from '@/types/googleApi'
 import { Location } from '@/types/events'
 import { getCachedLocation, setCacheLocation } from '@/lib/cache'
 import { logr } from '@/lib/utils/logr'
@@ -7,10 +7,16 @@ import { logr } from '@/lib/utils/logr'
 // Type definitions for consistent return values
 type GeocodingResult<T = Location | null> = {
     result: T
-    source: 'sCache' | 'custom' | 'api' | 'other' | null
+    source: GeocodingSource | null
     time: number
     parserIndex?: number
 }
+
+export type GeocodingSource =
+    | 'sCache' // fetched from redis cache, see checkCache()
+    | 'custom' // calculated from location string using customLocationParsers
+    | 'api' //    fetched from Google API, see callGeocodingAPI()
+    | 'other' //  other source (currently unused)
 
 // Configuration
 const CONFIG = {
@@ -179,8 +185,8 @@ export function updateResolvedLocation(result: Location, apiData: GoogleGeocodeR
         return {
             original_location: result.original_location,
             formatted_address: apiData.formatted_address,
-            lat: apiData.geometry.location.lat,
-            lng: apiData.geometry.location.lng,
+            lat: Number(apiData.geometry.location.lat.toFixed(6)),
+            lng: Number(apiData.geometry.location.lng.toFixed(6)),
             types: apiData.types,
             status: 'resolved' as const,
         }
@@ -274,7 +280,7 @@ async function callGeocodingAPI(locationString: string): Promise<GeocodingResult
                 address: locationString,
                 key: CONFIG.GOOGLE_MAPS_API_KEY,
             }
-            const response = await axios.get<GeocodeResponse>(CONFIG.GOOGLE_MAPS_GEOCODING_API, { params })
+            const response = await axiosGet(CONFIG.GOOGLE_MAPS_GEOCODING_API, params)
 
             logr.debug('api-geo', 'response result:', response.data.results[0])
 
@@ -302,7 +308,7 @@ async function callGeocodingAPI(locationString: string): Promise<GeocodingResult
  */
 export async function geocodeLocation(
     locationString: string
-): Promise<[Location, 'sCache' | 'custom' | 'api' | 'other', Record<string, number>]> {
+): Promise<[Location, GeocodingSource, Record<string, number>]> {
     // Handle empty string case
     if (!locationString) {
         return [createUnresolvedLocation(''), 'other', { total: 0 }]
@@ -326,7 +332,7 @@ export async function geocodeLocation(
     const timings: Record<string, number> = {}
     const trimmedLocation = locationString.trim()
     let result: Location = createUnresolvedLocation(trimmedLocation)
-    let source: 'sCache' | 'custom' | 'api' | 'other' | null = null
+    let source: GeocodingSource | null = null
 
     // Try custom parsers first
     const customResult = await tryCustomParsers(trimmedLocation)

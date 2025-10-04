@@ -251,13 +251,13 @@ src/components/events/__tests__/EventList.test.tsx  # Component tests with RTL
 
 ```bash
 npm test
-> calendar-map-filter@0.3.7 test
+> calendar-map-filter@0.3.8 test
 > jest --coverage && node src/scripts/show-total-loc.mjs && date && echo
 ...
 ----------------------------|---------|----------|---------|---------|-----------------------------------------------------------------
 File                        | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
 ----------------------------|---------|----------|---------|---------|-----------------------------------------------------------------
-All files                   |    68.9 |    61.66 |   71.42 |   69.22 |
+All files                   |      68 |    60.87 |   71.07 |   68.21 |
  components/common          |     100 |      100 |     100 |     100 |
   ErrorMessage.tsx          |     100 |      100 |     100 |     100 |
   LoadingSpinner.tsx        |     100 |      100 |     100 |     100 |
@@ -281,7 +281,7 @@ All files                   |    68.9 |    61.66 |   71.42 |   69.22 |
  lib                        |     100 |      100 |     100 |     100 |
   utils.ts                  |     100 |      100 |     100 |     100 |
  lib/api                    |   91.76 |    83.33 |   94.73 |   92.94 |
-  geocoding.ts              |   91.76 |    83.33 |   94.73 |   92.94 | 50,81,119,153,284,312-314,358,383,425
+  geocoding.ts              |   91.76 |    83.33 |   94.73 |   92.94 | 56,87,125,159,290,318-320,364,389,431
  lib/api/eventSources/plura |   75.64 |    76.92 |      60 |   75.34 |
   types.ts                  |     100 |      100 |     100 |     100 |
   utils.ts                  |      75 |    76.92 |      60 |      75 | 71,91-92,100,148,157-191
@@ -301,9 +301,9 @@ All files                   |    68.9 |    61.66 |   71.42 |   69.22 |
   urlProcessingService.ts   |    6.81 |        0 |       0 |    6.89 | 25-237
  lib/state                  |   97.14 |     82.6 |   91.66 |   96.55 |
   appStateReducer.ts        |   97.14 |     82.6 |   91.66 |   96.55 | 102
- lib/utils                  |   81.33 |    75.63 |   84.09 |   81.96 |
+ lib/utils                  |   79.08 |    73.45 |   83.45 |   79.47 |
   calendar.ts               |   85.71 |     72.5 |     100 |   85.71 | 28-29,46,56,76,82,128-129,134-135,151
-  date-19hz-parsing.ts      |   86.25 |       80 |   83.33 |   86.04 | 101-115,359-378
+  date-19hz-parsing.ts      |   86.25 |    81.53 |   83.33 |   86.04 | 101-115,359-378
   date-constants.ts         |     100 |      100 |     100 |     100 |
   date.ts                   |   92.54 |     86.3 |     100 |   92.15 | 59-60,76-77,85-86,129-130,225,443,490-491
   headerNames.ts            |       0 |        0 |       0 |       0 | 7-35
@@ -315,19 +315,21 @@ All files                   |    68.9 |    61.66 |   71.42 |   69.22 |
   umami.ts                  |   41.17 |     37.5 |       0 |   46.66 | 14-18,31-34
   url-utils.ts              |   94.87 |    84.29 |   96.15 |   97.57 | 76-77,317,325
   utils-client.ts           |   52.94 |     64.7 |      60 |   53.06 | 14-45,63,67,98,117-118
+  utils-server.ts           |   23.25 |        0 |       0 |   19.51 | 8,30-90
   utils-shared.ts           |   54.23 |    74.41 |   33.33 |    57.4 | 26,45,47,49,67-71,118-142
   venue-parsing.ts          |   96.87 |     82.6 |     100 |   96.82 | 151-152
- types                      |      75 |      100 |     100 |     100 |
+ types                      |   33.33 |      100 |       0 |   28.57 |
+  error.ts                  |       0 |      100 |       0 |       0 | 1-8
   events.ts                 |      75 |      100 |     100 |     100 |
 ----------------------------|---------|----------|---------|---------|-----------------------------------------------------------------
 
 Test Suites: 1 skipped, 30 passed, 30 of 31 total
 Tests:       10 skipped, 503 passed, 513 total
 Snapshots:   0 total
-Time:        2.615 s, estimated 3 s
+Time:        2.993 s, estimated 3 s
 Ran all test suites.
-Total Lines of Code: 2323
-Fri Oct  3 13:52:57 PDT 2025
+Total Lines of Code: 2369
+Mon Oct  6 13:29:55 PDT 2025
 ```
 
 ## Next Steps for Testing

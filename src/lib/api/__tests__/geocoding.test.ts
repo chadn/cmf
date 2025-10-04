@@ -7,11 +7,11 @@ import {
     batchGeocodeLocations,
 } from '@/lib/api/geocoding'
 import { logr } from '@/lib/utils/logr'
-import axios from 'axios'
 import { getCachedLocation, setCacheLocation } from '@/lib/cache'
+import * as utilsServer from '@/lib/utils/utils-server'
 
 // Mock dependencies
-jest.mock('axios')
+jest.mock('@/lib/utils/utils-server')
 jest.mock('@/lib/utils/logr', () => ({
     logr: {
         info: jest.fn(),
@@ -185,7 +185,7 @@ describe('geocoding', () => {
 
         beforeEach(() => {
             process.env.GOOGLE_MAPS_API_KEY = 'test-api-key'
-            ;(axios.get as jest.Mock).mockResolvedValue(mockApiResponse)
+            ;(utilsServer.axiosGet as jest.Mock).mockResolvedValue(mockApiResponse)
             ;(getCachedLocation as jest.Mock).mockResolvedValue(null)
         })
 
@@ -211,7 +211,7 @@ describe('geocoding', () => {
             const [result, source] = await geocodeLocation('Test Location')
             expect(result).toEqual(cachedLocation)
             expect(source).toBe('sCache')
-            expect(axios.get).not.toHaveBeenCalled()
+            expect(utilsServer.axiosGet).not.toHaveBeenCalled()
         })
 
         it('should geocode location using Google Maps API', async () => {
@@ -225,17 +225,15 @@ describe('geocoding', () => {
                 status: 'resolved',
             })
             expect(source).toBe('api')
-            expect(axios.get).toHaveBeenCalledWith('https://maps.googleapis.com/maps/api/geocode/json', {
-                params: {
-                    address: 'Test Location',
-                    key: 'test-api-key',
-                },
+            expect(utilsServer.axiosGet).toHaveBeenCalledWith('https://maps.googleapis.com/maps/api/geocode/json', {
+                address: 'Test Location',
+                key: 'test-api-key',
             })
             expect(setCacheLocation).toHaveBeenCalled()
         })
 
         it('should handle API errors', async () => {
-            ;(axios.get as jest.Mock).mockRejectedValue(new Error('API Error'))
+            ;(utilsServer.axiosGet as jest.Mock).mockRejectedValue(new Error('API Error'))
 
             const [result, source] = await geocodeLocation('Test Location')
             expect(result).toEqual({
@@ -249,7 +247,7 @@ describe('geocoding', () => {
         it('should handle missing API key', async () => {
             process.env.GOOGLE_MAPS_API_KEY = undefined
             // Mock API to fail when API key is missing
-            ;(axios.get as jest.Mock).mockRejectedValue(new Error('No API key'))
+            ;(utilsServer.axiosGet as jest.Mock).mockRejectedValue(new Error('No API key'))
 
             const [result, source] = await geocodeLocation('Test Location')
             expect(result).toEqual({

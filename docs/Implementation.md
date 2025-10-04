@@ -321,12 +321,17 @@ App parses URL in the following order
       /geocoding.ts             # Google Maps geocoding with cache
       /eventSources/            # Event source integrations
         /19hz.ts                # 19hz.info music events
-        /googleCalendar.ts      # Google Calendar integration
-        /facebookEvents.ts      # Facebook events (via iCal)
-        /protests.ts            # pol-rev.com protest events
         /dissent-google-sheets.ts # WeThePeopleDissent.net events
+        /facebookEvents.ts      # Facebook events (via iCal)
+        /foopee.ts              # SF Bay Area music events
+        /googleCalendar.ts      # Google Calendar integration
+        /mobilize.ts            # Mobilize.us API events (multiple organizations)
+        /nokings.ts             # No Kings protest events
         /plura/                 # Plura community events (with scraper)
+        /protests.ts            # pol-rev.com protest events
+        /testSource.ts          # Test events for E2E testing
         /BaseEventSourceHandler.ts # Base class for event sources
+        /index.ts               # Event source registry
         /README.md              # Event source development guide
     /cache                      # Cache abstraction layer
       /upstash.ts               # Upstash Redis implementation (production)

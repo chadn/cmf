@@ -32,7 +32,8 @@ Done items in [CHANGELOG](../CHANGELOG.md)
 1. better error handling of HTTP 500 from /api/events
 1. Add new field CmfEvent.timeKnown instead of "Hack: if same as start, exact start time is not known. If 1 minute after start, end time is not known.
 1. Performance improvements
-    1. Create new state, `user-updating` which is triggered by `user-updating-event`. When in `user-updating` state, don't recalculate visible events or chip counts (which leads to re-renders).  
+    1. Store start and end times of events as seconds since epoch. Or end should be replaced by duration? Using seconds is faster for filters. s
+    1. Create new state, `user-updating` which is triggered by `user-updating-event`. When in `user-updating` state, don't recalculate visible events or chip counts (which leads to re-renders).
        Note debouncing is a technique that will delay the execution of a function until an event stops firing for a specified time period.
        So basically debounce after user-updating-event (USER_UPDATING_TIMEOUT=100 ms) then change from `user-updating` to `user-interactive`.
        Examples of `user-updating-event`: when user starts dragging date slider, or map, or typing search box.
@@ -42,6 +43,15 @@ Done items in [CHANGELOG](../CHANGELOG.md)
     1. quick filter for next 3 (?) hrs.
     1. Click on event will not zoom out
 1. Support No Kings from from https://www.mobilize.us/?tag_ids=27849&tag_ids=26436 via https://github.com/mobilizeamerica/api - Get all public events (organization_id = 1 for public events) for Oct 18.
+1. Support https://www.nokings.org/#map
+
+```
+curl 'https://mobilize-feed-cache.vercel.app/data-42198.json?timeslot_start=gte_now&per_page=100&approval_status=APPROVED&is_virtual=false' | jq .>nokings.json
+14:20 chad@mbp-2022 main scripts > cat nokings.json |grep '"count"'
+  "count": 2093
+```
+
+1. foopee - if no times, currently defaults to 8:01pm, in general if parsing date/time and only date, should pick reasonable start end time (6am-10pm) - do this when implementing CmfEvent.timeKnown
 
 (thanks https://euangoddard.github.io/clipboard2markdown/)
 
@@ -74,3 +84,40 @@ Working on fixing these:
 Also see [How to Use](usage.md)
 
 Found a bug or want a feature? Let me know by [Creating a new issue in github](https://github.com/chadn/cmf/issues/new)
+
+## Temp
+
+Consider removing `nokings` event source.
+
+Comparing data from `nokings:all` vs `mobilize:nokings`:
+These are basically the same, minor differences
+
+- mobilize has a 36 that nokings does not, nokings has 2 mobilize does not.
+- For 241 identical evenets (same original_event_url), nokings did and mobilize did not have lat/lng (was added along with formatted_address by geocoder).
+- some descriptions are different
+
+Details:
+
+```
+rm nokings.json && curl 'http://localhost:3000/api/events?id=nokings%3Aall&timeMin=2025-09-06T17%3A30%3A03Z&timeMax=2026-01-06T18%3A30%3A03Z' |jq .>nokings.json
+rm mobilize.42198.json && curl 'http://localhost:3000/api/events?id=mobilize%3A42198&timeMin=2025-09-06T17%3A20%3A26Z&timeMax=2026-01-06T18%3A20%3A26Z' |jq .>mobilize.42198.json
+rm nokings.mobilize.42198.json && cat mobilize.42198.json | jq -S . |sed 's/"id": "mobilize-/"id": "nokings-/g'  >nokings.mobilize.42198.json
+git add nokings.mobilize.42198.json
+cat nokings.json | jq -S . >tmp.json; /bin/mv -f tmp.json nokings.mobilize.42198.json
+git diff nokings.mobilize.42198.json |wc
+    5867   37973  325290
+git diff nokings.mobilize.42198.json |grep 'original_event_url"' |grep '+'
++      "original_event_url": "https://www.mobilize.us/nokings/event/848034/",
++      "original_event_url": "https://www.mobilize.us/nokings/event/855478/",
+git diff nokings.mobilize.42198.json |grep 'original_event_url"' |grep '-'|wc
+      36     108    2808
+grep 'formatted_address' mobilize.42198.json |wc
+     241    1217   13411
+grep 'formatted_address' nokings.json |wc
+       0       0       0
+wc -l *.json
+   41184 mobilize.42198.json
+   39620 nokings.json
+   39620 nokings.mobilize.42198.json
+  156973 nokings.org.json
+```

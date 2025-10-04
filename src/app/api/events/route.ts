@@ -13,6 +13,8 @@ import '@/lib/api/eventSources/dissent-google-sheets'
 import '@/lib/api/eventSources/facebookEvents'
 import '@/lib/api/eventSources/foopee'
 import '@/lib/api/eventSources/googleCalendar'
+import '@/lib/api/eventSources/mobilize'
+import '@/lib/api/eventSources/nokings'
 import '@/lib/api/eventSources/plura/index'
 import '@/lib/api/eventSources/protests'
 import '@/lib/api/eventSources/testSource'
@@ -36,10 +38,20 @@ const fetchAndGeocode = async (
 
     // GEOCODE LOCATIONS
     const uniqueLocations = Array.from(
-        new Set(events.map((event) => event.location).filter((location) => location && location.trim() !== ''))
+        new Set(
+            events
+                // skip events with resolved status
+                .filter((event) => event.resolved_location?.status !== 'resolved')
+                // skip invalid or blank locations
+                .map((event) => event.location?.trim())
+                .filter((location): location is string => !!location)
+        )
     )
     const geocodedLocations = await batchGeocodeLocations(uniqueLocations)
-    logr.info('api-events', `Geocoded ${geocodedLocations.length} of ${uniqueLocations.length} locations`)
+    logr.info(
+        'api-events',
+        `Geocoded/unique/total: ${geocodedLocations.length}/${uniqueLocations.length}/${events.length}`
+    )
 
     // Create a map for quick lookup
     const locationMap = new Map()

@@ -1,7 +1,12 @@
-import { logr } from '@/lib/utils/logr'
 import axios from 'axios'
+import curlirize from 'axios-curlirize'
+import { logr } from '@/lib/utils/logr'
 import { getSizeOfAny } from '@/lib/utils/utils-shared'
 import { HttpError } from '@/types/error'
+
+if (process.env.NODE_ENV === 'development') {
+    curlirize(axios)
+}
 
 /**
  * Axios configuration for requests with browser-like User-Agent

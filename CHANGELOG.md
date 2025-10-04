@@ -5,6 +5,27 @@ All notable changes to Calendar Map Filter (CMF) will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.8] - 2025-10-6
+
+### Added
+
+- **Mobilize Event Source** - New event source handler for Mobilize.us API supporting multiple organizations
+    - Supports filtering by organization ID (e.g., `es=mobilize:nokings` for Oct 18 No Kings organization 42198)
+    - Events include resolved locations from Mobilize API (latitude/longitude)
+- **No Kings Event Source** - Direct event source `es=nokings:all` for No Kings protest events via Mobilize cache
+    - Fetches from mobilize-feed-cache.vercel.app as defined in nokings.org
+    - Alternative to using `mobilize:nokings`, mobilize has more fresh data
+
+### Changed
+
+- Skip geocoding for events that already have resolved locations
+- Latitude/longitude should be limited to 6 decimal places (±4.3 inches precision)
+
+### Technical
+
+- Added `axios-curlirize` dependency for HTTP request debugging in development
+- Enhanced logging to show geocoded/unique/total event counts
+
 ## [0.3.7] - 2025-10-3
 
 ### Changed
