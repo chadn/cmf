@@ -109,12 +109,16 @@ jest.mock('react-map-gl', () => {
     const MockNavigationControl = () => <div data-testid="navigation-control" />
     MockNavigationControl.displayName = 'MockNavigationControl'
 
+    const MockGeolocateControl = () => <div data-testid="geolocate-control" />
+    MockGeolocateControl.displayName = 'MockGeolocateControl'
+
     return {
         __esModule: true,
         default: MockMapComponent,
         Marker: MockMarker,
         Popup: MockPopup,
         NavigationControl: MockNavigationControl,
+        GeolocateControl: MockGeolocateControl,
     }
 })
 

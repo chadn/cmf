@@ -1,7 +1,8 @@
 'use client'
 
 import { useRef, useEffect, useState, useCallback } from 'react'
-import Map, { Marker, Popup, NavigationControl, ViewState, MapRef } from 'react-map-gl'
+import Map, { Marker, Popup, NavigationControl, GeolocateControl, ViewState, MapRef } from 'react-map-gl'
+import type { GeolocateResultEvent } from 'react-map-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { env } from '@/lib/config/env'
 import { MapViewport, MapBounds, MapMarker } from '@/types/map'
@@ -228,6 +229,15 @@ const MapContainer: React.FC<MapContainerProps> = ({
         setPopupMarker(null)
     }
 
+    // Handle geolocate events
+    const handleGeolocate = useCallback((e: GeolocateResultEvent) => {
+        logr.info('mapc', 'User location found', {
+            latitude: e.coords.latitude.toFixed(6),
+            longitude: e.coords.longitude.toFixed(6),
+            accuracy: e.coords.accuracy,
+        })
+    }, [])
+
     return (
         <div className="relative w-full h-full" style={{ minHeight: '100%' }}>
             <Map
@@ -278,6 +288,18 @@ const MapContainer: React.FC<MapContainerProps> = ({
             >
                 {/* Navigation controls */}
                 <NavigationControl position="top-right" showCompass={true} showZoom={true} visualizePitch={true} />
+
+                {/* Geolocate control - user location */}
+                <GeolocateControl
+                    position="bottom-right"
+                    trackUserLocation={false}
+                    showUserHeading={false}
+                    onGeolocate={handleGeolocate}
+                    fitBoundsOptions={{
+                        maxZoom: 12, // Don't zoom in closer than this level
+                        duration: 0, // Animation duration in milliseconds
+                    }}
+                />
 
                 {/* Markers */}
                 {markers.map((marker) => (
