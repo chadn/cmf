@@ -251,13 +251,13 @@ src/components/events/__tests__/EventList.test.tsx  # Component tests with RTL
 
 ```bash
 npm test
-> calendar-map-filter@0.3.8 test
+> calendar-map-filter@0.3.10 test
 > jest --coverage && node src/scripts/show-total-loc.mjs && date && echo
 ...
 ----------------------------|---------|----------|---------|---------|-----------------------------------------------------------------
 File                        | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
 ----------------------------|---------|----------|---------|---------|-----------------------------------------------------------------
-All files                   |      68 |    60.87 |   71.07 |   68.21 |
+All files                   |   68.47 |    61.64 |   71.42 |   68.73 |
  components/common          |     100 |      100 |     100 |     100 |
   ErrorMessage.tsx          |     100 |      100 |     100 |     100 |
   LoadingSpinner.tsx        |     100 |      100 |     100 |     100 |
@@ -270,8 +270,8 @@ All files                   |      68 |    60.87 |   71.07 |   68.21 |
  components/layout          |     100 |      100 |     100 |     100 |
   Footer.tsx                |     100 |      100 |     100 |     100 |
   Header.tsx                |     100 |      100 |     100 |     100 |
- components/map             |    85.4 |    73.33 |   91.17 |   87.42 |
-  MapContainer.tsx          |      83 |    71.42 |      90 |   83.33 | 53-62,78,87,121-122,169,195-197,288-290
+ components/map             |   85.02 |    73.33 |   88.57 |   86.98 |
+  MapContainer.tsx          |   82.35 |    71.42 |   85.71 |   82.65 | 54-63,79,88,122-123,170,196-198,234,310-312
   MapMarker.tsx             |   94.44 |    81.81 |     100 |     100 | 15,35
   MapPopup.tsx              |   86.56 |    72.97 |    90.9 |   91.52 | 75-81,92
  components/ui              |   94.11 |    66.66 |      90 |     100 |
@@ -291,10 +291,10 @@ All files                   |      68 |    60.87 |   71.07 |   68.21 |
   FilterEventsManager.ts    |   69.44 |    77.14 |   46.66 |      70 | 37-39,53-69,112,135-136,152-160,199-217
   examples.ts               |     100 |      100 |     100 |     100 |
   filters.ts                |   66.66 |       55 |   57.14 |   65.38 | 32,43,67-71,83-114
- lib/hooks                  |   32.69 |    25.86 |   44.55 |   32.01 |
+ lib/hooks                  |   33.06 |    22.11 |   45.91 |   32.37 |
   useAppController.ts       |   10.73 |        0 |       0 |   11.18 | 116-570
   useBreakpoint.ts          |    7.69 |        0 |       0 |      10 | 11-22
-  useEventsManager.ts       |      50 |    48.57 |   56.75 |   49.21 | 115-134,144-205,223-247,258-283
+  useEventsManager.ts       |   56.36 |    55.55 |   61.76 |   56.12 | 106-125,135-178,191-208
   useMap.ts                 |   66.37 |    33.33 |   77.41 |   67.34 | 22-29,54-60,131-142,159-165,176-180,202-205,209,242-243,276-287
   useUrlProcessor.ts        |     7.4 |        0 |       0 |    7.84 | 72-347
  lib/services               |    6.81 |        0 |       0 |    6.89 |
@@ -326,10 +326,10 @@ All files                   |      68 |    60.87 |   71.07 |   68.21 |
 Test Suites: 1 skipped, 30 passed, 30 of 31 total
 Tests:       10 skipped, 503 passed, 513 total
 Snapshots:   0 total
-Time:        2.993 s, estimated 3 s
+Time:        4.13 s
 Ran all test suites.
-Total Lines of Code: 2369
-Mon Oct  6 13:29:55 PDT 2025
+Total Lines of Code: 2341
+Mon Oct  6 16:37:13 PDT 2025
 ```
 
 ## Next Steps for Testing

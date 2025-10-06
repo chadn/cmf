@@ -98,7 +98,19 @@ describe('useEventsManager - new viewport parameter model', () => {
     beforeEach(() => {
         jest.clearAllMocks()
         swrMock.default.mockImplementation(() => ({
-            data: mockApiResponse,
+            data: {
+                aggregatedData: mockApiResponse,
+                sources: [
+                    {
+                        prefix: mockApiResponse.source.prefix,
+                        id: mockApiResponse.source.id,
+                        name: mockApiResponse.source.name,
+                        totalCount: mockApiResponse.source.totalCount,
+                        unknownLocationsCount: mockApiResponse.source.unknownLocationsCount,
+                        url: mockApiResponse.source.url,
+                    },
+                ],
+            },
             error: null,
             isLoading: false,
             mutate: jest.fn(),
@@ -456,8 +468,22 @@ describe('useEventsManager - new viewport parameter model', () => {
 
         it('should transition from loading to loaded state', () => {
             let isLoading = true
+            const wrappedMockData = {
+                aggregatedData: mockApiResponse,
+                sources: [
+                    {
+                        prefix: mockApiResponse.source.prefix,
+                        id: mockApiResponse.source.id,
+                        name: mockApiResponse.source.name,
+                        totalCount: mockApiResponse.source.totalCount,
+                        unknownLocationsCount: mockApiResponse.source.unknownLocationsCount,
+                        url: mockApiResponse.source.url,
+                    },
+                ],
+            }
+
             swrMock.default.mockImplementation(() => ({
-                data: isLoading ? undefined : mockApiResponse,
+                data: isLoading ? undefined : wrappedMockData,
                 error: null,
                 isLoading,
                 mutate: jest.fn(),
@@ -475,7 +501,7 @@ describe('useEventsManager - new viewport parameter model', () => {
             // Simulate loading completion
             isLoading = false
             swrMock.default.mockImplementation(() => ({
-                data: mockApiResponse,
+                data: wrappedMockData,
                 error: null,
                 isLoading: false,
                 mutate: jest.fn(),

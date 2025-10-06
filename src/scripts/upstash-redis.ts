@@ -21,8 +21,8 @@ get-key-count <pattern> - Output count of keys matching pattern
 get-value <key>         - Output value for a specific key
 get-prefixes            - Output list counts for each prefix
 delete-keys <pattern>   - Delete keys matching pattern. Confirmation required.
-update-location <k1> <json>  - updates the value of k1 based on json string. Also sets k1's TTL to never expire. Create using curl.
 fix-location <k1> <k2>  - updates the value of k1 to be just like the k2's value while preseriving k1's original_location. Also sets k1's TTL to never expire.
+update-location <k1> <json> - updates the value of k1 based on json string. Also sets k1's TTL to never expire. Create using curl.
 
   Examples:
 ${ME} 

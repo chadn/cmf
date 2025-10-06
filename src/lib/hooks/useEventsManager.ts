@@ -66,8 +66,11 @@ export function useEventsManager({
         filtrEvtMgr.reset()
     }, [eventSourceId, filtrEvtMgr])
 
-    // Determine if we have single or multiple sources
-    const isMultipleSources = Array.isArray(eventSourceId)
+    // Normalize eventSourceId to array for internal use
+    const sourceIds = useMemo(() => {
+        if (!eventSourceId) return []
+        return Array.isArray(eventSourceId) ? eventSourceId : [eventSourceId]
+    }, [eventSourceId])
 
     // Memoize timeMin and timeMax to avoid repeated calls to getDateFromUrlDateString
     const { timeMin, timeMax } = useMemo(() => {
@@ -77,38 +80,26 @@ export function useEventsManager({
         }
     }, [sd, ed])
 
-    // For single sources, use the original SWR pattern. For multiple sources, use custom fetcher
-    const singleApiUrl = useMemo(() => {
-        if (!eventSourceId || isMultipleSources) return null
+    // Memoize the API URLs construction - handles both single and multiple sources
+    const apiUrls = useMemo(() => {
+        if (sourceIds.length === 0) return null
         // timeMin and timeMax must be RFC3339 date strings
-        return (
-            `/api/events?id=${encodeURIComponent(eventSourceId)}` +
-            `&timeMin=${encodeURIComponent(timeMin || '')}` +
-            `&timeMax=${encodeURIComponent(timeMax || '')}`
-        )
-    }, [eventSourceId, isMultipleSources, timeMin, timeMax])
-
-    // Memoize the API URLs construction for multiple sources only
-    const multiApiUrls = useMemo(() => {
-        if (!isMultipleSources || !Array.isArray(eventSourceId)) return null
-        // timeMin and timeMax must be RFC3339 date strings
-        return eventSourceId.map(
+        return sourceIds.map(
             (sourceId) =>
                 `/api/events?id=${encodeURIComponent(sourceId)}` +
                 `&timeMin=${encodeURIComponent(timeMin || '')}` +
                 `&timeMax=${encodeURIComponent(timeMax || '')}`
         )
-    }, [eventSourceId, isMultipleSources, timeMin, timeMax])
+    }, [sourceIds, timeMin, timeMax])
 
     // Log the API URLs being used
     useEffect(() => {
-        if (singleApiUrl) {
-            logr.info('use_evts_mgr', `uE: Single API URL for events data: "${singleApiUrl}"`)
+        if (apiUrls) {
+            logr.info(
+                'use_evts_mgr',
+                `uE: API URLs for events data: ${JSON.stringify(apiUrls)}`)
         }
-        if (multiApiUrls) {
-            logr.info('use_evts_mgr', `uE: Multiple API URLs for events data (${multiApiUrls.length}):`, multiApiUrls)
-        }
-    }, [singleApiUrl, multiApiUrls])
+    }, [apiUrls])
 
     // Handle non-200 HTTP responses
     const dispatchNot200 = (msg: string) => {
@@ -138,7 +129,7 @@ export function useEventsManager({
     const multiSourceFetcher = async (
         urls: string[]
     ): Promise<{
-        aggregatedData: EventsSourceResponse
+        allEvents: CmfEvent[]
         sources: Array<EventsSource>
     }> => {
         const results = await Promise.all(urls.map((url) => fetcherLogr(url)))
@@ -156,13 +147,10 @@ export function useEventsManager({
         // Aggregate all events and add src field for multiple sources
         const allEvents: CmfEvent[] = []
         const sources: Array<EventsSource> = []
-        let totalCount = 0
-        let totalUnknownLocations = 0
 
         results.forEach((result: EventsSourceResponse, index: number) => {
-            const eventsWithSrc = isMultipleSources
-                ? result.events.map((event) => ({ ...event, src: index + 1 }))
-                : result.events
+            const eventsWithSrc =
+                results.length > 1 ? result.events.map((event) => ({ ...event, src: index + 1 })) : result.events
 
             // Check for duplicates by comparing event IDs
             const existingIds = new Set(allEvents.map((e) => e.id))
@@ -178,104 +166,41 @@ export function useEventsManager({
                 )
             }
             allEvents.push(...eventsNoDuplicates)
-            totalCount += result.source.totalCount || 0
-            totalUnknownLocations += result.source.unknownLocationsCount || 0
 
             sources.push({
                 prefix: result.source.prefix,
                 name: result.source.name,
-                totalCount: result.source.totalCount || 0,
                 unknownLocationsCount: result.source.unknownLocationsCount || 0,
                 id: result.source.id || '',
                 url: result.source.url,
             })
         })
-
-        // Create aggregated source data
-        const allSourceIds = results.map((result) => result.source.id || '')
-        const aggregatedSource = {
-            prefix: results[0].source.prefix,
-            name: allSourceIds.length > 1 ? 'Multiple Event Sources' : results[0].source.name,
-            url: results[0].source.url,
-            id: allSourceIds.length > 1 ? allSourceIds.join(',') : allSourceIds[0],
-            totalCount,
-            unknownLocationsCount: totalUnknownLocations,
-        }
-
         return {
-            aggregatedData: {
-                events: allEvents,
-                source: aggregatedSource,
-                httpStatus: 200,
-            },
+            allEvents,
             sources,
         }
     }
 
-    // SWR for single source (original behavior)
+    // SWR for all sources (single or multiple)
     const {
-        data: singleApiData,
-        error: singleApiError,
-        isLoading: singleApiIsLoading,
-    } = useSWR(shouldFetchData ? singleApiUrl : null, fetcherLogr, {
-        revalidateOnFocus: false,
-        onSuccess: (data: EventsSourceResponse) => {
-            if (!(data && data.httpStatus)) {
-                dispatchNot200(`HTTP 500: onSuccess should have data.httpStatus`)
-                return
-            }
-            if (data.httpStatus !== 200) {
-                logr.info('use_evts_mgr', 'httpStatus !== 200', data)
-                dispatchNot200(`HTTP ${data.httpStatus}:`)
-                return
-            }
-            logr.info('use_evts_mgr', `Single source events data fetched: "${data.source.name || 'Unknown Source'}"`, {
-                sourceId: data.source.id || 'unknown',
-                sourceType: data.source.prefix || 'unknown',
-                totalEvents: data.source.totalCount || 0,
-                unknownLocations: data.source.unknownLocationsCount || 0,
-            })
-            logr.debug('use_evts_mgr', `Before filtrEvtMgr.cmf_events_all=${filtrEvtMgr.cmf_events_all.length}`)
-            logr.info('use_evts_mgr', `Calling filtrEvtMgr.setEvents(${data.events.length})`)
-            // DEBUG: Track event loading completion
-            logr.info('debug-flow', `Events loaded: ${data.events.length} events, SWR loading complete`)
-            filtrEvtMgr.setEvents(data.events)
-            // Events are now managed by FilterEventsManager only
-            logr.debug('use_evts_mgr', `After filtrEvtMgr.cmf_events_all=${filtrEvtMgr.cmf_events_all.length}`)
-        },
-        onError: (err) => {
-            dispatchNot200(err)
-        },
-    })
-
-    // SWR for multiple sources
-    const {
-        data: multiSwrData,
-        error: multiApiError,
-        isLoading: multiApiIsLoading,
+        data: swrData,
+        error: apiError,
+        isLoading: apiIsLoading,
     } = useSWR(
-        shouldFetchData && multiApiUrls ? `multi:${multiApiUrls.join('|')}` : null,
-        multiApiUrls ? () => multiSourceFetcher(multiApiUrls) : null,
+        shouldFetchData && apiUrls ? `events:${apiUrls.join('|')}` : null,
+        apiUrls ? () => multiSourceFetcher(apiUrls) : null,
         {
             revalidateOnFocus: false,
-            onSuccess: ({ aggregatedData, sources }) => {
-                const data = aggregatedData
-                logr.info('use_evts_mgr', `Multiple sources events data fetched: "${data.source.name}"`, {
-                    sourceId: data.source.id,
-                    sourceType: data.source.prefix,
-                    totalEvents: data.source.totalCount,
-                    unknownLocations: data.source.unknownLocationsCount,
-                    numSources: sources.length,
-                })
+            onSuccess: ({ allEvents, sources }) => {
+                logr.info('use_evts_mgr', `Loaded ${allEvents.length} events from ${sources.length} sources: ${JSON.stringify(sources)}`)
                 // DEBUG: Track multi-source event loading completion
                 logr.info(
                     'debug-flow',
-                    `Multi-source events loaded: ${data.source.totalCount} events, SWR loading complete`
+                    `Loaded ${allEvents.length} events from ${sources.length} sources, SWR loading complete`
                 )
-
                 logr.debug('use_evts_mgr', `Before filtrEvtMgr.cmf_events_all=${filtrEvtMgr.cmf_events_all.length}`)
-                logr.info('use_evts_mgr', `Calling filtrEvtMgr.setEvents(${data.events.length})`)
-                filtrEvtMgr.setEvents(data.events)
+                logr.info('use_evts_mgr', `Calling filtrEvtMgr.setEvents(${allEvents.length})`)
+                filtrEvtMgr.setEvents(allEvents)
                 // Events are now managed by FilterEventsManager only
                 logr.debug('use_evts_mgr', `After filtrEvtMgr.cmf_events_all=${filtrEvtMgr.cmf_events_all.length}`)
             },
@@ -284,25 +209,6 @@ export function useEventsManager({
             },
         }
     )
-
-    // Determine which data to use
-    const apiData = isMultipleSources ? multiSwrData?.aggregatedData : singleApiData
-    const eventSources = isMultipleSources
-        ? multiSwrData?.sources
-        : singleApiData
-          ? [
-                {
-                    prefix: singleApiData.source.prefix,
-                    name: singleApiData.source.name,
-                    totalCount: singleApiData.source.totalCount || 0,
-                    unknownLocationsCount: singleApiData.source.unknownLocationsCount || 0,
-                    id: singleApiData.source.id || '',
-                    url: singleApiData.source.url,
-                },
-            ]
-          : null
-    const apiError = singleApiError || multiApiError
-    const apiIsLoading = singleApiIsLoading || multiApiIsLoading
 
     useEffect(() => {
         logr.info('use_evts_mgr', `uE: isLoading changed to ${apiIsLoading}`)
@@ -322,12 +228,12 @@ export function useEventsManager({
     }, [dateRange, searchQuery, showUnknownLocationsOnly, filtrEvtMgr])
 
     // Memoize filtered events to avoid unnecessary recalculations
-    // apiData: needed to trigger recalculation when new events are loaded
+    // swrData?.allEvents: needed to trigger recalculation when new events are loaded
     // filterVersion: needed to trigger recalculation when filters change
     const currentCmfEvents = useMemo(
         () => filtrEvtMgr.getCmfEvents(currentBounds || undefined),
         // eslint-disable-next-line react-hooks/exhaustive-deps
-        [filtrEvtMgr, apiData, currentBounds, filterVersion]
+        [filtrEvtMgr, swrData?.allEvents, currentBounds, filterVersion]
     )
     useEffect(() => {
         logr.info('use_evts_mgr', `uE: currentBounds now ${stringify(currentBounds)}`)
@@ -357,8 +263,8 @@ export function useEventsManager({
                 setFilterVersion((prev) => prev + 1)
             },
         },
-        eventSources: eventSources || null,
-        apiIsLoading: apiIsLoading,
+        eventSources: swrData?.sources || null,
+        apiIsLoading,
         apiError: apiError || error,
         filtrEvtMgr,
     }

@@ -14,7 +14,11 @@ Done items in [CHANGELOG](../CHANGELOG.md)
     - support scraping https://lu.ma/genai-sf
 1. Client side caching events - use local storage for events if less than CLIENT_EVENT_CACHE_SECS. For more than 5mb, use [dexie](https://github.com/dexie/Dexie.js/?tab=readme-ov-file#hello-world-react--typescript) and [indexedDB](https://www.geeksforgeeks.org/difference-between-localstorage-and-indexeddb-in-javascript/).
 1. Have a map search box - Add ability for user to type location in box, then map jumps to it. like https://thetide.guide/, Use https://maps.googleapis.com/maps/api/place/js/AutocompletionService.GetPredictionsJson
-1. Use CMF for multi day festivals - sliders can be hour instead of day, quick filters can be next 3 hrs, tonight, etc. Can support custom maps and custom event sources
+1. Use CMF for multi day festivals 
+    1. quick filter for next 3 (?) hrs or "tonight"
+    1. sliders can be hour instead of day
+    1. Click on event will not zoom out
+    1. Support custom maps
 1. compress json before writing to / after reading from redis. Consider [MessagePack](https://msgpack.org/index.html), [Protobuf](https://developers.google.com/protocol-buffers), [Arvo](https://avro.apache.org/), [BSON](https://en.wikipedia.org/wiki/BSON)
 1. batchGeocodeLocations() calls getCachedLocation() for each location. Instead, it should call a new function, getCachedLocations(), with many locations.
 1. Plura event end time is hardcoded to 1 hr after start, since only start time is shown on city pages. TODO: scrape event page itself for correct end time, and description (which is empty on city page)
@@ -32,25 +36,14 @@ Done items in [CHANGELOG](../CHANGELOG.md)
 1. better error handling of HTTP 500 from /api/events
 1. Add new field CmfEvent.timeKnown instead of "Hack: if same as start, exact start time is not known. If 1 minute after start, end time is not known.
 1. Performance improvements
-    1. Store start and end times of events as seconds since epoch. Or end should be replaced by duration? Using seconds is faster for filters. s
+    1. Store start and end times of events as seconds since epoch. Or end should be replaced by duration? Using seconds is faster for filters.
     1. Create new state, `user-updating` which is triggered by `user-updating-event`. When in `user-updating` state, don't recalculate visible events or chip counts (which leads to re-renders).
-       Note debouncing is a technique that will delay the execution of a function until an event stops firing for a specified time period.
-       So basically debounce after user-updating-event (USER_UPDATING_TIMEOUT=100 ms) then change from `user-updating` to `user-interactive`.
-       Examples of `user-updating-event`: when user starts dragging date slider, or map, or typing search box.
-    1. Current code has allEvents and visibleEvents, both array of CmfEvent[]. Every time visibleEvents changes, it recalculates event list and markers. Instead, make visibleEvents just list of eventIds, allEvents a record of Id:CmfEvent, event list can just change display:none for tr on events that are not visible.
+    Note debouncing is a technique that will delay the execution of a function until an event stops firing for a specified time period.
+    So basically debounce after user-updating-event (USER_UPDATING_TIMEOUT=100 ms) then change from `user-updating` to `user-interactive`.
+    Examples of `user-updating-event`: when user starts dragging date slider, or map, or typing search box.
+    1. Current code has allEvents and visibleEvents, both array of CmfEvent[]. Every time visibleEvents changes, it recalculates event list and markers. Instead, make visibleEvents just list of eventIds, allEvents a record of Id:CmfEvent, and separate those for dependencies.
+    1. See if event list can just change display:none for tr on events that are not visible.
 1. support `skipCache=1` in react url to force server to pull fresh data from event source.
-1. Festival support
-    1. quick filter for next 3 (?) hrs.
-    1. Click on event will not zoom out
-1. Support No Kings from from https://www.mobilize.us/?tag_ids=27849&tag_ids=26436 via https://github.com/mobilizeamerica/api - Get all public events (organization_id = 1 for public events) for Oct 18.
-1. Support https://www.nokings.org/#map
-
-```
-curl 'https://mobilize-feed-cache.vercel.app/data-42198.json?timeslot_start=gte_now&per_page=100&approval_status=APPROVED&is_virtual=false' | jq .>nokings.json
-14:20 chad@mbp-2022 main scripts > cat nokings.json |grep '"count"'
-  "count": 2093
-```
-
 1. foopee - if no times, currently defaults to 8:01pm, in general if parsing date/time and only date, should pick reasonable start end time (6am-10pm) - do this when implementing CmfEvent.timeKnown
 
 (thanks https://euangoddard.github.io/clipboard2markdown/)
@@ -69,8 +62,7 @@ Working on fixing these:
 1. Feature: if start and end time are same, code assumes timing is not accurate, and says "See event for time" instead of showing time
 1. chrome on android - Sometimes top of app (CMF, title) goes up off screen when using map to select events, triggering scrollTo, which may trigger browser to scroll up.
 1. 19hz has recurring events that also sometimes appear in non-recurring event section, which creates almost duplicate entries (duplicates can be identified and prevented). Consider ways to remove almost duplicates - original event source, identitcal title, etc.
-1. Logging bug if multiple event sources, could be more than just logs. Below is sourceType 19hz and gc (google calendar), but only gc's id is logged. TODO: review how multiple event sources are resolved - create a new function that will turn a given es string into an array of type:id's using examples.ts. Also fix this log:
-   [INFO][USE_EVTS_MGR] ✅ Multiple sources events data fetched: "Multiple Event Sources" {sourceId: 'BayArea,aabe6c219ee2af5b791ea6719e04a92990f9ccd1e68a3ff0d89bacd153a0b36d@group.calendar.google.com', sourceType: '19hz', totalEvents: 703, unknownLocations: 9, numSources: 2}
+1. Logging bug if multiple event sources, could be more than just logs. Below is sourceType 19hz and gc (google calendar), but only gc's id is logged.
 
 ## Features
 
@@ -84,40 +76,3 @@ Working on fixing these:
 Also see [How to Use](usage.md)
 
 Found a bug or want a feature? Let me know by [Creating a new issue in github](https://github.com/chadn/cmf/issues/new)
-
-## Temp
-
-Consider removing `nokings` event source.
-
-Comparing data from `nokings:all` vs `mobilize:nokings`:
-These are basically the same, minor differences
-
-- mobilize has a 36 that nokings does not, nokings has 2 mobilize does not.
-- For 241 identical evenets (same original_event_url), nokings did and mobilize did not have lat/lng (was added along with formatted_address by geocoder).
-- some descriptions are different
-
-Details:
-
-```
-rm nokings.json && curl 'http://localhost:3000/api/events?id=nokings%3Aall&timeMin=2025-09-06T17%3A30%3A03Z&timeMax=2026-01-06T18%3A30%3A03Z' |jq .>nokings.json
-rm mobilize.42198.json && curl 'http://localhost:3000/api/events?id=mobilize%3A42198&timeMin=2025-09-06T17%3A20%3A26Z&timeMax=2026-01-06T18%3A20%3A26Z' |jq .>mobilize.42198.json
-rm nokings.mobilize.42198.json && cat mobilize.42198.json | jq -S . |sed 's/"id": "mobilize-/"id": "nokings-/g'  >nokings.mobilize.42198.json
-git add nokings.mobilize.42198.json
-cat nokings.json | jq -S . >tmp.json; /bin/mv -f tmp.json nokings.mobilize.42198.json
-git diff nokings.mobilize.42198.json |wc
-    5867   37973  325290
-git diff nokings.mobilize.42198.json |grep 'original_event_url"' |grep '+'
-+      "original_event_url": "https://www.mobilize.us/nokings/event/848034/",
-+      "original_event_url": "https://www.mobilize.us/nokings/event/855478/",
-git diff nokings.mobilize.42198.json |grep 'original_event_url"' |grep '-'|wc
-      36     108    2808
-grep 'formatted_address' mobilize.42198.json |wc
-     241    1217   13411
-grep 'formatted_address' nokings.json |wc
-       0       0       0
-wc -l *.json
-   41184 mobilize.42198.json
-   39620 nokings.json
-   39620 nokings.mobilize.42198.json
-  156973 nokings.org.json
-```
