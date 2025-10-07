@@ -1,9 +1,10 @@
 {
     "name": "calendar-map-filter",
-    "version": "0.3.10",
+    "version": "0.3.11",
     "private": true,
     "scripts": {
         "dev": "next dev",
+        "dev:https": "node src/scripts/server.js",
         "build": "next build",
         "start": "next start",
         "lint": "next lint",

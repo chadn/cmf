@@ -5,6 +5,12 @@ All notable changes to Calendar Map Filter (CMF) will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.11] - 2025-10-7
+
+- **Locate Me** - fixed map on android chrome to match viewport, before bottom of map was off screen, making the Locate me icon also off screen. 
+Expect small changes to visible events, etc.
+- HTTPS is now supported in dev environment via `npm run dev:https`, see [HTTPS section in development.md](development.md#https-development-server-optional) for details.
+
 ## [0.3.10] - 2025-10-6
 
 ### Technical
@@ -15,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Support for user to jump to current location on the map by clicking icon in bottom right, aka GeolocateControl, 
+- **Locate Me** - Support for user to jump to current location on the map by clicking icon in bottom right, aka GeolocateControl, 
   using browser geolocation API. User must give permission.
 
 ## [0.3.8] - 2025-10-6

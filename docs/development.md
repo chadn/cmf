@@ -9,6 +9,7 @@
     - [Google Maps Geocoding API Key](#google-maps-geocoding-api-key)
     - [Run Dev Server](#run-dev-server)
     - [Production Build](#production-build)
+- [HTTPS Development Server (Optional)](#https-development-server-optional)
 - [Deployment](#deployment)
     - [Vercel (Recommended)](#vercel-recommended)
 - [Contributing](#contributing)
@@ -88,6 +89,57 @@ Start the production server:
 ```bash
 npm start
 ```
+
+## HTTPS Development Server (Optional)
+
+HTTPS is **not required** for most local development. However, certain browser features require a secure context (HTTPS), including:
+
+- **Geolocation API** - The map's "locate me" button (bottom-right geolocate icon) requires HTTPS to function
+- Service Workers
+- Clipboard API (in some browsers)
+- Media devices (camera/microphone)
+
+If you need these features during development, you can run the dev server with HTTPS.
+
+### Setup HTTPS (One-time)
+
+1. **Install mkcert** (creates locally-trusted SSL certificates):
+   ```bash
+   brew install mkcert
+   ```
+
+2. **Install local Certificate Authority**:
+   ```bash
+   mkcert -install
+   ```
+   You'll be prompted for your system password to trust the local CA.
+
+3. **Generate certificates** for localhost:
+   ```bash
+   mkdir -p .cert
+   mkcert -key-file .cert/localhost-key.pem -cert-file .cert/localhost-cert.pem localhost 127.0.0.1 ::1
+   ```
+
+### Run HTTPS Dev Server
+
+After setup, start the HTTPS development server:
+
+```bash
+npm run dev:https
+```
+
+Open [https://localhost:3000](https://localhost:3000) in your browser.
+
+**Note**: The `.cert/` directory is gitignored and should not be committed to version control.
+
+### Troubleshooting
+
+- **Certificate errors**: Run `mkcert -install` again to reinstall the local CA
+- **Port conflicts**: The HTTPS server uses port 3000 by default (same as HTTP dev server)
+- **Mobile testing**: To test HTTPS on mobile devices on the same network, you'll need to:
+  1. Find your computer's local IP address (`ifconfig | grep "inet "`)
+  2. Generate certificates for that IP (`mkcert -key-file .cert/localhost-key.pem -cert-file .cert/localhost-cert.pem localhost 192.168.x.x`)
+  3. Install the mkcert root CA on your mobile device
 
 ## Deployment
 

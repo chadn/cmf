@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import 'react-toastify/dist/ReactToastify.css'
@@ -15,6 +15,12 @@ export const metadata: Metadata = {
     icons: {
         icon: '/icons/favicon.ico',
     },
+}
+
+export const viewport: Viewport = {
+    width: 'device-width',
+    initialScale: 1,
+    viewportFit: 'cover',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
