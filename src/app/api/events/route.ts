@@ -127,7 +127,7 @@ export async function GET(request: NextRequest) {
         }
 
         // Check if we have a handler for this event source
-        const handler = getEventSourceHandler(eventSourceId)
+        const [handler] = getEventSourceHandler(eventSourceId)
         if (!handler) {
             logr.info('api-events', `No handler found for event source: ${eventSourceId}`)
             return NextResponse.json({ error: 'Unsupported event source type' }, { status: 400 })
@@ -136,18 +136,19 @@ export async function GET(request: NextRequest) {
         // Get optional date range parameters
         const timeMin = request.nextUrl.searchParams.get('timeMin') || ''
         const timeMax = request.nextUrl.searchParams.get('timeMax') || ''
-        const useCache = !(request.nextUrl.searchParams.get('skipCache') || false)
+        const useCache = !(request.nextUrl.searchParams.get('skipCache') == '1')
 
         if (useCache) {
             // Fetch events from the cache if available
             const startTime = performance.now()
-            const cachedResponse = await getEventsCache(eventSourceId, timeMin, timeMax)
+            const cachedResponse = await getEventsCache(eventSourceId, handler.getCacheTtl(), timeMin, timeMax)
             const fetchTime = Math.round(performance.now() - startTime)
             if (cachedResponse) {
                 logr.info(
                     'api-events',
                     `Cache hit in ${fetchTime}ms, returning ${cachedResponse.events.length} events for ${eventSourceId}`
                 )
+                cachedResponse.fromCache = true
                 return NextResponse.json(cachedResponse)
             }
             logr.info('api-events', `Cache miss, ${fetchTime}ms. Calling fetchAndGeocode for ${eventSourceId}`)
@@ -156,7 +157,8 @@ export async function GET(request: NextRequest) {
         }
         // Fetch and process events
         const response = await fetchAndGeocode(eventSourceId, timeMin, timeMax)
-        setEventsCache(response, eventSourceId, timeMin, timeMax)
+        setEventsCache(response, eventSourceId, handler.getCacheTtl(), timeMin, timeMax)
+        response.fromCache = false
 
         // Anything besides HTTP 200 should be done like: throw new Error(`HTTP 404: No events found`)
         return NextResponse.json(response)

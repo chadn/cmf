@@ -251,13 +251,13 @@ src/components/events/__tests__/EventList.test.tsx  # Component tests with RTL
 
 ```bash
 npm test
-> calendar-map-filter@0.3.10 test
+> calendar-map-filter@0.3.12 test
 > jest --coverage && node src/scripts/show-total-loc.mjs && date && echo
 ...
 ----------------------------|---------|----------|---------|---------|-----------------------------------------------------------------
 File                        | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
 ----------------------------|---------|----------|---------|---------|-----------------------------------------------------------------
-All files                   |   68.47 |    61.64 |   71.42 |   68.73 |
+All files                   |   68.79 |    61.76 |   71.42 |   69.07 |
  components/common          |     100 |      100 |     100 |     100 |
   ErrorMessage.tsx          |     100 |      100 |     100 |     100 |
   LoadingSpinner.tsx        |     100 |      100 |     100 |     100 |
@@ -291,19 +291,19 @@ All files                   |   68.47 |    61.64 |   71.42 |   68.73 |
   FilterEventsManager.ts    |   69.44 |    77.14 |   46.66 |      70 | 37-39,53-69,112,135-136,152-160,199-217
   examples.ts               |     100 |      100 |     100 |     100 |
   filters.ts                |   66.66 |       55 |   57.14 |   65.38 | 32,43,67-71,83-114
- lib/hooks                  |   33.06 |    22.11 |   45.91 |   32.37 |
+ lib/hooks                  |   33.46 |    22.74 |   45.91 |   32.81 |
   useAppController.ts       |   10.73 |        0 |       0 |   11.18 | 116-570
   useBreakpoint.ts          |    7.69 |        0 |       0 |      10 | 11-22
-  useEventsManager.ts       |   56.36 |    55.55 |   61.76 |   56.12 | 106-125,135-178,191-208
+  useEventsManager.ts       |   57.52 |    56.14 |   61.76 |   57.42 | 109-128,138-181,194-214
   useMap.ts                 |   66.37 |    33.33 |   77.41 |   67.34 | 22-29,54-60,131-142,159-165,176-180,202-205,209,242-243,276-287
   useUrlProcessor.ts        |     7.4 |        0 |       0 |    7.84 | 72-347
  lib/services               |    6.81 |        0 |       0 |    6.89 |
   urlProcessingService.ts   |    6.81 |        0 |       0 |    6.89 | 25-237
  lib/state                  |   97.14 |     82.6 |   91.66 |   96.55 |
   appStateReducer.ts        |   97.14 |     82.6 |   91.66 |   96.55 | 102
- lib/utils                  |   79.08 |    73.45 |   83.45 |   79.47 |
+ lib/utils                  |   79.65 |    73.51 |   83.45 |   80.09 |
   calendar.ts               |   85.71 |     72.5 |     100 |   85.71 | 28-29,46,56,76,82,128-129,134-135,151
-  date-19hz-parsing.ts      |   86.25 |    81.53 |   83.33 |   86.04 | 101-115,359-378
+  date-19hz-parsing.ts      |   92.36 |    86.15 |   83.33 |   92.24 | 96-97,359-378
   date-constants.ts         |     100 |      100 |     100 |     100 |
   date.ts                   |   92.54 |     86.3 |     100 |   92.15 | 59-60,76-77,85-86,129-130,225,443,490-491
   headerNames.ts            |       0 |        0 |       0 |       0 | 7-35
@@ -315,8 +315,8 @@ All files                   |   68.47 |    61.64 |   71.42 |   68.73 |
   umami.ts                  |   41.17 |     37.5 |       0 |   46.66 | 14-18,31-34
   url-utils.ts              |   94.87 |    84.29 |   96.15 |   97.57 | 76-77,317,325
   utils-client.ts           |   52.94 |     64.7 |      60 |   53.06 | 14-45,63,67,98,117-118
-  utils-server.ts           |   23.25 |        0 |       0 |   19.51 | 8,30-90
-  utils-shared.ts           |   54.23 |    74.41 |   33.33 |    57.4 | 26,45,47,49,67-71,118-142
+  utils-server.ts           |   23.25 |        0 |       0 |   19.51 | 9,31-91
+  utils-shared.ts           |   54.54 |    69.23 |   33.33 |   57.37 | 26,45,47,49,67-71,86-89,131-155
   venue-parsing.ts          |   96.87 |     82.6 |     100 |   96.82 | 151-152
  types                      |   33.33 |      100 |       0 |   28.57 |
   error.ts                  |       0 |      100 |       0 |       0 | 1-8
@@ -326,10 +326,10 @@ All files                   |   68.47 |    61.64 |   71.42 |   68.73 |
 Test Suites: 1 skipped, 30 passed, 30 of 31 total
 Tests:       10 skipped, 503 passed, 513 total
 Snapshots:   0 total
-Time:        4.13 s
+Time:        2.522 s, estimated 3 s
 Ran all test suites.
-Total Lines of Code: 2341
-Mon Oct  6 16:37:13 PDT 2025
+Total Lines of Code: 2351
+Wed Oct  8 15:50:28 PDT 2025
 ```
 
 ## Next Steps for Testing

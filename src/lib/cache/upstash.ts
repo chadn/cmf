@@ -76,6 +76,35 @@ export async function redisMGet<T>(keys: string[], prefix: string = ''): Promise
 }
 
 /**
+ * Generic function to get first 100 matching keys from Redis
+ * @param wildCardKey - The key string with wildcard *
+ * @param prefix - Optional prefix to prepend to the key
+ * @returns Promise with the array of strings, each is redis key
+ */
+export async function redisScan<T>(wildCardKey: string, prefix: string = ''): Promise<T | null> {
+    try {
+        // Skip if Upstash is not configured
+        if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) {
+            return null
+        }
+
+        if (!wildCardKey) {
+            return null
+        }
+
+        const client = getRedisClient()
+        const cacheKey = prefix ? `${prefix}${wildCardKey}` : wildCardKey
+        const [, keys] = await client.scan('0', { match: cacheKey, count: 100 })
+        // First element is cursor used for pagination ('0' means scan complete) - unused for now
+        // keys is the array of matching keys
+        return keys && keys.length > 0 ? (keys as T) : null
+    } catch (error) {
+        logr.warn('cache', 'redisScan error', error)
+        return null
+    }
+}
+
+/**
  * Generic function to set a value in Redis
  * @param key - The key to store
  * @param value - The value to store

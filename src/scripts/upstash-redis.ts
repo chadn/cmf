@@ -263,7 +263,7 @@ function ttlStr(ttl: number): string {
     if (ttl === -1) {
         ttlStr = '-1=INFINITE, will never expire'
     } else if (ttl === -2) {
-        ttlStr = '-2=NOT_FOUND (bug in upstash-redis.ts)'
+        ttlStr = '-2=NOT_FOUND (expired key lazily deleted, gone on next access)'
     } else if (ttl === 0) {
         ttlStr = '0=EXPIRED, will be deleted soon'
     } else if (ttl > 60) {

@@ -53,6 +53,10 @@ export class MobilizeEventsSource extends BaseEventSourceHandler {
 
     private readonly baseUrl = 'https://api.mobilize.us/v1'
 
+    getCacheTtl(): number {
+        return 60 * 60 * 6 // Cache for 6 hours
+    }
+
     async fetchEvents(params: EventsSourceParams): Promise<EventsSourceResponse> {
         try {
             const mobilizeIds: Record<string, { id: string; name: string }> = {

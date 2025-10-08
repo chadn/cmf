@@ -19,7 +19,7 @@ export interface Location {
 // signal blockage (buildings, bridges, trees, indoors), atmospheric conditions, and receiver design features/quality.
 //  https://www.gps.gov/index.php/gps-accuracy-0
 
-// CmfEvent attributes are all strings for json export compatibility
+// CmfEvent attributes are all strings or numbers (or arrays/objects of those) for json export compatibility
 export interface CmfEvent {
     id: string
     name: string
@@ -69,6 +69,7 @@ export interface EventsSourceResponse {
     events: CmfEvent[]
     source: EventsSource
     httpStatus: number
+    fromCache?: boolean
 }
 
 export interface DateRangeIso {

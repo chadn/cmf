@@ -41,6 +41,10 @@ export class PluraEventsSource extends BaseEventSourceHandler {
         super()
     }
 
+    getCacheTtl(): number {
+        return 60 * 60 * 48 // Cache for 48 hours
+    }
+
     async fetchEvents(params: EventsSourceParams): Promise<EventsSourceResponse> {
         const cityToScrape = params.id || 'all'
         const returnEvents: Record<string, CmfEvent> = {} //  our key is eventId, val is CMF Event

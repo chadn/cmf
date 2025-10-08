@@ -5,23 +5,32 @@ All notable changes to Calendar Map Filter (CMF) will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.12] - 2025-10-8
+
+### Technical
+
+- Improved events caching.
+    - `skipCache=1` in app URL will force not to use cache. Already supported in API `/api/events`
+    - `/api/events` return json now includes `fromCache` boolean
+    - enable cache TTL setting per event source via `getCacheTtl` (mobilize and nokings 6 hrs, plura 48 hrs)
+
 ## [0.3.11] - 2025-10-7
 
-- **Locate Me** - fixed map on android chrome to match viewport, before bottom of map was off screen, making the Locate me icon also off screen. 
-Expect small changes to visible events, etc.
-- HTTPS is now supported in dev environment via `npm run dev:https`, see [HTTPS section in development.md](development.md#https-development-server-optional) for details.
+- **Locate Me** - fixed map on android chrome to match viewport, before bottom of map was off screen, making the Locate me icon also off screen.
+  Expect small changes to visible events, etc.
+- HTTPS is now supported in dev environment via `npm run dev:https`, see [HTTPS section in development.md](docs/development.md#https-development-server-optional) for details.
 
 ## [0.3.10] - 2025-10-6
 
 ### Technical
 
-- code cleanup, simplified useEventsManager.ts 
+- code cleanup, simplified useEventsManager.ts
 
 ## [0.3.9] - 2025-10-6
 
 ### Added
 
-- **Locate Me** - Support for user to jump to current location on the map by clicking icon in bottom right, aka GeolocateControl, 
+- **Locate Me** - Support for user to jump to current location on the map by clicking icon in bottom right, aka GeolocateControl,
   using browser geolocation API. User must give permission.
 
 ## [0.3.8] - 2025-10-6
@@ -59,13 +68,13 @@ Expect small changes to visible events, etc.
 ### Added
 
 - `es=dissent:oct18nokings` for Oct 18 No Kings WeThePeopleDissent.net
-- `update-location` to `npm run cache` in order to edit lat/lng (and more) for a location.  
+- `update-location` to `npm run cache` in order to edit lat/lng (and more) for a location.
 
 ## [0.3.6] - 2025-10-1
 
 ### Changed
 
-- es=19hz now defaults to all north american cities. 
+- es=19hz now defaults to all north american cities.
 - fixed e2e tests to always pass.
 - include version on homepage, bottom left.
 
@@ -461,7 +470,6 @@ Expect small changes to visible events, etc.
 ### Planned
 
 - Favorite events with local storage
-- Additional protest event sources integration
 - Client-side event caching improvements
 - Map search box for location jumping
 - Festival mode with hourly time sliders

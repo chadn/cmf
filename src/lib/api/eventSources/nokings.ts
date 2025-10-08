@@ -48,6 +48,10 @@ export class NoKingsEventsSource extends BaseEventSourceHandler {
         url: 'https://nokings.org/',
     }
 
+    getCacheTtl(): number {
+        return 60 * 60 * 6 // Cache for 6 hours
+    }
+
     async fetchEvents(params: EventsSourceParams): Promise<EventsSourceResponse> {
         try {
             logr.info('api-es-nokings', 'Fetching No Kings events from Mobilize API')

@@ -3,6 +3,7 @@ import curlirize from 'axios-curlirize'
 import { logr } from '@/lib/utils/logr'
 import { getSizeOfAny } from '@/lib/utils/utils-shared'
 import { HttpError } from '@/types/error'
+import { stringify } from '@/lib/utils/utils-shared'
 
 if (process.env.NODE_ENV === 'development') {
     curlirize(axios)
@@ -63,7 +64,7 @@ export const axiosGet = async (url: string, params?: any) => {
             if (error.response) {
                 // The request was made and the server responded with a status code
                 // that falls out of the range of 2xx
-                logr.info('utils-server', `isAxiosError error.response.data: ${JSON.stringify(error.response.data)}`)
+                logr.info('utils-server', `isAxiosError error.response.data: ${stringify(error.response.data)}`)
                 logr.info(
                     'utils-server',
                     `isAxiosError error.response.status: ${JSON.stringify(error.response.status)}`

@@ -9,9 +9,27 @@ const useFilesystemCache = checkUseFilesystemCache()
 const CACHE_TTL_API_GEOCODE = process.env.CACHE_TTL_API_GEOCODE
     ? parseInt(process.env.CACHE_TTL_API_GEOCODE)
     : 60 * 60 * 24 * 90 // 90 days
-const CACHE_TTL_API_EVENTSOURCE = process.env.CACHE_TTL_API_EVENTSOURCE
-    ? parseInt(process.env.CACHE_TTL_API_EVENTSOURCE)
-    : 60 * 10 // 10 minutes
+
+export async function getCacheKeys(key: string, prefix?: string): Promise<string[]> {
+    if (!key) return []
+    const start = performance.now()
+
+    let results: string[] | null = null
+    if (useFilesystemCache) {
+        // not tested
+        const cache = filesystemCache.loadCache()
+        results = Object.keys(cache).filter((k) => k.startsWith(`${prefix}${key}`))
+    } else {
+        results = await upstashCache.redisScan<string[]>(`${prefix}${key}`)
+    }
+
+    const { bytes, sizeString } = getSizeOfAny(results, 'json') as { bytes: number; sizeString: string }
+    const val = bytes > 10 ? '' : ` (${JSON.stringify(results)})`
+
+    logr.info('cache', `getCacheKeys ${Math.round(performance.now() - start)}ms ${sizeString}${val} ${prefix}${key}`)
+    return results ? results : []
+}
+
 /**
  * Generic function to get a single or multiple values from cache
  * @param key - The key or keys to retrieve
@@ -182,51 +200,110 @@ export async function setCacheLocation(locationKey: string, location: Location):
     return setCache<Location>(locationKey, location, LOCATION_KEY_PREFIX, CACHE_TTL_API_GEOCODE)
 }
 
+/**
+ * Generates a cache key for events
+ */
+function createEventsCacheKey(eventSourceId: string, timeMin: string = '', timeMax: string = ''): string {
+    return `${eventSourceId}-${roundTimeToNearestHour(timeMin)}-${roundTimeToNearestHour(timeMax)}`
+}
+
+/**
+ * Validates and parses time strings into Date objects, returns current time if invalid params
+ */
+function parseTimeRange(timeMin: string, timeMax: string): { timeMinDate: Date; timeMaxDate: Date } {
+    const timeMinDate = timeMin ? new Date(timeMin) : new Date()
+    const timeMaxDate = timeMax ? new Date(timeMax) : new Date()
+    if (isNaN(timeMinDate.getTime()) || isNaN(timeMaxDate.getTime())) {
+        logr.info('cache', `parseTimeRange: invalid timeMin(${timeMin}) or timeMax(${timeMax}), using current time.`)
+        return parseTimeRange('', '')
+    }
+    return { timeMinDate, timeMaxDate }
+}
+
+/**
+ * Fetches value from cache, the key used is based on params.  Trying to do 2 things
+ * - fetch accurately - for specific timeMin and timeMax
+ * - fetch broadly - for the eventSourceId across any cached value over cacheTtlEventSource
+ * @param eventSourceId - The ID of the event source
+ * @param cacheTtlEventSource - The TTL for the event source cache
+ * @param timeMin - The minimum time for the event range
+ * @param timeMax - The maximum time for the event range
+ * @returns The cache key for the events
+ */
 export const getEventsCache = async (
     eventSourceId: string,
+    cacheTtlEventSource: number, // in seconds
     timeMin: string = '',
     timeMax: string = ''
 ): Promise<EventsSourceResponse | null> => {
-    let fetchKey = `${eventSourceId}-${roundTimeToNearestHour(timeMin)}-${roundTimeToNearestHour(timeMax)}`
-    const cachedResponse = await getCache<EventsSourceResponse>(fetchKey, EVENTS_CACHE_PREFIX)
-    if (cachedResponse) return cachedResponse
+    // TODO: improve performance slightly. Currently code does 2 redis calls synchronously.
+    // Instead, do 2 in parallel:
+    // - getCacheKeys() as done now
+    // - getCache() for the most recent key (calculated). If hit, return right away
 
-    // try again for the previous hour (in case it is 1 minute into a new hour)
-    // Only do this if we have valid dates
-    if (timeMin && timeMax) {
-        const timeMinDate = new Date(timeMin)
-        const timeMaxDate = new Date(timeMax)
-        if (!isNaN(timeMinDate.getTime()) && !isNaN(timeMaxDate.getTime())) {
-            const timeMin2 = new Date(timeMinDate.getTime() - 59 * 60 * 1000).toISOString()
-            const timeMax2 = new Date(timeMaxDate.getTime() - 59 * 60 * 1000).toISOString()
-            fetchKey = `${eventSourceId}-${roundTimeToNearestHour(timeMin2)}-${roundTimeToNearestHour(timeMax2)}`
-            const cachedResponse2 = await getCache<EventsSourceResponse>(fetchKey, EVENTS_CACHE_PREFIX)
-            return cachedResponse2
+    // Use provided times or default to current time if invalid
+    const { timeMinDate, timeMaxDate } = parseTimeRange(timeMin, timeMax)
+    const MAX_HOURS_BACK = 72 //  prevent infinite loops, 3 days seems reasonable.
+    const maxHoursBack = Math.min(MAX_HOURS_BACK, Math.ceil(cacheTtlEventSource / 3600))
+
+    logr.info('cache', `getEventsCache: Checking ${maxHoursBack} maxHoursBack for ${eventSourceId}`)
+
+    // TODO: fetch all keys that match eventSourceId-*, then find best match for timeMin/timeMax
+    const results = await getCacheKeys(`${eventSourceId}-*`, EVENTS_CACHE_PREFIX)
+    logr.info(
+        'cache',
+        `getEventsCache: getCacheKeys Found ${results.length} keys that start with '${eventSourceId}-'\n${JSON.stringify(results)}`
+    )
+
+    // Search backwards in time for cached entries until TTL cutoff, most recent cached first
+    for (let hoursBack = 0; hoursBack - 1 < maxHoursBack; hoursBack++) {
+        const currentTimeMin = new Date(timeMinDate.getTime() - hoursBack * 60 * 60 * 1000)
+        const currentTimeMax = new Date(timeMaxDate.getTime() - hoursBack * 60 * 60 * 1000)
+        const fetchKey =
+            EVENTS_CACHE_PREFIX +
+            createEventsCacheKey(
+                eventSourceId,
+                roundTimeToNearestHour(currentTimeMin),
+                roundTimeToNearestHour(currentTimeMax)
+            )
+        if (results.includes(fetchKey)) {
+            const cachedResponse = await getCache<EventsSourceResponse>(fetchKey)
+            if (cachedResponse) {
+                logr.info('cache', `getEventsCache: Cache hit for ${fetchKey} (${hoursBack}h back)`)
+                return cachedResponse
+            }
+        } else {
+            //logr.info('cache', `getEventsCache: key miss for '${fetchKey}'`)
         }
     }
 
+    logr.info('cache', `getEventsCache: No cache found for ${eventSourceId} within ${cacheTtlEventSource}s TTL`)
     return null
 }
 
+/**
+ * Sets the events cache for a specific event source and time range
+ * @param response - The events source response to cache
+ * @param eventSourceId - The ID of the event source
+ * @param cacheTtlEventSource - The cache TTL
+ * @param timeMin - The minimum time for the event range
+ * @param timeMax - The maximum time for the event range
+ */
 export const setEventsCache = async (
     response: EventsSourceResponse,
     eventSourceId: string,
+    cacheTtlEventSource: number, // in seconds
     timeMin?: string,
     timeMax?: string
-) => {
-    const fetchKey = `${eventSourceId}-${roundTimeToNearestHour(timeMin)}-${roundTimeToNearestHour(timeMax)}`
+): Promise<void> => {
+    const fetchKey = createEventsCacheKey(eventSourceId, timeMin, timeMax)
 
-    // Save to cache in the background (don't await) but log when successful or failed
+    // Save to cache in the background using waitUntil (don't await), log success or error.
     // 2024 https://vercel.com/changelog/waituntil-is-now-available-for-vercel-functions
     waitUntil(
-        new Promise(async () => {
-            try {
-                await setCache<EventsSourceResponse>(fetchKey, response, EVENTS_CACHE_PREFIX, CACHE_TTL_API_EVENTSOURCE)
-                logr.info('api-events', `waitUntil:Cached events TTL=${CACHE_TTL_API_EVENTSOURCE}s for ${fetchKey}`)
-            } catch (error) {
-                logr.warn('api-events', `waitUntil:Failed to cache events for ${fetchKey}`, error)
-            }
-        })
+        setCache<EventsSourceResponse>(fetchKey, response, EVENTS_CACHE_PREFIX, cacheTtlEventSource)
+            .then(() => logr.info('api-events', `setEventsCache Done TTL=${cacheTtlEventSource}s for ${fetchKey}\n`))
+            .catch((error) => logr.warn('api-events', `setEventsCache FAIL for ${fetchKey}\n`, error))
     )
 }
 

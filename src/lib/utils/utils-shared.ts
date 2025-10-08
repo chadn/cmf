@@ -62,24 +62,33 @@ export const getSizeOfAny = (
 /**
  * Rounds a date to the nearest hour in ISO 8601 format
  * @param date - Date object or string to round, defaults to current date if invalid
- * @returns ISO 8601 formatted date string rounded to the nearest hour
+ * @returns ISO 8601 formatted date string rounded to the nearest hour, msecs removed
  */
 export function roundTimeToNearestHour(date: Date | string = ''): string {
     let roundedDate = new Date(date)
     if (isNaN(roundedDate.getTime())) roundedDate = new Date()
     roundedDate.setMinutes(0, 0, 0)
-    return roundedDate.toISOString()
+    return roundedDate.toISOString().replace(/00\.000Z/, '00Z')
 }
 
 /**
  * Like JSON.stringify(), but custom strings for certain types
  * @param data - The data to standardize
+ * @param maxLength - Maximum length of the resulting string, default 100.
+ *        For data types that do not match, longer strings are truncated with ...
  * @returns A standardized string
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function stringify(data: any): string {
+export function stringify(data: any, maxLength: number = 100): string {
     if (data == null) return String(data) // handles null + undefined
-    if (typeof data === 'string') return data // handles string
+
+    if (typeof data === 'string') {
+        if (maxLength && data.length > maxLength) {
+            return data.substring(0, maxLength - 3) + '...'
+        } else {
+            return data
+        }
+    }
 
     // TypeScript uses the concept of a discriminated union (also called a tagged union).
     // For that to work, all members of the union must share a common property whose type is a string (or literal) union
@@ -101,7 +110,11 @@ export function stringify(data: any): string {
         // MapViewport type
         return `lat:${data.latitude} lon:${data.longitude} zoom:${data.zoom}`
     }
-    return JSON.stringify(data)
+    let result = JSON.stringify(data)
+    if (maxLength && result.length > maxLength) {
+        result = result.substring(0, maxLength - 3) + '...'
+    }
+    return result
 }
 
 /**

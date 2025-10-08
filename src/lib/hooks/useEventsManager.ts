@@ -46,7 +46,8 @@ export function useEventsManager({
     ed,
 }: UseEventsManagerProps): UseEventsManagerResult {
     // Always initialize hooks in the same order (React rules)
-    // rename filtrEvtMgr to filterEventsMgr
+
+    // TODO: rename filtrEvtMgr to filterEventsMgr
     const [filtrEvtMgr] = useState(() => new FilterEventsManager())
 
     // Check if we should skip data fetching
@@ -80,24 +81,26 @@ export function useEventsManager({
         }
     }, [sd, ed])
 
-    // Memoize the API URLs construction - handles both single and multiple sources
     const apiUrls = useMemo(() => {
         if (sourceIds.length === 0) return null
-        // timeMin and timeMax must be RFC3339 date strings
+
+        let shouldSkip = false
+        if (typeof window !== 'undefined') {
+            shouldSkip = /[?&]skipcache=1/i.test(window.location.search)
+        }
         return sourceIds.map(
             (sourceId) =>
                 `/api/events?id=${encodeURIComponent(sourceId)}` +
                 `&timeMin=${encodeURIComponent(timeMin || '')}` +
-                `&timeMax=${encodeURIComponent(timeMax || '')}`
+                `&timeMax=${encodeURIComponent(timeMax || '')}` +
+                `&skipCache=${shouldSkip ? '1' : '0'}`
         )
     }, [sourceIds, timeMin, timeMax])
 
     // Log the API URLs being used
     useEffect(() => {
         if (apiUrls) {
-            logr.info(
-                'use_evts_mgr',
-                `uE: API URLs for events data: ${JSON.stringify(apiUrls)}`)
+            logr.info('use_evts_mgr', `uE: API URLs for events data: ${JSON.stringify(apiUrls)}`)
         }
     }, [apiUrls])
 
@@ -192,7 +195,10 @@ export function useEventsManager({
         {
             revalidateOnFocus: false,
             onSuccess: ({ allEvents, sources }) => {
-                logr.info('use_evts_mgr', `Loaded ${allEvents.length} events from ${sources.length} sources: ${JSON.stringify(sources)}`)
+                logr.info(
+                    'use_evts_mgr',
+                    `Loaded ${allEvents.length} events from ${sources.length} sources: ${JSON.stringify(sources)}`
+                )
                 // DEBUG: Track multi-source event loading completion
                 logr.info(
                     'debug-flow',

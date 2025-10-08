@@ -1,5 +1,6 @@
 import { EventsSourceParams, EventsSourceResponse, EventsSource } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
+import { env } from '@/lib/config/env'
 
 /**
  * Base class for event source handlers that provides common functionality
@@ -7,6 +8,11 @@ import { logr } from '@/lib/utils/logr'
 export abstract class BaseEventSourceHandler {
     abstract type: EventsSource
     abstract fetchEvents(params: EventsSourceParams): Promise<EventsSourceResponse>
+
+    getCacheTtl(): number {
+        // in seconds, if >0 and httpStatus=200, cache this response for that many seconds
+        return env.CACHE_TTL_API_EVENTSOURCE
+    }
 
     /**
      * Extracts URLs from a text string
