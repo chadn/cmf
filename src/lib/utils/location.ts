@@ -1,5 +1,5 @@
 import { MutableRefObject } from 'react'
-import { ViewState as ViewStateType } from 'react-map-gl'
+import { ViewState as ViewStateType } from 'react-map-gl/maplibre'
 import WebMercatorViewport from '@math.gl/web-mercator'
 import { MapBounds, MapViewport, MapMarker } from '@/types/map'
 import { CmfEvent } from '@/types/events'

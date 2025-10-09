@@ -21,8 +21,8 @@ const mockMapInstance = {
 // Import React directly to avoid require style import
 import * as ReactImport from 'react'
 
-// Mock react-map-gl components
-jest.mock('react-map-gl', () => {
+// Mock react-map-gl/maplibre components
+jest.mock('react-map-gl/maplibre', () => {
     interface MapProps {
         children?: React.ReactNode
         onLoad?: () => void

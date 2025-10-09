@@ -1,4 +1,11 @@
-import { getCityStateFromCity, getTimezoneFromCity, convertUtcToTimeZone } from '@/lib/utils/timezones'
+import {
+    getCityStateFromCity,
+    getTimezoneFromCity,
+    convertUtcToTimeZone,
+    convertUtcToTimeZoneAtCoords,
+    getTimezoneFromLatLng,
+    timezoneInfo,
+} from '@/lib/utils/timezones'
 import { parseDateString } from '@/lib/utils/date'
 
 describe('timezones utilities', () => {
@@ -48,6 +55,79 @@ describe('timezones utilities', () => {
 
         it('should default to America/Los_Angeles when city is not found', () => {
             expect(getTimezoneFromCity('nonexistent')).toBe('America/Los_Angeles')
+        })
+    })
+
+    describe('getTimezoneFromLatLng', () => {
+        it('should return timezone for valid coordinates', () => {
+            // San Francisco coordinates
+            expect(getTimezoneFromLatLng(37.7749, -122.4194)).toBe('America/Los_Angeles')
+
+            // New York coordinates
+            expect(getTimezoneFromLatLng(40.7128, -74.006)).toBe('America/New_York')
+
+            // London coordinates
+            expect(getTimezoneFromLatLng(51.5074, -0.1278)).toBe('Europe/London')
+        })
+
+        it('should return UNKNOWN_TZ for invalid coordinates', () => {
+            // Invalid latitude (out of range)
+            expect(getTimezoneFromLatLng(999, -122.4194)).toBe('UNKNOWN_TZ')
+
+            // Invalid longitude (out of range)
+            expect(getTimezoneFromLatLng(37.7749, 999)).toBe('UNKNOWN_TZ')
+        })
+    })
+
+    describe('convertUtcToTimeZoneAtCoords', () => {
+        it('should convert time to timezone at given coordinates', () => {
+            const utcTime = '2024-06-10T17:00:00Z'
+
+            // San Francisco coordinates
+            const sfResult = convertUtcToTimeZoneAtCoords(utcTime, 37.7749, -122.4194)
+            expect(sfResult).toBe('2024-06-10T17:00:00-07:00')
+
+            // New York coordinates
+            const nyResult = convertUtcToTimeZoneAtCoords(utcTime, 40.7128, -74.006)
+            expect(nyResult).toBe('2024-06-10T17:00:00-04:00')
+        })
+
+        it('should handle winter dates with different DST offsets', () => {
+            const winterTime = '2024-01-10T17:00:00Z'
+
+            // San Francisco in winter (PST)
+            const sfResult = convertUtcToTimeZoneAtCoords(winterTime, 37.7749, -122.4194)
+            expect(sfResult).toBe('2024-01-10T17:00:00-08:00')
+        })
+    })
+
+    describe('timezoneInfo', () => {
+        it('should return browser timezone information', () => {
+            const info = timezoneInfo()
+
+            expect(info).toHaveProperty('browserTz')
+            expect(info).toHaveProperty('tzOffset')
+            expect(info).toHaveProperty('tzAbbrev')
+
+            expect(typeof info.browserTz).toBe('string')
+            expect(typeof info.tzOffset).toBe('string')
+            expect(typeof info.tzAbbrev).toBe('string')
+
+            // Verify offset format (e.g., ' UTC-7' or ' UTC+0')
+            expect(info.tzOffset).toMatch(/^ UTC[+-]\d+(\.\d+)?$/)
+        })
+
+        it('should handle environments without Intl', () => {
+            const originalIntl = global.Intl
+            // @ts-expect-error - intentionally deleting Intl for testing
+            delete global.Intl
+
+            const info = timezoneInfo()
+            expect(info.browserTz).toBe('Unknown')
+            expect(info.tzOffset).toBe('')
+            expect(info.tzAbbrev).toBe('')
+
+            global.Intl = originalIntl
         })
     })
 

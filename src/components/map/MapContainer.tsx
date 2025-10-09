@@ -1,8 +1,8 @@
 'use client'
 
 import { useRef, useEffect, useState, useCallback } from 'react'
-import Map, { Marker, Popup, NavigationControl, GeolocateControl, ViewState, MapRef } from 'react-map-gl'
-import type { GeolocateResultEvent } from 'react-map-gl'
+import Map, { Marker, Popup, NavigationControl, GeolocateControl, ViewState, MapRef } from 'react-map-gl/maplibre'
+import type { GeolocateResultEvent } from 'react-map-gl/maplibre'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { env } from '@/lib/config/env'
 import { MapViewport, MapBounds, MapMarker } from '@/types/map'
@@ -262,10 +262,8 @@ const MapContainer: React.FC<MapContainerProps> = ({
                         },
                     ],
                 }}
-                mapboxAccessToken="" // Ensure no token is used
                 minZoom={2} // Slightly restrict min zoom to avoid world wrapping issues
                 maxZoom={19} // Allow high zoom for detailed city views
-                attributionControl={true}
                 reuseMaps={true} // Set to true to fix performance issues
                 renderWorldCopies={true}
                 latitude={viewport.latitude}
@@ -279,10 +277,7 @@ const MapContainer: React.FC<MapContainerProps> = ({
                 interactive={true}
                 dragRotate={false} // Disable rotation for simplicity
                 doubleClickZoom={true} // Enable double-click zoom
-                scrollZoom={{
-                    speed: 0.01, // Increase zoom speed (default is 0.002)
-                    smooth: true,
-                }} // Configure faster scroll zoom
+                scrollZoom={true} // Enable scroll zoom
                 dragPan={true} // Ensure drag pan is enabled
                 touchPitch={false}
             >
@@ -293,7 +288,6 @@ const MapContainer: React.FC<MapContainerProps> = ({
                 <GeolocateControl
                     position="bottom-right"
                     trackUserLocation={false}
-                    showUserHeading={false}
                     onGeolocate={handleGeolocate}
                     fitBoundsOptions={{
                         maxZoom: 12, // Don't zoom in closer than this level

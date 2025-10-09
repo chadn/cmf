@@ -1,5 +1,6 @@
 import React, { forwardRef, ReactNode, useMemo } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
 import * as Popover from '@radix-ui/react-popover'
 import { Button } from '@/components/ui/button'
@@ -119,9 +120,9 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(
                                         <div className="flex flex-col gap-2 text-blue-700  text-sm">
                                             <ul className="list-disc pl-5 space-y-1">
                                                 <li>
-                                                    <a href="/" className="hover:underline">
+                                                    <Link href="/" className="hover:underline">
                                                         Enter New Source
-                                                    </a>
+                                                    </Link>
                                                 </li>
                                                 <li>
                                                     <button

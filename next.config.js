@@ -2,7 +2,12 @@
 const nextConfig = {
     reactStrictMode: true, // set to false to more closely imitate production
     images: {
-        domains: ['maps.googleapis.com'],
+        remotePatterns: [
+            {
+                protocol: 'https',
+                hostname: 'maps.googleapis.com',
+            },
+        ],
     },
     // Configure environment variables that should be available on the client
     env: {

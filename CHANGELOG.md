@@ -5,6 +5,27 @@ All notable changes to Calendar Map Filter (CMF) will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2025-10-8
+
+### Changed
+
+- **Major Framework Upgrade** - Upgraded to Next.js 15 and React 19
+  - All dependencies updated for React 19 compatibility
+  - See [ADR: Upgrade to Next.js 15 and React 19](docs/adr/2025-10-08-upgrade-nextjs-15-react-19.md) for details
+- **Unit Tests** - coverage improved 
+
+### Technical
+
+- **Map Library Updates** - Updated to react-map-gl 8 and maplibre-gl 5
+- **UI Libraries** - Updated Radix UI components for React 19 compatibility
+- **Configuration** - Updated `next.config.js` to use `remotePatterns` instead of deprecated `domains`
+- **Deferred Upgrades** - Evaluated and deferred Jest v30, Tailwind CSS v4, and ESLint v9 (see ADR for rationale)
+
+### Fixed
+
+- Updated internal navigation to use Next.js `<Link>` component (ESLint compliance)
+- Removed deprecated Map component props for react-map-gl v8 compatibility
+
 ## [0.3.12] - 2025-10-8
 
 ### Technical
