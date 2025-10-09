@@ -44,147 +44,26 @@ More details in [Development Guide](development.md).
 
 ## Architecture Overview
 
-Basically this a single page web app, where client retrieves list of events from server, maintains a list of visibleEvents, and constantly updates UI when number of visibleEvents changes. visibleEvents change when user does actions that trigger search filter, date filter, or map filter.
-
-The challenge in implementation is when a UI element like the map, is both an input (filtering events) and output (updated with visibleEvents)
-
-The application follows a hybrid Next.js architecture.
-
-The trickiest part is how the client React app loads and runs.
-
-**Server Components:**
-
-- API routes (`/api/events`, `/api/geocode`) for data fetching
-- Server-side rendering for initial page load
-- Geocoding cache using Upstash Redis (production) or filesystem (development)
-
-**Client Components:**
-
-- React app with complex state setup and running
-- Interactive MapLibre GL map with react-map-gl wrapper
-- Real-time event filtering via FilterEventsManager
-- UI interactions with shadcn/ui components
-
-**Filtering Architecture:**
-
-- **Two-stage filtering**: Domain filters (date, search) → Map filter (map bounds)
-- **Domain filters** determine core event set, applied in FilterEventsManager
-- **Map filter** determines what's visible on map using MapBounds, applied separately
-- **Independent chip counts**: Each filter chip shows events hidden by that filter alone
-
-**Test Coverage:** See [tests.md](tests.md) for current coverage statistics.
-
-### Architecture Principles
-
-**Smart Hook / Dumb Component Pattern**
-
-CMF now implements a **complete separation of business logic from UI rendering** using the Smart Hook / Dumb Component architecture pattern:
-
-- **Services Layer** (`lib/services/`, `lib/utils/`) = Pure business logic functions, easily testable, no React dependencies
-- **Smart Hook** (`lib/hooks/useAppController.ts`) = **ALL** React state management and business logic orchestration (~550 lines)
-- **Dumb Components** (`app/page.tsx`, `components/*/`) = **ONLY** UI rendering with props, zero business logic (~50 lines for main page)
-- **Specialized Hooks** (`lib/hooks/useEventsManager.ts`, `useMap.ts`) = Domain-specific React state management
-- **Type System** (`types/`) = Consolidated interfaces with clean separation
-
-**Benefits Realized:**
-
-- **Single Source of Truth:** All business logic centralized in useAppController
-- **Independent Testing:** Smart hook tested separately from UI components
-- **Reusable Services:** Pure functions available to any component/hook
-- **Clear Responsibilities:** Each layer has single, well-defined purpose
-
-#### **Pure Functions (Services)**
-
-- **Location:** `src/lib/services/`
-- **When to create:** Business logic that needs independent testing
-- **Examples:** `processDomainFilters()`, `shouldTransitionTo()`, `getStateRequirements()`
-
-#### **React Hooks**
-
-- **Location:** `src/lib/hooks/`
-- **When to create:** React state management that uses services
-- **Examples:** `useAppController()`, `useEventsManager()`, `useMap()`
-
-#### **Utility Functions**
-
-- **Location:** `src/lib/utils/`
-- **When to use:** General-purpose functions used across the app
-- **Examples:** `logr.info()`, `calculateBoundsFromViewport()`, `urlDateToIsoString()`
+For a comprehensive architecture overview, see [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Key Data Structures and Data Flow
 
 ### Core Data Structures
 
-- **Events** defined in [types/events.ts](../src/types/events.ts), on server and client
-    - `CmfEvent` object definiton below. Used on server when transforming from event sources, and on client in lists, map markers, and filters
-    - `CmfEvents` object definiton below. Used on client, tracks allEvents and currently visibleEvents along with counts for filters
-- **Maps** defined in [types/map.ts](../src/types/map.ts), on client
-    - `MapViewport` - latitude, longitude, zoom
-    - `MapBounds` - north, south, east, west boundaries in degrees for Map Container
-    - `MapMarker` - latitude, longitude, id, events (cmfEvents at that marker's location)
-    - `MapState` - viewport, bounds, markers, selectedMarkerId. The complete state of the map component.
-- **Filters** defined in [types/events.ts](../src/types/events.ts), on client
-    - `DomainFilters` - current date and search filters
-    - No separate map filter, just uses `MapBounds` object
-- **Other** on client
-    - URL definitions in [types/urlparams.d.ts](../src/types/urlparams.d.ts) and parsing in [url-utils.ts](../src/lib/utils/url-utils.ts)
+See [ARCHITECTURE.md](ARCHITECTURE.md#core-data-structures) for detailed data structure definitions.
 
-```typescript
-export interface CmfEvent {
-    id: string
-    name: string
-    original_event_url: string
-    description: string // always exists, may be empty
-    description_urls: string[] // always exists, may be empty. NOT USED: Consider removing.
-    start: string // ISO string
-    end: string // ISO string. Hack: if same as start, exact start time is not known. If 1 minute after start, end time is not known.
-    tz?: string // ex: 'America/Los_Angeles'; 'UNKNOWN_TZ' if location not found, 'CONVERT_UTC_TO_LOCAL' as temp timezone till can look up location
-    location: string // always exists, may be empty, matches original_location
-    src?: number // source index when 2 or more event sources: 1 for first source, 2 for second, etc.
-    resolved_location?: Location {
-        status: EventStatus
-        original_location: string
-        // the rest of these are only if status === 'resolved'
-        formatted_address?: string
-        lat?: number // latitude
-        lng?: number // longitude
-} }
-export interface CmfEvents {
-    allEvents: CmfEvent[]
-    visibleEvents: CmfEvent[] // events that pass all filters
-    hiddenCounts: {
-        byMap: number
-        bySearch: number
-        byDate: number
-        byLocationFilter: number
-}   }
-```
+**Quick reference:**
 
-```typescript
-export interface MapState {
-    viewport: MapViewport // latitude, longitude, zoom
-    bounds: MapBounds | null // north, south, east, west
-    markers: MapMarker[]
-    selectedMarkerId: string | null
-}
-export interface MapMarker {
-    id: string // Unique identifier for the marker, typically based on coordinates
-    latitude: number // Latitude position of the marker
-    longitude: number // Longitude position of the marker
-    events: CmfEvent[] // Array of events that occur at this location
-}
-```
+- **CmfEvent** - Individual event with location, time, metadata (defined in [types/events.ts](../src/types/events.ts))
+- **CmfEvents** - Collection with `allEvents`, `visibleEvents`, `hiddenCounts` (defined in [types/events.ts](../src/types/events.ts))
+- **MapState** - Map viewport, bounds, markers, selectedMarkerId (defined in [types/map.ts](../src/types/map.ts))
+- **DomainFilters** - Date range and search query filters (defined in [types/events.ts](../src/types/events.ts))
+- **URL parameters** - Defined in [types/urlparams.d.ts](../src/types/urlparams.d.ts), parsed in [url-utils.ts](../src/lib/utils/url-utils.ts)
 
-```typescript
-export interface DomainFilters {
-    dateRange?: DateRangeIso {
-      startIso: string // store as ISO, use date-fns/format to display in user's local timezone
-      endIso: string   // store as ISO, use date-fns/format to display in user's local timezone
-    }
-    searchQuery?: string
-    showUnknownLocationsOnly?: boolean
-}
-```
+### Function Call Graph
+
+
+<img src="function-call-graph.png" alt="Example" style="height:1193px;">
 
 ### Timezones
 
@@ -203,53 +82,19 @@ Code
 - Note [timezones.ts](../src/lib/utils/timezones.ts) has functions for server, uses luxon for timezones
 - All client date parsing and converting should be done via [date-fns library](https://github.com/date-fns/date-fns) or functions in [date.ts](../src/lib/utils/date.ts), where dates are converted to local timezone when calculating what day an isoTime is.
 
-### Data Flow: Application State Machine
+### Data Flow
 
-**State Machine Flow:**
+See [ARCHITECTURE.md](ARCHITECTURE.md#data-flow--state-management) for complete data flow documentation including:
 
-```
-export type AppState =
-    | 'starting-app'          // When successfully parses es, before fetching events, should transition to fetching-events
-    | 'fetching-events'       // SWR fetching events from API
-    | 'processing-events'     // resetMapToVisibleEvents, header setup
-    | 'applying-url-filters'  // DateAndSearchFilters processes date/search URL params
-    | 'parsing-remaining-url' // Handle se, llz, auto-resize logic
-    | 'finalizing-setup'      // Final transition before interaction (placeholder for tracking)
-    | 'user-interactive'      // Normal user interaction mode, was 'main-state'
+- **Application State Machine** (8 states from `starting-app` to `user-interactive`)
+- **Server-side event fetching** (API → Event Sources → Geocoding → Cache)
+- **Client-side filtering** (useAppController → useEventsManager → FilterEventsManager → UI)
 
-```
+**Quick reference for debugging:**
 
-**Performance:** Complete progression from browser request to interactive state in ~2.5 seconds
-
-**Smart Hook Architecture:**
-
-```typescript
-// useAppController.ts orchestrates the entire flow
-function useAppController() {
-  // Manages 8-state progression automatically
-  // Delegates business logic to services
-  // Returns clean interface for dumb components
-  return { state, eventData, mapData, handlers, dispatch, hasEventSource }
-}
-
-// page.tsx just renders with props
-function HomeContent() {
-  const { state, eventData, mapData, handlers } = useAppController()
-  return <div>pure rendering only</div>
-}
-```
-
-### Data Flow: Server Processing Event Source
-
-```
-Event Source Handler on Client
-  → API endpoint (/api/events?id=source:id)
-  → Fetch events
-  → Transform to CmfEvent format
-  → Geocode locations
-  → Cache results
-  → Return EventsSourceResponse
-```
+- State transitions managed by `appStateReducer.ts` with actions in `appActions`
+- URL processing handled by `useUrlProcessor` hook during initialization
+- Event filtering uses two-stage model: domain filters (date, search) → map bounds filter
 
 ## URL Parsing
 

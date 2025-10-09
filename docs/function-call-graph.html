@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CMF Function Call Graph - Interactive</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+        }
+        #header {
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            margin: 0 0 10px 0;
+            font-size: 24px;
+        }
+        #controls {
+            background: white;
+            padding: 15px 20px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .control-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        button, select {
+            padding: 8px 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover, select:hover {
+            background: #f0f0f0;
+        }
+        button.active {
+            background: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+        #graph-container {
+            position: relative;
+            width: 100%;
+            height: calc(100vh - 160px);
+            overflow: hidden;
+        }
+        #svg-container {
+            width: 100%;
+            height: 100%;
+        }
+        .node {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .node:hover {
+            filter: brightness(0.9);
+        }
+        .node rect {
+            stroke: #333;
+            stroke-width: 2;
+        }
+        .node.highlighted rect {
+            stroke: #e74c3c;
+            stroke-width: 3;
+            filter: drop-shadow(0 0 8px rgba(231, 76, 60, 0.6));
+        }
+        .node text {
+            font-size: 12px;
+            pointer-events: none;
+        }
+        .link {
+            fill: none;
+            stroke: #999;
+            stroke-width: 1.5;
+            opacity: 0.6;
+            transition: all 0.3s ease;
+        }
+        .link.highlighted {
+            stroke: #e74c3c;
+            stroke-width: 3;
+            opacity: 1;
+        }
+        .link-label {
+            font-size: 10px;
+            fill: #666;
+            pointer-events: none;
+        }
+        .arrow {
+            fill: #999;
+        }
+        .arrow.highlighted {
+            fill: #e74c3c;
+        }
+        #tooltip {
+            position: absolute;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            border-radius: 6px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            max-width: 300px;
+            font-size: 13px;
+            line-height: 1.4;
+            z-index: 1000;
+        }
+        #legend {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            font-size: 12px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 6px 0;
+        }
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+            border: 1px solid #333;
+            border-radius: 3px;
+        }
+        #info-panel {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
+        }
+        #info-panel.visible {
+            display: block;
+        }
+        .warning-badge {
+            background: #e74c3c;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: bold;
+            margin-left: 4px;
+        }
+        .collapse-btn {
+            font-size: 10px;
+            padding: 2px 6px;
+            margin-left: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <h1>📊 CMF Function Call Graph</h1>
+        <div style="font-size: 14px; opacity: 0.9;">Interactive visualization showing naming propagation and potential confusion points</div>
+    </div>
+
+    <div id="controls">
+        <div class="control-group">
+            <label>Filter by category:</label>
+            <select id="category-filter">
+                <option value="all">All</option>
+                <option value="hook">Hooks</option>
+                <option value="component">Components</option>
+                <option value="service">Services</option>
+                <option value="manager">Managers</option>
+                <option value="api">API Routes</option>
+                <option value="handler">Handlers</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label>Highlight risk:</label>
+            <button id="btn-high-risk" class="active">High Risk</button>
+            <button id="btn-medium-risk">Medium Risk</button>
+            <button id="btn-all-nodes">All Nodes</button>
+        </div>
+        <div class="control-group">
+            <button id="btn-reset-zoom">Reset Zoom</button>
+            <button id="btn-fit-screen">Fit to Screen</button>
+        </div>
+        <div class="control-group">
+            <label>Layout:</label>
+            <select id="layout-select">
+                <option value="tree">Tree (Top-Down)</option>
+                <option value="radial">Radial</option>
+                <option value="force">Force-Directed</option>
+            </select>
+        </div>
+    </div>
+
+    <div id="graph-container">
+        <div id="svg-container"></div>
+        <div id="tooltip"></div>
+        <div id="legend">
+            <div style="font-weight: bold; margin-bottom: 10px;">Legend</div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #E8F4F8;"></div>
+                <span>Component</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #FFF4E6;"></div>
+                <span>Hook</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #F0E6FF;"></div>
+                <span>Service</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #E6F7E6;"></div>
+                <span>Manager</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #FFE6E6;"></div>
+                <span>API Route</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #FFFACD;"></div>
+                <span>Handler</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #FFEBCD;"></div>
+                <span>Utility</span>
+            </div>
+            <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #ddd;">
+                <div class="legend-item">
+                    <span class="warning-badge">⚠️</span>
+                    <span style="margin-left: 4px;">Naming Risk</span>
+                </div>
+            </div>
+        </div>
+        <div id="info-panel"></div>
+    </div>
+
+    <script>
+        // Graph data structure
+        const graphData = {
+            nodes: [
+                // Entry
+                { id: "page", label: "page.tsx", category: "component", risk: "low", info: "Main application entry point" },
+
+                // Hooks
+                { id: "useAppController", label: "useAppController", category: "hook", risk: "low", info: "Smart hook containing all business logic (~550 lines)\n\nState:\n• appState (FSM state)\n• currentBounds ⚠️ (filtering bounds)\n• isShowingAllEvents" },
+                { id: "useEventsManager", label: "useEventsManager", category: "hook", risk: "medium", info: "Event fetching and filtering hook\n\nParams:\n• currentBounds (MapBounds | null) ⚠️\n\nReturns:\n• cmfEvents (CmfEvents object)\n• filters ⚠️ (FUNCTIONS, not values)\n• filtrEvtMgr" },
+                { id: "useMap", label: "useMap", category: "hook", risk: "medium", info: "Map state and marker management\n\nParams:\n• cmfEvents\n• filtrEvtMgr\n\nNOTE: Calls getCmfEvents again (duplicate!)" },
+                { id: "useUrlProcessor", label: "useUrlProcessor", category: "hook", risk: "low", info: "URL parameter processing hook" },
+                { id: "useBreakpoint", label: "useBreakpoint", category: "hook", risk: "low", info: "Responsive breakpoint detection" },
+
+                // Manager
+                { id: "FilterEventsManager", label: "FilterEventsManager", category: "manager", risk: "high", info: "Event filtering manager class\n\nPrivate:\n• allEvents ⚠️ (internal storage)\n• filters ⚠️ (VALUES: DomainFilters)\n\nPublic:\n• cmf_events_all ⚠️ (snake_case getter)" },
+                { id: "fem_setEvents", label: "setEvents()", category: "manager", risk: "high", info: "Sets internal allEvents ⚠️\n\nParam: allEvents (from API)" },
+                { id: "fem_getCmfEvents", label: "getCmfEvents()", category: "manager", risk: "high", info: "Returns filtered events\n\nParam: mapBounds? ⚠️ (optional)\n\nReturns: CmfEvents {\n  allEvents ⚠️ (property),\n  visibleEvents,\n  hiddenCounts\n}" },
+                { id: "fem_setDateRange", label: "setDateRange()", category: "manager", risk: "low", info: "Sets date range filter" },
+                { id: "fem_setSearchQuery", label: "setSearchQuery()", category: "manager", risk: "low", info: "Sets search query filter" },
+
+                // Components
+                { id: "MapContainer", label: "MapContainer", category: "component", risk: "medium", info: "Main map component\n\nProps:\n• cmfEvents\n• viewport\n• markers\n\nTriggers:\n• onMoveEnd → bounds change" },
+                { id: "EventList", label: "EventList", category: "component", risk: "low", info: "Event list component\n\nProps:\n• cmfEvents.visibleEvents" },
+                { id: "DateAndSearchFilters", label: "DateAndSearchFilters", category: "component", risk: "low", info: "Date and search filter controls" },
+                { id: "Sidebar", label: "Sidebar", category: "component", risk: "medium", info: "Sidebar with filter chips\n\nUses:\n• cmfEvents.allEvents.length\n• cmfEvents.visibleEvents.length\n• cmfEvents.hiddenCounts" },
+
+                // Services
+                { id: "applyDateFilter", label: "applyDateFilter", category: "service", risk: "low", info: "Date filter predicate function" },
+                { id: "applySearchFilter", label: "applySearchFilter", category: "service", risk: "low", info: "Search filter predicate function" },
+                { id: "applyMapFilter", label: "applyMapFilter", category: "service", risk: "medium", info: "Map bounds filter predicate\n\nParam: mapBounds ⚠️" },
+                { id: "calculateBoundsFromMarkers", label: "calculateBoundsFromMarkers", category: "service", risk: "medium", info: "Calculates bounds from marker positions\n\nReturns: MapBounds ⚠️" },
+                { id: "generateMapMarkers", label: "generateMapMarkers", category: "service", risk: "low", info: "Creates map markers from visible events\n\nParam: visibleEvents" },
+                { id: "processDomainFilters", label: "processDomainFilters", category: "service", risk: "low", info: "Processes URL domain filter params" },
+                { id: "processMapPosition", label: "processMapPosition", category: "service", risk: "low", info: "Processes URL map position params" },
+                { id: "processSelectedEvent", label: "processSelectedEvent", category: "service", risk: "medium", info: "Processes selected event from URL\n\nSearches: cmfEvents.allEvents ⚠️" },
+
+                // Handlers
+                { id: "handleBoundsChangeForFilters", label: "handleBoundsChangeForFilters", category: "handler", risk: "high", info: "Handles map bounds changes\n\nParam: bounds ⚠️ (new bounds)\nState: currentBounds ⚠️ (old bounds)\nSets: currentBounds = bounds\n\nNaming confusion: three 'bounds'!" },
+                { id: "handleEventSelect", label: "handleEventSelect", category: "handler", risk: "medium", info: "Handles event selection\n\nSearches in: cmfEvents.allEvents ⚠️" },
+                { id: "handleSearchChange", label: "handleSearchChange", category: "handler", risk: "low", info: "Handles search input changes" },
+                { id: "handleDateRangeChange", label: "handleDateRangeChange", category: "handler", risk: "low", info: "Handles date range changes" },
+                { id: "resetMapToVisibleEvents", label: "resetMapToVisibleEvents", category: "handler", risk: "high", info: "Resets map to show visible events\n\nParams:\n• mapBounds? ⚠️ (optional bounds)\n• useBounds? (boolean)\n\nCreates: curBounds ⚠️" },
+
+                // API
+                { id: "api_events", label: "/api/events", category: "api", risk: "medium", info: "Events API endpoint\n\nReturns:\n• allEvents ⚠️ (from API)\n• sources" },
+                { id: "geocodeEventLocations", label: "geocodeEventLocations", category: "api", risk: "low", info: "Geocodes event locations with caching" },
+            ],
+            links: [
+                // Main flow
+                { source: "page", target: "useAppController", label: "calls" },
+
+                // useAppController dependencies
+                { source: "useAppController", target: "useEventsManager", label: "calls\ncurrentBounds →", risk: "medium" },
+                { source: "useAppController", target: "useMap", label: "calls\ncmfEvents →", risk: "low" },
+                { source: "useAppController", target: "useUrlProcessor", label: "calls" },
+                { source: "useAppController", target: "useBreakpoint", label: "calls" },
+
+                // useEventsManager flow
+                { source: "useEventsManager", target: "api_events", label: "useSWR\nfetches", risk: "high" },
+                { source: "api_events", target: "useEventsManager", label: "Returns:\nallEvents ⚠️", risk: "high" },
+                { source: "api_events", target: "geocodeEventLocations", label: "calls" },
+
+                { source: "useEventsManager", target: "FilterEventsManager", label: "creates" },
+                { source: "useEventsManager", target: "fem_setEvents", label: "setEvents(\nallEvents ⚠️)", risk: "high" },
+                { source: "useEventsManager", target: "fem_setDateRange", label: "calls" },
+                { source: "useEventsManager", target: "fem_setSearchQuery", label: "calls" },
+                { source: "useEventsManager", target: "fem_getCmfEvents", label: "getCmfEvents(\nmapBounds ⚠️)", risk: "high" },
+
+                // FilterEventsManager internals
+                { source: "fem_getCmfEvents", target: "applyDateFilter", label: "calls" },
+                { source: "fem_getCmfEvents", target: "applySearchFilter", label: "calls" },
+                { source: "fem_getCmfEvents", target: "applyMapFilter", label: "calls\nmapBounds ⚠️", risk: "medium" },
+
+                // useMap flow
+                { source: "useMap", target: "fem_getCmfEvents", label: "DUPLICATE\nCALL ⚠️", risk: "high" },
+                { source: "useMap", target: "generateMapMarkers", label: "calls\nvisibleEvents →" },
+                { source: "useMap", target: "calculateBoundsFromMarkers", label: "calls" },
+                { source: "useMap", target: "resetMapToVisibleEvents", label: "creates" },
+
+                // resetMapToVisibleEvents
+                { source: "resetMapToVisibleEvents", target: "fem_getCmfEvents", label: "calls\ncurBounds ⚠️", risk: "high" },
+                { source: "resetMapToVisibleEvents", target: "calculateBoundsFromMarkers", label: "calls" },
+
+                // useUrlProcessor
+                { source: "useUrlProcessor", target: "processDomainFilters", label: "calls" },
+                { source: "useUrlProcessor", target: "processMapPosition", label: "calls" },
+                { source: "useUrlProcessor", target: "processSelectedEvent", label: "calls\nallEvents ⚠️", risk: "medium" },
+
+                // Handlers
+                { source: "MapContainer", target: "handleBoundsChangeForFilters", label: "onMoveEnd\nbounds ⚠️", risk: "high" },
+                { source: "handleBoundsChangeForFilters", target: "useAppController", label: "sets\ncurrentBounds ⚠️", risk: "high" },
+
+                { source: "EventList", target: "handleEventSelect", label: "onClick" },
+                { source: "handleEventSelect", target: "useAppController", label: "sets selected" },
+
+                { source: "DateAndSearchFilters", target: "handleSearchChange", label: "onChange" },
+                { source: "handleSearchChange", target: "fem_setSearchQuery", label: "calls\nfilters.set ⚠️", risk: "medium" },
+
+                { source: "DateAndSearchFilters", target: "handleDateRangeChange", label: "onChange" },
+                { source: "handleDateRangeChange", target: "fem_setDateRange", label: "calls\nfilters.set ⚠️", risk: "medium" },
+
+                { source: "Sidebar", target: "resetMapToVisibleEvents", label: "onClick" },
+
+                // Component rendering
+                { source: "useAppController", target: "MapContainer", label: "props:\ncmfEvents →" },
+                { source: "useAppController", target: "EventList", label: "props:\nvisibleEvents →" },
+                { source: "useAppController", target: "DateAndSearchFilters", label: "props" },
+                { source: "useAppController", target: "Sidebar", label: "props:\ncmfEvents →" },
+            ]
+        };
+
+        // Color mapping
+        const colorMap = {
+            component: "#E8F4F8",
+            hook: "#FFF4E6",
+            service: "#F0E6FF",
+            manager: "#E6F7E6",
+            api: "#FFE6E6",
+            handler: "#FFFACD",
+            utility: "#FFEBCD"
+        };
+
+        // Setup
+        const container = d3.select("#svg-container");
+        const width = container.node().getBoundingClientRect().width;
+        const height = container.node().getBoundingClientRect().height;
+
+        const svg = container.append("svg")
+            .attr("width", width)
+            .attr("height", height);
+
+        const g = svg.append("g");
+
+        // Zoom behavior
+        const zoom = d3.zoom()
+            .scaleExtent([0.1, 4])
+            .on("zoom", (event) => {
+                g.attr("transform", event.transform);
+            });
+
+        svg.call(zoom);
+
+        // Tooltip
+        const tooltip = d3.select("#tooltip");
+
+        // Info panel
+        const infoPanel = d3.select("#info-panel");
+
+        let currentLayout = "tree";
+        let currentFilter = "all";
+        let currentRiskFilter = "high";
+
+        // Initialize graph
+        renderGraph();
+
+        // Event listeners
+        d3.select("#category-filter").on("change", function() {
+            currentFilter = this.value;
+            renderGraph();
+        });
+
+        d3.select("#layout-select").on("change", function() {
+            currentLayout = this.value;
+            renderGraph();
+        });
+
+        d3.select("#btn-high-risk").on("click", function() {
+            setRiskFilter("high", this);
+        });
+
+        d3.select("#btn-medium-risk").on("click", function() {
+            setRiskFilter("medium", this);
+        });
+
+        d3.select("#btn-all-nodes").on("click", function() {
+            setRiskFilter("all", this);
+        });
+
+        d3.select("#btn-reset-zoom").on("click", () => {
+            svg.transition().duration(750).call(zoom.transform, d3.zoomIdentity);
+        });
+
+        d3.select("#btn-fit-screen").on("click", () => {
+            const bounds = g.node().getBBox();
+            const fullWidth = width;
+            const fullHeight = height;
+            const scale = 0.9 / Math.max(bounds.width / fullWidth, bounds.height / fullHeight);
+            const translate = [fullWidth / 2 - scale * (bounds.x + bounds.width / 2), fullHeight / 2 - scale * (bounds.y + bounds.height / 2)];
+
+            svg.transition().duration(750).call(
+                zoom.transform,
+                d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale)
+            );
+        });
+
+        function setRiskFilter(risk, button) {
+            currentRiskFilter = risk;
+            d3.selectAll("#controls button").classed("active", false);
+            d3.select(button).classed("active", true);
+            highlightRisk();
+        }
+
+        function renderGraph() {
+            // Clear existing
+            g.selectAll("*").remove();
+
+            // Filter nodes
+            let filteredNodes = graphData.nodes;
+            if (currentFilter !== "all") {
+                filteredNodes = graphData.nodes.filter(d => d.category === currentFilter);
+            }
+
+            const filteredNodeIds = new Set(filteredNodes.map(d => d.id));
+            const filteredLinks = graphData.links.filter(d =>
+                filteredNodeIds.has(d.source) && filteredNodeIds.has(d.target)
+            );
+
+            // Create hierarchy for tree layout
+            if (currentLayout === "tree") {
+                renderTreeLayout(filteredNodes, filteredLinks);
+            } else if (currentLayout === "radial") {
+                renderRadialLayout(filteredNodes, filteredLinks);
+            } else {
+                renderForceLayout(filteredNodes, filteredLinks);
+            }
+
+            highlightRisk();
+        }
+
+        function renderTreeLayout(nodes, links) {
+            // Build hierarchy
+            const root = d3.stratify()
+                .id(d => d.id)
+                .parentId(d => {
+                    const parentLink = links.find(l => l.target === d.id);
+                    return parentLink ? parentLink.source : null;
+                })(nodes);
+
+            const treeLayout = d3.tree()
+                .size([width - 200, height - 200])
+                .separation((a, b) => (a.parent === b.parent ? 1 : 1.5));
+
+            const treeData = treeLayout(root);
+
+            // Draw links
+            g.selectAll(".link")
+                .data(treeData.links())
+                .join("path")
+                .attr("class", "link")
+                .attr("d", d3.linkVertical()
+                    .x(d => d.x)
+                    .y(d => d.y))
+                .attr("stroke", d => {
+                    const linkData = links.find(l => l.source === d.source.id && l.target === d.target.id);
+                    return linkData && linkData.risk === "high" ? "#e74c3c" : "#999";
+                });
+
+            // Draw nodes
+            const node = g.selectAll(".node")
+                .data(treeData.descendants())
+                .join("g")
+                .attr("class", "node")
+                .attr("transform", d => `translate(${d.x},${d.y})`)
+                .on("mouseover", handleMouseOver)
+                .on("mouseout", handleMouseOut)
+                .on("click", handleClick);
+
+            node.append("rect")
+                .attr("x", -60)
+                .attr("y", -20)
+                .attr("width", 120)
+                .attr("height", 40)
+                .attr("rx", 5)
+                .attr("fill", d => colorMap[d.data.category] || "#fff");
+
+            node.append("text")
+                .attr("dy", "0.35em")
+                .attr("text-anchor", "middle")
+                .text(d => d.data.label)
+                .each(function(d) {
+                    if (d.data.risk === "high" || d.data.risk === "medium") {
+                        d3.select(this.parentNode)
+                            .append("text")
+                            .attr("x", 50)
+                            .attr("y", -15)
+                            .attr("class", "warning-badge")
+                            .attr("font-size", "12px")
+                            .attr("fill", "#e74c3c")
+                            .text("⚠️");
+                    }
+                });
+        }
+
+        function renderRadialLayout(nodes, links) {
+            // Similar to tree but radial - simplified version
+            renderTreeLayout(nodes, links);
+        }
+
+        function renderForceLayout(nodes, links) {
+            const simulation = d3.forceSimulation(nodes)
+                .force("link", d3.forceLink(links).id(d => d.id).distance(100))
+                .force("charge", d3.forceManyBody().strength(-300))
+                .force("center", d3.forceCenter(width / 2, height / 2))
+                .force("collision", d3.forceCollide().radius(70));
+
+            const link = g.selectAll(".link")
+                .data(links)
+                .join("line")
+                .attr("class", "link")
+                .attr("stroke", d => d.risk === "high" ? "#e74c3c" : "#999");
+
+            const node = g.selectAll(".node")
+                .data(nodes)
+                .join("g")
+                .attr("class", "node")
+                .call(d3.drag()
+                    .on("start", dragstarted)
+                    .on("drag", dragged)
+                    .on("end", dragended))
+                .on("mouseover", handleMouseOver)
+                .on("mouseout", handleMouseOut)
+                .on("click", handleClick);
+
+            node.append("circle")
+                .attr("r", 40)
+                .attr("fill", d => colorMap[d.category] || "#fff")
+                .attr("stroke", "#333")
+                .attr("stroke-width", 2);
+
+            node.append("text")
+                .attr("dy", "0.35em")
+                .attr("text-anchor", "middle")
+                .text(d => d.label)
+                .style("font-size", "10px");
+
+            simulation.on("tick", () => {
+                link
+                    .attr("x1", d => d.source.x)
+                    .attr("y1", d => d.source.y)
+                    .attr("x2", d => d.target.x)
+                    .attr("y2", d => d.target.y);
+
+                node.attr("transform", d => `translate(${d.x},${d.y})`);
+            });
+
+            function dragstarted(event, d) {
+                if (!event.active) simulation.alphaTarget(0.3).restart();
+                d.fx = d.x;
+                d.fy = d.y;
+            }
+
+            function dragged(event, d) {
+                d.fx = event.x;
+                d.fy = event.y;
+            }
+
+            function dragended(event, d) {
+                if (!event.active) simulation.alphaTarget(0);
+                d.fx = null;
+                d.fy = null;
+            }
+        }
+
+        function handleMouseOver(event, d) {
+            const info = d.data ? d.data.info : d.info;
+            tooltip
+                .style("opacity", 1)
+                .html(info.replace(/\n/g, "<br>"))
+                .style("left", (event.pageX + 10) + "px")
+                .style("top", (event.pageY - 10) + "px");
+        }
+
+        function handleMouseOut() {
+            tooltip.style("opacity", 0);
+        }
+
+        function handleClick(event, d) {
+            const data = d.data || d;
+            infoPanel.classed("visible", true);
+            infoPanel.html(`
+                <h3 style="margin-top:0;">${data.label}</h3>
+                <div><strong>Category:</strong> ${data.category}</div>
+                <div><strong>Risk Level:</strong> ${data.risk}</div>
+                <div style="margin-top:10px;">${data.info.replace(/\n/g, "<br>")}</div>
+            `);
+        }
+
+        function highlightRisk() {
+            if (currentRiskFilter === "all") {
+                g.selectAll(".node").classed("highlighted", false);
+                g.selectAll(".link").classed("highlighted", false);
+                return;
+            }
+
+            g.selectAll(".node").classed("highlighted", function(d) {
+                const data = d.data || d;
+                return data.risk === currentRiskFilter;
+            });
+
+            g.selectAll(".link").classed("highlighted", function(d) {
+                return d.risk === currentRiskFilter;
+            });
+        }
+    </script>
+</body>
+</html>

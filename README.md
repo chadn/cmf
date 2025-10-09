@@ -51,13 +51,14 @@ See [Development](docs/development.md)
 -   [How to Use the App](docs/usage.md)
 -   [Development Setup](docs/development.md)
 -   [CHANGELOG](CHANGELOG.md) log of changes with each new version
--   [Implementation Details](docs/Implementation.md) - architecture and technical decisions
+-   [Architecture Overview](docs/ARCHITECTURE.md) - system design, data flows, and design principles
+-   [Implementation Details](docs/implementation.md) - technical implementation and code organization
 -   [Architecture Decision Records (ADR)](docs/adr/README.md) - key architectural decisions and rationale
 -   [Test Coverage](docs/tests.md) - Manual testing and current test statistics
 -   [Feature Backlog](docs/todo.md) - planned features, bugs, and known issues todo.
 -   [Creating your own Event Source](src/lib/api/eventSources)
 
-See [docs/README.md](docs/README.md) for full documentation overview
+And more in [docs/](docs/) 
 
 ## History
 

@@ -178,7 +178,7 @@ The `useUrlProcessor` smart hook handles all URL parameter processing across thr
 - Validates and processes event selection (`se` parameter)
 - Handles map positioning from location/zoom coordinates (`llz` parameter)
 - Implements auto-resize logic when no specific positioning is provided
-- Follows Implementation.md steps 3-7 for URL parsing precedence
+- Follows implementation.md steps 3-7 for URL parsing precedence
 
 **Phase 3: URL Parameter Sync (user-interactive state)**
 - Updates URL parameters when viewport changes (maintains `llz` sync)

@@ -122,7 +122,7 @@ export interface MapPositionResult {
     llzChecked: boolean
     /** Any errors encountered during processing */
     errors: string[]
-    /** True if valid se found - stops further URL processing per Implementation.md rules */
+    /** True if valid se found - stops further URL processing per implementation.md rules */
     shouldStopUrlProcessing: boolean
 }
 

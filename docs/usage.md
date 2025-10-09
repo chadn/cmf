@@ -1,3 +1,7 @@
+---
+title: CMF Usage
+---
+
 # How To Use CMF
 
 Calendar Map Filter (CMF) is a web application that allows users to view and filter events on an interactive map. It supports various calendar sources and provides powerful real-time filtering capabilities.

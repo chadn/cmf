@@ -5,6 +5,11 @@ All notable changes to Calendar Map Filter (CMF) will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1] - 2025-10-9
+
+- Updated Documentation
+- Fixed counts in Event Sources popover 
+
 ## [0.4.0] - 2025-10-8
 
 ### Changed
@@ -207,7 +212,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Build System Enhancement** - All TypeScript strict mode compliance, clean compilation
 - Significant improvements to test coverage with new URL utilities tests and Manual Testing guidance
 - Enhanced error handling and type safety throughout the application
-- Improved documentation in Implementation.md, tests.md, usage.md and other files
+- Improved documentation in implementation.md, tests.md, usage.md and other files
 - Better separation of concerns in utility modules
 - More robust date and timezone handling
 - Using function modules instead of classes
@@ -237,7 +242,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `appStateReducer.ts`, for AppState machine with proper Redux-style patterns with reducer, action creators and type guards
 - Added `useBreakpoint.ts` hook extracted from page.tsx for reusability
 - Added `headerNames.ts` utility for determining dynamic header names
-- Added URL Parsing rules to Implementation.md to guide code and make it more understandable
+- Added URL Parsing rules to implementation.md to guide code and make it more understandable
 
 ### Changed
 
@@ -324,7 +329,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Documentation
 
-- Major restructure of Implementation.md - streamlined from 608 to 303 lines
+- Major restructure of implementation.md - streamlined from 608 to 303 lines
     - Removed redundant architectural decision details (moved to ADR)
     - Simplified directory structure with cleaner formatting
     - Updated data structure examples to reflect EventsSource changes

@@ -84,7 +84,7 @@ Note:
 
 ### Testing Different URLs
 
-Background in [Implementation.md: URL Parsing](Implementation.md#url-parsing)
+Background in [implementation.md: URL Parsing](implementation.md#url-parsing)
 
 Note these URL tests are automated via `npm run test:pageload` as part of [End-to-End Testing](#end-to-end-testing)
 
@@ -247,7 +247,7 @@ src/components/events/__tests__/EventList.test.tsx  # Component tests with RTL
 
 ### Jest Coverage
 
-**Test Coverage:** The following output from `npm test` makes it easy to see test coverage and compare against the [Directory Structure in Implementation.md](Implementation.md#directory-structure)
+**Test Coverage:** The following output from `npm test` makes it easy to see test coverage and compare against the [Directory Structure in implementation.md](implementation.md#directory-structure)
 
 ```bash
 npm test

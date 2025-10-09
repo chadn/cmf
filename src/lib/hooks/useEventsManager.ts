@@ -47,7 +47,7 @@ export function useEventsManager({
 }: UseEventsManagerProps): UseEventsManagerResult {
     // Always initialize hooks in the same order (React rules)
 
-    // TODO: rename filtrEvtMgr to filterEventsMgr
+    // TODO: rename filtrEvtMgr to filterEventsMgr or eventsFilterManager
     const [filtrEvtMgr] = useState(() => new FilterEventsManager())
 
     // Check if we should skip data fetching
@@ -173,6 +173,7 @@ export function useEventsManager({
             sources.push({
                 prefix: result.source.prefix,
                 name: result.source.name,
+                totalCount: result.source.totalCount || 0,
                 unknownLocationsCount: result.source.unknownLocationsCount || 0,
                 id: result.source.id || '',
                 url: result.source.url,

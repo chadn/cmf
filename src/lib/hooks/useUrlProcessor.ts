@@ -240,7 +240,7 @@ export function useUrlProcessor(config: UrlProcessorConfig): UrlProcessorResult 
         dispatch,
     ])
 
-    // PHASE 2: During init, Handle page load URL parsing steps 3-7 (from Implementation.md) after domain filters are applied
+    // PHASE 2: During init, Handle page load URL parsing steps 3-7 (from implementation.md) after domain filters are applied
     // Copied from useAppController.ts:380-438
     useEffect(() => {
         if (appState !== 'parsing-remaining-url') return

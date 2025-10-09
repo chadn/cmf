@@ -33,7 +33,7 @@ Review the latest git commit. Ensure the following are true — fix if not - and
 4. File reference docs:
 
     - If any files were added, removed, or renamed:
-        - Update all affected documentation (e.g. tests.md, Implementation.md)
+        - Update all affected documentation (e.g. tests.md, implementation.md)
 
 5. docs/tests.md:
 
@@ -132,7 +132,8 @@ npm test             # Run Jest tests with coverage
 
 ## Testing
 
--   Use Jest + React Testing Library
+-   Use Jest + React Testing Library for unit tests, 
+-   `npm run test:e2e` for playwright end to end tests 
 
 ## Project-Specific Patterns
 

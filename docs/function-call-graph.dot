@@ -1,0 +1,334 @@
+// CMF Function Call Graph - DOT/Graphviz Format
+// Generate visualization: dot -Tpng function-call-graph.dot -o function-call-graph.png
+// Or online: https://dreampuf.github.io/GraphvizOnline/
+// v6 function-call-graph.png PNG 6171x2385 6171x2385+0+0 8-bit sRGB 776715B 0.000u 0:00.000
+
+digraph CMF_Function_Calls {
+    // Graph settings
+    rankdir=TB;
+    compound=true;
+    newrank=true;
+    splines=polyline;  // Changed from ortho for smoother edges
+    nodesep=0.6;       // Reduced from 0.8 to be more compact
+    ranksep=1.0;       // Reduced from 1.2 to be more compact
+    concentrate=true;  // Merge parallel edges to reduce clutter
+    ratio=auto;        // Let graphviz optimize aspect ratio
+
+    // Default node style
+    node [shape=box, style=filled, fontname="Arial", fontsize=11];  // Increased from 10
+    edge [fontname="Arial", fontsize=10];  // Increased from 9
+
+    // Color scheme (based on function category)
+    // #E8F4F8 - Light blue (Components)
+    // #FFF4E6 - Light orange (Hooks)
+    // #F0E6FF - Light purple (Services)
+    // #E6F7E6 - Light green (Managers)
+    // #FFE6E6 - Light red (API Routes)
+    // #FFEBCD - Beige (Utilities)
+
+    // ========================================================================
+    // SUBGRAPH: Application Entry
+    // ========================================================================
+
+    subgraph cluster_entry {
+        label="Application Entry";
+        style=dashed;
+        color=gray;
+
+        page_tsx [label="page.tsx\n[Component]", fillcolor="#E8F4F8"];
+    }
+
+    // ========================================================================
+    // SUBGRAPH: Smart Hook Layer
+    // ========================================================================
+
+    subgraph cluster_hooks {
+        label="Smart Hooks Layer";
+        style=filled;
+        fillcolor="#FFF9F0";
+
+        useAppController [label="useAppController()\n[Hook]\n\nState:\n• appState\n• currentBounds\n• isShowingAllEvents", fillcolor="#FFF4E6", width=2.5];
+
+        useEventsManager [label="useEventsManager()\n[Hook]\n\nParams:\n• currentBounds\n• dateRange\n\nReturns:\n• cmfEvents\n• filters [!] (functions)\n• filtrEvtMgr", fillcolor="#FFF4E6", width=2.5];
+
+        useMap [label="useMap()\n[Hook]\n\nParams:\n• cmfEvents\n• filtrEvtMgr\n\nReturns:\n• viewport\n• markers\n• resetMapToVisibleEvents", fillcolor="#FFF4E6", width=2.5];
+
+        useUrlProcessor [label="useUrlProcessor()\n[Hook]\n\nParams:\n• urlParams\n• cmfEvents\n• handlers", fillcolor="#FFF4E6", width=2];
+
+        useBreakpoint [label="useBreakpoint()\n[Hook]", fillcolor="#FFF4E6"];
+    }
+
+    // ========================================================================
+    // SUBGRAPH: Manager Classes
+    // ========================================================================
+
+    subgraph cluster_managers {
+        label="Manager Classes";
+        style=filled;
+        fillcolor="#F0FFF0";
+
+        FilterEventsManager [label="FilterEventsManager\n[Class]\n\nPrivate:\n• allEvents [!] (storage)\n• filters [!] (values)\n\nPublic:\n• cmf_events_all [!]", fillcolor="#E6F7E6", width=2.5];
+
+        fem_constructor [label="constructor(events)", fillcolor="#E6F7E6"];
+        fem_setEvents [label="setEvents(allEvents)", fillcolor="#E6F7E6"];
+        fem_setDateRange [label="setDateRange(dateRange)", fillcolor="#E6F7E6"];
+        fem_setSearchQuery [label="setSearchQuery(query)", fillcolor="#E6F7E6"];
+        fem_getCmfEvents [label="getCmfEvents(mapBounds?)\n\nReturns:\n• CmfEvents {\n    allEvents [!] (prop),\n    visibleEvents,\n    hiddenCounts\n  }", fillcolor="#E6F7E6", width=2.5];
+    }
+
+    // ========================================================================
+    // SUBGRAPH: Components
+    // ========================================================================
+
+    subgraph cluster_components {
+        label="UI Components";
+        style=filled;
+        fillcolor="#F0F8FF";
+        rank=same;
+
+        MapContainer [label="MapContainer\n[Component]\n\nProps:\n• cmfEvents\n• viewport\n• markers", fillcolor="#E8F4F8", width=2];
+        EventList [label="EventList\n[Component]\n\nProps:\n• cmfEvents.visibleEvents", fillcolor="#E8F4F8", width=2];
+        DateAndSearchFilters [label="DateAndSearchFilters\n[Component]", fillcolor="#E8F4F8", width=2];
+        Sidebar [label="Sidebar\n[Component]\n\nUses:\n• cmfEvents.allEvents [!]\n• cmfEvents.visibleEvents\n• hiddenCounts", fillcolor="#E8F4F8", width=2];
+        MapMarker [label="MapMarker\n[Component]", fillcolor="#E8F4F8"];
+        MapPopup [label="MapPopup\n[Component]", fillcolor="#E8F4F8"];
+    }
+
+    // ========================================================================
+    // SUBGRAPH: Services & Utilities
+    // ========================================================================
+
+    subgraph cluster_services {
+        label="Services & Utilities";
+        style=filled;
+        fillcolor="#F8F0FF";
+
+        // Group filter services vertically
+        subgraph cluster_filters {
+            label="Filters";
+            style=dashed;
+            color="#9966FF";
+
+            applyDateFilter [label="applyDateFilter()", fillcolor="#F0E6FF", width=1.8];
+            applySearchFilter [label="applySearchFilter()", fillcolor="#F0E6FF", width=1.8];
+            applyMapFilter [label="applyMapFilter()", fillcolor="#F0E6FF", width=1.8];
+            applyUnknownLocFilter [label="applyUnknownLocationsFilter()", fillcolor="#F0E6FF", width=2.2];
+        }
+
+        // Group location services vertically
+        subgraph cluster_location {
+            label="Location";
+            style=dashed;
+            color="#9966FF";
+
+            calculateBoundsFromMarkers [label="calculateBoundsFromMarkers()", fillcolor="#F0E6FF", width=2.2];
+            calculateBoundsFromViewport [label="calculateBoundsFromViewport()", fillcolor="#F0E6FF", width=2.2];
+            isInBounds [label="isInBounds()", fillcolor="#F0E6FF", width=1.5];
+            hasResolvedLocation [label="hasResolvedLocation()", fillcolor="#F0E6FF", width=1.8];
+        }
+
+        // Group URL processing vertically
+        subgraph cluster_url {
+            label="URL Processing";
+            style=dashed;
+            color="#9966FF";
+
+            processDomainFilters [label="processDomainFilters()", fillcolor="#F0E6FF", width=1.8];
+            processMapPosition [label="processMapPosition()", fillcolor="#F0E6FF", width=1.8];
+            processSelectedEvent [label="processSelectedEvent()", fillcolor="#F0E6FF", width=1.8];
+        }
+
+        // Utilities group
+        subgraph cluster_utils {
+            label="Utilities";
+            style=dashed;
+            color="#CC9933";
+
+            appStateReducer [label="appStateReducer()", fillcolor="#F0E6FF", width=1.5];
+            sortEvents [label="sortEvents()", fillcolor="#FFEBCD", width=1.5];
+            generateMapMarkers [label="generateMapMarkers()", fillcolor="#FFEBCD", width=1.8];
+            genMarkerId [label="genMarkerId()", fillcolor="#FFEBCD", width=1.5];
+            checkForZipCode [label="checkForZipCode()", fillcolor="#FFEBCD", width=1.5];
+        }
+    }
+
+    // ========================================================================
+    // SUBGRAPH: API Routes
+    // ========================================================================
+
+    subgraph cluster_api {
+        label="API Routes (Server-side)";
+        style=filled;
+        fillcolor="#FFF0F0";
+
+        api_events [label="/api/events\n[API Route]\n\nReturns:\n• allEvents [!] (API)\n• sources", fillcolor="#FFE6E6", width=2];
+        api_geocode [label="/api/geocode\n[API Route]", fillcolor="#FFE6E6"];
+
+        fetchEvents [label="fetchEvents()\n[Handler]", fillcolor="#FFE6E6"];
+        transformToCmfEvent [label="transformToCmfEvent()\n[Transform]", fillcolor="#FFE6E6", width=1.8];
+        geocodeEventLocations [label="geocodeEventLocations()\n[Geocoding]", fillcolor="#FFE6E6", width=2];
+        geocodeAddress [label="geocodeAddress()\n[Geocoding]", fillcolor="#FFE6E6"];
+    }
+
+    // ========================================================================
+    // SUBGRAPH: Handlers
+    // ========================================================================
+
+    subgraph cluster_handlers {
+        label="Event Handlers (in useAppController)";
+        style=filled;
+        fillcolor="#FFFFF0";
+        rank=same;
+        
+        handleBoundsChangeForFilters [label="handleBoundsChangeForFilters()\n\nParam: bounds [!] (new)\nState: currentBounds [!] (old)\nSets: currentBounds = bounds", fillcolor="#FFFACD", width=3];
+        handleEventSelect [label="handleEventSelect()\n\nSearches: cmfEvents.allEvents", fillcolor="#FFFACD", width=2.5];
+        handleSearchChange [label="handleSearchChange()", fillcolor="#FFFACD"];
+        handleDateRangeChange [label="handleDateRangeChange()", fillcolor="#FFFACD", width=2];
+        handleClearMapFilter [label="handleClearMapFilter()", fillcolor="#FFFACD", width=2];
+        handleResetMapToVisibleEvents [label="handleResetMapToVisibleEvents()", fillcolor="#FFFACD", width=2.5];
+        resetMapToVisibleEvents [label="resetMapToVisibleEvents()\n\nParams:\n• mapBounds? [!]\n• useBounds?\n\nCreates: curBounds [!]", fillcolor="#FFFACD", width=2.5];
+    }
+
+    // ========================================================================
+    // MAIN FLOW: Entry to Hooks
+    // ========================================================================
+
+    page_tsx -> useAppController [label="calls"];
+
+    // useAppController dependencies
+    useAppController -> useEventsManager [label="calls\n\nParams:\n• currentBounds", color=blue, fontcolor=blue];
+    useAppController -> useMap [label="calls\n\nParams:\n• cmfEvents\n• filtrEvtMgr", color=blue, fontcolor=blue];
+    useAppController -> useUrlProcessor [label="calls"];
+    useAppController -> useBreakpoint [label="calls"];
+
+    // ========================================================================
+    // useEventsManager FLOW
+    // ========================================================================
+
+    useEventsManager -> api_events [label="useSWR\nfetches", color=red, fontcolor=red, style=dashed];
+    api_events -> useEventsManager [label="Returns:\n• allEvents [!]\n• sources", color=red, fontcolor=red, style=dashed];
+
+    useEventsManager -> fem_constructor [label="new FilterEventsManager(events)"];
+    useEventsManager -> fem_setEvents [label="filtrEvtMgr.setEvents(allEvents) [!]", color=orange, fontcolor=orange];
+    useEventsManager -> fem_setDateRange [label="calls"];
+    useEventsManager -> fem_setSearchQuery [label="calls"];
+    useEventsManager -> fem_getCmfEvents [label="calls\n\nParam: mapBounds [!]", color=purple, fontcolor=purple];
+
+    // FilterEventsManager internals
+    fem_constructor -> FilterEventsManager [label="creates instance"];
+    fem_setEvents -> FilterEventsManager [label="sets this.allEvents [!]", color=orange, fontcolor=orange];
+    fem_setDateRange -> FilterEventsManager [label="sets this.filters.dateRange [!]"];
+    fem_setSearchQuery -> FilterEventsManager [label="sets this.filters.searchQuery [!]"];
+
+    // getCmfEvents calls filter functions
+    fem_getCmfEvents -> applyDateFilter [label="for each event"];
+    fem_getCmfEvents -> applySearchFilter [label="for each event"];
+    fem_getCmfEvents -> applyMapFilter [label="for each event\n\nParam: mapBounds [!]", color=purple, fontcolor=purple];
+    fem_getCmfEvents -> applyUnknownLocFilter [label="for each event"];
+
+    // applyMapFilter uses isInBounds
+    applyMapFilter -> isInBounds [label="calls"];
+
+    // ========================================================================
+    // useMap FLOW
+    // ========================================================================
+
+    useMap -> fem_getCmfEvents [label="DUPLICATE CALL [!]\n\nAlready called in\nuseEventsManager!", color=red, fontcolor=red, style=bold];
+    useMap -> generateMapMarkers [label="calls\n\nParam: visibleEvents", color=green, fontcolor=green];
+    useMap -> calculateBoundsFromMarkers [label="calls"];
+    useMap -> resetMapToVisibleEvents [label="creates function"];
+
+    // resetMapToVisibleEvents internals
+    resetMapToVisibleEvents -> fem_getCmfEvents [label="calls\n\nParam: curBounds [!]", color=purple, fontcolor=purple];
+    resetMapToVisibleEvents -> calculateBoundsFromMarkers [label="calls"];
+
+    // ========================================================================
+    // useUrlProcessor FLOW
+    // ========================================================================
+
+    useUrlProcessor -> processDomainFilters [label="calls"];
+    useUrlProcessor -> processMapPosition [label="calls"];
+    useUrlProcessor -> processSelectedEvent [label="calls\n\nSearches:\ncmfEvents.allEvents [!]", color=orange, fontcolor=orange];
+
+    // ========================================================================
+    // HANDLER FLOWS
+    // ========================================================================
+
+    // handleBoundsChangeForFilters
+    MapContainer -> handleBoundsChangeForFilters [label="onMoveEnd\n\nParam: bounds [!]\n(from map.getBounds())", color=purple, fontcolor=purple, style=bold];
+    handleBoundsChangeForFilters -> useAppController [label="setCurrentBounds(bounds) [!]", color=purple, fontcolor=purple, style=dashed];
+
+    // handleEventSelect
+    EventList -> handleEventSelect [label="onClick"];
+    handleEventSelect -> genMarkerId [label="calls"];
+
+    // handleSearchChange
+    DateAndSearchFilters -> handleSearchChange [label="onSearchChange"];
+    handleSearchChange -> fem_setSearchQuery [label="calls filters.setSearchQuery() [!]"];
+    handleSearchChange -> checkForZipCode [label="calls"];
+
+    // handleDateRangeChange
+    DateAndSearchFilters -> handleDateRangeChange [label="onDateRangeChange"];
+    handleDateRangeChange -> fem_setDateRange [label="calls filters.setDateRange() [!]"];
+
+    // handleClearMapFilter
+    Sidebar -> handleClearMapFilter [label="onClearMapFilter"];
+    handleClearMapFilter -> resetMapToVisibleEvents [label="calls"];
+
+    // handleResetMapToVisibleEvents
+    Sidebar -> handleResetMapToVisibleEvents [label="onResetMapToVisibleEvents"];
+    handleResetMapToVisibleEvents -> calculateBoundsFromMarkers [label="calls"];
+    handleResetMapToVisibleEvents -> resetMapToVisibleEvents [label="calls\n\nParam: mapBounds [!]", color=purple, fontcolor=purple];
+
+    // ========================================================================
+    // COMPONENT RENDERING FLOWS
+    // ========================================================================
+
+    useAppController -> MapContainer [label="Props:\n• cmfEvents\n• viewport\n• markers", color=blue, fontcolor=blue, style=dashed];
+    useAppController -> EventList [label="Props:\n• cmfEvents.visibleEvents", color=green, fontcolor=green, style=dashed];
+    useAppController -> DateAndSearchFilters [label="Props:\n• handlers", style=dashed];
+    useAppController -> Sidebar [label="Props:\n• cmfEvents\n• currentBounds [!]", color=purple, fontcolor=purple, style=dashed];
+
+    MapContainer -> MapMarker [label="renders"];
+    MapMarker -> MapPopup [label="renders"];
+
+    EventList -> sortEvents [label="calls"];
+
+    // ========================================================================
+    // API ROUTE INTERNALS
+    // ========================================================================
+
+    api_events -> fetchEvents [label="calls"];
+    fetchEvents -> transformToCmfEvent [label="calls"];
+    fetchEvents -> geocodeEventLocations [label="calls"];
+    geocodeEventLocations -> geocodeAddress [label="for each event"];
+    geocodeAddress -> api_geocode [label="calls if not cached", style=dashed];
+
+    // ========================================================================
+    // LEGEND
+    // ========================================================================
+
+    subgraph cluster_legend {
+        label="Legend";
+        style=filled;
+        fillcolor=white;
+
+        // Arrange legend items horizontally
+        {
+            rank=same;
+            legend_component [label="Component", fillcolor="#E8F4F8", width=1.2];
+            legend_hook [label="Hook", fillcolor="#FFF4E6", width=1.2];
+            legend_service [label="Service", fillcolor="#F0E6FF", width=1.2];
+            legend_manager [label="Manager", fillcolor="#E6F7E6", width=1.2];
+            legend_api [label="API Route", fillcolor="#FFE6E6", width=1.2];
+            legend_util [label="Utility", fillcolor="#FFEBCD", width=1.2];
+            legend_handler [label="Handler", fillcolor="#FFFACD", width=1.2];
+        }
+
+        legend_warning [label="[!] = Naming confusion risk", shape=plaintext, fillcolor=white];
+
+        // Invisible edges for horizontal layout
+        legend_component -> legend_hook -> legend_service -> legend_manager -> legend_api -> legend_util -> legend_handler [style=invis];
+        legend_manager -> legend_warning [style=invis];
+    }
+}

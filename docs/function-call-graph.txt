@@ -1,0 +1,424 @@
+# CMF Function Call Graph - ASCII Tree Format
+
+Legend:
+  [H] = Hook
+  [C] = Component
+  [S] = Service/Utility
+  [M] = Manager Class
+  [A] = API Route
+
+Focus: Shows naming propagation and parameter passing where confusion could occur
+
+═══════════════════════════════════════════════════════════════════════════════
+ROOT: Application Entry Point
+═══════════════════════════════════════════════════════════════════════════════
+
+[C] page.tsx (Main App)
+    │
+    └─→ [H] useAppController()
+        │   ├── State: appState, headerName, currentBounds, isShowingAllEvents
+        │   ├── Returns: { state, eventData, mapData, handlers }
+        │   │
+        │   ├─→ [H] useEventsManager(appState, eventSourceId, currentBounds, sd, ed, dateRange)
+        │   │   │   ├── Params: currentBounds (MapBounds | null)
+        │   │   │   ├── Returns: { cmfEvents, filters, eventSources, filtrEvtMgr }
+        │   │   │   │   └── NOTE: 'filters' contains FUNCTIONS (setDateRange, setSearchQuery)
+        │   │   │   │
+        │   │   │   ├─→ useSWR('/api/events', fetcher)
+        │   │   │   │   └── Returns: { data: { allEvents, sources }, isLoading, error }
+        │   │   │   │       └── NOTE: 'allEvents' from API response
+        │   │   │   │
+        │   │   │   ├─→ [M] FilterEventsManager.constructor(events)
+        │   │   │   │   └── Creates: this.allEvents (internal storage)
+        │   │   │   │       └── NOTE: Different 'allEvents' than API response
+        │   │   │   │
+        │   │   │   ├─→ [M] FilterEventsManager.setEvents(allEvents)
+        │   │   │   │   └── Sets: this.allEvents = events
+        │   │   │   │
+        │   │   │   ├─→ [M] FilterEventsManager.setDateRange(dateRange)
+        │   │   │   │   └── Sets: this.filters.dateRange
+        │   │   │   │       └── NOTE: 'filters' is VALUES here (DomainFilters type)
+        │   │   │   │
+        │   │   │   ├─→ [M] FilterEventsManager.setSearchQuery(searchQuery)
+        │   │   │   │   └── Sets: this.filters.searchQuery
+        │   │   │   │
+        │   │   │   └─→ [M] FilterEventsManager.getCmfEvents(mapBounds?)
+        │   │   │       ├── Param: mapBounds (optional MapBounds)
+        │   │   │       ├── Returns: CmfEvents { allEvents, visibleEvents, hiddenCounts }
+        │   │   │       │   └── NOTE: Third different 'allEvents' (property of CmfEvents)
+        │   │   │       │
+        │   │   │       ├─→ [S] applyDateFilter(event, dateRange)
+        │   │   │       ├─→ [S] applySearchFilter(event, searchQuery)
+        │   │   │       ├─→ [S] applyMapFilter(event, mapBounds, aggregateCenter)
+        │   │   │       │   └── Param: mapBounds (from parent call)
+        │   │   │       └─→ [S] applyUnknownLocationsFilter(event, showUnknownOnly)
+        │   │   │
+        │   │   └── Returns:
+        │   │       ├── cmfEvents: CmfEvents (includes allEvents, visibleEvents)
+        │   │       ├── filters: { setDateRange, setSearchQuery, ... }
+        │   │       └── filtrEvtMgr: FilterEventsManager instance
+        │   │
+        │   ├─→ [H] useMap(appState, cmfEvents, filtrEvtMgr, w, h, handleBoundsChangeForFilters)
+        │   │   │   ├── Params: cmfEvents (full CmfEvents object)
+        │   │   │   ├── Params: filtrEvtMgr (FilterEventsManager instance)
+        │   │   │   ├── Returns: { viewport, markers, selectedMarkerId, resetMapToVisibleEvents }
+        │   │   │   │
+        │   │   │   ├─→ [M] FilterEventsManager.getCmfEvents()
+        │   │   │   │   └── NOTE: Duplicate call! Already called in useEventsManager
+        │   │   │   │   └── Returns: CmfEvents with allEvents, visibleEvents
+        │   │   │   │
+        │   │   │   ├─→ [S] generateMapMarkers(visibleEvents)
+        │   │   │   │   ├── Param: visibleEvents (from cmfEvents.visibleEvents)
+        │   │   │   │   └── Returns: MapMarker[]
+        │   │   │   │       └── Each marker contains: { id, lat, lng, events: CmfEvent[] }
+        │   │   │   │
+        │   │   │   ├─→ [S] calculateBoundsFromMarkers(markers)
+        │   │   │   │   └── Returns: MapBounds (calculated bounds)
+        │   │   │   │       └── NOTE: Not same as 'currentBounds' or 'mapBounds' params
+        │   │   │   │
+        │   │   │   └─→ resetMapToVisibleEvents(options?)
+        │   │   │       ├── Param: options.mapBounds (optional MapBounds)
+        │   │   │       ├── Param: options.useBounds (boolean)
+        │   │   │       │
+        │   │   │       ├── Locally creates: curBounds (MapBounds | undefined)
+        │   │   │       │   └── NOTE: Yet another 'bounds' variable name
+        │   │   │       │
+        │   │   │       ├─→ [M] FilterEventsManager.getCmfEvents(curBounds)
+        │   │   │       │   └── Param: curBounds (calculated locally)
+        │   │   │       │   └── Returns: curEvents (CmfEvents)
+        │   │   │       │       └── NOTE: 'curEvents' different from cmfEvents param
+        │   │   │       │
+        │   │   │       └─→ [S] calculateBoundsFromMarkers(markers)
+        │   │   │           └── Returns: newBounds (MapBounds)
+        │   │   │               └── NOTE: 'newBounds' vs 'curBounds' vs 'mapBounds'
+        │   │   │
+        │   │   └── Returns: { viewport, markers, selectedMarkerId, ... }
+        │   │
+        │   ├─→ [H] useBreakpoint('(min-width: 1024px)')
+        │   │   └── Returns: isDesktop (boolean)
+        │   │
+        │   ├─→ [H] useUrlProcessor(config)
+        │   │   │   ├── Params: urlParams (CurrentUrlState)
+        │   │   │   ├── Params: cmfEvents, viewport, handlers
+        │   │   │   │
+        │   │   │   ├─→ [S] processDomainFilters(urlParams)
+        │   │   │   │   └── Returns: DomainFilterResult
+        │   │   │   │
+        │   │   │   ├─→ [S] processMapPosition(urlParams)
+        │   │   │   │   └── Returns: MapPositionResult
+        │   │   │   │
+        │   │   │   └─→ [S] processSelectedEvent(se, cmfEvents.allEvents)
+        │   │   │       └── Param: cmfEvents.allEvents
+        │   │   │           └── NOTE: Using allEvents from CmfEvents
+        │   │   │
+        │   │   └── Returns: { dateConfig }
+        │   │
+        │   ├── Handler: handleBoundsChangeForFilters(bounds, fromUserInteraction)
+        │   │   ├── Param: bounds (MapBounds) - NEW bounds from map
+        │   │   ├── Compares with: currentBounds (state) - CURRENT bounds
+        │   │   └── Calls: setCurrentBounds(bounds) - sets to NEW bounds
+        │   │       └── NOTE: 'bounds' param becomes 'currentBounds' state
+        │   │
+        │   ├── Handler: handleEventSelect(eventId)
+        │   │   ├─→ Find in: cmfEvents.allEvents
+        │   │   │   └── NOTE: Searching allEvents property
+        │   │   ├─→ genMarkerId(event)
+        │   │   └─→ setViewport({ lat, lng, zoom })
+        │   │
+        │   ├── Handler: handleSearchChange(query)
+        │   │   ├─→ filters.setSearchQuery(query)
+        │   │   │   └── NOTE: 'filters' from useEventsManager (functions)
+        │   │   └─→ [S] checkForZipCode(query, zipLatLonRef)
+        │   │
+        │   ├── Handler: handleDateRangeChange(newDateRange)
+        │   │   ├─→ setDateSliderRange(newDateRange)
+        │   │   └─→ filters.setDateRange(newDateRange)
+        │   │
+        │   ├── Handler: handleClearMapFilter()
+        │   │   ├─→ setCurrentBounds(null)
+        │   │   │   └── NOTE: null = special "show all" semantics
+        │   │   └─→ resetMapToVisibleEvents({ useBounds: false })
+        │   │
+        │   └── Handler: handleResetMapToVisibleEvents()
+        │       ├─→ [S] calculateBoundsFromMarkers(markers)
+        │       │   └── Returns: mapBounds
+        │       └─→ resetMapToVisibleEvents({ useBounds: true, mapBounds })
+        │           └── NOTE: 'mapBounds' local var passed as param
+        │
+        └── Returns to page.tsx:
+            ├── state: { appState, headerName, dateSliderRange, ... }
+            ├── eventData: { cmfEvents, eventSources, apiIsLoading, apiError }
+            │   └── NOTE: cmfEvents contains allEvents and visibleEvents
+            ├── mapData: { viewport, markers, selectedMarkerId, currentBounds, ... }
+            └── handlers: { onEventSelect, onSearchChange, onBoundsChange, ... }
+
+
+═══════════════════════════════════════════════════════════════════════════════
+COMPONENTS: Render Layer
+═══════════════════════════════════════════════════════════════════════════════
+
+[C] MapContainer
+    ├── Props: cmfEvents, viewport, markers, selectedMarkerId, handlers
+    │   └── NOTE: Receives full cmfEvents object
+    │
+    ├─→ [C] MapMarker (for each marker)
+    │   ├── Props: marker.events (CmfEvent[])
+    │   │   └── NOTE: Array of events at this location
+    │   └─→ [C] MapPopup
+    │       └── Props: events (CmfEvent[])
+    │           └── NOTE: Same events array from marker
+    │
+    └── Handlers:
+        ├─→ onMove → handlers.onViewportChange(viewport)
+        │   └── Param: viewport (MapViewport)
+        │
+        └─→ onMoveEnd → handlers.onBoundsChange(bounds, fromUserInteraction=true)
+            └── Param: bounds (MapBounds from map.getBounds())
+                └── NOTE: Triggers handleBoundsChangeForFilters
+
+
+[C] EventList
+    ├── Props: cmfEvents.visibleEvents, handlers
+    │   └── NOTE: Only receives visibleEvents array
+    │
+    ├─→ [S] sortEvents(visibleEvents, sortField, sortDirection)
+    │   └── Returns: sorted events array
+    │
+    └── onClick → handlers.onEventSelect(event.id)
+
+
+[C] DateAndSearchFilters
+    ├── Props: currentUrlState, dateConfig, handlers
+    │
+    ├── On mount (applying-url-filters state):
+    │   ├─→ handlers.onDateRangeChange(dateRange)
+    │   │   └── Triggers: filters.setDateRange() in useEventsManager
+    │   └─→ handlers.onSearchChange(searchQuery)
+    │       └── Triggers: filters.setSearchQuery() in useEventsManager
+    │
+    └── User interactions:
+        ├─→ Date slider → handlers.onDateRangeChange(newRange)
+        ├─→ Quick filters → handlers.onDateQuickFilterChange(value)
+        └─→ Search input → handlers.onSearchChange(query)
+
+
+[C] Sidebar (ActiveFilters)
+    ├── Props: cmfEvents, currentBounds, handlers
+    │   ├── Uses: cmfEvents.allEvents.length (total count)
+    │   ├── Uses: cmfEvents.visibleEvents.length (visible count)
+    │   └── Uses: cmfEvents.hiddenCounts (chip counts)
+    │
+    └── Chip clicks:
+        ├─→ handlers.onClearMapFilter()
+        ├─→ handlers.onClearSearchFilter()
+        ├─→ handlers.onClearDateFilter()
+        └─→ handlers.onResetMapToVisibleEvents()
+
+
+═══════════════════════════════════════════════════════════════════════════════
+API ROUTES: Server-side
+═══════════════════════════════════════════════════════════════════════════════
+
+[A] /api/events?id=SOURCE&sd=DATE&ed=DATE
+    │
+    ├─→ parseEventSourceId(id)
+    │   └── Returns: EventsSource[]
+    │
+    ├─→ For each source:
+    │   │
+    │   ├─→ EventSourceHandler.fetchEvents(params)
+    │   │   │
+    │   │   ├─→ [Google Calendar] fetchGoogleCalendarEvents(calendarId, timeMin, timeMax)
+    │   │   │   └── Returns: rawEvents (GoogleCalendarEvent[])
+    │   │   │       └── NOTE: 'rawEvents' different from API response 'allEvents'
+    │   │   │
+    │   │   ├─→ [Facebook] fetchFacebookEvents(url, sd, ed)
+    │   │   │   └── Returns: events (CmfEvent[])
+    │   │   │
+    │   │   └─→ [19hz] fetch19hzEvents(city, sd, ed)
+    │   │       └── Returns: events (CmfEvent[])
+    │   │
+    │   ├─→ transformToCmfEvent(sourceEvent)
+    │   │   └── Returns: CmfEvent
+    │   │
+    │   └─→ geocodeEventLocations(events)
+    │       │
+    │       ├─→ For each event:
+    │       │   └─→ [S] geocodeAddress(location)
+    │       │       │
+    │       │       ├─→ [S] getCachedGeocode(locationKey)
+    │       │       │   └── Returns: cached Location or null
+    │       │       │
+    │       │       ├─→ If not cached:
+    │       │       │   ├─→ Google Maps Geocoding API
+    │       │       │   └─→ [S] cacheGeocode(locationKey, result)
+    │       │       │
+    │       │       └── Returns: Location { status, lat?, lng?, formatted_address? }
+    │       │
+    │       └── Returns: events with resolved_location
+    │
+    └── Returns: {
+        allEvents: CmfEvent[],  ← NOTE: 'allEvents' at API boundary
+        sources: EventsSource[]
+    }
+
+
+═══════════════════════════════════════════════════════════════════════════════
+SERVICE/UTILITY FUNCTIONS: Pure functions
+═══════════════════════════════════════════════════════════════════════════════
+
+[S] Filter Functions (lib/events/filters.ts)
+    │
+    ├── applyDateFilter(event, dateRange?)
+    │   └── Returns: boolean (event passes date filter)
+    │
+    ├── applySearchFilter(event, searchQuery?)
+    │   └── Returns: boolean (event passes search filter)
+    │
+    ├── applyMapFilter(event, mapBounds, aggregateCenter?)
+    │   ├── Param: mapBounds (MapBounds)
+    │   └── Returns: boolean (event is within bounds)
+    │
+    └── applyUnknownLocationsFilter(event, showUnknownOnly?)
+        └── Returns: boolean (event passes location filter)
+
+
+[S] Location Functions (lib/utils/location.ts)
+    │
+    ├── calculateBoundsFromMarkers(markers)
+    │   └── Returns: MapBounds (calculated from marker positions)
+    │       └── NOTE: Creates new bounds from data
+    │
+    ├── calculateBoundsFromViewport(viewport, width, height)
+    │   └── Returns: MapBounds (calculated from viewport)
+    │       └── NOTE: Viewport → Bounds conversion
+    │
+    ├── isInBounds(event, bounds, aggregateCenter?)
+    │   ├── Param: bounds (MapBounds)
+    │   └── Returns: boolean
+    │
+    └── hasResolvedLocation(event)
+        └── Returns: boolean (event has valid lat/lng)
+
+
+[S] URL Processing (lib/services/urlProcessingService.ts)
+    │
+    ├── processDomainFilters(urlParams)
+    │   └── Returns: DomainFilterResult { dateRange, searchQuery }
+    │
+    ├── processMapPosition(urlParams)
+    │   └── Returns: MapPositionResult { viewport?, bounds? }
+    │
+    └── validateUrlParams(urlParams)
+        └── Returns: UrlValidationResult
+
+
+[S] State Management (lib/state/appStateReducer.ts)
+    │
+    ├── appStateReducer(state, action)
+    │   ├── Param: state (AppState)
+    │   └── Returns: AppState (new state)
+    │
+    └── appActions (action creators)
+        ├── startFetchingEvents()
+        ├── eventsFetched(hasEvents)
+        ├── eventsProcessed()
+        ├── urlFiltersApplied()
+        ├── remainingUrlParsed()
+        └── setupFinalized()
+
+
+═══════════════════════════════════════════════════════════════════════════════
+CRITICAL NAMING PROPAGATION PATHS
+═══════════════════════════════════════════════════════════════════════════════
+
+Path 1: allEvents Propagation (HIGH RISK)
+─────────────────────────────────────────
+/api/events
+  └── allEvents (API response) ───┐
+                                   │
+useEventsManager                   │
+  ├── { allEvents } = swrData ─────┘ (API allEvents)
+  ├── filtrEvtMgr.setEvents(allEvents) ──→ this.allEvents (internal storage)
+  └── filtrEvtMgr.getCmfEvents() ──→ { allEvents, ... } (CmfEvents property)
+                                      │
+page.tsx / Components               │
+  └── cmfEvents.allEvents ───────────┘ (consumed by UI)
+
+  ⚠️  THREE different 'allEvents' in same data flow!
+
+
+Path 2: Bounds Propagation (HIGH RISK)
+───────────────────────────────────────
+MapContainer.onMoveEnd
+  └── map.getBounds() ──→ bounds (MapBounds from API)
+                          │
+handleBoundsChangeForFilters
+  ├── Param: bounds (new bounds) ───┐
+  ├── State: currentBounds (old) ───┤ COMPARISON
+  └── setCurrentBounds(bounds) ──────┘ (new becomes current)
+                                      │
+useEventsManager                      │
+  └── Param: currentBounds ───────────┘
+      │
+FilterEventsManager.getCmfEvents
+  └── Param: mapBounds ──→ used in applyMapFilter(event, mapBounds, ...)
+
+  ⚠️  bounds → currentBounds → mapBounds (same data, three names!)
+
+
+Path 3: Filters Propagation (MEDIUM RISK)
+──────────────────────────────────────────
+useEventsManager
+  └── Returns: filters = { setDateRange, setSearchQuery, ... } (FUNCTIONS)
+                │
+useAppController          │
+  └── const { filters } ──┘
+      │
+Component handlers        │
+  └── filters.setDateRange() ───→ FilterEventsManager.setDateRange()
+                                  │
+FilterEventsManager               │
+  └── this.filters.dateRange ─────┘ (VALUES, not functions!)
+
+  ⚠️  Same name 'filters' for both VALUES and FUNCTIONS!
+
+
+Path 4: Events Filtering Chain
+───────────────────────────────
+FilterEventsManager.getCmfEvents(mapBounds?)
+  ├── Loop: for (const event of this.allEvents)
+  │   ├── applySearchFilter(event, this.filters.searchQuery)
+  │   ├── applyDateFilter(event, this.filters.dateRange)
+  │   ├── applyMapFilter(event, mapBounds, aggregateCenter)
+  │   └── If all pass → visibleEvents.push(event)
+  │
+  └── Returns: { allEvents: this.allEvents, visibleEvents, hiddenCounts }
+      │
+      └── Used by:
+          ├── EventList (uses visibleEvents for display)
+          ├── MapContainer (uses visibleEvents for markers)
+          └── Sidebar (uses allEvents.length and visibleEvents.length)
+
+  NOTE: Single source of truth for filtering, but consumers must
+        know whether to use allEvents or visibleEvents!
+
+
+═══════════════════════════════════════════════════════════════════════════════
+NOTES ON LIMITATIONS
+═══════════════════════════════════════════════════════════════════════════════
+
+This call graph shows:
+✓ Direct function calls and parameter passing
+✓ Naming patterns and where confusion occurs
+✓ Data flow through the naming pipeline
+✓ Critical paths where bugs are most likely
+
+This call graph does NOT show:
+✗ Complete coverage of all functions (focused on naming-critical paths)
+✗ Internal implementation details of each function
+✗ All prop drilling and component composition
+✗ Utility functions not related to naming confusion (logr, umami, etc.)
+
+For complete function signatures, see source files directly.
+For naming recommendations, see code-review-naming.md.
