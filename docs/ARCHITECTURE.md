@@ -287,10 +287,12 @@ useAppController (smart hook)
 
 The following png may help you understand all the core functions.  You can also view [force-directed graph layout with D3.js](https://chadn.github.io/cmf/function-call-graph.html) which is currently focused on identifying problematic names.
 
-<div style="overflow-x:auto;">
-<img src="function-call-graph.png" alt="Function Call Graph" style="height: 1193px; width:auto; display:block;">
+<div style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
+  <img 
+  src="function-call-graph.png" 
+  alt="Function Call Graph" 
+  style="height:300px; width:auto; max-width:none !important; display:block;">
 </div>
-
 
 ---
 

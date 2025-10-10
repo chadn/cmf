@@ -10,7 +10,7 @@ This directory contains comprehensive documentation for Calendar Map Filter (CMF
 1. [Test Coverage](tests.md) - Manual testing, Automated tests, and current test statistics
 1. [Todo and Feature Backlog](todo.md) - planned features, bugs, and known issues todo.
 
-And in parent directory
+And in [parent directory](https://github.com/chadn/cmf)
 
 - [CHANGELOG](../CHANGELOG.md) log of changes with each new version
 - [README.md](../README.md) Standard introduction 
