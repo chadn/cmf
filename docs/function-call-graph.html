@@ -204,9 +204,9 @@
         <div class="control-group">
             <label>Layout:</label>
             <select id="layout-select">
+                <option value="force">Force-Directed</option>
                 <option value="tree">Tree (Top-Down)</option>
                 <option value="radial">Radial</option>
-                <option value="force">Force-Directed</option>
             </select>
         </div>
     </div>
@@ -403,7 +403,7 @@
         // Info panel
         const infoPanel = d3.select("#info-panel");
 
-        let currentLayout = "tree";
+        let currentLayout = "force";
         let currentFilter = "all";
         let currentRiskFilter = "high";
 
@@ -554,20 +554,58 @@
         }
 
         function renderForceLayout(nodes, links) {
-            const simulation = d3.forceSimulation(nodes)
-                .force("link", d3.forceLink(links).id(d => d.id).distance(100))
-                .force("charge", d3.forceManyBody().strength(-300))
+            // Clone nodes to avoid mutation issues
+            const simNodes = nodes.map(d => ({...d}));
+            const simLinks = links.map(d => ({...d}));
+
+            const simulation = d3.forceSimulation(simNodes)
+                .force("link", d3.forceLink(simLinks).id(d => d.id).distance(d => {
+                    // Vary distance based on risk level for better visualization
+                    return d.risk === "high" ? 120 : 150;
+                }))
+                .force("charge", d3.forceManyBody().strength(-800))
                 .force("center", d3.forceCenter(width / 2, height / 2))
-                .force("collision", d3.forceCollide().radius(70));
+                .force("collision", d3.forceCollide().radius(50))
+                .force("x", d3.forceX(width / 2).strength(0.05))
+                .force("y", d3.forceY(height / 2).strength(0.05));
+
+            // Add arrow markers
+            const defs = g.append("defs");
+
+            defs.append("marker")
+                .attr("id", "arrow-normal")
+                .attr("viewBox", "0 -5 10 10")
+                .attr("refX", 45)
+                .attr("refY", 0)
+                .attr("markerWidth", 6)
+                .attr("markerHeight", 6)
+                .attr("orient", "auto")
+                .append("path")
+                .attr("d", "M0,-5L10,0L0,5")
+                .attr("fill", "#999");
+
+            defs.append("marker")
+                .attr("id", "arrow-high")
+                .attr("viewBox", "0 -5 10 10")
+                .attr("refX", 45)
+                .attr("refY", 0)
+                .attr("markerWidth", 6)
+                .attr("markerHeight", 6)
+                .attr("orient", "auto")
+                .append("path")
+                .attr("d", "M0,-5L10,0L0,5")
+                .attr("fill", "#e74c3c");
 
             const link = g.selectAll(".link")
-                .data(links)
+                .data(simLinks)
                 .join("line")
                 .attr("class", "link")
-                .attr("stroke", d => d.risk === "high" ? "#e74c3c" : "#999");
+                .attr("stroke", d => d.risk === "high" ? "#e74c3c" : "#999")
+                .attr("stroke-width", d => d.risk === "high" ? 2.5 : 1.5)
+                .attr("marker-end", d => d.risk === "high" ? "url(#arrow-high)" : "url(#arrow-normal)");
 
             const node = g.selectAll(".node")
-                .data(nodes)
+                .data(simNodes)
                 .join("g")
                 .attr("class", "node")
                 .call(d3.drag()
@@ -579,16 +617,32 @@
                 .on("click", handleClick);
 
             node.append("circle")
-                .attr("r", 40)
+                .attr("r", d => {
+                    // Size based on risk
+                    if (d.risk === "high") return 35;
+                    if (d.risk === "medium") return 30;
+                    return 25;
+                })
                 .attr("fill", d => colorMap[d.category] || "#fff")
-                .attr("stroke", "#333")
-                .attr("stroke-width", 2);
+                .attr("stroke", d => d.risk === "high" ? "#e74c3c" : "#333")
+                .attr("stroke-width", d => d.risk === "high" ? 3 : 2);
 
             node.append("text")
                 .attr("dy", "0.35em")
                 .attr("text-anchor", "middle")
-                .text(d => d.label)
-                .style("font-size", "10px");
+                .text(d => d.label.length > 26 ? d.label.substring(0, 23) + "..." : d.label)
+                .style("font-size", "11px")
+                .style("font-weight", "500")
+                .style("pointer-events", "none");
+
+            // Add warning badge for high risk nodes
+            node.filter(d => d.risk === "high" || d.risk === "medium")
+                .append("text")
+                .attr("x", 20)
+                .attr("y", -20)
+                .attr("font-size", "14px")
+                .attr("pointer-events", "none")
+                .text("⚠️");
 
             simulation.on("tick", () => {
                 link
@@ -598,6 +652,22 @@
                     .attr("y2", d => d.target.y);
 
                 node.attr("transform", d => `translate(${d.x},${d.y})`);
+            });
+
+            // Auto-fit after simulation stabilizes
+            simulation.on("end", () => {
+                setTimeout(() => {
+                    const bounds = g.node().getBBox();
+                    const fullWidth = width;
+                    const fullHeight = height;
+                    const scale = 0.85 / Math.max(bounds.width / fullWidth, bounds.height / fullHeight);
+                    const translate = [fullWidth / 2 - scale * (bounds.x + bounds.width / 2), fullHeight / 2 - scale * (bounds.y + bounds.height / 2)];
+
+                    svg.transition().duration(750).call(
+                        zoom.transform,
+                        d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale)
+                    );
+                }, 500);
             });
 
             function dragstarted(event, d) {

@@ -25,7 +25,6 @@ Done items in [CHANGELOG](../CHANGELOG.md)
 1. Update AGENT.md with CI and related stuff
 1. Enable parsing and showing plura's ever evolving site categories, similar to 19hz:DC. So plura:sf-bay-area-polyamory should load https://heyplura.com/sf-bay-area-polyamory
 1. Prepare for case where 2 different event sources have similar event ids. setSelectedEventIdUrl(eventId) may highlight event from wrong source. Right now id's are unique per event source. Low priority now that "Skipping duplicate events" fixes real issue - events with same id are just duplicates and we don't want them.
-1. Upgrade from next 14 to next 15
 1. Change marker id 'unresolved' to 'unresolvedMarkerId', revisit how unresolved works with filters and related data structures
 1. Currently some url params are type `string`, some are `string | null` - seems like null is not necessary.
 1. refactor to follow React best practice of

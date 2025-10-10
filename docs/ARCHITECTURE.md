@@ -6,6 +6,31 @@
 **Reading time:** ~8 minutes
 **Update when:** a new subsystem is added, a data contract changes, or a major dependency shifts.
 
+## Table of Contents
+
+1. [TL;DR](#1-tldr)
+2. [Components Overview](#2-components-overview)
+3. [Typical Flow](#3-typical-flow)
+  - [Happy Path: User Loads Events](#happy-path-user-loads-events)
+  - [User Interaction: Filtering Events By Date](#user-interaction-filtering-events-by-date)
+  - [Error Handling](#error-handling)
+  - [Idempotency](#idempotency)
+4. [Design Principles](#4-design-principles)
+5. [Decisions & Rationale](#5-decisions--rationale)
+  - [Key Architectural Decisions](#key-architectural-decisions)
+  - [Technology Choices](#technology-choices)
+6. [Data Flow & State Management](#6-data-flow--state-management)
+  - [Application State Machine (8 States)](#application-state-machine-8-states)
+  - [Core Data Structures](#core-data-structures)
+  - [Data Flow Through System](#data-flow-through-system)
+  - [Filtering Architecture: Two-Stage Model](#filtering-architecture-two-stage-model)
+  - [Function Call Graph](#function-call-graph)
+7. [Security & Data](#7-security--data)
+8. [Sizing & Limits](#8-sizing--limits)
+9. [Risks / TODOs / Open Questions](#9-risks--todos--open-questions)
+10. [Reading Paths](#10-reading-paths)
+11. [Maintainers / Update Policy](#11-maintainers--update-policy)
+
 ## 1. TL;DR
 
 - **Goal:** Display calendar events on an interactive map with real-time filtering by date, search, and geographic area
@@ -22,15 +47,27 @@
 
 ```mermaid
 flowchart LR
-    User((User)) --> Client[Client SPA]
-    Client --> API["/api/events"]
-    API --> ES[Event Sources]
-    API --> GC[Geocoding API]
+    Client[Client SPA] --> API["/api/events<br/>on Server"]
     API --> Cache[(Redis Cache)]
-    Client --> Map[MapLibre GL]
+    API -->|Cache Miss| ES[Event Sources]
+    API -->|Cache Miss| GC[Geocoding API]
+    Client --> Map[MapContainer<br/>MapLibre GL]
     Client --> Filters[FilterEventsManager]
+    Filters --> FilterCounts[FilterCounts]
     Filters --> Map
-    Filters --> List[Event List]
+    Filters --> List[EventList]
+    subgraph SPA
+        Map
+        Filters
+        FilterCounts
+        List
+    end
+    subgraph Internet
+        API
+        Cache
+        ES
+        GC
+    end
 ```
 
 ## 2. Components Overview
@@ -246,6 +283,15 @@ useAppController (smart hook)
 
 **Key Insight:** Each filter is independent. Chip counts show events hidden by _that specific filter alone_, not cumulative filtering.
 
+### Function Call Graph
+
+The following png may help you understand all the core functions.  You can also view [force-directed graph layout with D3.js](https://chadn.github.io/cmf/function-call-graph.html) which is currently focused on identifying problematic names.
+
+<div style="overflow-x:auto;">
+<img src="function-call-graph.png" alt="Function Call Graph" style="height: 1193px; width:auto; display:block;">
+</div>
+
+
 ---
 
 ## 7. Security & Data
@@ -368,13 +414,4 @@ useAppController (smart hook)
 - New event sources (unless changes event source pattern)
 - Performance optimizations (unless architectural approach changes)
 
----
-
-## Additional Resources
-
-- **Implementation Details:** [implementation.md](implementation.md)
-- **Architecture Decisions:** [ADR Index](adr/README.md)
-- **User Guide:** [Usage Documentation](usage.md)
-- **Development Setup:** [Development Guide](development.md)
-- **Test Coverage:** [Testing Documentation](tests.md)
-- **Changelog:** [CHANGELOG.md](../CHANGELOG.md)
+That's all.  You can also [view other docs](../docs/)

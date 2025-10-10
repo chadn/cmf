@@ -6,14 +6,10 @@ This document covers the technical implementation details for Calendar Map Filte
 
 - [Quick Reference](#quick-reference)
 - [Architecture Overview](#architecture-overview)
-    - [Architecture Principles](#architecture-principles)
-        - [Pure Functions (Services)](#pure-functions-services)
-        - [React Hooks](#react-hooks)
-        - [Utility Functions](#utility-functions)
 - [Key Data Structures and Data Flow](#key-data-structures-and-data-flow)
     - [Core Data Structures](#core-data-structures)
-    - [Data Flow: Application State Machine](#data-flow-application-state-machine)
-    - [Data Flow: Server Processing Event Source](#data-flow-server-processing-event-source)
+    - [Timezones](#timezones)
+    - [Data Flow](#data-flow)
 - [URL Parsing](#url-parsing)
     - [URL Parsing Guidelines and Reasoning](#url-parsing-guidelines-and-reasoning)
 - [Directory Structure](#directory-structure)
@@ -59,11 +55,6 @@ See [ARCHITECTURE.md](ARCHITECTURE.md#core-data-structures) for detailed data st
 - **MapState** - Map viewport, bounds, markers, selectedMarkerId (defined in [types/map.ts](../src/types/map.ts))
 - **DomainFilters** - Date range and search query filters (defined in [types/events.ts](../src/types/events.ts))
 - **URL parameters** - Defined in [types/urlparams.d.ts](../src/types/urlparams.d.ts), parsed in [url-utils.ts](../src/lib/utils/url-utils.ts)
-
-### Function Call Graph
-
-
-<img src="function-call-graph.png" alt="Example" style="height:1193px;">
 
 ### Timezones
 
@@ -330,27 +321,3 @@ Vercel automatically detects Next.js and uses optimal build settings. Custom con
 
 _For development setup and local running, see [development.md](development.md)_
 _For user guide and features, see [usage.md](usage.md)_
-
-# TEMP
-
-OLD vs NEW states
-
-```
-  export type AppState =
- -    | 'events-init' // Fetching events from eventSource
- -    | 'events-loaded' // Events loaded, map markers can be generated
- -    | 'mapbounds-init' // Map component initialized, ready for domain filter processing
- -    | 'domain-filters-applied' // URL domain filters (date, search) processed and applied
- -    | 'url-processed' // All URL parameters processed (domain + map positioning)
- -    | 'mapbounds-calculated' // Map bounds calculated from filtered events and URL state
- -    | 'mapbounds-set' // Map bounds applied to filtering, ready for user interaction
- -    | 'main-state' // Normal user interaction mode
-
- +    | 'starting-app' // When successfully parses es, before fetching events, should transition to fetching-events
- +    | 'fetching-events' // SWR fetching events from API
- +    | 'processing-events' // resetMapToVisibleEvents, header setup
- +    | 'applying-url-filters' // DateAndSearchFilters processes date/search URL params
- +    | 'parsing-remaining-url' // Handle se, llz, auto-resize logic
- +    | 'finalizing-setup' // Final transition before interaction (placeholder for tracking)
- +    | 'user-interactive' // Normal user interaction mode
-```

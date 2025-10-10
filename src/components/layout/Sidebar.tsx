@@ -109,7 +109,7 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(
                                             CMF, Calendar Map Filter, lets you use a map to view and filter events. You
                                             can also filter by date or search term. <br />
                                             <a
-                                                href="https://github.com/chadn/cmf/blob/main/docs/usage.md#how-to-use-cmf"
+                                                href="https://chadn.github.io/cmf/usage.html#how-to-use-cmf"
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="hover:underline text-blue-700"

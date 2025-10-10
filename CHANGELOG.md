@@ -5,9 +5,14 @@ All notable changes to Calendar Map Filter (CMF) will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.2] - 2025-10-9
+
+- Minor updates to Documentation
+- Setup github pages, so using https://chadn.github.io/cmf/usage.html for [usage.md](docs/usage.md)
+
 ## [0.4.1] - 2025-10-9
 
-- Updated Documentation
+- Updated Documentation - added ARCHITECTURE.md and function-call-graph files, updated others.
 - Fixed counts in Event Sources popover 
 
 ## [0.4.0] - 2025-10-8
