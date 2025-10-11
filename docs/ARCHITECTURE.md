@@ -285,7 +285,9 @@ useAppController (smart hook)
 
 ### Function Call Graph
 
-The following png may help you understand all the core functions.  You can also view [force-directed graph layout with D3.js](https://chadn.github.io/cmf/function-call-graph.html) which is currently focused on identifying problematic names.
+The following png may help you understand all the core functions.  
+You can also view [force-directed graph layout with D3.js](https://chadn.github.io/cmf/function-call-graph.html) 
+which is currently focused on identifying problematic names, more at [Code Review: Naming Analysis](code-review-naming.md)
 
 <div style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
   <img 
@@ -367,7 +369,7 @@ The following png may help you understand all the core functions.  You can also 
 **Technical Debt:**
 
 - Some event sources use custom parsing (19hz, foopee) - fragile to website changes
-- Timezone conversion uses special constants (`UNKNOWN_TZ`, `CONVERT_UTC_TO_LOCAL`) - needs refactoring
+- Timezone conversion uses special constants (`UNKNOWN_TZ`, `REINTERPRET_UTC_TO_LOCAL`) - needs refactoring
 - URL parameter handling spread across multiple hooks - could centralize further
 - Test coverage gaps: map components (82%), hooks (33-65%), services (7%)
 

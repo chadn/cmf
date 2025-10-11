@@ -5,6 +5,13 @@ All notable changes to Calendar Map Filter (CMF) will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## [0.4.3] - 2025-10-11
+
+- Fixed bugs with timezones, clarified [timezones logic in implementation.md](docs/implementation.md#timezones).
+- Added startSecs and endSecs to CmfEvent, Testing using number (seconds since epoch) along with timezone string instead of time strings.
+- More updates to Documentation
+
 ## [0.4.2] - 2025-10-9
 
 - Minor updates to Documentation
@@ -91,7 +98,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Events Sources popup now has scroll bar, needed for es=19hz
 - Festival support: Duration can be in mins
-- Timezones - better organized and explained in docs, special temporary timezone constants UNKNOWN_TZ, CONVERT_UTC_TO_LOCAL are more clear.
+- Timezones - better organized and explained in docs, special temporary timezone constants UNKNOWN_TZ, REINTERPRET_UTC_TO_LOCAL are more clear.
 - Fixed headerNames, enforced max length of 22 chars on event sources (can still click to view full length)
 - date slider on mobile was too close to edge, gave a little padding (mx-2)
 - better error logging if axios.isAxiosError() when fetching from event sources

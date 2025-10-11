@@ -117,7 +117,7 @@ Images coming soon
 5. **Map Container** – The visible map area in your browser (measured in pixels). Events outside this geographic area aren't part of "Visible Events". Map bounds (north/south/east/west coordinates) correspond to the geographic area shown.
 6. **Location** – Where an event occurs. Should be an address, coordinates, or unique identifier suitable for geolocation. Vague locations like "Mom's house" cannot be mapped accurately.
 7. **Marker** – A numbered circle on the map indicating visible event count at that location. Clicking selects the first event at that location.
-8. **Marker Popup** - Detail panel above a marker showing events at that location. May contain multiple events. Closes via X button at top right. While open, map is in [Selected Events Exception](#selected-events-exception) mode.
+8. **Marker Popup** - Detail panel above a marker showing events at that location, including start time in local timezone of event. May contain multiple events. Closes via X button at top right. While open, map is in [Selected Events Exception](#selected-events-exception) mode.
 9. **Event List** – Filterable table of visible events, displayed above map (mobile) or beside map (desktop). Sortable by name, date, duration, location. Click headers to sort.
 10. **Filters** – Clickable **Chips** above the event list (e.g., "xx Filtered By Map"). Three types exist: map, date, and search. Click any chip to remove that filter.
 11. **Map Filter** - Geographic filtering based on current map view. Events outside the map container are filtered out. Remove by clicking "Filtered by Map" chip, which will update map so that all events could fit in map container.
@@ -349,7 +349,7 @@ Once the page loads, you can click on the header (To the right of CMF button) to
 
 ## Troubleshooting
 
-- If the map is empty but TOTAL events > 1, try removing all filters then click the "<X> of <TOTAL> Visible" button
+- If the map is empty but TOTAL events > 1, try removing all filters then click the "{X} of {TOTAL} Visible" button
 - For Google Calendar issues, verify the calendar ID and sharing settings
 - Clear browser cache if the app behaves unexpectedly
 

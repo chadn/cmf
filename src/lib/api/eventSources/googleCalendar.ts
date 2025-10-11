@@ -33,6 +33,7 @@ export class GoogleCalendarEventsSource extends BaseEventSourceHandler {
                 name: gcEvt.summary,
                 start: startDate,
                 end: endDate,
+                tz: `TIME_IS_ACCURATE`, // Google Calendar timezone is not timezone of location, but accurate.
                 location: gcEvt.location?.trim() || '',
                 description: gcEvt.description || '',
                 description_urls: this.extractUrls(gcEvt.description || ''),

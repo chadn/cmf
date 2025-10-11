@@ -5,7 +5,8 @@ import { getEventsCache, setEventsCache } from '@/lib/cache'
 import { EventsSourceResponse } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
 import { HttpError } from '@/types/error'
-import { convertUtcToTimeZone, getTimezoneFromLatLng } from '@/lib/utils/timezones'
+import { getTimezoneFromLatLng, validateTzUpdateEventTimes } from '@/lib/utils/timezones'
+import { stringify } from '@/lib/utils/utils-shared'
 
 // Import event source handlers to ensure they're registered (alphabetical order)
 import '@/lib/api/eventSources/19hz'
@@ -53,48 +54,43 @@ const fetchAndGeocode = async (
         `Geocoded/unique/total: ${geocodedLocations.length}/${uniqueLocations.length}/${events.length}`
     )
 
-    // Create a map for quick lookup
+    // Create a map for quick lookup, and add location_tz
     const locationMap = new Map()
     geocodedLocations.forEach((location) => {
+        if (location.lat && location.lng) {
+            location.location_tz = getTimezoneFromLatLng(location.lat, location.lng)
+        }
         locationMap.set(location.original_location, location)
     })
 
     // Add resolved locations to events
     const eventsWithLocationResolved = events.map((event) => {
-        // Always populate startSecs for reliable sorting
-        event.startSecs = Math.round(new Date(event.start).getTime() / 1000)
-
-        if (event.location && locationMap.has(event.location)) {
-            const resolved_location = locationMap.get(event.location)
-            if (event.tz === 'CONVERT_UTC_TO_LOCAL' && resolved_location) {
-                event.tz = getTimezoneFromLatLng(resolved_location.lat, resolved_location.lng)
-                if (event.tz == 'UNKNOWN_TZ') {
-                    // TODO: try another way - get or guess timezone from address?
-                }
-                if (event.tz != 'UNKNOWN_TZ') {
-                    event.start = convertUtcToTimeZone(event.start, event.tz)
-                    event.end = convertUtcToTimeZone(event.end, event.tz)
-                    // Recalculate startSecs after timezone conversion
-                    event.startSecs = Math.round(new Date(event.start).getTime() / 1000)
-                }
-            }
-            return {
-                ...event,
-                resolved_location: resolved_location,
-            }
+        const resolved_location = event.location ? locationMap.get(event.location) : undefined
+        if (!resolved_location) {
+            logr.warn('api-events', `Location not resolved: ${event.id} :${event.location}`)
+            return event
         }
-        return event
+        return { ...event, resolved_location }
+    })
+    // Make sure times are updated and accurate
+    const eventsWithTimes = eventsWithLocationResolved.map((event) => {
+        try {
+            return validateTzUpdateEventTimes(event)
+        } catch (error) {
+            logr.warn('api-events', `validateTzUpdateEventTimes skipped, error: ${error} ${stringify(event)}`)
+            return event
+        }
     })
 
     // Count events with unknown locations
-    const unknownLocationsCount = eventsWithLocationResolved.filter(
+    const unknownLocationsCount = eventsWithTimes.filter(
         (event) => !event.resolved_location || event.resolved_location.status !== 'resolved'
     ).length
     logr.info('api-events', `Events with unknown locations: ${unknownLocationsCount}`)
 
     // Construct the response
     const response: EventsSourceResponse = {
-        events: eventsWithLocationResolved,
+        events: eventsWithTimes,
         source: {
             ...source,
             unknownLocationsCount,

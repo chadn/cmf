@@ -113,6 +113,12 @@ CMF displays calendar events on an interactive map with real-time filtering. Key
 
 Architecture: Client-side event filtering with server-side API integration and geocoding cache.
 
+## Creating or Editing Files
+
+Before modifying/deleting any function or variable, make sure you understand its use in every occurence.
+Before adding any function or variable, make sure there is not something similar that could be used instead.
+Read docs/implementation.md#directory-structure for short summary of every file, and docs/ARCHITECTURE.md for system architecture.
+
 ## Development Commands
 
 ```bash

@@ -82,7 +82,7 @@ export class DissentGoogleSheetsSource extends BaseEventSourceHandler {
                     start: startIso,
                     end: endIso,
                     startSecs,
-                    tz: 'CONVERT_UTC_TO_LOCAL', // TODO: get timezone from lat/lng
+                    tz: 'REINTERPRET_UTC_TO_LOCAL', // TODO: get timezone from lat/lng
                     original_event_url: rowObj['Link'] || '',
                     location,
                     note: rowObj['ADA Accessible'] ? `ADA: ${rowObj['ADA Accessible']}` : undefined,

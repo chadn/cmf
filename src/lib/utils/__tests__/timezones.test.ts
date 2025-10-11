@@ -1,8 +1,7 @@
 import {
     getCityStateFromCity,
     getTimezoneFromCity,
-    convertUtcToTimeZone,
-    convertUtcToTimeZoneAtCoords,
+    reinterpretUtcTz,
     getTimezoneFromLatLng,
     timezoneInfo,
 } from '@/lib/utils/timezones'
@@ -79,28 +78,6 @@ describe('timezones utilities', () => {
         })
     })
 
-    describe('convertUtcToTimeZoneAtCoords', () => {
-        it('should convert time to timezone at given coordinates', () => {
-            const utcTime = '2024-06-10T17:00:00Z'
-
-            // San Francisco coordinates
-            const sfResult = convertUtcToTimeZoneAtCoords(utcTime, 37.7749, -122.4194)
-            expect(sfResult).toBe('2024-06-10T17:00:00-07:00')
-
-            // New York coordinates
-            const nyResult = convertUtcToTimeZoneAtCoords(utcTime, 40.7128, -74.006)
-            expect(nyResult).toBe('2024-06-10T17:00:00-04:00')
-        })
-
-        it('should handle winter dates with different DST offsets', () => {
-            const winterTime = '2024-01-10T17:00:00Z'
-
-            // San Francisco in winter (PST)
-            const sfResult = convertUtcToTimeZoneAtCoords(winterTime, 37.7749, -122.4194)
-            expect(sfResult).toBe('2024-01-10T17:00:00-08:00')
-        })
-    })
-
     describe('timezoneInfo', () => {
         it('should return browser timezone information', () => {
             const info = timezoneInfo()
@@ -131,35 +108,102 @@ describe('timezones utilities', () => {
         })
     })
 
-    describe('convertUtcToTimeZone', () => {
-        it('should preserve wall time when converting between timezones', () => {
-            // Test converting from UTC to Pacific Time
-            const utcTime = '2024-06-10T17:00:00.000Z' // output Date().toISOString()
-            const result = convertUtcToTimeZone(utcTime, 'America/Los_Angeles')
-            expect(result).toBe('2024-06-10T17:00:00-07:00')
+    describe('reinterpretUtcTz', () => {
+        describe('string input/output', () => {
+            it('should convert UTC time to target timezone correctly', () => {
+                // Test reinterpreting UTC wall time as Pacific Time
+                // '2024-06-10T17:00:00Z' wall time (17:00) → '2024-06-10T17:00:00-07:00' (same wall time, different timezone)
+                const utcTime = '2024-06-10T17:00:00Z'
+                const result = reinterpretUtcTz(utcTime, 'America/Los_Angeles')
+                expect(result).toBe('2024-06-10T17:00:00-07:00')
 
-            // Test converting from UTC to Eastern Time
-            const result2 = convertUtcToTimeZone(utcTime, 'America/New_York')
-            expect(result2).toBe('2024-06-10T17:00:00-04:00')
+                // Test reinterpreting UTC wall time as Eastern Time
+                // '2024-06-10T17:00:00Z' wall time (17:00) → '2024-06-10T17:00:00-04:00' (same wall time, different timezone)
+                const result2 = reinterpretUtcTz(utcTime, 'America/New_York')
+                expect(result2).toBe('2024-06-10T17:00:00-04:00')
+            })
+
+            it('should handle different times of day correctly', () => {
+                // Test early morning - preserve wall time
+                // '2024-06-10T05:00:00Z' wall time (05:00) → '2024-06-10T05:00:00-07:00' (same wall time)
+                const earlyMorning = '2024-06-10T05:00:00Z'
+                const result = reinterpretUtcTz(earlyMorning, 'America/Los_Angeles')
+                expect(result).toBe('2024-06-10T05:00:00-07:00')
+
+                // Test late night - preserve wall time
+                // '2024-06-10T23:00:00Z' wall time (23:00) → '2024-06-10T23:00:00-07:00' (same wall time)
+                const lateNight = '2024-06-10T23:00:00Z'
+                const result2 = reinterpretUtcTz(lateNight, 'America/Los_Angeles')
+                expect(result2).toBe('2024-06-10T23:00:00-07:00')
+            })
+
+            it('should handle different dates correctly (winter vs summer DST)', () => {
+                // Test a date in winter (PST, UTC-8) - preserve wall time
+                // '2024-01-10T17:00:00Z' wall time (17:00) → '2024-01-10T17:00:00-08:00' (same wall time, winter offset)
+                const winterDate = '2024-01-10T17:00:00Z'
+                const result = reinterpretUtcTz(winterDate, 'America/Los_Angeles')
+                expect(result).toBe('2024-01-10T17:00:00-08:00')
+            })
         })
 
-        it('should handle different times of day correctly', () => {
-            // Test early morning
-            const earlyMorning = '2024-06-10T05:00:00Z'
-            const result = convertUtcToTimeZone(earlyMorning, 'America/Los_Angeles')
-            expect(result).toBe('2024-06-10T05:00:00-07:00')
+        describe('number input/output', () => {
+            it('should convert epoch seconds to new timezone', () => {
+                // Test reinterpreting wall time from UTC to Pacific Time
+                // 1718048400 = 2024-06-10T17:00:00Z (UTC wall time 17:00)
+                // Reinterpret as 2024-06-10T17:00:00-07:00 (LA wall time 17:00)
+                // LA is UTC-7, so 17:00 LA = 24:00 UTC = 1718074800 epoch
+                const utcTimeSeconds = 1718048400
+                const result = reinterpretUtcTz(utcTimeSeconds, 'America/Los_Angeles')
+                expect(typeof result).toBe('number')
+                expect(result).toBe(1718073600) // 2024-06-10T17:00:00-07:00 = 2024-06-11T00:00:00Z
 
-            // Test late night
-            const lateNight = '2024-06-10T23:00:00Z'
-            const result2 = convertUtcToTimeZone(lateNight, 'America/Los_Angeles')
-            expect(result2).toBe('2024-06-10T23:00:00-07:00')
-        })
+                // Test reinterpreting from UTC to Eastern Time
+                // 1718048400 = 2024-06-10T17:00:00Z (UTC wall time 17:00)
+                // Reinterpret as 2024-06-10T17:00:00-04:00 (NY wall time 17:00)
+                // NY is UTC-4, so 17:00 NY = 21:00 UTC = 1718053200 epoch
+                const result2 = reinterpretUtcTz(utcTimeSeconds, 'America/New_York')
+                expect(typeof result2).toBe('number')
+                expect(result2).toBe(1718062800) // 2024-06-10T17:00:00-04:00 = 2024-06-10T21:00:00Z
+            })
 
-        it('should handle different dates correctly', () => {
-            // Test a date in winter (different DST)
-            const winterDate = '2024-01-10T17:00:00Z'
-            const result = convertUtcToTimeZone(winterDate, 'America/Los_Angeles')
-            expect(result).toBe('2024-01-10T17:00:00-08:00')
+            it('should handle different epoch times correctly', () => {
+                // Test early morning: 1717995600 = 2024-06-10T05:00:00Z (UTC wall time 05:00)
+                // Reinterpret as 2024-06-10T05:00:00-07:00 (LA wall time 05:00)
+                // 05:00 LA = 12:00 UTC = 1718020800 epoch
+                const earlyMorningSeconds = 1717995600
+                const result = reinterpretUtcTz(earlyMorningSeconds, 'America/Los_Angeles')
+                expect(typeof result).toBe('number')
+                expect(result).toBe(1718020800) // 2024-06-10T05:00:00-07:00 = 2024-06-10T12:00:00Z
+
+                // Test late night: 1718060400 = 2024-06-10T23:00:00Z (UTC wall time 23:00)
+                // Reinterpret as 2024-06-10T23:00:00-07:00 (LA wall time 23:00)
+                // 23:00 LA = 06:00 UTC next day = 1718085600 epoch
+                const lateNightSeconds = 1718060400
+                const result2 = reinterpretUtcTz(lateNightSeconds, 'America/Los_Angeles')
+                expect(typeof result2).toBe('number')
+                expect(result2).toBe(1718085600) // 2024-06-10T23:00:00-07:00 = 2024-06-11T06:00:00Z
+            })
+
+            it('should handle winter dates correctly (different DST)', () => {
+                // Test a date in winter: 1704902400 = 2024-01-10T17:00:00Z (UTC wall time 17:00)
+                // Reinterpret as 2024-01-10T17:00:00-08:00 (LA wall time 17:00, winter PST is UTC-8)
+                // 17:00 LA = 01:00 UTC next day = 1704931200 epoch
+                const winterDateSeconds = 1704902400
+                const result = reinterpretUtcTz(winterDateSeconds, 'America/Los_Angeles')
+                expect(typeof result).toBe('number')
+                expect(result).toBe(1704931200) // 2024-01-10T17:00:00-08:00 = 2024-01-11T01:00:00Z
+            })
+
+            it('should handle fractional seconds correctly', () => {
+                // Test with fractional seconds (should be floored)
+                // 1718038800.789 = ~2024-06-10T14:20:00.789Z (UTC wall time ~14:20)
+                // Reinterpret as 2024-06-10T14:20:00-07:00 (LA wall time 14:20)
+                // 14:20 LA = 21:20 UTC = 1718064000 epoch
+                const fractionalSeconds = 1718038800.789
+                const result = reinterpretUtcTz(fractionalSeconds, 'America/Los_Angeles')
+                expect(typeof result).toBe('number')
+                expect(result).toBe(1718064000) // 2024-06-10T14:20:00-07:00 floored
+            })
         })
     })
 

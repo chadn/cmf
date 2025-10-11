@@ -1,5 +1,3 @@
-import { logr } from '@/lib/utils/logr'
-import { CmfEvent, DateRangeIso } from '@/types/events'
 import {
     format,
     formatDistance,
@@ -15,6 +13,9 @@ import {
     differenceInDays,
 } from 'date-fns'
 import { DateTime } from 'luxon'
+import { CmfEvent, DateRangeIso } from '@/types/events'
+import { isValidTimeZone } from '@/lib/utils/timezones'
+import { logr } from '@/lib/utils/logr'
 
 // Comprehensive timezone tests implemented in date.test.ts
 /**
@@ -24,6 +25,13 @@ import { DateTime } from 'luxon'
  *
  * This module follows a clear strategy for handling dates and timezones:
  *
+ * New Strategy:
+ * Store timezone string in event.tz
+ * Store event.startSecs and event.endSecs times as numbers, seconds since epoch
+ * Store event.start and event.end  as ISO 8601 strings
+ * Use extra logging to find and fix bugs
+ *
+ * OLD STRATEGY, led to bugs, keeping for reference for now. TODO: remove.
  * GENERAL PRINCIPLES:
  * 1. Dates should be stored WITHOUT timezone knowledge, as Date objects or
  *    ISO strings in .toISOString() format (UTC with 'Z' suffix)
@@ -63,26 +71,29 @@ export function formatEventDate(dateString: string, includeTime: boolean = true)
 
 /**
  * Formats a date for display in the UI with Timezone
- * TIMEZONE BEHAVIOR: Uses local timezone for display (date-fns handles timezone conversion)
- * @param dateString - ISO date string (stored without timezone knowledge, typically in UTC)
+ * Behavior:
+ *  - If tz is valid → format in that zone.
+ *  - If tz is invalid → ignore tz, use system local time.
+ *  - If date invalid → return "Invalid date".
+ * @param dateString - ISO string (expected in UTC, may include Z or offset)
  * @param tz - IANA timezone string (e.g., "America/Los_Angeles")
  * @returns Formatted date string: MM/DD Day hh:mm[am|pm] in specified timezone. Ex: "9/25 Thu 3:15PM PDT"
  */
 export function formatEventDateTz(dateString: string, tz: string | undefined, includeTime: boolean = true): string {
     try {
-        logr.info('date', `formatEventDateTz(${dateString}, tz=${tz}, includeTime=${includeTime})`)
-        const date = DateTime.fromISO(dateString, { zone: 'utc' }).setZone(tz || 'America/Los_Angeles')
-        if (!date.isValid) {
-            logr.info('date', `formatEventDateTz() invalid date: ${dateString}, tz=${tz}`)
-            return 'Invalid date'
-        }
-        // date-fns/format automatically converts to local timezone for display
-        // aaa is 'am' or 'pm'
-        return includeTime
-            ? date.toFormat('M/d EEE h:mm') + date.toFormat('a').toLowerCase() + date.toFormat(' ZZZZ')
-            : date.toFormat('M/d EEE')
-    } catch (error) {
-        logr.warn('date', 'Error formatting date:', error)
+        // Parse date — Luxon will respect Z or offset automatically
+        const dt = DateTime.fromISO(dateString, { zone: 'utc' })
+        if (!dt.isValid) return 'Invalid date'
+
+        // Use provided timezone if valid, otherwise local
+        const validTz = tz && isValidTimeZone(tz) ? tz : 'local'
+        const date = dt.setZone(validTz)
+
+        // Format
+        const base = date.toFormat('M/d EEE')
+        if (!includeTime) return base
+        return `${base} ${date.toFormat('h:mm')}${date.toFormat('a').toLowerCase()} ${date.toFormat('ZZZZ')}`
+    } catch {
         return 'Invalid date'
     }
 }
@@ -231,13 +242,13 @@ export function getDateFromUrlDateString(dateString: string): Date | null {
 /**
  * Helper to parse event date + tz and convert to UTC
  * If tz is valid, use luxon to parse the date and convert to UTC
- * If tz is invalid/missing/CONVERT_UTC_TO_LOCAL/UNKNOWN_TZ, fallback to UTC
+ * If tz is invalid/missing/REINTERPRET_UTC_TO_LOCAL/UNKNOWN_TZ, fallback to UTC
  * @param iso - The event's start/end ISO strings
  * @param tz - timezone
  * @returns Date
  */
 const parseEventDate = (iso: string, tz?: string): Date => {
-    if (tz && tz !== 'UNKNOWN_TZ' && tz !== 'CONVERT_UTC_TO_LOCAL') {
+    if (tz && tz !== 'UNKNOWN_TZ' && tz !== 'REINTERPRET_UTC_TO_LOCAL') {
         const dt = DateTime.fromISO(iso, { zone: tz })
         if (dt.isValid) return dt.toUTC().toJSDate()
         logr.warn('date', 'Invalid date with tz, falling back to UTC', { iso, tz })
@@ -250,7 +261,7 @@ const parseEventDate = (iso: string, tz?: string): Date => {
  *
  * TIMEZONE BEHAVIOR:
  * - If event has a valid tz, parse start/end in that timezone and convert to UTC.
- * - If tz is missing/invalid/CONVERT_UTC_TO_LOCAL/UNKNOWN_TZ, treat start/end as UTC ISO strings.
+ * - If tz is missing/invalid/REINTERPRET_UTC_TO_LOCAL/UNKNOWN_TZ, treat start/end as UTC ISO strings.
  * - Range boundaries are assumed to be ISO UTC strings.
  *
  * @param event - The event with start/end ISO strings and optional tz
@@ -371,7 +382,7 @@ export function extractEventTimes(description: string, eventDate: Date) {
 /**
  * Helper to get start of day (04:01:00) for UI date filtering
  *
- * BUSINESS LOGIC: Uses 4:01am CONVERT_UTC_TO_LOCAL time (not midnight) because users think of
+ * BUSINESS LOGIC: Uses 4:01am REINTERPRET_UTC_TO_LOCAL time (not midnight) because users think of
  * 2-3am as "last night" rather than "today". When a user selects "Saturday"
  * in the date filter, they expect Friday night events (2-3am Saturday) to be
  * excluded from Saturday's results.
@@ -390,7 +401,7 @@ export function getStartOfDay(days: number, minDate: Date): string {
 }
 
 /**
- * Helper to get end of day (23:59:59.999) for a given day offset from a minimum date in CONVERT_UTC_TO_LOCAL timezone
+ * Helper to get end of day (23:59:59.999) for a given day offset from a minimum date in REINTERPRET_UTC_TO_LOCAL timezone
  * TIMEZONE BEHAVIOR: Returns local timezone time for UI date selection
  * As documented: "11:59pm of end day in correct timezone"
  * @param days - Number of days from the minimum date
@@ -405,7 +416,7 @@ export function getEndOfDay(days: number, minDate: Date): string {
 
 /**
  * Parses date and time strings from dissent spreadsheet columns. Returns UTC ISO strings (assume UTC timezone).
- * Therefore caller should call convertUtcToTimeZone() to convert to local timezone.
+ * Therefore caller should call reinterpretUtcTz() to convert to local timezone.
  * Examples
  * "10/18/2025 8:00 AM-10:00 AM"
  * "10/18/2025 12:00 AM-12:00 PM"
@@ -419,7 +430,7 @@ export function getEndOfDay(days: number, minDate: Date): string {
  *
  * @param dateString  from dissent spreadsheet column. Ex: "10/18/25"
  * @param timeString  from dissent spreadsheet column. Ex: "8:00 AM-10:00 AM"
- * @returns start and end ISO strings, empty strings if not found. Caller should call convertUtcToTimeZone()
+ * @returns start and end ISO strings, empty strings if not found. Caller should call reinterpretUtcTz()
  */
 export function parseDateFromDissent(dateString: string, timeString: string): { startIso: string; endIso: string } {
     let startIso = ''

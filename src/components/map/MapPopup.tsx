@@ -22,7 +22,7 @@ const MapPopup: React.FC<MapPopupProps> = ({ marker, selectedEventId, onEventSel
     const { events } = marker
 
     // Default to first event if no valid event is selected
-    const getInitialIndex = useCallback(() => {
+    const getEventIndex = useCallback(() => {
         if (!events || events.length === 0) return 0
 
         if (selectedEventId) {
@@ -33,18 +33,17 @@ const MapPopup: React.FC<MapPopupProps> = ({ marker, selectedEventId, onEventSel
         return 0
     }, [events, selectedEventId])
 
-    const [currentIndex, setCurrentIndex] = useState(getInitialIndex)
+    const [currentIndex, setCurrentIndex] = useState(getEventIndex)
 
     useEffect(() => {
         // Re-calculate the index whenever selectedEventId or events change
-        const newIndex = getInitialIndex()
+        const newIndex = getEventIndex()
         setCurrentIndex(newIndex)
-
-        logr.info('map-popup', `Event selection updated: ${events[newIndex]?.name}`, {
-            eventIndex: newIndex,
-            totalEvents: events.length,
-        })
-    }, [selectedEventId, events, getInitialIndex])
+        logr.info(
+            'map-popup',
+            `Event selection updated: ${events[newIndex]?.name} ${events[newIndex]?.tz} ${events[newIndex]?.start}`
+        )
+    }, [selectedEventId, events, getEventIndex])
 
     // Get current event (with safety checks)
     const currentEvent =

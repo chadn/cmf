@@ -12,6 +12,7 @@ export interface Location {
     lat?: number // latitude, -90 to +90 North Pole, at most 6 decimal places (4.3 inches at equator, less if closer to poles).
     lng?: number // longitude, -180 to +180, at most 6 decimal places (4.3 inches).
     types?: string[] // google maps location types: bars, night_club, point_of_interest, restaurant, etc.
+    location_tz?: string
 }
 // more on latitude and longitude accuracy - 6 decimals (4 inches) is more accurate than GPS usually gives (2 feet).
 // "On April 20, 2021, the global average URE across all satellites was ≤0.643 m (2.1 ft.), 95% of the time.
@@ -29,7 +30,8 @@ export interface CmfEvent {
     start: string // ISO string
     end: string // ISO string. Hack: if same as start, exact start time is not known. If 1 minute after start, end time is not known.
     startSecs?: number // start time in seconds since epoch
-    tz?: string // ex: 'America/Los_Angeles'; 'UNKNOWN_TZ' if location not found.  'UNKNOWN_TZ|CONVERT_UTC_TO_LOCAL' if using UTC but time is actually local.
+    endSecs?: number //     end time in seconds since epoch
+    tz?: string // ex: 'America/Los_Angeles'; 'UNKNOWN_TZ' if location not found.  'UNKNOWN_TZ|REINTERPRET_UTC_TO_LOCAL' if using UTC but time is actually local.
     location: string // always exists, may be empty, matches original_location
     resolved_location?: Location
     note?: string // for internal use, eg 'plura'

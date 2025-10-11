@@ -60,16 +60,25 @@ See [ARCHITECTURE.md](ARCHITECTURE.md#core-data-structures) for detailed data st
 
 Managing timezones can be tricky since some sources have times for events without timezone information. Specifically websites can display times local to event or based on browsers timezone. For example, if you are in NYC looking at a show in SF that starts at 8pm, most likely that is 8pm SF time, which is 11pm NYC time.
 
-Logic
+Logic Summary: when timezone is not explicitly stated, assume time is local time to the location.  The following logic is mostly implemented in `validateTzUpdateEventTimes()`
+- Event Source: 
+  - If timezone exists, store in `CmfEvent.tz` and store `CmfEvent.start` and `CmfEvent.end` times based on that timezone.
+  - If timezone info does not exist, but start and end times are correct ISO 8601 (not wall time), set `CmfEvent.tz` to `TIME_IS_ACCURATE`.
+  - If not sure timezone, and times are wall time, set `CmfEvent.tz` to `REINTERPRET_UTC_TO_LOCAL` and store `CmfEvent.start` and `CmfEvent.end` times in UTC
+- Geocoding: Once location is resolved, lookup timezone based on lat/lng
+  - If timezone known, store in `location_tz`, convert `CmfEvent.start` and `CmfEvent.end` times to timezone using `reinterpretUtcTz()`
+  - If timezone still not known, set `CmfEvent.tz` to `UNKNOWN_TZ`, log `id`.
+- Display Format on Client
+  - Map Marker Popup uses `formatEventDateTz()` which requires tz string. If tz is not valid timezone, it is ignored.
+  - Event List does not check timezone, uses `formatEventDate()`
 
-- If no timezone is specified in source, assume time is local time to the location.
+Code Reference
 
-Code
-
-- Special temporary timezone constants are used to let the code know the state of the start and end times
-    - `UNKNOWN_TZ` if location not found after lat/lng has been resolved.
-    - `CONVERT_UTC_TO_LOCAL` means source did not have timezone, stored as UTC, and will need to convert to LOCAL timezone after lat/lng are figured out.
-    - `UNKNOWN_TZ|CONVERT_UTC_TO_LOCAL` if using UTC but time is actually local.
+- Special temporary timezone constants are used to let the code know the state of the event's start and end times
+    - `UNKNOWN_TZ` if location not found after lat/lng has been resolved or lat/lng unknown. Start and End are still assumed to be UTC but not sure.
+    - `REINTERPRET_UTC_TO_LOCAL` means source did not have timezone, wall time stored as UTC, and will need to reinterpret to LOCAL timezone after lat/lng are figured out.
+    - `TIME_IS_ACCURATE` means source did not have timezone, stored as UTC, and will NOT need to convert to LOCAL timezone.
+    - `UNKNOWN_TZ|REINTERPRET_UTC_TO_LOCAL` if using UTC but time is probably local.
 - Note [timezones.ts](../src/lib/utils/timezones.ts) has functions for server, uses luxon for timezones
 - All client date parsing and converting should be done via [date-fns library](https://github.com/date-fns/date-fns) or functions in [date.ts](../src/lib/utils/date.ts), where dates are converted to local timezone when calculating what day an isoTime is.
 

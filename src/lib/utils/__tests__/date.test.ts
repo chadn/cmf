@@ -1,5 +1,6 @@
 import {
     formatEventDate,
+    formatEventDateTz,
     formatEventDuration,
     getRelativeTimeString,
     getDateFromUrlDateString,
@@ -60,6 +61,245 @@ describe('Date Utilities', () => {
 
         it('handles empty strings', () => {
             expect(formatEventDate('')).toBe('Invalid date')
+        })
+    })
+
+    describe('formatEventDateTz', () => {
+        describe('Valid timezone formatting', () => {
+            it('formats UTC time in America/Los_Angeles timezone correctly', () => {
+                // 2024-06-10T17:00:00Z UTC = 2024-06-10T10:00:00 PDT (UTC-7 in summer)
+                const result = formatEventDateTz('2024-06-10T17:00:00Z', 'America/Los_Angeles')
+                expect(result).toContain('6/10') // Month/Day
+                expect(result).toContain('Mon') // Day of week
+                expect(result).toContain('10:00am') // Time in LA timezone
+                expect(result).toContain('PDT') // Pacific Daylight Time
+            })
+
+            it('formats UTC time in America/New_York timezone correctly', () => {
+                // 2024-06-10T17:00:00Z UTC = 2024-06-10T13:00:00 EDT (UTC-4 in summer)
+                const result = formatEventDateTz('2024-06-10T17:00:00Z', 'America/New_York')
+                expect(result).toContain('6/10')
+                expect(result).toContain('Mon')
+                expect(result).toContain('1:00pm') // 13:00 = 1:00pm
+                expect(result).toContain('EDT') // Eastern Daylight Time
+            })
+
+            it('formats UTC time in Europe/London timezone correctly', () => {
+                // 2024-06-10T17:00:00Z UTC = 2024-06-10T18:00:00 BST (UTC+1 in summer)
+                const result = formatEventDateTz('2024-06-10T17:00:00Z', 'Europe/London')
+                expect(result).toContain('6/10')
+                expect(result).toContain('Mon')
+                expect(result).toContain('6:00pm') // 18:00 = 6:00pm
+                expect(result).toMatch(/GMT\+1|BST/) // British Summer Time or GMT+1
+            })
+
+            it('formats UTC time in Asia/Tokyo timezone correctly', () => {
+                // 2024-06-10T17:00:00Z UTC = 2024-06-11T02:00:00 JST (UTC+9)
+                const result = formatEventDateTz('2024-06-10T17:00:00Z', 'Asia/Tokyo')
+                expect(result).toContain('6/11') // Next day in Tokyo
+                expect(result).toContain('Tue') // Tuesday
+                expect(result).toContain('2:00am')
+                expect(result).toMatch(/GMT\+9|JST/) // Japan Standard Time or GMT+9
+            })
+
+            it('handles winter time (PST) vs summer time (PDT) correctly', () => {
+                // Winter: 2024-01-10T17:00:00Z = 2024-01-10T09:00:00 PST (UTC-8)
+                const winterResult = formatEventDateTz('2024-01-10T17:00:00Z', 'America/Los_Angeles')
+                expect(winterResult).toContain('1/10')
+                expect(winterResult).toContain('Wed')
+                expect(winterResult).toContain('9:00am')
+                expect(winterResult).toContain('PST') // Pacific Standard Time
+
+                // Summer: 2024-06-10T17:00:00Z = 2024-06-10T10:00:00 PDT (UTC-7)
+                const summerResult = formatEventDateTz('2024-06-10T17:00:00Z', 'America/Los_Angeles')
+                expect(summerResult).toContain('6/10')
+                expect(summerResult).toContain('Mon')
+                expect(summerResult).toContain('10:00am')
+                expect(summerResult).toContain('PDT') // Pacific Daylight Time
+            })
+
+            it('handles dates with offset notation correctly', () => {
+                // ISO string with -05:00 offset should be parsed correctly
+                const result = formatEventDateTz('2024-06-10T17:00:00-05:00', 'America/New_York')
+                expect(result).toContain('6/10')
+                expect(result).toContain('Mon')
+                expect(result).toMatch(/\d{1,2}:\d{2}(am|pm)/)
+                expect(result).toContain('EDT')
+            })
+
+            it('handles midnight correctly', () => {
+                const result = formatEventDateTz('2024-06-10T07:00:00Z', 'America/Los_Angeles')
+                expect(result).toContain('6/10')
+                expect(result).toContain('Mon')
+                expect(result).toContain('12:00am') // Midnight in LA
+                expect(result).toContain('PDT')
+            })
+
+            it('handles noon correctly', () => {
+                const result = formatEventDateTz('2024-06-10T19:00:00Z', 'America/Los_Angeles')
+                expect(result).toContain('6/10')
+                expect(result).toContain('Mon')
+                expect(result).toContain('12:00pm') // Noon in LA
+                expect(result).toContain('PDT')
+            })
+
+            it('formats with includeTime=false to show date only', () => {
+                const result = formatEventDateTz('2024-06-10T17:00:00Z', 'America/Los_Angeles', false)
+                expect(result).toContain('6/10')
+                expect(result).toContain('Mon')
+                expect(result).not.toContain('am')
+                expect(result).not.toContain('pm')
+                expect(result).not.toContain('PDT')
+                expect(result).not.toContain(':')
+            })
+        })
+
+        describe('Invalid timezone handling', () => {
+            it('falls back to local timezone for invalid timezone', () => {
+                const result = formatEventDateTz('2024-06-10T17:00:00Z', 'Invalid/Timezone')
+                expect(result).not.toBe('Invalid date')
+                expect(result).toContain('6/10')
+                expect(result).toContain('Mon')
+                expect(result).toMatch(/\d{1,2}:\d{2}(am|pm)/)
+                // Should still return a valid formatted string using local timezone
+            })
+
+            it('falls back to local timezone for undefined timezone', () => {
+                const result = formatEventDateTz('2024-06-10T17:00:00Z', undefined)
+                expect(result).not.toBe('Invalid date')
+                expect(result).toContain('6/10')
+                expect(result).toContain('Mon')
+                expect(result).toMatch(/\d{1,2}:\d{2}(am|pm)/)
+            })
+
+            it('falls back to local timezone for empty string timezone', () => {
+                const result = formatEventDateTz('2024-06-10T17:00:00Z', '')
+                expect(result).not.toBe('Invalid date')
+                expect(result).toContain('6/10')
+                expect(result).toContain('Mon')
+                expect(result).toMatch(/\d{1,2}:\d{2}(am|pm)/)
+            })
+
+            it('falls back to local timezone for UNKNOWN_TZ', () => {
+                const result = formatEventDateTz('2024-06-10T17:00:00Z', 'UNKNOWN_TZ')
+                expect(result).not.toBe('Invalid date')
+                expect(result).toContain('6/10')
+                expect(result).toContain('Mon')
+                expect(result).toMatch(/\d{1,2}:\d{2}(am|pm)/)
+            })
+
+            it('falls back to local timezone for REINTERPRET_UTC_TO_LOCAL', () => {
+                const result = formatEventDateTz('2024-06-10T17:00:00Z', 'REINTERPRET_UTC_TO_LOCAL')
+                expect(result).not.toBe('Invalid date')
+                expect(result).toContain('6/10')
+                expect(result).toContain('Mon')
+                expect(result).toMatch(/\d{1,2}:\d{2}(am|pm)/)
+            })
+        })
+
+        describe('Invalid date handling', () => {
+            it('returns "Invalid date" for malformed date string', () => {
+                expect(formatEventDateTz('not-a-date', 'America/Los_Angeles')).toBe('Invalid date')
+                expect(formatEventDateTz('bad-date', 'America/New_York')).toBe('Invalid date')
+                expect(formatEventDateTz('invalid', 'Europe/London')).toBe('Invalid date')
+            })
+
+            it('returns "Invalid date" for empty date string', () => {
+                expect(formatEventDateTz('', 'America/Los_Angeles')).toBe('Invalid date')
+            })
+
+            it('returns "Invalid date" for invalid ISO format', () => {
+                expect(formatEventDateTz('2024-13-45T99:99:99Z', 'America/Los_Angeles')).toBe('Invalid date')
+            })
+        })
+
+        describe('Edge cases', () => {
+            it('handles date crossing day boundary', () => {
+                // Late night UTC becomes early morning next day in Tokyo
+                const result = formatEventDateTz('2024-06-10T15:00:00Z', 'Asia/Tokyo')
+                expect(result).toContain('6/11') // Next day
+                expect(result).toContain('Tue')
+                expect(result).toContain('12:00am')
+                expect(result).toMatch(/GMT\+9|JST/)
+            })
+
+            it('handles date crossing day boundary backwards', () => {
+                // Early morning UTC becomes previous night in LA
+                const result = formatEventDateTz('2024-06-11T06:00:00Z', 'America/Los_Angeles')
+                expect(result).toContain('6/10') // Previous day
+                expect(result).toContain('Mon')
+                expect(result).toContain('11:00pm')
+                expect(result).toMatch(/PDT|PST/)
+            })
+
+            it('handles leap year date correctly', () => {
+                const result = formatEventDateTz('2024-02-29T12:00:00Z', 'America/New_York')
+                expect(result).toContain('2/29')
+                expect(result).toContain('Thu')
+                expect(result).toMatch(/\d{1,2}:\d{2}(am|pm)/)
+                expect(result).toMatch(/EST|EDT/)
+            })
+
+            it('handles year boundary crossing', () => {
+                // Dec 31 late night UTC -> Jan 1 in Tokyo
+                const result = formatEventDateTz('2023-12-31T15:00:00Z', 'Asia/Tokyo')
+                expect(result).toContain('1/1') // New year
+                expect(result).toContain('Mon')
+                expect(result).toContain('12:00am')
+                expect(result).toMatch(/GMT\+9|JST/)
+            })
+        })
+
+        describe('DST transition handling', () => {
+            it('handles spring DST transition (spring forward)', () => {
+                // March 10, 2024, 2:00 AM → 3:00 AM (spring forward in US)
+                const beforeTransition = formatEventDateTz('2024-03-10T09:59:00Z', 'America/New_York')
+                const afterTransition = formatEventDateTz('2024-03-10T10:01:00Z', 'America/New_York')
+
+                expect(beforeTransition).toContain('3/10')
+                expect(afterTransition).toContain('3/10')
+                expect(beforeTransition).not.toBe('Invalid date')
+                expect(afterTransition).not.toBe('Invalid date')
+            })
+
+            it('handles fall DST transition (fall back)', () => {
+                // November 3, 2024, 2:00 AM → 1:00 AM (fall back in US)
+                const beforeTransition = formatEventDateTz('2024-11-03T05:59:00Z', 'America/New_York')
+                const afterTransition = formatEventDateTz('2024-11-03T06:01:00Z', 'America/New_York')
+
+                expect(beforeTransition).toContain('11/3')
+                expect(afterTransition).toContain('11/3')
+                expect(beforeTransition).not.toBe('Invalid date')
+                expect(afterTransition).not.toBe('Invalid date')
+            })
+        })
+
+        describe('Format consistency', () => {
+            it('always returns consistent format for valid inputs', () => {
+                const testCases = [
+                    { date: '2024-01-15T12:00:00Z', tz: 'America/Los_Angeles' },
+                    { date: '2024-06-15T12:00:00Z', tz: 'America/New_York' },
+                    { date: '2024-12-15T12:00:00Z', tz: 'Europe/London' },
+                    { date: '2024-09-15T12:00:00Z', tz: 'Asia/Tokyo' },
+                ]
+
+                testCases.forEach(({ date, tz }) => {
+                    const result = formatEventDateTz(date, tz)
+                    // Should match pattern: M/D Day H:MMam/pm TZ
+                    expect(result).toMatch(/\d{1,2}\/\d{1,2} \w{3} \d{1,2}:\d{2}(am|pm) \w+/)
+                })
+            })
+
+            it('formats single digit months and days correctly', () => {
+                const result = formatEventDateTz('2024-01-05T12:00:00Z', 'America/Los_Angeles')
+                expect(result).toContain('1/5') // Not 01/05
+                expect(result).toMatch(/\d{1,2}\/\d{1,2}/)
+            })
+
+            it('formats double digit months and days correctly', () => {
+                const result = formatEventDateTz('2024-12-25T12:00:00Z', 'America/Los_Angeles')
+                expect(result).toContain('12/25')
+            })
         })
     })
 
@@ -651,11 +891,11 @@ describe('Date Utilities', () => {
                 expect(eventInDateRange(event, dateRange)).toBe(true)
             })
 
-            test('event with CONVERT_UTC_TO_LOCAL timezone should be treated as UTC', () => {
+            test('event with REINTERPRET_UTC_TO_LOCAL timezone should be treated as UTC', () => {
                 const event = createTestEvent({
                     start: '2023-07-15T14:00:00Z',
                     end: '2023-07-15T16:00:00Z',
-                    tz: 'CONVERT_UTC_TO_LOCAL',
+                    tz: 'REINTERPRET_UTC_TO_LOCAL',
                 })
 
                 const dateRange = {
