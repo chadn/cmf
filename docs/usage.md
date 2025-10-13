@@ -75,6 +75,17 @@ Use the map to zoom in, filtering out all events not in that part of town, to ma
 
 Images coming soon
 
+### Fix My Events With Bad Location
+
+If you have a public google calendar with lots of events, you can use CMF to confirm all the events have good locations.
+A good location just means that the location can be resolved to an address or specific location on a map. 
+So `unresolved` locations are ones that are not good.  You can focus CMF on unresolved locations using that as search term.
+
+For example, here's all the unresolved locations for this public Google calendar for Spain
+https://cmf.chadnorwood.com/?es=gc:geocachingspain@gmail.com&sq=unresolved
+
+![unresolved locations](images/unresolved_20251013.png)
+
 ## Key Features
 
 - Explore using map, visible events, and filters. As you filter, either by moving map, changing dates, or search terms,
@@ -104,7 +115,7 @@ Images coming soon
 
 ## Definitions
 
-1. **Event Source** - A data provider for events, such as a Google Calendar or event websites like pol-rev.com. All sources are listed in [src/lib/api/eventSources](../src/lib/api/eventSources)
+1. **Event Source** - A data provider for events, such as a Google Calendar or event websites like pol-rev.com. All sources are listed in [src/lib/api/eventSources](https://github.com/chadn/cmf/blob/main/src/lib/api/eventSources)
 2. **Event** – Contains name, location, date, and description. Multiple events can occur at the same location or time. Events may repeat.
 3. **Visible Events** - Events within the map container (map bounds) that pass all active filters (search, date). The "X of Y Visible" button shows counts where Y is total events and X is events not filtered out.
 4. **Selected Event** - A focused event indicated by three visual cues: map marker popup, highlighted event row (green background) in the Event List, and URL updated with `se` parameter. Can be triggered by:
@@ -143,7 +154,7 @@ To use examples, click on the links.
 3. Click the three dots next to the calendar name
 4. Select "Settings and sharing"
 5. Scroll down to "Integrate calendar" section
-6. Copy the "Calendar ID" - it will look like `example@gmail.com` or `example@group.calendar.google.com`
+6. Copy the "Calendar ID" - it will look like `example@gmail.com` or `NNNNNNN@group.calendar.google.com`
 
 ## Find your Facebook Events iCal URL
 
@@ -229,7 +240,7 @@ All unresolved locations share a special marker. You can see them with special s
 1.  On map, Click on it, in event popup, hover over "View Original Event" to get location key (k1) (or look at html and copy title). ex: `location:Asiento`
 1.  Figure out what location it should be, and store in geolocation cache, noting the key name (k2). ex:
     `curl 'https://cmf.chadnorwood.com/api/geocode?a=Asiento,sf,ca'`
-1.  Update value for location key using [upstash-redis.ts](../src/scripts/upstash-redis.ts) `fix-location <k1> <k2>`
+1.  Update value for location key using [upstash-redis.ts](https://github.com/chadn/cmf/blob/main/src/scripts/upstash-redis.ts) `fix-location <k1> <k2>`
     `node upstash-redis.ts fix-location 'location:Asiento' 'location:Asiento,sf,ca'`
 
 ## URL Parameters
@@ -315,7 +326,7 @@ There are 2 types of event sources
 - custom ones like 19hz that parse a website, requiring custom code.
 
 The code is written to make it easy to add different type of event sources, custom ones that do not have to be a calendar.
-Read more about the [Event Sources System](../src/lib/api/eventSources)
+Read more about the [Event Sources System](https://github.com/chadn/cmf/blob/main/src/lib/api/eventSources)
 
 The `es` paramater can handle one or more event sources, separated by commas.
 
@@ -355,6 +366,6 @@ Once the page loads, you can click on the header (To the right of CMF button) to
 
 ## More
 
-Read more about this project and how it was built in the [README.md](../README.md)
+Read more about this project and how it was built in the [README.md](https://github.com/chadn/cmf/tree/main?tab=readme-ov-file#calendar-map-filter-cmf)
 
 Found a bug or want a feature? Let me know by [Creating a new issue in github](https://github.com/chadn/cmf/issues/new)

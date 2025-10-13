@@ -44,6 +44,7 @@ const MapMarker: React.FC<MapMarkerProps> = ({ count, isSelected, isUnresolved }
         cursor-pointer
       `}
             data-testid="map-marker-component"
+            data-umami-event="MarkerDiv"
             data-selected={isSelected}
         >
             {count}

@@ -12,8 +12,6 @@ import MapContainer from '@/components/map/MapContainer'
 import Sidebar from '@/components/layout/Sidebar'
 import { CmfEvents, EventsSource } from '@/types/events'
 import { useAppController } from '@/lib/hooks/useAppController'
-import { logr } from '@/lib/utils/logr'
-import { stringify } from '@/lib/utils/utils-shared'
 
 declare global {
     interface Window {
@@ -25,8 +23,6 @@ declare global {
 function HomeContent() {
     // Smart Hook / Dumb Component Architecture - All business logic in useAppController
     const { state, eventData, mapData, handlers, hasEventSource } = useAppController()
-    const dateConfig = state.dateConfig
-    logr.info('app', `state.dateConfig: ${stringify({ dateConfig })}`)
 
     // If no eventSourceId is provided, show the eventSource selector
     if (!hasEventSource) {

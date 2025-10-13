@@ -5,6 +5,13 @@ All notable changes to Calendar Map Filter (CMF) will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.4] - 2025-10-13
+
+- Fixed Deployment bug
+- Fixed bug in Plura timezone processing
+- Fixed bug on pageload, now `sq=unresolved` shows unresolved locations correctly.
+- Improved umami tracking
+- More updates to Documentation
 
 ## [0.4.3] - 2025-10-11
 

@@ -33,7 +33,7 @@ Done items in [CHANGELOG](../CHANGELOG.md)
     - Services (lib/utils) → pure functions for business logic and data processing.
 1. when clicking on event, map centers and zooms. Currently its always same zoom level. Improvement: if marker is already on screen, just move map without changing zoom. Benefit: identifying
 1. better error handling of HTTP 500 from /api/events
-1. Add new field CmfEvent.timeKnown instead of "Hack: if same as start, exact start time is not known. If 1 minute after start, end time is not known.
+1. Add new field CmfEvent.timeStatus to track timezone and times hacks. Get rid of stuff like: "Hack: if same as start, exact start time is not known. If 1 minute after start, end time is not known.
 1. Performance improvements
     1. Store start and end times of events as seconds since epoch. Or end should be replaced by duration? Using seconds is faster for filters.
     1. Create new state, `user-updating` which is triggered by `user-updating-event`. When in `user-updating` state, don't recalculate visible events or chip counts (which leads to re-renders).
@@ -44,6 +44,7 @@ Done items in [CHANGELOG](../CHANGELOG.md)
     1. See if event list can just change display:none for tr on events that are not visible.
 1. support `skipCache=1` in react url to force server to pull fresh data from event source.
 1. foopee - if no times, currently defaults to 8:01pm, in general if parsing date/time and only date, should pick reasonable start end time (6am-10pm) - do this when implementing CmfEvent.timeKnown
+1. Change homepage on desktop to not look like mobile 
 
 (thanks https://euangoddard.github.io/clipboard2markdown/)
 
@@ -63,6 +64,8 @@ Working on fixing these:
 1. 19hz has recurring events that also sometimes appear in non-recurring event section, which creates almost duplicate entries (duplicates can be identified and prevented). Consider ways to remove almost duplicates - original event source, identitcal title, etc.
 1. Logging bug if multiple event sources, could be more than just logs. Below is sourceType 19hz and gc (google calendar), but only gc's id is logged.
 1. Occasionally on mobile only, timezone is incorrect for some events.
+1. When you enter new source, then hit browser back button, events are empty when should not be.
+
 ## Features
 
 1. Not a bug: When clicking on event for marker popup, map changes, filters and event showing count do not change (correct). Clicking on x to close popup or zooming/moving map should change count.

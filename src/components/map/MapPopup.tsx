@@ -159,6 +159,7 @@ const MapPopup: React.FC<MapPopupProps> = ({ marker, selectedEventId, onEventSel
                             href={facebookEventUrl}
                             target="_blank"
                             rel="noopener noreferrer"
+                            data-umami-event="MarkerFBEvent"
                             className="text-xs text-blue-600 hover:underline mt-1 inline-block"
                         >
                             FB Event
@@ -182,6 +183,7 @@ const MapPopup: React.FC<MapPopupProps> = ({ marker, selectedEventId, onEventSel
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-600 hover:underline"
+                    data-umami-event="MarkerViewOriginal"
                     title={`${LOCATION_KEY_PREFIX}${currentEvent.resolved_location?.original_location}`}
                 >
                     View Original Event
@@ -202,6 +204,7 @@ const MapPopup: React.FC<MapPopupProps> = ({ marker, selectedEventId, onEventSel
 
                                 <button
                                     onClick={handleGoogleCalendar}
+                                    data-umami-event="MarkerGoogleCal"
                                     className="text-left text-sm text-blue-600 hover:underline focus:outline-none"
                                 >
                                     • Google Calendar
@@ -209,6 +212,7 @@ const MapPopup: React.FC<MapPopupProps> = ({ marker, selectedEventId, onEventSel
 
                                 <button
                                     onClick={handleAppleCalendar}
+                                    data-umami-event="MarkerAppleCal"
                                     className="text-left text-sm text-blue-600 hover:underline focus:outline-none"
                                 >
                                     • Apple (iCal) Calendar
@@ -238,6 +242,7 @@ const MapPopup: React.FC<MapPopupProps> = ({ marker, selectedEventId, onEventSel
                     <button
                         onClick={goToPrev}
                         className="text-blue-600 hover:underline"
+                        data-umami-event="MarkerPrev"
                         aria-label="Go to previous event"
                     >
                         Previous
@@ -245,7 +250,12 @@ const MapPopup: React.FC<MapPopupProps> = ({ marker, selectedEventId, onEventSel
                     <span className="text-gray-600" aria-live="polite">
                         {currentIndex + 1} of {events.length}
                     </span>
-                    <button onClick={goToNext} className="text-blue-600 hover:underline" aria-label="Go to next event">
+                    <button
+                        onClick={goToNext}
+                        className="text-blue-600 hover:underline"
+                        data-umami-event="MarkerNext"
+                        aria-label="Go to next event"
+                    >
                         Next
                     </button>
                 </div>

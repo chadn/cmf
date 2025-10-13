@@ -13,6 +13,7 @@ This document covers the technical implementation details for Calendar Map Filte
 - [URL Parsing](#url-parsing)
     - [URL Parsing Guidelines and Reasoning](#url-parsing-guidelines-and-reasoning)
 - [Directory Structure](#directory-structure)
+- [Umami Analytics](#umami-analytics)
 - [Troubleshooting](#troubleshooting)
     - [Common Issues and Solutions](#common-issues-and-solutions)
     - [Debug Tools](#debug-tools)
@@ -149,6 +150,7 @@ App parses URL in the following order
       /DateQuickButtons.tsx     # Quick date selection buttons
     /home                       # Homepage-specific components
       /EventsSourceSelector.tsx  # Event source configuration UI
+      /UmamiScript.tsx          # Loads uamami script
     /layout                     # Layout components
       /Header.tsx               # Application header
       /Footer.tsx               # Application footer
@@ -227,6 +229,12 @@ App parses URL in the following order
 /__tests__                      # Test files throughout codebase
   # Test files mirror source structure with *.test.tsx pattern
 ```
+
+## Umami Analytics
+
+Basic analytics tracking has been implemented using [Umamai](https://uamami.is).  In addition to basic stats such as views and client info, umami is used to track events to learn user behaviour and how to improve imteractivity.   
+
+The code implements event tracking 2 ways, either by calling `umamiTrack()` or by `data-umami-event` property on html elements.  See code for examples.
 
 ## Troubleshooting
 

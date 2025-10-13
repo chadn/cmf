@@ -16,6 +16,7 @@ import { logr } from '@/lib/utils/logr'
 import { llzObjectToViewport, calculateBoundsFromViewport } from '@/lib/utils/location'
 import { stringify } from '@/lib/utils/utils-shared'
 import { getDateFromUrlDateString } from '@/lib/utils/date'
+import { umamiTrack } from '@/lib/utils/umami'
 
 /**
  * Configuration for URL processor hook using consolidated types
@@ -169,6 +170,10 @@ export function useUrlProcessor(config: UrlProcessorConfig): UrlProcessorResult 
         // Enhanced debug logging - Track raw URL parameters received
         logr.info('url_filters', `Raw URL parameters received during ${appState}: ${stringify(urlParams)}`)
         logr.info('url_filters', `calculated dateConfig: ${stringify(dateConfig)}`)
+        umamiTrack('urlParams', {
+            all: window.location.search,
+            ...Object.fromEntries(new URLSearchParams(window.location.search)),
+        })
 
         // Use urlProcessingService to process domain filters
         const domainFilterResult = processDomainFilters({
@@ -284,12 +289,17 @@ export function useUrlProcessor(config: UrlProcessorConfig): UrlProcessorResult 
 
         // Step 6. If no llz and domain filters: zoom to visible events (e.g., if only 2 markers remain, zoom to those 2 markers)
         // Step 7. If no llz and no domain filters: zoom to fit all events
-        logr.info('app', 'URL parsing step 6 & 7 Auto-resizing map to show visible events')
-        handlers.resetMapToVisibleEvents({ useBounds: true })
+        const showOnlyUnresolved = urlParams.sq === 'unresolved'
+        logr.info(
+            'app',
+            `URL parsing step 6 & 7 Auto-resizing map to show visible events (useBounds: ${!showOnlyUnresolved})`
+        )
+        handlers.resetMapToVisibleEvents({ useBounds: !showOnlyUnresolved })
         dispatch(appActions.remainingUrlParsed())
     }, [
         appState,
         urlParams.se,
+        urlParams.sq,
         urlParams.llz,
         mapHookWidthHeight.w,
         mapHookWidthHeight.h,

@@ -4,8 +4,10 @@ import {
     reinterpretUtcTz,
     getTimezoneFromLatLng,
     timezoneInfo,
+    validateTzUpdateEventTimes,
 } from '@/lib/utils/timezones'
 import { parseDateString } from '@/lib/utils/date'
+import { CmfEvent } from '@/types/events'
 
 describe('timezones utilities', () => {
     describe('getCityStateFromCity', () => {
@@ -279,6 +281,307 @@ describe('timezones utilities', () => {
             const date2 = parseDateString('6/14/25 1:30 PM')
             expect(date2).toBeInstanceOf(Date)
             expect(date2?.toISOString()).toBe('2025-06-14T13:30:00.000Z')
+        })
+    })
+
+    describe('validateTzUpdateEventTimes', () => {
+        const createBaseEvent = (): CmfEvent => ({
+            id: 'test-123',
+            name: 'Test Event',
+            original_event_url: 'https://example.com',
+            description: 'Test description',
+            description_urls: [],
+            start: '2024-06-10T17:00:00Z',
+            end: '2024-06-10T19:00:00Z',
+            location: 'San Francisco, CA',
+        })
+
+        describe('REINTERPRET_UTC_TO_LOCAL with resolved_location', () => {
+            it('should reinterpret UTC times to local timezone and update event', () => {
+                const event = {
+                    ...createBaseEvent(),
+                    tz: 'REINTERPRET_UTC_TO_LOCAL',
+                    resolved_location: {
+                        status: 'resolved' as const,
+                        original_location: 'San Francisco, CA',
+                        formatted_address: 'San Francisco, CA, USA',
+                        lat: 37.7749,
+                        lng: -122.4194,
+                        location_tz: 'America/Los_Angeles',
+                    },
+                }
+
+                const result = validateTzUpdateEventTimes(event)
+
+                expect(result.tz).toBe('America/Los_Angeles')
+                expect(result.start).toBe('2024-06-10T17:00:00-07:00')
+                expect(result.end).toBe('2024-06-10T19:00:00-07:00')
+                // After reinterpretation: 2024-06-10T17:00:00-07:00 = 2024-06-11T00:00:00Z
+                expect(result.startSecs).toBe(1718064000)
+                expect(result.endSecs).toBe(1718071200)
+            })
+
+            it('should handle REINTERPRET_UTC_TO_LOCAL with existing startSecs/endSecs', () => {
+                const event = {
+                    ...createBaseEvent(),
+                    tz: 'REINTERPRET_UTC_TO_LOCAL',
+                    startSecs: 1718048400,
+                    endSecs: 1718055600,
+                    resolved_location: {
+                        status: 'resolved' as const,
+                        original_location: 'San Francisco, CA',
+                        location_tz: 'America/Los_Angeles',
+                    },
+                }
+
+                const result = validateTzUpdateEventTimes(event)
+
+                expect(result.tz).toBe('America/Los_Angeles')
+                // reinterpretUtcTz(1718048400, 'America/Los_Angeles')
+                // 1718048400 = 2024-06-10T17:00:00Z in UTC
+                // Reinterpret wall time 17:00 as Pacific = 2024-06-10T17:00:00-07:00
+                // Which equals 2024-06-11T00:00:00Z = 1718073600
+                expect(result.startSecs).toBe(1718073600)
+                expect(result.endSecs).toBe(1718080800)
+            })
+
+            it('should set tz to UNKNOWN_TZ when location_tz is UNKNOWN_TZ', () => {
+                const event = {
+                    ...createBaseEvent(),
+                    tz: 'REINTERPRET_UTC_TO_LOCAL',
+                    resolved_location: {
+                        status: 'resolved' as const,
+                        original_location: 'Unknown Place',
+                        location_tz: 'UNKNOWN_TZ',
+                    },
+                }
+
+                const result = validateTzUpdateEventTimes(event)
+
+                expect(result.tz).toBe('UNKNOWN_TZ')
+            })
+
+            it('should throw error if tz or start or end is missing', () => {
+                const event = {
+                    ...createBaseEvent(),
+                    tz: 'REINTERPRET_UTC_TO_LOCAL',
+                    start: '',
+                    resolved_location: {
+                        status: 'resolved' as const,
+                        original_location: 'San Francisco, CA',
+                        location_tz: 'America/Los_Angeles',
+                    },
+                }
+
+                expect(() => validateTzUpdateEventTimes(event)).toThrow(/Event with REINTERPRET_UTC_TO_LOCAL is buggy/)
+            })
+        })
+
+        describe('REINTERPRET_UTC_TO_LOCAL without resolved_location', () => {
+            it('should set tz to UNKNOWN_TZ when no resolved_location', () => {
+                const event = {
+                    ...createBaseEvent(),
+                    tz: 'REINTERPRET_UTC_TO_LOCAL',
+                }
+
+                const result = validateTzUpdateEventTimes(event)
+
+                expect(result.tz).toBe('UNKNOWN_TZ')
+            })
+        })
+
+        describe('TIME_IS_ACCURATE with resolved_location', () => {
+            it('should set tz from resolved_location', () => {
+                const event = {
+                    ...createBaseEvent(),
+                    tz: 'TIME_IS_ACCURATE',
+                    resolved_location: {
+                        status: 'resolved' as const,
+                        original_location: 'New York, NY',
+                        location_tz: 'America/New_York',
+                    },
+                }
+
+                const result = validateTzUpdateEventTimes(event)
+
+                expect(result.tz).toBe('America/New_York')
+            })
+
+            it('should keep TIME_IS_ACCURATE when location_tz is UNKNOWN_TZ', () => {
+                const event = {
+                    ...createBaseEvent(),
+                    tz: 'TIME_IS_ACCURATE',
+                    resolved_location: {
+                        status: 'resolved' as const,
+                        original_location: 'Unknown Place',
+                        location_tz: 'UNKNOWN_TZ',
+                    },
+                }
+
+                const result = validateTzUpdateEventTimes(event)
+
+                expect(result.tz).toBe('TIME_IS_ACCURATE')
+            })
+        })
+
+        describe('TIME_IS_ACCURATE without resolved_location', () => {
+            it('should set tz to UNKNOWN_TZ when no resolved_location', () => {
+                const event = {
+                    ...createBaseEvent(),
+                    tz: 'TIME_IS_ACCURATE',
+                }
+
+                const result = validateTzUpdateEventTimes(event)
+
+                expect(result.tz).toBe('UNKNOWN_TZ')
+            })
+        })
+
+        describe('UNKNOWN_TZ before location lookup', () => {
+            it('should throw error for UNKNOWN_TZ before location lookup', () => {
+                const event = {
+                    ...createBaseEvent(),
+                    tz: 'UNKNOWN_TZ',
+                }
+
+                expect(() => validateTzUpdateEventTimes(event)).toThrow(
+                    'Event with UNKNOWN_TZ before location lookup is a bug'
+                )
+            })
+        })
+
+        describe('missing timezone', () => {
+            it('should throw error when tz is missing', () => {
+                const event = createBaseEvent()
+
+                expect(() => validateTzUpdateEventTimes(event)).toThrow(
+                    'Event with no timezone is a bug - perhaps should have been REINTERPRET_UTC_TO_LOCAL'
+                )
+            })
+        })
+
+        describe('valid IANA timezone', () => {
+            it('should accept and preserve valid IANA timezone', () => {
+                const event = {
+                    ...createBaseEvent(),
+                    tz: 'America/Los_Angeles',
+                }
+
+                const result = validateTzUpdateEventTimes(event)
+
+                expect(result.tz).toBe('America/Los_Angeles')
+                expect(result.startSecs).toBeDefined()
+                expect(result.endSecs).toBeDefined()
+            })
+
+            it('should accept Europe/London timezone', () => {
+                const event = {
+                    ...createBaseEvent(),
+                    tz: 'Europe/London',
+                }
+
+                const result = validateTzUpdateEventTimes(event)
+
+                expect(result.tz).toBe('Europe/London')
+            })
+
+            it('should accept UTC timezone', () => {
+                const event = {
+                    ...createBaseEvent(),
+                    tz: 'UTC',
+                }
+
+                const result = validateTzUpdateEventTimes(event)
+
+                expect(result.tz).toBe('UTC')
+            })
+        })
+
+        describe('invalid timezone', () => {
+            it('should handle invalid timezone gracefully', () => {
+                const event = {
+                    ...createBaseEvent(),
+                    tz: 'Invalid/Timezone',
+                }
+
+                const result = validateTzUpdateEventTimes(event)
+
+                // Function logs but doesn't throw for invalid timezones
+                expect(result.tz).toBe('Invalid/Timezone')
+            })
+        })
+
+        describe('startSecs and endSecs population', () => {
+            it('should populate startSecs and endSecs when missing', () => {
+                const event = {
+                    ...createBaseEvent(),
+                    tz: 'America/Los_Angeles',
+                    start: '2024-06-10T17:00:00Z',
+                    end: '2024-06-10T19:00:00Z',
+                }
+
+                const result = validateTzUpdateEventTimes(event)
+
+                // Convert '2024-06-10T17:00:00Z' to epoch seconds
+                expect(result.startSecs).toBe(1718038800)
+                expect(result.endSecs).toBe(1718046000)
+            })
+
+            it('should not overwrite existing startSecs and endSecs', () => {
+                const event = {
+                    ...createBaseEvent(),
+                    tz: 'America/Los_Angeles',
+                    startSecs: 1234567890,
+                    endSecs: 1234567900,
+                }
+
+                const result = validateTzUpdateEventTimes(event)
+
+                expect(result.startSecs).toBe(1234567890)
+                expect(result.endSecs).toBe(1234567900)
+            })
+        })
+
+        describe('edge cases', () => {
+            it('should handle winter dates with different DST offset', () => {
+                const event = {
+                    ...createBaseEvent(),
+                    tz: 'REINTERPRET_UTC_TO_LOCAL',
+                    start: '2024-01-10T17:00:00Z',
+                    end: '2024-01-10T19:00:00Z',
+                    resolved_location: {
+                        status: 'resolved' as const,
+                        original_location: 'San Francisco, CA',
+                        location_tz: 'America/Los_Angeles',
+                    },
+                }
+
+                const result = validateTzUpdateEventTimes(event)
+
+                expect(result.tz).toBe('America/Los_Angeles')
+                expect(result.start).toBe('2024-01-10T17:00:00-08:00')
+                expect(result.end).toBe('2024-01-10T19:00:00-08:00')
+            })
+
+            it('should handle different timezones correctly', () => {
+                const event = {
+                    ...createBaseEvent(),
+                    tz: 'REINTERPRET_UTC_TO_LOCAL',
+                    start: '2024-06-10T17:00:00Z',
+                    end: '2024-06-10T19:00:00Z',
+                    resolved_location: {
+                        status: 'resolved' as const,
+                        original_location: 'New York, NY',
+                        location_tz: 'America/New_York',
+                    },
+                }
+
+                const result = validateTzUpdateEventTimes(event)
+
+                expect(result.tz).toBe('America/New_York')
+                expect(result.start).toBe('2024-06-10T17:00:00-04:00')
+                expect(result.end).toBe('2024-06-10T19:00:00-04:00')
+            })
         })
     })
 })

@@ -30,15 +30,13 @@ export const fetcherLogr = async (url: string) => {
             esId = url.split('id=')[1]?.split('&')[0]
         } catch {} // ignore errors
 
-        if (esId === 'unknownEsId') {
-            umamiTrack('ClientFetch', {
-                esId: esId,
-                status: response.status,
-                sizeKb: Math.round(sizeOfResponse / 10240) * 10,
-                sec: Math.round(ms / 1000),
-                secId: Math.round(ms / 1000) + '-' + esId,
-            })
-        }
+        umamiTrack('ClientFetch', {
+            esId: esId,
+            status: Math.round(response.status),
+            sizeKb: Math.round(sizeOfResponse / 10240) * 10,
+            sec: Math.round(ms / 100) / 10,
+            secId: Math.round(ms / 1000) + '-' + esId,
+        })
         return data
     } catch (error) {
         logr.info('browser', `Error from url: ${url}`, error)

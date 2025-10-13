@@ -53,6 +53,10 @@ export default function DateQuickButtons({
         if (onDateQuickFilterChange) {
             onDateQuickFilterChange(filterId)
         }
+        // the following similar to data-umami-event-dateqbtn={filterId} on the button
+        // except on button the event Name is 'DateQuickButton' vs 'dateQuickFilter' here.
+        // except on button the event Property is 'dateqbtn' vs 'clicked' here.
+        // Both events have same value for the property.
         umamiTrack('dateQuickFilter', { clicked: filterId })
     }
 

@@ -10,7 +10,12 @@ export type ExampleEventSource = {
 export const ExampleEventsSources: ExampleEventSource[] = [
     {
         name: 'SF Bay Music + FB Events',
-        id: '19hz:BayArea,foopee:all,gc:aabe6c219ee2af5b791ea6719e04a92990f9ccd1e68a3ff0d89bacd153a0b36d@group.calendar.google.com',
+        id: [
+            '19hz:BayArea',
+            'gc:aabe6c219ee2af5b791ea6719e04a92990f9ccd1e68a3ff0d89bacd153a0b36d@group.calendar.google.com', // Chadrock FB Events
+            'gc:4fe481e85ecc730d248edc17d07f66c9dcfca7fdfb7270711813baa3d945f591@group.calendar.google.com', // Let's Dance SF
+            'foopee:all',
+        ].join(','),
         shortId: 'sf', // can just do es=sf in the url for 2 sources
     },
     {

@@ -291,7 +291,7 @@ which is currently focused on identifying problematic names, more at [Code Revie
 
 <div style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
   <img 
-  src="function-call-graph.png" 
+  src="images/function-call-graph.png" 
   alt="Function Call Graph" 
   style="height:300px; width:auto; max-width:none !important; display:block;">
 </div>
@@ -345,8 +345,8 @@ which is currently focused on identifying problematic names, more at [Code Revie
 
 **Browser Constraints:**
 
-- Map markers: Tested with 100+ markers (clusters at same location)
-- Event list: Virtual scrolling not implemented, tested with 300 events
+- Map markers: Tested with 100+ markers (multiple events at same marker)
+- Event list:  Scrolling and jumping (clicking marker) tested with 3,000+ events
 - Memory: Events stored in memory (allEvents + visibleEvents arrays)
 
 ---

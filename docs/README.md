@@ -21,6 +21,6 @@ Temporary
 
 - Function Calls, focused on identifying problematic names
   - [Force-directed graph layout with D3.js](https://chadn.github.io/cmf/function-call-graph.html) .
-  - [Very large PNG Graph](function-call-graph.png) generated from [function-call-graph.dot](function-call-graph.dot)
+  - [Very large PNG Graph](images/function-call-graph.png) generated from [function-call-graph.dot](function-call-graph.dot)
   - [ASCII Tree Format ](function-call-graph.txt)
   

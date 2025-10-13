@@ -24,6 +24,7 @@ import { checkForZipCode, calculateBoundsFromMarkers } from '@/lib/utils/locatio
 import { determineHeaderName } from '@/lib/utils/headerNames'
 import { stringify } from '@/lib/utils/utils-shared'
 import { urlDateToIsoString } from '@/lib/utils/date'
+import { uamamiHandler, umamiTrack } from '../utils/umami'
 
 /**
  * Event data interface for components
@@ -261,13 +262,6 @@ export function useAppController(): UseAppControllerReturn {
             setHeaderName('Loading Event Source...')
             dispatch(appActions.startFetchingEvents())
         }
-        // TODO move this somewhere else - perhaps umami has own file to track appState changes?
-        /*
-        umamiTrack('LoadCalendar', {
-            es: Array.isArray(eventSourceId) ? eventSourceId.join(',') : eventSourceId ?? 'null',
-            numEvents: cmfEvents.allEvents.length,
-        })
-        */
     }, [eventSourceId])
 
     // Handle transition from fetching-events and to processing-events
@@ -364,7 +358,7 @@ export function useAppController(): UseAppControllerReturn {
     // TODO: move this to another file, maybe new file like src/lib/utils/eventSelection.ts
     const handleEventSelect = useCallback(
         (eventId: string | null) => {
-            logr.info('app', `handleEventSelect() selectedEventIdUrl from ${selectedEventIdUrl} to ${eventId}`)
+            logr.info('app', `handleEventSelect() selectedEventIdUrl from '${selectedEventIdUrl}' to '${eventId}'`)
 
             // If event is null, clear marker selection
             if (!eventId) {
@@ -546,34 +540,36 @@ export function useAppController(): UseAppControllerReturn {
 
         // Handlers for components
         handlers: {
-            // Event handlers
-            onEventSelect: handleEventSelect,
-            onSearchChange: handleSearchChange,
-            onDateRangeChange: handleDateRangeChange,
-            onDateQuickFilterChange: setDateQuickFilterUrl,
+            // Event List handlers
+            onEventSelect: uamamiHandler('onEventSelect', handleEventSelect),
+            onSearchChange: uamamiHandler('onSearchChange', handleSearchChange),
+            onDateRangeChange: uamamiHandler('onDateRangeChange', handleDateRangeChange),
+            onDateQuickFilterChange: uamamiHandler('onDateQuickFilterChange', setDateQuickFilterUrl),
 
             // Map handlers
-            onViewportChange: setViewport,
-            onBoundsChange: handleBoundsChangeForFilters,
-            onMarkerSelect: setSelectedMarkerId,
-            onWidthHeightChange: setMapHookWidthHeight,
+            onViewportChange: uamamiHandler('onViewportChange', setViewport),
+            onBoundsChange: uamamiHandler('onBoundsChange', handleBoundsChangeForFilters),
+            onMarkerSelect: uamamiHandler('onMarkerSelect', setSelectedMarkerId),
+            onWidthHeightChange: uamamiHandler('onWidthHeightChange', setMapHookWidthHeight),
 
-            // Filter handlers
-            onClearMapFilter: handleClearMapFilter,
+            // Filter handlers in Sidebar
+            onClearMapFilter: uamamiHandler('onClearMapFilter', handleClearMapFilter),
             onClearSearchFilter: () => {
+                umamiTrack('onClearSearchFilter')
                 setSearchQueryUrl('')
                 filters.setSearchQuery('')
             },
             onClearDateFilter: () => {
+                umamiTrack('onClearDateFilter')
                 setDateSliderRange(undefined)
                 filters.setDateRange(undefined)
                 setDateQuickFilterUrl(null)
             },
-            onResetMapToVisibleEvents: handleResetMapToVisibleEvents,
+            onResetMapToVisibleEvents: uamamiHandler('onResetMapToVisibleEvents', handleResetMapToVisibleEvents),
 
             // Settings handlers
-            onLlzCheckedChange: setLlzChecked,
-            onPreferQfCheckedChange: setPreferQfChecked,
+            onLlzCheckedChange: uamamiHandler('onLlzCheckedChange', setLlzChecked),
+            onPreferQfCheckedChange: uamamiHandler('onPreferQfCheckedChange', setPreferQfChecked),
         },
 
         // State Management

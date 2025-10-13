@@ -101,7 +101,7 @@ export function convertUtcSecsToString(epochSeconds: number): string {
 }
 
 /**
- * Update the time fields of events based on their location and timezone.
+ * Update the time fields of events based on their location and timezone.  Logic below must match implementation.md#timezones
  * This function is called by server /api/events, after fetching events and geocoding, before returning events
  * @param events - Array of Event objects to update
  * @returns Array of updated Event objects
@@ -129,7 +129,7 @@ export function validateTzUpdateEventTimes(event: CmfEvent): CmfEvent {
     } else if (event.tz === 'TIME_IS_ACCURATE' && event.resolved_location) {
         event.tz = event.resolved_location.location_tz
         if (event.tz === 'UNKNOWN_TZ') {
-            event.tz === 'TIME_IS_ACCURATE' // keep it as is
+            event.tz = 'TIME_IS_ACCURATE' // keep it as is
             logr.info('timezones', `Event with TIME_IS_ACCURATE, keeping,location_tz=UNKNOWN_TZ: ${stringify(event)}`)
         } else {
             // TODO: comment this out but leave for troubleshooting if need be

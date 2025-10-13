@@ -78,6 +78,7 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(
                             <Popover.Trigger asChild>
                                 <Button
                                     variant="ghost"
+                                    data-umami-event="CmfButton"
                                     className="flex items-center px-2 py-1 text-lg lg:text-xl font-bold text-blue-600 hover:text-blue-800 hover:bg-blue-200 focus:outline-none"
                                 >
                                     CMF
@@ -113,6 +114,7 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="hover:underline text-blue-700"
+                                                data-umami-event="UsageDocClicked"
                                             >
                                                 View Usage Doc on Github
                                             </a>
@@ -120,8 +122,12 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(
                                         <div className="flex flex-col gap-2 text-blue-700  text-sm">
                                             <ul className="list-disc pl-5 space-y-1">
                                                 <li>
-                                                    <Link href="/" className="hover:underline">
-                                                        Enter New Source
+                                                    <Link
+                                                        href="/"
+                                                        className="hover:underline"
+                                                        data-umami-event="EnterSource1Clicked"
+                                                    >
+                                                        Enter New Event Source
                                                     </Link>
                                                 </li>
                                                 <li>
@@ -130,6 +136,7 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(
                                                         onClick={handleShare}
                                                         className="hover:underline cursor-pointer p-0 m-0 bg-transparent border-none text-inherit font-inherit text-blue-700 text-sm"
                                                         style={{ textAlign: 'left' }}
+                                                        data-umami-event="ShareClicked"
                                                     >
                                                         Share - Copy URL to Clipboard
                                                     </button>
@@ -197,6 +204,7 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(
                                     <Button
                                         variant="ghost"
                                         title="Click to view event source details"
+                                        data-umami-event="EventsSourceButton"
                                         className="sidebar-headerName text-md sm:text-lg lg:text-2xl font-semibold text-blue-600 hover:text-blue-800 hover:bg-blue-200 px-2 py-1 mx-2 rounded"
                                     >
                                         {headerName}
@@ -232,6 +240,8 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(
                                                                     target="_blank"
                                                                     rel="noopener noreferrer"
                                                                     className="text-blue-600 hover:underline text-sm"
+                                                                    data-umami-event="ViewSourceClicked"
+                                                                    data-umami-event-sourceName={source.name}
                                                                 >
                                                                     View Source
                                                                 </a>
@@ -243,6 +253,8 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(
                                                                     href={`/?es=${source.prefix}:${source.id}`}
                                                                     title="Click to reload with just this event source"
                                                                     className="text-blue-600 hover:underline text-sm"
+                                                                    data-umami-event="ShowOnlyTheseClicked"
+                                                                    data-umami-event-sourceName={source.name}
                                                                 >
                                                                     Show Only These
                                                                 </a>
@@ -264,6 +276,15 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(
                                                     </div>
                                                 )}
                                             </div>
+                                            <div>
+                                                <Link
+                                                    href="/"
+                                                    className="text-blue-600 hover:underline"
+                                                    data-umami-event="EnterSource2Clicked"
+                                                >
+                                                    Enter New Event Source
+                                                </Link>
+                                            </div>
                                         </div>
                                     </Popover.Content>
                                 </Popover.Portal>
@@ -279,6 +300,7 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(
                                 onClick={onResetMapToVisibleEvents}
                                 className="num-events-visible text-blue-600 hover:text-blue-800 hover:bg-blue-200 text-xs lg:text-sm xl:text-md 2xl:text-lg ml-2 px-1 py-0.5 rounded transition-colors cursor-pointer"
                                 disabled={!onResetMapToVisibleEvents}
+                                data-umami-event="VisibleButton"
                             >
                                 <span className="whitespace-nowrap">
                                     <span className="font-bold text-sm lg:text-md xl:text-lg 2xl:text-xl">

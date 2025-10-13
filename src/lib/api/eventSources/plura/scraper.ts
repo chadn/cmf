@@ -216,7 +216,12 @@ export function createEventFromCard($section: cheerio.Cheerio, eventUrl: string,
         const locationText = $section.find('li[title="Address"] span').text().trim() || ''
         const dateText = $section.find('li[title="Date"] span').first().text().trim()
         const note = `End Time is Estimated, Start Date UTC: ${dateText}`
-        const { startDate, endDate } = parsePluraDateString(dateText + ' UTC')
+
+        // Timezone handling:
+        // Plura city pages raw html has date in UTC (browser js may change to browser timezone), so use UTC to parse date
+        // Not sure timezone, so using TIME_IS_ACCURATE for event.tz, to be updated later in validateTzUpdateEventTimes
+        const eventTimezone = 'TIME_IS_ACCURATE'
+        const { startDate, endDate } = parsePluraDateString(dateText + ' UTC') // Browser scraper must be in UTC, too.
         if (!startDate || !endDate) {
             logr.warn('api-es-plura', `createEventFromCard: no date found in ${cityName} for ${eventUrl}`)
         }
@@ -227,7 +232,7 @@ export function createEventFromCard($section: cheerio.Cheerio, eventUrl: string,
             description_urls: [],
             start: startDate?.toISOString() || '',
             end: endDate?.toISOString() || '',
-            tz: 'UTC',
+            tz: eventTimezone,
             original_event_url: eventUrl,
             location: improveLocation(locationText, cityName),
             note: note,
