@@ -2,7 +2,7 @@ import axios from 'axios'
 import * as cheerio from 'cheerio'
 import { CmfEvent, EventsSourceParams, EventsSourceResponse, EventsSource, DateRangeIso } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
-import { BaseEventSourceHandler, registerEventsSource } from './index'
+import { BaseEventSourceHandler, registerEventSourceFactory } from './index'
 import { parse19hzDateRange, getCityInfo } from '@/lib/utils/date-19hz-parsing'
 import { extractVenueAndCity } from '@/lib/utils/venue-parsing'
 import { applyDateFilter } from '@/lib/events/filters'
@@ -233,7 +233,7 @@ export class NineteenHzEventsSource extends BaseEventSourceHandler {
         cityInfo: { name: string; timezone: string; state: string }
     ): CmfEvent | null {
         try {
-            const { start, end } = this.parseDateRange(parsed.dateTime, cityInfo.timezone)
+            const { start, end, recurring } = this.parseDateRange(parsed.dateTime, cityInfo.timezone)
 
             // Build description from all columns as requested
             const descriptionParts = [
@@ -244,7 +244,7 @@ export class NineteenHzEventsSource extends BaseEventSourceHandler {
                 parsed.links ? `Links: ${parsed.links}` : '',
             ].filter(Boolean)
 
-            const description = descriptionParts.join(' | ')
+            const description = descriptionParts.join(' | ') + (recurring ? ' (Recurring)' : '')
 
             // Use location from extractVenueAndCity (already formatted)
             const location = parsed.venue || ''
@@ -297,8 +297,5 @@ export class NineteenHzEventsSource extends BaseEventSourceHandler {
     }
 }
 
-// Register the 19hz event source
-const nineteenHzEventsSource = new NineteenHzEventsSource()
-registerEventsSource(nineteenHzEventsSource)
-
-export default nineteenHzEventsSource
+// Register factory for 19hz event source
+registerEventSourceFactory(() => new NineteenHzEventsSource())

@@ -135,7 +135,7 @@ const MapContainer: React.FC<MapContainerProps> = ({
             )
             // TODO: this function should debounce
             updateMapWidthHeight() // Update dimensions and notify parent if changed
-            onViewportChange(vp)
+            onViewportChange(vp) // calls setViewport()
             debouncedUpdateBounds()
         },
         [onViewportChange, debouncedUpdateBounds, updateMapWidthHeight]

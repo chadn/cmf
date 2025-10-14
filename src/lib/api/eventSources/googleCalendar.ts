@@ -3,7 +3,7 @@ import { addMonths, subMonths, format } from 'date-fns'
 import { GoogleCalendarResponse, GoogleCalendarEvent } from '@/types/googleApi'
 import { CmfEvent, EventsSourceParams, EventsSourceResponse, EventsSource } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
-import { BaseEventSourceHandler, registerEventsSource } from './index'
+import { BaseEventSourceHandler, registerEventSourceFactory } from './index'
 
 const GOOGLE_CALENDAR_API_BASE = 'https://www.googleapis.com/calendar/v3/calendars'
 const GOOGLE_CALENDAR_PUBLIC_URL_BASE = 'https://calendar.google.com/calendar/embed?src='
@@ -108,8 +108,5 @@ export class GoogleCalendarEventsSource extends BaseEventSourceHandler {
     }
 }
 
-// Register the Google Calendar event source
-const googleCalendarEventsSource = new GoogleCalendarEventsSource()
-registerEventsSource(googleCalendarEventsSource)
-
-export default googleCalendarEventsSource
+// Register factory for Google Calendar event source
+registerEventSourceFactory(() => new GoogleCalendarEventsSource())

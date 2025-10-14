@@ -3,7 +3,7 @@ import * as cheerio from 'cheerio'
 import { format, addYears, subDays, parse } from 'date-fns'
 import { CmfEvent, EventsSourceParams, EventsSourceResponse, EventsSource } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
-import { BaseEventSourceHandler, registerEventsSource } from './index'
+import { BaseEventSourceHandler, registerEventSourceFactory } from './index'
 import { extractEventTimes, parseMonthDayRange } from '@/lib/utils/date'
 
 interface DatePageInfo {
@@ -357,8 +357,5 @@ export class FoopeeEventsSource extends BaseEventSourceHandler {
     }
 }
 
-// Register the foopee event source
-const foopeeEventsSource = new FoopeeEventsSource()
-registerEventsSource(foopeeEventsSource)
-
-export default foopeeEventsSource
+// Register factory for event source
+registerEventSourceFactory(() => new FoopeeEventsSource())

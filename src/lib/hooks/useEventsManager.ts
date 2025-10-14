@@ -110,9 +110,7 @@ export function useEventsManager({
         // Format user-friendly error message
         let userMessage = 'Failed to fetch events'
         if (msg.includes('HTTP 404')) {
-            const hasGoogleCalendar = Array.isArray(eventSourceId)
-                ? eventSourceId.some((id) => id.startsWith('gc:'))
-                : eventSourceId?.startsWith('gc:')
+            const hasGoogleCalendar = sourceIds.some((s) => s.startsWith('gc:') || s.startsWith('gc.'))
             if (hasGoogleCalendar) {
                 userMessage = `Google Calendar not found - confirm source and try again`
             } else {

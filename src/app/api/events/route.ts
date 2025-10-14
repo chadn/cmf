@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { fetchEvents, getEventSourceHandler } from '@/lib/api/eventSources'
+import { fetchEvents, getEventSourceHandler, initializeEventSources } from '@/lib/api/eventSources'
 import { batchGeocodeLocations } from '@/lib/api/geocoding'
 import { getEventsCache, setEventsCache } from '@/lib/cache'
 import { EventsSourceResponse } from '@/types/events'
@@ -8,7 +8,7 @@ import { HttpError } from '@/types/error'
 import { getTimezoneFromLatLng, validateTzUpdateEventTimes } from '@/lib/utils/timezones'
 import { stringify } from '@/lib/utils/utils-shared'
 
-// Import event source handlers to ensure they're registered (alphabetical order)
+// Import event source handlers to register their factories (alphabetical order)
 import '@/lib/api/eventSources/19hz'
 import '@/lib/api/eventSources/dissent-google-sheets'
 import '@/lib/api/eventSources/facebookEvents'
@@ -19,6 +19,9 @@ import '@/lib/api/eventSources/nokings'
 import '@/lib/api/eventSources/plura/index'
 import '@/lib/api/eventSources/protests'
 import '@/lib/api/eventSources/testSource'
+
+// Initialize all event sources (creates handler instances from factories)
+initializeEventSources()
 
 // Export config to make this a dynamic API route
 export const dynamic = 'force-dynamic'
@@ -123,7 +126,7 @@ export async function GET(request: NextRequest) {
         }
 
         // Check if we have a handler for this event source
-        const [handler] = getEventSourceHandler(eventSourceId)
+        const { handler } = getEventSourceHandler(eventSourceId)
         if (!handler) {
             logr.info('api-events', `No handler found for event source: ${eventSourceId}`)
             return NextResponse.json({ error: 'Unsupported event source type' }, { status: 400 })

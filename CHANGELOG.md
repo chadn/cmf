@@ -5,6 +5,12 @@ All notable changes to Calendar Map Filter (CMF) will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.5] - 2025-10-14
+
+- added example animated gif to usage.md for weekend filter
+- Improved code around timezones and event sources for easier maintenance and to reduce future bugs
+- Fixes around updating map after 5-digit zip code search query.
+
 ## [0.4.4] - 2025-10-13
 
 - Fixed Deployment bug

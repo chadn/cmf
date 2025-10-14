@@ -1,6 +1,6 @@
 import { CmfEvent, EventsSourceParams, EventsSourceResponse, EventsSource } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
-import { BaseEventSourceHandler, registerEventsSource } from './index'
+import { BaseEventSourceHandler, registerEventSourceFactory } from './index'
 import { createTestEvent } from '@/tests/locations'
 
 export class TestEventsSource extends BaseEventSourceHandler {
@@ -44,8 +44,5 @@ export class TestEventsSource extends BaseEventSourceHandler {
     }
 }
 
-// Register the test event source
-const testEventsSource = new TestEventsSource()
-registerEventsSource(testEventsSource)
-
-export default testEventsSource
+// Register factory for test event source
+registerEventSourceFactory(() => new TestEventsSource())

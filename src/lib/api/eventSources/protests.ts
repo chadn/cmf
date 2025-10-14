@@ -2,7 +2,7 @@ import axios from 'axios'
 import { format } from 'date-fns'
 import { CmfEvent, EventsSourceParams, EventsSourceResponse, EventsSource } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
-import { BaseEventSourceHandler, registerEventsSource } from './index'
+import { BaseEventSourceHandler, registerEventSourceFactory } from './index'
 
 // Interface for the Protest API response
 interface ProtestEvent {
@@ -273,8 +273,5 @@ export class ProtestsEventsSource extends BaseEventSourceHandler {
     }
 }
 
-// Register the Protests event source
-const protestsEventsSource = new ProtestsEventsSource()
-registerEventsSource(protestsEventsSource)
-
-export default protestsEventsSource
+// Register factory for event source
+registerEventSourceFactory(() => new ProtestsEventsSource())

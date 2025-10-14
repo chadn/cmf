@@ -200,9 +200,9 @@ const EventList: React.FC<EventListProps> = ({ cmfEvents, selectedEventId, onEve
                                     : undefined
                             }
                         >
-                            {/* Note sidebar is on top up to lg, has extra width from md to lg, so use Duration for md to lg*/}
-                            <span className="inline md:hidden lg:inline 2xl:hidden">Dur.</span>
-                            <span className="hidden md:inline lg:hidden 2xl:inline">Duration</span>
+                            {/* Note sidebar is on top up to lg (<1024px), so has extra width in md (>768px), so use Duration for md */}
+                            <span className="inline md:hidden lg:inline 2xl:inline">Dur.</span>
+                            <span className="hidden md:inline lg:hidden 2xl:hidden">Duration</span>
                             {sortField === 'duration' && (
                                 <span className="ml-1" aria-hidden="true">
                                     {sortDirection === 'asc' ? '↑' : '↓'}

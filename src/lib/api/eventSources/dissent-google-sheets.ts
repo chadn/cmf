@@ -1,6 +1,6 @@
 import { CmfEvent, EventsSourceParams, EventsSourceResponse, EventsSource } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
-import { BaseEventSourceHandler, registerEventsSource } from './index'
+import { BaseEventSourceHandler, registerEventSourceFactory } from './index'
 import { axiosGet } from '@/lib/utils/utils-server'
 import { HttpError } from '@/types/error'
 import { parseDateFromDissent } from '@/lib/utils/date'
@@ -114,7 +114,5 @@ export class DissentGoogleSheetsSource extends BaseEventSourceHandler {
     }
 }
 
-const dissentGoogleSheetsSource = new DissentGoogleSheetsSource()
-registerEventsSource(dissentGoogleSheetsSource)
-
-export default dissentGoogleSheetsSource
+// Register factory for event source
+registerEventSourceFactory(() => new DissentGoogleSheetsSource())

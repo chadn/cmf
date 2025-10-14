@@ -1,7 +1,7 @@
 import { axiosGet } from '@/lib/utils/utils-server'
 import { CmfEvent, Location, EventsSourceParams, EventsSourceResponse, EventsSource } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
-import { BaseEventSourceHandler, registerEventsSource } from './index'
+import { BaseEventSourceHandler, registerEventSourceFactory } from './index'
 
 interface MobilizeTimeslot {
     start_date: number
@@ -199,8 +199,5 @@ export class NoKingsEventsSource extends BaseEventSourceHandler {
     }
 }
 
-// Register the nokings event source
-const noKingsEventsSource = new NoKingsEventsSource()
-registerEventsSource(noKingsEventsSource)
-
-export default noKingsEventsSource
+// Register factory for event source
+registerEventSourceFactory(() => new NoKingsEventsSource())

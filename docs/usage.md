@@ -9,42 +9,43 @@ Calendar Map Filter (CMF) is a web application that allows users to view and fil
 ## Table of Contents
 
 - [Overview](#overview)
-  - [Use Cases](#use-cases)
-    - [What's Going On This Weekend](#whats-going-on-this-weekend)
-    - [Explore Where The Action Is](#explore-where-the-action-is)
-  - [Key Features](#key-features)
-    - [Real-Time Data Updates](#real-time-data-updates)
-    - [Map and Event List Integration](#map-and-event-list-integration)
-    - [Location Requirements](#location-requirements)
-  - [Definitions](#definitions)
-    - [Selected Events Exception](#selected-events-exception)
+    - [Use Cases](#use-cases)
+        - [What's Going On This Weekend](#whats-going-on-this-weekend)
+        - [Explore Where The Action Is](#explore-where-the-action-is)
+        - [Fix My Events With Bad Location](#fix-my-events-with-bad-location)
+    - [Key Features](#key-features)
+        - [Real-Time Data Updates](#real-time-data-updates)
+        - [Map and Event List Integration](#map-and-event-list-integration)
+        - [Location Requirements](#location-requirements)
+    - [Definitions](#definitions)
+        - [Selected Events Exception](#selected-events-exception)
 - [Initial View: Pick Event Source](#initial-view-pick-event-source)
-  - [Find your Google Calendar Id](#find-your-google-calendar-id)
-  - [Find your Facebook Events iCal URL](#find-your-facebook-events-ical-url)
+    - [Find your Google Calendar Id](#find-your-google-calendar-id)
+    - [Find your Facebook Events iCal URL](#find-your-facebook-events-ical-url)
 - [Map View: Main Page](#map-view-main-page)
-  - [Map](#map)
-  - [Event List](#event-list)
-  - [Search Box](#search-box)
-  - [Date Selector](#date-selector)
-    - [Quick Filter Options](#quick-filter-options)
-  - [Incorrect and Unresolved Locations](#incorrect-and-unresolved-locations)
-  - [URL Parameters](#url-parameters)
-    - [Event Source Parameters](#event-source-parameters)
-    - [Map Viewport Parameters](#map-viewport-parameters)
-    - [Date Parameters](#date-parameters)
-    - [Search Parameters](#search-parameters)
-    - [Selected Event Parameters](#selected-event-parameters)
-  - [Date Formats](#date-formats)
-  - [Example URLs](#example-urls)
-  - [Event Sources](#event-sources)
-    - [Event Source Details](#event-source-details)
+    - [Map](#map)
+    - [Event List](#event-list)
+    - [Search Box](#search-box)
+    - [Date Selector](#date-selector)
+        - [Quick Filter Options](#quick-filter-options)
+    - [Incorrect and Unresolved Locations](#incorrect-and-unresolved-locations)
+    - [URL Parameters](#url-parameters)
+        - [Event Source Parameters](#event-source-parameters)
+        - [Map Viewport Parameters](#map-viewport-parameters)
+        - [Date Parameters](#date-parameters)
+        - [Search Parameters](#search-parameters)
+        - [Selected Event Parameters](#selected-event-parameters)
+    - [Date Formats](#date-formats)
+    - [Example URLs](#example-urls)
+    - [Event Sources](#event-sources)
+        - [Event Source Details](#event-source-details)
 - [Other Notes](#other-notes)
-  - [Mobile vs Desktop Features](#mobile-vs-desktop-features)
-    - [Desktop Experience](#desktop-experience)
-    - [Mobile Experience](#mobile-experience)
-    - [Cross-Device Features](#cross-device-features)
-  - [Troubleshooting](#troubleshooting)
-  - [More](#more)
+    - [Mobile vs Desktop Features](#mobile-vs-desktop-features)
+        - [Desktop Experience](#desktop-experience)
+        - [Mobile Experience](#mobile-experience)
+        - [Cross-Device Features](#cross-device-features)
+    - [Troubleshooting](#troubleshooting)
+    - [More](#more)
 
 # Overview
 
@@ -63,10 +64,13 @@ and changes on the numbers of how many events are showing and filtered by date.
 
 ### What's Going On This Weekend
 
-Use date quick filter, weekend, to only see events happening Friday, Saturday, and Sunday.
+Use date quick filter, Weekend, to only see events happening Friday, Saturday, and Sunday.
 Click on Events in the list to see details in the map via the marker popup.
 
-Images coming soon
+Notice in the following example that the visible event count drops from 1248 to 171 when Weekend button is pressed.
+Clicking on the "1356 Filtered by Date x" button (or chip) removed the Weekend date filter, increase visible event count.
+
+![Showing Weekend Filter for SF](images/sf-weekend-2025-10-14.gif)
 
 ### Explore Where The Action Is
 
@@ -78,11 +82,11 @@ Images coming soon
 ### Fix My Events With Bad Location
 
 If you have a public google calendar with lots of events, you can use CMF to confirm all the events have good locations.
-A good location just means that the location can be resolved to an address or specific location on a map. 
-So `unresolved` locations are ones that are not good.  You can focus CMF on unresolved locations using that as search term.
+A good location just means that the location can be resolved to an address or specific location on a map.
+So `unresolved` locations are ones that are not good. You can focus CMF on unresolved locations using that as search term.
 
 For example, here's all the unresolved locations for this public Google calendar for Spain
-https://cmf.chadnorwood.com/?es=gc:geocachingspain@gmail.com&sq=unresolved
+[cmf.chadnorwood.com/?es=gc:geocachingspain@gmail.com&sq=unresolved](https://cmf.chadnorwood.com/?es=gc:geocachingspain@gmail.com&sq=unresolved)
 
 ![unresolved locations](images/unresolved_20251013.png)
 
@@ -91,7 +95,7 @@ https://cmf.chadnorwood.com/?es=gc:geocachingspain@gmail.com&sq=unresolved
 - Explore using map, visible events, and filters. As you filter, either by moving map, changing dates, or search terms,
   the number of visible events can reduce to only a handful.
 - Clicking on Visible button will zoom and center on remaining visible events.
-- Clicking on map chip (X Filtered by Map) will zoom out again and remove chip. 
+- Clicking on map chip (X Filtered by Map) will zoom out again and remove chip.
 - Remove all chips to view all events.
 
 ### Real-Time Data Updates
@@ -208,7 +212,8 @@ out so that the only ones shown are ones matching the letters you type. Matching
 Search box also allows for special searching.
 
 - **unresolved** - typing `unresolved` will show all events with [Incorrect and Unresolved Locations](#incorrect-and-unresolved-locations)
-- **zip codes** - typing a zip code, and on the 5th number of a valid zip code the map will update to go to that zip code
+- **zip codes** - typing a zip code, and on the 5th number of a valid zip code the map will update to go to that zip code.
+  To actually search events for a zipcode, enter a space after 5th number.
 
 ## Date Selector
 
@@ -233,7 +238,7 @@ All unresolved locations share a special marker. You can see them with special s
 
 **Incorrect locations** are when an event has a location but it appears to be incorrect on the map. It probably got incorrectly geocoded, maybe due to lack of location details. These can be often be fixed on the app side, by updating the geolocation cache.
 
-**Report-location** To report incorrect locations, click on event or marker. In the Marker Popup, click on "Add To Cal", which will create another little popup. In that one, click "Report Incorrect Location" 
+**Report-location** To report incorrect locations, click on event or marker. In the Marker Popup, click on "Add To Cal", which will create another little popup. In that one, click "Report Incorrect Location"
 
 **Fix-location** To fix incorrect locations - This is for admins only
 

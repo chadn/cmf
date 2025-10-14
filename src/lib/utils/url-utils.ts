@@ -262,10 +262,10 @@ export const parseAsLlz = createParser({
 })
 
 function validateSource(source: string): string {
-    if (/^[a-zA-Z0-9]+:/.test(source)) {
+    if (/^[a-zA-Z0-9]+[:\.]/.test(source)) {
         return source
     } else if (/^[a-zA-Z0-9]+$/.test(source)) {
-        return source + ':all'
+        return source + '.all'
     }
     return ''
 }

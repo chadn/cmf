@@ -1,4 +1,3 @@
-import { MutableRefObject } from 'react'
 import { ViewState as ViewStateType } from 'react-map-gl/maplibre'
 import WebMercatorViewport from '@math.gl/web-mercator'
 import { MapBounds, MapViewport, MapMarker } from '@/types/map'
@@ -386,41 +385,52 @@ export const llzObjectToViewport = (llz: { lat: number; lon: number; zoom: numbe
 }
 
 // Custom parsers to read and write values to the URL
-
+/**
+ * Checks if the input query is a valid ZIP code and returns its lat/lon coordinates if found.
+ * @param query - The input string to check, typically from user input
+ * @param zipLatLonRef - A reference to the ZIP code to lat/lon mapping
+ * @returns An object containing lat/lon coordinates or null if not found
+ */
 export const checkForZipCode = async (
     query: string,
-    zipLatLonRef: MutableRefObject<{ [zip: string]: string } | null>
+    zipLatLonRef: React.RefObject<Record<string, string> | null>
 ): Promise<{ lat: number; lon: number } | null> => {
-    const loadZipLatLon = async () => {
+    // --- Helper: Lazy load ZIP → lat/lon map ---
+    const loadZipLatLon = async (): Promise<void> => {
         try {
             const jsonData = await fetcherLogr('/data/zip-codes-to-lat-long.json')
-            if (jsonData) {
+            if (jsonData && typeof jsonData === 'object') {
                 zipLatLonRef.current = jsonData
             } else {
-                logr.warn('app', 'Failed to fetch zip-codes-to-lat-long.json')
+                logr.warn('app', 'Invalid JSON format for zip-codes-to-lat-long.json')
             }
-        } catch (e) {
-            logr.warn('app', 'Error fetching zip-codes-to-lat-long.json', e)
+        } catch (error) {
+            logr.warn('app', 'Error fetching zip-codes-to-lat-long.json', error)
         }
     }
-    // begin lazy loading on first digit
-    if (/^\d+$/.test(query)) {
-        // Lazy load mapping if not loaded
-        if (!zipLatLonRef.current) {
+
+    // --- Early exit: only process numeric input ---
+    if (!/^\d+$/.test(query)) return null
+
+    // --- Lazy-load dataset (non-blocking on partial input) ---
+    if (!zipLatLonRef.current) {
+        if (query.length < 5) {
+            // Preload in background
             loadZipLatLon()
+            return null
         }
+        // Wait for data before lookup
+        await loadZipLatLon()
     }
-    // If query is a 5-digit zip code
-    if (/^\d{5}$/.test(query)) {
-        // Lazy load mapping if not loaded
-        if (!zipLatLonRef.current) {
-            await loadZipLatLon()
-        }
-        const mapping = zipLatLonRef.current
-        if (mapping && mapping[query]) {
-            const [lat, lon] = mapping[query].split(',').map(Number)
+
+    // --- 5-digit lookup ---
+    if (query.length === 5 && zipLatLonRef.current?.[query]) {
+        const [lat, lon] = zipLatLonRef.current[query].split(',').map(Number)
+        if (Number.isFinite(lat) && Number.isFinite(lon)) {
             return { lat, lon }
         }
+        logr.warn('app', `Invalid lat/lon for ZIP ${query}: ${zipLatLonRef.current[query]}`)
     }
+
     return null
 }

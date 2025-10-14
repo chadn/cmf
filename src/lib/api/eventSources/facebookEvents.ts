@@ -1,12 +1,13 @@
 import { EventsSourceParams, EventsSourceResponse, EventsSource, CmfEvent } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
-import { BaseEventSourceHandler, registerEventsSource } from './index'
+import { BaseEventSourceHandler, registerEventSourceFactory } from './index'
 import { parseIcsContent } from '@/lib/utils/icsParser'
 import axios from 'axios'
 import { HttpError } from '@/types/error'
 
 /**
  * Facebook Events source handler implementation
+ * TIP: Add events to your feed that your friends like: https://www.facebook.com/events/?discover_tab=FRIENDS
  */
 export class FacebookEventsSource extends BaseEventSourceHandler {
     // Event source format: 'fb:${facebookUid}-${facebookKey}'
@@ -86,8 +87,5 @@ export class FacebookEventsSource extends BaseEventSourceHandler {
     }
 }
 
-// Register the Facebook Events source
-const facebookEventsSource = new FacebookEventsSource()
-registerEventsSource(facebookEventsSource)
-
-export default facebookEventsSource
+// Register factory for event source
+registerEventSourceFactory(() => new FacebookEventsSource())

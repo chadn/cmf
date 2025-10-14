@@ -290,8 +290,8 @@ describe('parseAsEventsSource', () => {
 
     it('should return null for invalid event source IDs', () => {
         expect(parseAsEventsSource.parse('invalid-format')).toBeNull()
-        // Note: '123' now gets processed as '123:all' which is valid
-        expect(parseAsEventsSource.parse('123')).toEqual(['123:all'])
+        // Note: '123' now gets processed as '123.all' which is valid
+        expect(parseAsEventsSource.parse('123')).toEqual(['123.all'])
     })
 
     it('should serialize event source IDs correctly', () => {
@@ -418,8 +418,8 @@ describe('parseAsEventsSource', () => {
 
     it('should return null for invalid event source formats', () => {
         expect(parseAsEventsSource.parse('invalid-format')).toBeNull()
-        // Note: '123' now gets processed as '123:all' which is valid
-        expect(parseAsEventsSource.parse('123')).toEqual(['123:all'])
+        // Note: '123' now gets processed as '123.all' which is valid
+        expect(parseAsEventsSource.parse('123')).toEqual(['123.all'])
         expect(parseAsEventsSource.parse('')).toBeNull()
         expect(parseAsEventsSource.parse(123 as unknown as string)).toEqual([])
     })

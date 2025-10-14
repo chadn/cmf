@@ -101,57 +101,225 @@ export function convertUtcSecsToString(epochSeconds: number): string {
 }
 
 /**
- * Update the time fields of events based on their location and timezone.  Logic below must match implementation.md#timezones
+ * Special timezone state constants used during event processing pipeline:
+ * - Set by event source handlers based on data availability
+ * - Transformed by validateTzUpdateEventTimes after geocoding
+ */
+export const TZ_STATE = {
+    /**
+     * Indicates times are stored as UTC wall time and need reinterpretation
+     * to local timezone once location is geocoded.
+     * Example: Event says "8pm" but no timezone → stored as "20:00:00Z"
+     * After geocoding SF → reinterpreted to "20:00:00-07:00"
+     */
+    REINTERPRET: 'REINTERPRET_UTC_TO_LOCAL',
+
+    /**
+     * Indicates times are already in correct format and don't need conversion.
+     * Just need to associate with location timezone for display purposes.
+     */
+    ACCURATE: 'TIME_IS_ACCURATE',
+
+    /**
+     * Indicates timezone could not be determined.
+     * Either geocoding failed or location has no timezone data.
+     */
+    UNKNOWN: 'UNKNOWN_TZ',
+} as const
+
+/**
+ * Debug helper: Log current state of event timezone fields
+ * Uncomment calls to this in validateTzUpdateEventTimes() when debugging
+ */
+function debugEventTzState(label: string, event: CmfEvent): void {
+    logr.info(
+        'timezones-debug',
+        JSON.stringify(
+            {
+                label,
+                id: event.id,
+                tz: event.tz,
+                start: event.start,
+                end: event.end,
+                startSecs: event.startSecs,
+                endSecs: event.endSecs,
+                has_resolved_location: !!event.resolved_location,
+                location_tz: event.resolved_location?.location_tz,
+                location: event.location,
+            },
+            null,
+            2
+        )
+    )
+}
+
+/**
+ * Update the time fields of events based on their location and timezone.
+ * Logic below must match implementation.md#timezones
+ *
  * This function is called by server /api/events, after fetching events and geocoding, before returning events
- * @param events - Array of Event objects to update
- * @returns Array of updated Event objects
+ *
+ * FLOW DIAGRAM:
+ * ┌─────────────────────────────────────────────────────────────────┐
+ * │ Input: event with tz state + optional resolved_location         │
+ * └─────────────────────────────────────────────────────────────────┘
+ *                          ↓
+ * ┌─────────────────────────────────────────────────────────────────┐
+ * │ VALIDATION: Check for invalid states (UNKNOWN_TZ, no tz)        │
+ * │ → Throw errors for bugs that should never reach this point      │
+ * └─────────────────────────────────────────────────────────────────┘
+ *                          ↓
+ * ┌─────────────────────────────────────────────────────────────────┐
+ * │ CASE 1: REINTERPRET_UTC_TO_LOCAL                                │
+ * │ ├─ Has resolved_location?                                        │
+ * │ │  ├─ YES → Get location_tz                                      │
+ * │ │  │  ├─ location_tz = UNKNOWN_TZ? → Keep UNKNOWN_TZ, log       │
+ * │ │  │  └─ location_tz valid? → Reinterpret times, log success    │
+ * │ │  └─ NO → Set UNKNOWN_TZ, log (bug scenario)                   │
+ * └─────────────────────────────────────────────────────────────────┘
+ *                          ↓
+ * ┌─────────────────────────────────────────────────────────────────┐
+ * │ CASE 2: TIME_IS_ACCURATE                                         │
+ * │ ├─ Has resolved_location?                                        │
+ * │ │  ├─ YES → Get location_tz                                      │
+ * │ │  │  ├─ location_tz = UNKNOWN_TZ? → Keep TIME_IS_ACCURATE      │
+ * │ │  │  └─ location_tz valid? → Use it (no reinterpretation)      │
+ * │ │  └─ NO → Set UNKNOWN_TZ, log (bug scenario)                   │
+ * └─────────────────────────────────────────────────────────────────┘
+ *                          ↓
+ * ┌─────────────────────────────────────────────────────────────────┐
+ * │ CASE 3: Normal IANA timezone (e.g., 'America/Los_Angeles')      │
+ * │ → Validate it, log if invalid                                    │
+ * └─────────────────────────────────────────────────────────────────┘
+ *                          ↓
+ * ┌─────────────────────────────────────────────────────────────────┐
+ * │ FINAL: Ensure startSecs/endSecs populated                        │
+ * └─────────────────────────────────────────────────────────────────┘
+ *
+ * COMMON DEBUGGING SCENARIOS:
+ *
+ * 1. "Event showing wrong time"
+ *    → Check: Is event.tz a valid IANA zone?
+ *    → Check: Was REINTERPRET_UTC_TO_LOCAL path taken?
+ *    → Enable: debugEventTzState('AFTER_REINTERPRET', event)
+ *
+ * 2. "All events from source X have UNKNOWN_TZ"
+ *    → Check: Is event source setting tz correctly?
+ *    → Check: Is resolved_location.location_tz being set?
+ *    → Enable: All logr.info calls in CASE 1 and CASE 2
+ *
+ * 3. "Times off by timezone offset"
+ *    → Likely: Event source should use TIME_IS_ACCURATE not REINTERPRET_UTC_TO_LOCAL
+ *    → Check: What does event source set for event.tz?
+ *
+ * 4. "Event source changed format"
+ *    → Enable: ALL commented logr.info calls
+ *    → Compare: Before/after debugEventTzState dumps
+ *    → Check: Event source handler in src/lib/api/eventSources/
+ *
+ * @param event - CmfEvent to validate and update
+ * @returns Updated CmfEvent with correct timezone and epoch times
  */
 export function validateTzUpdateEventTimes(event: CmfEvent): CmfEvent {
+    // debugEventTzState('ENTRY', event)
+
+    // ========================================================================
+    // VALIDATION: Catch bugs that should never happen
+    // ========================================================================
+
+    if (event.tz === 'UNKNOWN_TZ') {
+        // State: tz=UNKNOWN_TZ before geocoding → BUG
+        throw new Error('Event with UNKNOWN_TZ before location lookup is a bug')
+    }
+    if (!event.tz) {
+        // State: tz is undefined/null → BUG
+        throw new Error('Event with no timezone is a bug - perhaps should have been REINTERPRET_UTC_TO_LOCAL')
+    }
+
+    // ========================================================================
+    // CASE 1: REINTERPRET_UTC_TO_LOCAL
+    // Event source didn't provide timezone, times stored as UTC wall time
+    // Need to reinterpret to local timezone after geocoding
+    // ========================================================================
+
     if (event.tz === 'REINTERPRET_UTC_TO_LOCAL' && event.resolved_location) {
+        // State: tz=REINTERPRET, has location → Extract timezone from location
         event.tz = event.resolved_location.location_tz
+
         if (event.tz === 'UNKNOWN_TZ') {
+            // State: location_tz=UNKNOWN_TZ → Can't reinterpret, keep as UNKNOWN
             logr.info('timezones', `Event with REINTERPRET_UTC_TO_LOCAL got UNKNOWN_TZ: ${stringify(event)}`)
         } else if (event.tz && event.start && event.end) {
+            // State: Valid location_tz → Reinterpret UTC wall times to local timezone
+            // Before: start='2024-06-10T17:00:00Z' (UTC wall time)
+            // After:  start='2024-06-10T17:00:00-07:00' (local timezone with offset)
+            // debugEventTzState('BEFORE_REINTERPRET', event)
             event.startSecs = reinterpretUtcTz(event.startSecs || convertUtcStringToSecs(event.start), event.tz)
             event.endSecs = reinterpretUtcTz(event.endSecs || convertUtcStringToSecs(event.end), event.tz)
             event.start = reinterpretUtcTz(event.start, event.tz)
             event.end = reinterpretUtcTz(event.end, event.tz)
+            // debugEventTzState('AFTER_REINTERPRET', event)
             logr.info('timezones', `Event with REINTERPRET_UTC_TO_LOCAL set tz correctly: ${event.id}`)
         } else {
+            // State: Missing required fields → BUG
             throw new Error(`Event with REINTERPRET_UTC_TO_LOCAL is buggy: ${stringify(event)}`)
         }
     } else if (event.tz === 'REINTERPRET_UTC_TO_LOCAL' && !event.resolved_location) {
+        // State: tz=REINTERPRET, no location → Geocoding failed or location unresolvable
         event.tz = 'UNKNOWN_TZ'
         logr.info(
             'timezones',
             `Event with REINTERPRET_UTC_TO_LOCAL, no resolved_location: (bug) setting to UNKNOWN_TZ: ${stringify(event)}`
         )
+
+        // ========================================================================
+        // CASE 2: TIME_IS_ACCURATE
+        // Event source provided times in correct format (not wall time)
+        // Just need to associate with location timezone, no reinterpretation needed
+        // ========================================================================
     } else if (event.tz === 'TIME_IS_ACCURATE' && event.resolved_location) {
+        // State: tz=TIME_IS_ACCURATE, has location → Use location_tz without reinterpreting
         event.tz = event.resolved_location.location_tz
+
         if (event.tz === 'UNKNOWN_TZ') {
+            // State: location_tz=UNKNOWN_TZ → Keep TIME_IS_ACCURATE since times are already correct
             event.tz = 'TIME_IS_ACCURATE' // keep it as is
             logr.info('timezones', `Event with TIME_IS_ACCURATE, keeping,location_tz=UNKNOWN_TZ: ${stringify(event)}`)
         } else {
-            // TODO: comment this out but leave for troubleshooting if need be
+            // State: Valid location_tz → Times already accurate, just update tz field
+            // DEBUG: Uncomment for troubleshooting timezone association
             //logr.info('timezones', `Event with TIME_IS_ACCURATE, set tz correctly: ${event.id}`)
         }
     } else if (event.tz === 'TIME_IS_ACCURATE' && !event.resolved_location) {
+        // State: tz=TIME_IS_ACCURATE, no location → Geocoding failed
         event.tz = 'UNKNOWN_TZ'
         logr.info(
             'timezones',
             `Event with TIME_IS_ACCURATE, no resolved_location: (bug) setting to UNKNOWN_TZ: ${stringify(event)}`
         )
-    } else if (event.tz === 'UNKNOWN_TZ') {
-        throw new Error('Event with UNKNOWN_TZ before location lookup is a bug')
-    } else if (!event.tz) {
-        throw new Error('Event with no timezone is a bug - perhaps should have been REINTERPRET_UTC_TO_LOCAL')
+
+        // ========================================================================
+        // CASE 3: Normal IANA Timezone
+        // Event source provided explicit timezone (e.g., 'America/Los_Angeles')
+        // ========================================================================
     } else if (isValidTimeZone(event.tz)) {
+        // State: Valid IANA timezone → No transformation needed
+        // DEBUG: Uncomment for troubleshooting valid timezone paths
         //logr.info('timezones', `GOOD event.tz='${event.tz}' for event: ${stringify(event)}`)
     } else {
+        // State: Invalid timezone string → Log for investigation
         logr.info('timezones', `BAD event.tz='${event.tz}' for event: ${stringify(event)}`)
     }
+
+    // ========================================================================
+    // FINAL: Ensure epoch times are populated for all events
+    // ========================================================================
+
+    // Convert ISO strings to epoch seconds if not already set
     event.startSecs ||= convertUtcStringToSecs(event.start)
     event.endSecs ||= convertUtcStringToSecs(event.end)
+
+    // debugEventTzState('EXIT', event)
     return event
 }
 

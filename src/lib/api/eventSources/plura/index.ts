@@ -10,7 +10,7 @@
  */
 
 import { CmfEvent, EventsSourceParams, EventsSourceResponse, EventsSource } from '@/types/events'
-import { BaseEventSourceHandler, registerEventsSource } from '@/lib/api/eventSources/index'
+import { BaseEventSourceHandler, registerEventSourceFactory } from '@/lib/api/eventSources/index'
 import { logr } from '@/lib/utils/logr'
 import { PluraEventScrapeStats } from './types'
 import { getCachedEvents, getCityEventsCache, setCachedCityMap, setCachedEvents, setCityEventsCache } from './cache'
@@ -239,8 +239,5 @@ export class PluraEventsSource extends BaseEventSourceHandler {
     }
 }
 
-// Create and register the event source
-const pluraEventsSource = new PluraEventsSource()
-registerEventsSource(pluraEventsSource)
-
-export { pluraEventsSource }
+// Register factory for Plura event source
+registerEventSourceFactory(() => new PluraEventsSource())

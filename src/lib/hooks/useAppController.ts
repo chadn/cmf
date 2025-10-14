@@ -6,7 +6,8 @@
  * Returns clean interface for dumb components
  */
 
-import { useState, useEffect, useCallback, useReducer, useRef, MutableRefObject, useMemo } from 'react'
+import { useState, useEffect, useCallback, useReducer, useRef, useMemo } from 'react'
+import { toast } from 'react-toastify'
 import { useQueryState, useQueryStates } from 'nuqs'
 import { CmfEvents, EventsSource, DateRangeIso } from '@/types/events'
 import { CurrentUrlState, DateConfig } from '@/types/urlProcessing'
@@ -242,10 +243,8 @@ export function useAppController(): UseAppControllerReturn {
         handleBoundsChangeForFilters
     )
 
-    // Ref for zip code mapping (must be mutable)
-    const zipLatLonRef = useRef<{ [zip: string]: string } | null>(null) as MutableRefObject<{
-        [zip: string]: string
-    } | null>
+    // Ref for checkForZipCode(query, zipLatLonRef) (must be mutable)
+    const zipLatLonRef = useRef<Record<string, string> | null>(null)
 
     // Shared state for split position (percent)
     const mapPanelPercent = 60
@@ -297,17 +296,25 @@ export function useAppController(): UseAppControllerReturn {
     // Handle search query changes
     const handleSearchChange = useCallback(
         async (query: string) => {
-            logr.info('app', 'Search filter changed', { query })
+            logr.info('app', 'handleSearchChange: Search filter changed', { query })
             setSearchQueryUrl(query)
-            filters.setSearchQuery(query)
             const result = await checkForZipCode(query, zipLatLonRef)
             if (result) {
+                logr.info('app', `handleSearchChange: Special search, Updating map based on ZIP code ${query}`)
+                // Update map via setViewport(). Note this only updates map.
+                // TODO: event list should be updated to show only events in the new map area
                 setViewport({
                     ...viewport,
                     latitude: result.lat,
                     longitude: result.lon,
                     zoom: 12,
                 })
+                filters.setSearchQuery('')
+                toast.success('Updating Map to ZIP code, Not Filtering.', {
+                    autoClose: 3000, // disappears after 3s
+                })
+            } else {
+                filters.setSearchQuery(query.trim())
             }
         },
         [filters, setSearchQueryUrl, setViewport, viewport]

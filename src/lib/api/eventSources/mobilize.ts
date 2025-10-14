@@ -1,7 +1,7 @@
 import { axiosGet } from '@/lib/utils/utils-server'
 import { CmfEvent, Location, EventsSourceParams, EventsSourceResponse, EventsSource } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
-import { BaseEventSourceHandler, registerEventsSource } from './index'
+import { BaseEventSourceHandler, registerEventSourceFactory } from './index'
 
 interface MobilizeTimeslot {
     start_date: number
@@ -242,8 +242,5 @@ export class MobilizeEventsSource extends BaseEventSourceHandler {
     }
 }
 
-// Register the mobilize event source
-const mobilizeEventsSource = new MobilizeEventsSource()
-registerEventsSource(mobilizeEventsSource)
-
-export default mobilizeEventsSource
+// Register factory for event source
+registerEventSourceFactory(() => new MobilizeEventsSource())

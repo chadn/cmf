@@ -10,37 +10,46 @@ Built for high responsiveness and clarity, CMF makes it easy to explore, analyze
 
 ## Status
 
--   Work In Progress: https://cmf.chadnorwood.com/
+- Work In Progress: https://cmf.chadnorwood.com/
 
 ## 🌟 Features
 
--   **Event Sources System**: [Modular system](src/lib/api/eventSources/README.md) for fetching events, from Google Calendar, Facebook Events, or custom websites.
--   **Interactive Map**: Use the map to **View** and **Filter** events on a MapLibre GL map
--   **Smart Filtering**: Filter events by date range, search terms, and map bounds
--   **Sortable Event List**: Organize events by name, date, duration, or location with both primary and secondary sorting.
--   **Location Geocoding**: Automatically converts event locations to map coordinates
--   **Responsive Design**: Works on desktop and mobile devices
--   **Performance Optimized**: Uses Redis cache, enabling < 1 second response most of time, and reduces API calls.
+- **Event Sources System**: [Modular system](src/lib/api/eventSources/README.md) for fetching events, from Google Calendar, Facebook Events, or custom websites.
+- **Interactive Map**: Use the map to **View** and **Filter** events on a MapLibre GL map
+- **Smart Filtering**: Filter events by date range, search terms, and map bounds
+- **Sortable Event List**: Organize events by name, date, duration, or location with both primary and secondary sorting.
+- **Location Geocoding**: Automatically converts event locations to map coordinates
+- **Responsive Design**: Works on desktop and mobile devices
+- **Performance Optimized**: Uses Redis cache, enabling < 1 second response most of time, and reduces API calls.
 
 ## 🔗 Tech Stack
 
--   **Frontend**: [React](https://reactjs.org/) - React framework with SSR (Server Side Rendering)
--   **Fullstack, Hosting**: [Next.js](https://nextjs.org/) and [Vercel](https://vercel.com/docs/frameworks/nextjs)
--   **Language**: [TypeScript](https://www.typescriptlang.org/) - Type-safe JavaScript
--   **Map**:[MapLibre GL JS](https://maplibre.org/) - Open-source maps SDKs using OpenStreetMap Data
--   **Data Fetching**:[SWR](https://swr.vercel.app/) - Data fetching and caching
--   **Data Input**: [Google Calendar API](https://developers.google.com/calendar) among others
--   **Location Lookup**: [Google Maps Geocoding API](https://developers.google.com/maps/documentation/geocoding/requests-geocoding)
--   **Caching**: [Upstash Redis](https://upstash.com/) - Serverless Redis for caching responses, geocoding, and more.
--   **Deployment**: Vercel
--   **Analytics**: Umami deployed on separate Vercel project with analytics data stored on private Supabase PostgreSQL 17.4
+- **Frontend**: [React](https://reactjs.org/) - React framework with SSR (Server Side Rendering)
+- **Fullstack, Hosting**: [Next.js](https://nextjs.org/) and [Vercel](https://vercel.com/docs/frameworks/nextjs)
+- **Language**: [TypeScript](https://www.typescriptlang.org/) - Type-safe JavaScript
+- **Map**:[MapLibre GL JS](https://maplibre.org/) - Open-source maps SDKs using OpenStreetMap Data
+- **Data Fetching**:[SWR](https://swr.vercel.app/) - Data fetching and caching
+- **Data Input**: [Google Calendar API](https://developers.google.com/calendar) among others
+- **Location Lookup**: [Google Maps Geocoding API](https://developers.google.com/maps/documentation/geocoding/requests-geocoding)
+- **Caching**: [Upstash Redis](https://upstash.com/) - Serverless Redis for caching responses, geocoding, and more.
+- **Deployment**: Vercel
+- **Analytics**: Umami deployed on separate Vercel project with analytics data stored on private Supabase PostgreSQL 17.4
+
+## Example
+
+What's Going On This Weekend?
+
+Use date quick filter, Weekend, to only see events happening Friday, Saturday, and Sunday.
+Click on Events in the list to see details in the map via the marker popup.
+
+![Showing Weekend Filter for SF](docs/images/sf-weekend-2025-10-14.gif)
 
 ## Requirements
 
--   Node.js 18.x or higher
--   Google Calendar API key
--   Google Maps Geocoding API key
--   (Optional) Upstash Redis account for production caching
+- Node.js 18.x or higher
+- Google Calendar API key
+- Google Maps Geocoding API key
+- (Optional) Upstash Redis account for production caching
 
 ## Development and Running Local
 
@@ -48,17 +57,17 @@ See [Development](docs/development.md)
 
 ## 📚 Documentation
 
--   [How to Use the App](docs/usage.md)
--   [Development Setup](docs/development.md)
--   [CHANGELOG](CHANGELOG.md) log of changes with each new version
--   [Architecture Overview](docs/ARCHITECTURE.md) - system design, data flows, and design principles
--   [Implementation Details](docs/implementation.md) - technical implementation and code organization
--   [Architecture Decision Records (ADR)](docs/adr/README.md) - key architectural decisions and rationale
--   [Test Coverage](docs/tests.md) - Manual testing and current test statistics
--   [Feature Backlog](docs/todo.md) - planned features, bugs, and known issues todo.
--   [Creating your own Event Source](src/lib/api/eventSources)
+- [How to Use the App](docs/usage.md)
+- [Development Setup](docs/development.md)
+- [CHANGELOG](CHANGELOG.md) log of changes with each new version
+- [Architecture Overview](docs/ARCHITECTURE.md) - system design, data flows, and design principles
+- [Implementation Details](docs/implementation.md) - technical implementation and code organization
+- [Architecture Decision Records (ADR)](docs/adr/README.md) - key architectural decisions and rationale
+- [Test Coverage](docs/tests.md) - Manual testing and current test statistics
+- [Feature Backlog](docs/todo.md) - planned features, bugs, and known issues todo.
+- [Creating your own Event Source](src/lib/api/eventSources)
 
-And more in [docs/](docs/) 
+And more in [docs/](docs/)
 
 ## History
 
