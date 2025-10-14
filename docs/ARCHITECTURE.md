@@ -11,20 +11,26 @@
 1. [TL;DR](#1-tldr)
 2. [Components Overview](#2-components-overview)
 3. [Typical Flow](#3-typical-flow)
-  - [Happy Path: User Loads Events](#happy-path-user-loads-events)
-  - [User Interaction: Filtering Events By Date](#user-interaction-filtering-events-by-date)
-  - [Error Handling](#error-handling)
-  - [Idempotency](#idempotency)
+
+- [Happy Path: User Loads Events](#happy-path-user-loads-events)
+- [User Interaction: Filtering Events By Date](#user-interaction-filtering-events-by-date)
+- [Error Handling](#error-handling)
+- [Idempotency](#idempotency)
+
 4. [Design Principles](#4-design-principles)
 5. [Decisions & Rationale](#5-decisions--rationale)
-  - [Key Architectural Decisions](#key-architectural-decisions)
-  - [Technology Choices](#technology-choices)
+
+- [Key Architectural Decisions](#key-architectural-decisions)
+- [Technology Choices](#technology-choices)
+
 6. [Data Flow & State Management](#6-data-flow--state-management)
-  - [Application State Machine (8 States)](#application-state-machine-8-states)
-  - [Core Data Structures](#core-data-structures)
-  - [Data Flow Through System](#data-flow-through-system)
-  - [Filtering Architecture: Two-Stage Model](#filtering-architecture-two-stage-model)
-  - [Function Call Graph](#function-call-graph)
+
+- [Application State Machine (8 States)](#application-state-machine-8-states)
+- [Core Data Structures](#core-data-structures)
+- [Data Flow Through System](#data-flow-through-system)
+- [Filtering Architecture: Two-Stage Model](#filtering-architecture-two-stage-model)
+- [Function Call Graph](#function-call-graph)
+
 7. [Security & Data](#7-security--data)
 8. [Sizing & Limits](#8-sizing--limits)
 9. [Risks / TODOs / Open Questions](#9-risks--todos--open-questions)
@@ -285,16 +291,179 @@ useAppController (smart hook)
 
 ### Function Call Graph
 
-The following png may help you understand all the core functions.  
-You can also view [force-directed graph layout with D3.js](https://chadn.github.io/cmf/function-call-graph.html) 
+The following png may help you understand all the core functions.
+You can also view [force-directed graph layout with D3.js](https://chadn.github.io/cmf/function-call-graph.html)
 which is currently focused on identifying problematic names, more at [Code Review: Naming Analysis](code-review-naming.md)
 
 <div style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
-  <img 
-  src="images/function-call-graph.png" 
-  alt="Function Call Graph" 
+  <img
+  src="images/function-call-graph.png"
+  alt="Function Call Graph"
   style="height:300px; width:auto; max-width:none !important; display:block;">
 </div>
+
+### Function Call Graph Map Related
+
+```
+User Interaction Flow (Pan/Zoom)
+
+User pans/zoom map
+→ handleViewportChange (Map onMove)
+  ├─→ updateMapWidthHeight()
+  │   └─→ onWidthHeightChange() [if dimensions changed]
+  ├─→ onViewportChange(viewport)
+  │   └─→ setViewport() [in useMap hook]
+  │       └─→ updates mapState.viewport
+  └─→ debouncedUpdateBounds() [500ms delay]
+      └─→ getMapBounds()
+          └─→ roundMapBounds()
+              └─→ onBoundsChange(bounds, true)
+                  └─→ Filter events in page.tsx
+                      └─→ Re-render with new markers
+
+User clicks event in EventList
+→ onEventSelect(eventId) [EventList.tsx:257]
+  └─→ handleEventSelect(eventId) [useAppController.ts:366]
+      ├─→ setSelectedEventIdUrl(eventId) [updates URL]
+      ├─→ Find event in cmfEvents.allEvents
+      │
+      ├─→ IF RESOLVED LOCATION:
+      │   ├─→ genMarkerId(event) [generate lat,lng hash]
+      │   ├─→ setSelectedMarkerId(markerId)
+      │   │   └─→ Updates mapState.selectedMarkerId
+      │   │       └─→ Marker highlights on map
+      │   │           └─→ MapPopup displays
+      │   └─→ setViewport(lat, lng, zoom: 14)
+      │       └─→ Map pans/zooms to event location
+      │
+      └─→ IF UNRESOLVED LOCATION:
+          ├─→ setSelectedMarkerId('unresolved')
+          ├─→ Find 'unresolved' marker in markers array
+          └─→ setViewport(unresolved marker location, zoom: 14)
+              └─→ Map pans to unresolved marker
+
+Map onLoad event
+→ handleMapLoad
+  └─→ setTimeout(10ms)
+      ├─→ updateMapWidthHeight()
+      │   └─→ onWidthHeightChange()
+      └─→ getMapBounds()
+          └─→ onBoundsChange(initialBounds, false)
+              └─→ Initial event filtering
+```
+
+mmdc -i maps-functions-current.mmd -o maps-functions-current.mmd.png -w 1600 -H 1600
+
+```mermaid
+flowchart TD
+    %% Entry Points (User Actions & Map Events)
+    UserPan["👤 User pans/zooms map"]
+    MapLoad["🗺️ Map onLoad event"]
+    UserClickEvent["👤 User clicks event in EventList"]
+
+    %% ========== MAP INTERACTION FLOWS ==========
+
+    %% Main Flow Functions
+    UserPan -->|triggers| handleViewportChange
+    MapLoad -->|triggers| handleMapLoad
+
+    %% handleViewportChange flow
+    handleViewportChange["<b>handleViewportChange</b><br/>(Map onMove callback)<br/>MapContainer.tsx:128"]
+    handleViewportChange -->|1. Get new dimensions| updateMapWidthHeight
+    handleViewportChange -->|2. Update viewport state| onViewportChange
+    handleViewportChange -->|3. Debounced bounds update| debouncedUpdateBounds
+
+    %% updateMapWidthHeight details
+    updateMapWidthHeight["<b>updateMapWidthHeight</b><br/>(Get map dimensions)<br/>MapContainer.tsx:67"]
+    updateMapWidthHeight -->|if dimensions changed| onWidthHeightChange
+    updateMapWidthHeight -.->|reads| mapRef["mapRef.current<br/>(MapLibre instance)"]
+    onWidthHeightChange["<b>onWidthHeightChange</b><br/>(Notify parent - page.tsx)<br/>Prop callback"]
+
+    %% debouncedUpdateBounds flow
+    debouncedUpdateBounds["<b>debouncedUpdateBounds</b><br/>(Debounced: 500ms)<br/>MapContainer.tsx:121"]
+    debouncedUpdateBounds -->|after delay| getMapBounds
+    getMapBounds["<b>getMapBounds</b><br/>(Read current bounds)<br/>MapContainer.tsx:97"]
+    getMapBounds -.->|reads| mapRef
+    getMapBounds -->|returns MapBounds| roundMapBounds["roundMapBounds()<br/>(Utility function)"]
+    roundMapBounds -->|rounded bounds| onBoundsChange
+
+    %% onViewportChange flow
+    onViewportChange["<b>onViewportChange</b><br/>(Notify parent - page.tsx)<br/>Prop callback"]
+    onViewportChange -->|calls| setViewport["<b>setViewport</b><br/>(useMap hook)<br/>useMap.ts:189"]
+    setViewport -->|updates| mapState["mapState.viewport<br/>(React state)"]
+
+    %% onBoundsChange flow
+    onBoundsChange["<b>onBoundsChange</b><br/>(Notify parent - page.tsx)<br/>Prop callback<br/>MapContainer.tsx:27"]
+    onBoundsChange -->|triggers| handleBoundsChangeForFilters["handleBoundsChangeForFilters<br/>(useAppController.ts:198)"]
+    handleBoundsChangeForFilters -->|updates| currentBoundsState["setCurrentBounds()<br/>(React state)"]
+    currentBoundsState -->|triggers filter| filterByBounds["Filter events by bounds<br/>(useEventsManager)"]
+    filterByBounds -->|updates| visibleEvents["visibleEvents<br/>(Filtered event list)"]
+    visibleEvents -.->|re-render| MapContainerRerender["MapContainer re-renders<br/>with new markers"]
+
+    %% handleMapLoad flow
+    handleMapLoad["<b>handleMapLoad</b><br/>(Map initialization)<br/>MapContainer.tsx:146"]
+    handleMapLoad -->|setTimeout 10ms| updateMapWidthHeight2["updateMapWidthHeight()"]
+    handleMapLoad -->|setTimeout 10ms| getMapBounds2["getMapBounds()"]
+    updateMapWidthHeight2 -->|if changed| onWidthHeightChange2["onWidthHeightChange()"]
+    getMapBounds2 -->|initial bounds| onBoundsChange2["onBoundsChange(bounds, false)"]
+    onBoundsChange2 -.->|false = not user interaction| handleBoundsChangeForFilters
+
+    %% ========== EVENT SELECTION FLOW ==========
+
+    UserClickEvent -->|onClick| onEventSelectProp["<b>onEventSelect(eventId)</b><br/>(EventList.tsx:257)<br/>Prop callback"]
+    onEventSelectProp -->|calls| handleEventSelect["<b>handleEventSelect</b><br/>(useAppController.ts:366)"]
+
+    handleEventSelect -->|1. Update URL| setSelectedEventIdUrl["setSelectedEventIdUrl(eventId)<br/>(URL query state)"]
+    handleEventSelect -->|2. Find event| findEvent["Find event in cmfEvents.allEvents"]
+
+    findEvent -->|if resolved location| resolvedFlow["Resolved Location Flow"]
+    findEvent -->|if unresolved| unresolvedFlow["Unresolved Location Flow"]
+
+    %% Resolved location flow
+    resolvedFlow -->|3a. Generate marker ID| genMarkerId["genMarkerId(event)<br/>(lat,lng hash)"]
+    genMarkerId -->|4a. Select marker| setSelectedMarkerIdCall["setSelectedMarkerId(markerId)<br/>(useMap.ts:303)"]
+    setSelectedMarkerIdCall -->|updates| markerState["mapState.selectedMarkerId<br/>(React state)"]
+    markerState -.->|highlights| MarkerHighlight["Marker highlights on map"]
+
+    resolvedFlow -->|5a. Calculate offset| calculateOffset["Calculate lat offset<br/>based on zoom"]
+    calculateOffset -->|6a. Pan & zoom to event| setViewportCall["setViewport()<br/>(zoom: 14, pan to event)"]
+    setViewportCall -->|updates viewport| mapState
+    mapState -.->|triggers| MapContainerRerender
+
+    %% Unresolved location flow
+    unresolvedFlow -->|3b. Select unresolved marker| setUnresolvedMarker["setSelectedMarkerId('unresolved')"]
+    unresolvedFlow -->|4b. Find unresolved marker| findUnresolvedMarker["Find 'unresolved' marker<br/>in markers array"]
+    findUnresolvedMarker -->|5b. Pan to unresolved| setViewportUnresolved["setViewport()<br/>(zoom: 14, pan to unresolved)"]
+    setViewportUnresolved -->|updates viewport| mapState
+
+    %% Map updates trigger popup
+    MarkerHighlight -.->|when marker selected| showPopup["MapPopup displays<br/>(MapContainer.tsx:326)"]
+    showPopup -->|shows event details| PopupContent["Event details, links,<br/>event list in popup"]
+
+    %% Styling
+    classDef entryPoint fill:#e1f5ff,stroke:#0288d1,stroke-width:3px
+    classDef mainFunc fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    classDef callback fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef state fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
+    classDef utility fill:#fce4ec,stroke:#c2185b,stroke-width:1px
+    classDef eventFlow fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+
+    class UserPan,MapLoad,UserClickEvent entryPoint
+    class handleViewportChange,handleMapLoad,updateMapWidthHeight,debouncedUpdateBounds,getMapBounds mainFunc
+    class onViewportChange,onBoundsChange,onWidthHeightChange,setViewport,onEventSelectProp callback
+    class mapState,visibleEvents,mapRef,markerState,currentBoundsState state
+    class roundMapBounds,calculateOffset,genMarkerId utility
+    class handleEventSelect,resolvedFlow,unresolvedFlow,setSelectedEventIdUrl,findEvent eventFlow
+
+    %% Add legend
+    subgraph Legend
+        EP["🟦 Entry Point<br/>(User action)"]
+        MF["🟧 Main Function<br/>(MapContainer)"]
+        CB["🟪 Callback<br/>(Props to parent)"]
+        ST["🟩 State<br/>(React/Map state)"]
+        EF["🟨 Event Selection<br/>(Event click flow)"]
+    end
+```
 
 ---
 
@@ -346,7 +515,7 @@ which is currently focused on identifying problematic names, more at [Code Revie
 **Browser Constraints:**
 
 - Map markers: Tested with 100+ markers (multiple events at same marker)
-- Event list:  Scrolling and jumping (clicking marker) tested with 3,000+ events
+- Event list: Scrolling and jumping (clicking marker) tested with 3,000+ events
 - Memory: Events stored in memory (allEvents + visibleEvents arrays)
 
 ---
@@ -418,4 +587,4 @@ which is currently focused on identifying problematic names, more at [Code Revie
 - New event sources (unless changes event source pattern)
 - Performance optimizations (unless architectural approach changes)
 
-That's all.  You can also [view other docs](../docs/)
+That's all. You can also [view other docs](../docs/)
