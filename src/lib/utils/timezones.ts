@@ -131,6 +131,7 @@ export const TZ_STATE = {
  * Debug helper: Log current state of event timezone fields
  * Uncomment calls to this in validateTzUpdateEventTimes() when debugging
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function debugEventTzState(label: string, event: CmfEvent): void {
     logr.info(
         'timezones-debug',

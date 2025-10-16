@@ -72,6 +72,7 @@ export interface EventsSourceResponse {
     source: EventsSource
     httpStatus: number
     fromCache?: boolean
+    statsOnly?: boolean
 }
 
 export interface DateRangeIso {

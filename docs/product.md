@@ -144,6 +144,7 @@ Events List (was Results List) should be formatted in a table or similar with th
     - Microsoft Outlook
     - Apple Calendar (ICS file import)
 - Calendar source change via URL parameter
+- UPDATE:  Later expanded to any event with location and time, focusing more on event sources vs calendar sources.
 
 ## 7. Map Integration
 

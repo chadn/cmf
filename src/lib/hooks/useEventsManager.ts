@@ -145,7 +145,7 @@ export function useEventsManager({
             }
         }
 
-        // Aggregate all events and add src field for multiple sources
+        // Aggregate all events, deduplicate, and add src field for multiple sources
         const allEvents: CmfEvent[] = []
         const sources: Array<EventsSource> = []
 
@@ -153,7 +153,7 @@ export function useEventsManager({
             const eventsWithSrc =
                 results.length > 1 ? result.events.map((event) => ({ ...event, src: index + 1 })) : result.events
 
-            // Check for duplicates by comparing event IDs
+            // Deduplication: Check for duplicates by comparing event IDs
             const existingIds = new Set(allEvents.map((e) => e.id))
             const duplicates = eventsWithSrc.filter((event) => existingIds.has(event.id))
             const eventsNoDuplicates = eventsWithSrc.filter((event) => !existingIds.has(event.id))

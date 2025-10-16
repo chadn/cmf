@@ -251,13 +251,13 @@ src/components/events/__tests__/EventList.test.tsx  # Component tests with RTL
 
 ```bash
 npm test
-> calendar-map-filter@0.4.5 test
+> calendar-map-filter@0.4.6 test
 > jest --coverage && node src/scripts/show-total-loc.mjs && date && echo
 ...
 ----------------------------|---------|----------|---------|---------|-----------------------------------------------------------------
 File                        | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
 ----------------------------|---------|----------|---------|---------|-----------------------------------------------------------------
-All files                   |   71.32 |    65.02 |   73.39 |   71.55 |
+All files                   |   70.88 |    64.29 |   73.03 |   71.14 |
  components/common          |     100 |      100 |     100 |     100 |
   ErrorMessage.tsx          |     100 |      100 |     100 |     100 |
   LoadingSpinner.tsx        |     100 |      100 |     100 |     100 |
@@ -291,8 +291,8 @@ All files                   |   71.32 |    65.02 |   73.39 |   71.55 |
   FilterEventsManager.ts    |   69.44 |    77.14 |   46.66 |      70 | 37-39,53-69,112,135-136,152-160,199-217
   examples.ts               |     100 |      100 |     100 |     100 |
   filters.ts                |   66.66 |       55 |   57.14 |   65.38 | 32,43,67-71,83-114
- lib/hooks                  |   33.13 |    22.42 |   45.91 |   32.54 |
-  useAppController.ts       |   11.39 |        0 |       0 |   11.84 | 118-573
+ lib/hooks                  |   32.88 |    22.22 |   45.91 |    32.4 |
+  useAppController.ts       |   11.11 |        0 |       0 |   11.68 | 118-575
   useBreakpoint.ts          |    7.69 |        0 |       0 |      10 | 11-22
   useEventsManager.ts       |   57.52 |    54.23 |   61.76 |      58 | 109-126,136-180,193-213
   useMap.ts                 |   65.81 |    33.33 |   77.41 |   66.66 | 22-29,54-60,131-143,159-165,176-180,202-205,209,242-243,276-287
@@ -301,21 +301,21 @@ All files                   |   71.32 |    65.02 |   73.39 |   71.55 |
   urlProcessingService.ts   |    6.74 |        0 |       0 |    6.81 | 25-237
  lib/state                  |   97.14 |     82.6 |   91.66 |   96.55 |
   appStateReducer.ts        |   97.14 |     82.6 |   91.66 |   96.55 | 102
- lib/utils                  |   84.27 |    78.59 |   89.28 |   84.66 |
+ lib/utils                  |   83.34 |    77.05 |   88.02 |   83.72 |
   calendar.ts               |   85.71 |     72.5 |     100 |   85.71 | 28-29,46,56,76,82,128-129,134-135,151
-  date-19hz-parsing.ts      |   92.42 |    86.15 |   83.33 |    92.3 | 96-97,359-378
+  date-19hz-parsing.ts      |   92.42 |    84.61 |   83.33 |    92.3 | 96-97,359-378
   date-constants.ts         |     100 |      100 |     100 |     100 |
   date.ts                   |   94.54 |    90.54 |     100 |   94.19 | 67-68,97,140-141,236,454,501-502
   headerNames.ts            |     100 |      100 |     100 |     100 |
   icsParser.ts              |     100 |      100 |     100 |     100 |
-  location.ts               |   75.36 |    66.66 |   86.95 |   76.98 | 205,222,250-256,309,384-385,400-436
+  location.ts               |   75.36 |    66.66 |   86.95 |   76.98 | 204,221,249-255,308,383-384,399-435
   logr.ts                   |   71.66 |    67.44 |   91.66 |   70.68 | 39,68-93,113,160
   quickFilters.ts           |   97.72 |      100 |     100 |   97.43 | 149
-  timezones.ts              |   87.75 |     86.2 |   84.61 |    88.5 | 55,76-84,87,95-100,135
-  umami.ts                  |      20 |        0 |       0 |   22.72 | 16-20,32-34,50-63
+  timezones.ts              |   87.75 |     86.2 |   84.61 |    88.5 | 55,76-84,87,95-100,136
+  umami.ts                  |   18.42 |        0 |       0 |   20.58 | 17-21,37-63,75-77,93-109
   url-utils.ts              |   94.87 |    84.29 |   96.15 |   97.57 | 76-77,317,325
   utils-client.ts           |      54 |    68.75 |      60 |   54.16 | 14-43,61,65,96,115-116
-  utils-server.ts           |   23.25 |        0 |       0 |   19.51 | 9,31-91
+  utils-server.ts           |      25 |        0 |       0 |      20 | 9,33-100,107
   utils-shared.ts           |   92.53 |    86.53 |     100 |   93.54 | 26,45,47,49
   venue-parsing.ts          |   96.87 |     82.6 |     100 |   96.82 | 151-152
  types                      |   33.33 |      100 |       0 |   28.57 |
@@ -326,10 +326,10 @@ All files                   |   71.32 |    65.02 |   73.39 |   71.55 |
 Test Suites: 1 skipped, 32 passed, 32 of 33 total
 Tests:       10 skipped, 595 passed, 605 total
 Snapshots:   0 total
-Time:        2.482 s, estimated 3 s
+Time:        2.909 s
 Ran all test suites.
-Total Lines of Code: 2436
-Tue Oct 14 13:56:12 PDT 2025
+Total Lines of Code: 2454
+Thu Oct 16 11:47:05 PDT 2025
 ```
 
 ## Next Steps for Testing

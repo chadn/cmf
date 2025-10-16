@@ -10,13 +10,14 @@ import EventsSourceSelector from '@/components/home/EventsSourceSelector'
 import Footer from '@/components/layout/Footer'
 import MapContainer from '@/components/map/MapContainer'
 import Sidebar from '@/components/layout/Sidebar'
-import { CmfEvents, EventsSource } from '@/types/events'
+import { CmfEvent, CmfEvents, EventsSource } from '@/types/events'
 import { useAppController } from '@/lib/hooks/useAppController'
 
 declare global {
     interface Window {
         cmfEvents: CmfEvents
         cmfEventSources: Array<EventsSource> | null
+        cmfEventSelected: CmfEvent | null | undefined
     }
 }
 

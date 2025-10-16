@@ -15,7 +15,7 @@ And in [parent directory](https://github.com/chadn/cmf)
 - [CHANGELOG](../CHANGELOG.md) log of changes with each new version
 - [README.md](../README.md) Standard introduction 
 - [AGENT.md](../AGENT.md) Info for AI Agents like claude code, cursor, etc.
-- [MIT LICENSE](../LICENSE) 
+- [APACHE 2 LICENSE](../LICENSE) Permissive like MIT, but includes legal safety - explicit patent protection and contribution clauses
 
 Temporary
 

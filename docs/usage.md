@@ -4,7 +4,7 @@ title: CMF Usage
 
 # How To Use CMF
 
-Calendar Map Filter (CMF) is a web application that allows users to view and filter events on an interactive map. It supports various calendar sources and provides powerful real-time filtering capabilities.
+Calendar Map Filter (CMF) is a web application that allows users to view and filter events on an interactive map. It supports various event sources and provides powerful real-time filtering capabilities.
 
 ## Table of Contents
 
@@ -38,7 +38,7 @@ Calendar Map Filter (CMF) is a web application that allows users to view and fil
     - [Date Formats](#date-formats)
     - [Example URLs](#example-urls)
     - [Event Sources](#event-sources)
-        - [Event Source Details](#event-source-details)
+    - [Event Sources and CMF About Popups](#event-sources-and-cmf-about-popups)
 - [Other Notes](#other-notes)
     - [Mobile vs Desktop Features](#mobile-vs-desktop-features)
         - [Desktop Experience](#desktop-experience)
@@ -335,9 +335,21 @@ Read more about the [Event Sources System](https://github.com/chadn/cmf/blob/mai
 
 The `es` paramater can handle one or more event sources, separated by commas.
 
-### Event Source Details
+## Event Sources and CMF About Popups
 
 Once the page loads, you can click on the header (To the right of CMF button) to reveal a popup with list of event source(s). For each event source, it shows total number of events from that source and "View Source" link that goes to a page roughly showing all events. When more than one source is shown, a "Show Only These" link is shown that will reload page showing on that event source.
+
+In addition to the Event Source Details popup, you can see another popup when you click on CMF in top left.  It shows
+- About summary, with link to this this usage doc
+- Enter New Event Source - lets you go back to home page to pick new event source
+- Share - Copy URL to Clipboard
+- Checkboxes for URL
+  - Add llz in URL - when checked, the URL will have a llz parameter that will update real time as you move map
+  - Prefer qf over fsd & fed - Lets you choose which date filters for url: qf (quick filter like Weekend), or calendar dates like fsd.
+
+And finally it shows you what timezone the browser is displaying times in for event list, and CMF Version number (from package.json)
+ 
+![CMF Event Sources and CMF Popups](images/cmf-event-sources-about-2025-10-14.gif)
 
 # Other Notes
 

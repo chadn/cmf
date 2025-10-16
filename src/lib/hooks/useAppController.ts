@@ -371,6 +371,7 @@ export function useAppController(): UseAppControllerReturn {
             if (!eventId) {
                 setSelectedMarkerId(null)
                 setSelectedEventIdUrl(null)
+                if (typeof window !== 'undefined') window.cmfEventSelected = null
                 return
             }
             setSelectedEventIdUrl(eventId)
@@ -379,6 +380,7 @@ export function useAppController(): UseAppControllerReturn {
 
             // Find the event
             const event = cmfEvents.allEvents.find((e) => e.id === eventId)
+            if (typeof window !== 'undefined') window.cmfEventSelected = event
             if (!event) return
 
             // Handle resolved location events

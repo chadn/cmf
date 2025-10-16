@@ -19,22 +19,31 @@ export const axiosConfig = {
     },
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type axiosCmfOptions = { method?: 'GET' | 'POST'; params?: any; data?: any; headers?: any }
+
 /**
- * Custom fetcher using axios.get with logging and error handling
+ * Custom fetcher using axios with logging and error handling
  * @param url - URL to fetch
- * @param params - Optional query parameters
+ * @param options - Optional config: method ('GET' | 'POST'), params (query params), data (POST body), headers
  * @returns Axios response with additional logging
  * @throws {HttpError} When request fails
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const axiosGet = async (url: string, params?: any) => {
+export const axiosCmf = async (url: string, options?: axiosCmfOptions) => {
+    const method = options?.method || 'GET'
     try {
         const startTime = performance.now()
-        logr.info('utils-server', `axiosGet request url: ${url}`)
+        logr.info('utils-server', `axiosCmf ${method} request url: ${url}`)
 
-        const response = await axios.get(url, { ...axiosConfig, params })
+        const config = {
+            ...axiosConfig,
+            headers: { ...axiosConfig.headers, ...options?.headers },
+            ...(options?.params && { params: options.params }),
+        }
 
-        const finalUrl = response.request.res.responseUrl
+        const response = method === 'POST' ? await axios.post(url, options?.data, config) : await axios.get(url, config)
+
+        const finalUrl = response.request.res?.responseUrl
         const newUrl = finalUrl && finalUrl !== url ? ` (redirected to ${finalUrl})` : ''
         const data = await response.data
         const ms = Math.round(performance.now() - startTime)
@@ -52,9 +61,9 @@ export const axiosGet = async (url: string, params?: any) => {
         }
         logr.info(
             'utils-server',
-            `axiosGet Response ${response.status} ${sizeOfResponse} in ${ms}ms url: ${url}${newUrl}`
+            `axiosCmf ${method} Response ${response.status} ${sizeOfResponse} in ${ms}ms url: ${url}${newUrl}`
         )
-        logr.debug('utils-server', `axiosGet Response ${response.status} url: ${url}`, data)
+        logr.debug('utils-server', `axiosCmf ${method} Response ${response.status} url: ${url}`, data)
         if (typeof data === 'object' && data !== null) {
             response.data.httpStatus = response.status
         }
@@ -83,11 +92,17 @@ export const axiosGet = async (url: string, params?: any) => {
                 logr.info('utils-server', `isAxiosError error.message: ${JSON.stringify(error.message)}`)
             }
 
-            logr.warn('utils-server', `axiosGet returning 503 isAxiosError ${error.response?.statusText} ${url}`)
+            logr.warn('utils-server', `axiosCmf returning 503 isAxiosError ${error.response?.statusText} ${url}`)
             throw new HttpError(503, error.response?.statusText || 'Service Unavailable')
         }
         const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
-        logr.warn('utils-server', `axiosGet error  ${url} ${errorMessage.substring(0, 200)}`)
+        logr.warn('utils-server', `axiosCmf error  ${url} ${errorMessage.substring(0, 200)}`)
         throw new HttpError(500, errorMessage)
     }
+}
+
+// Backwards compatibility - keep axiosGet with original signature
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const axiosGet = async (url: string, params?: any, headers?: any) => {
+    return axiosCmf(url, { method: 'GET', params, headers })
 }

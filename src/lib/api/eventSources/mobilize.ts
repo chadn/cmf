@@ -164,7 +164,7 @@ export class MobilizeEventsSource extends BaseEventSourceHandler {
                 Boolean
             )
             const description = descriptionParts.join('\n\n')
-            const resolved_location = this.resolvedLocation(mobilizeEvent.location)
+            const resolved_location = this.resolvedLocation(mobilizeEvent.location, id)
 
             const cmfEvent: CmfEvent = {
                 id,
@@ -188,7 +188,7 @@ export class MobilizeEventsSource extends BaseEventSourceHandler {
     /**
      * Build a resolved Location from Mobilize location data)
      */
-    private resolvedLocation(mobilizeLocation: MobilizeLocation): Location {
+    private resolvedLocation(mobilizeLocation: MobilizeLocation, id: string): Location {
         const original_location = this.buildLocationString(mobilizeLocation)
         if (mobilizeLocation.location?.latitude) {
             return {
@@ -198,7 +198,14 @@ export class MobilizeEventsSource extends BaseEventSourceHandler {
                 lng: mobilizeLocation.location?.longitude,
             }
         }
-        logr.info('api-es-mobilize', `No location.latitude:"${original_location}"\n${JSON.stringify(mobilizeLocation)}`)
+        if (mobilizeLocation.venue === 'This event’s address is private. Sign up for more details') {
+            //logr.debug('api-es-mobilize', `Private Address location.latitude:"${original_location}"\n${JSON.stringify(mobilizeLocation)}`)
+        } else {
+            logr.info(
+                'api-es-mobilize',
+                `No location.latitude ${id}:"${original_location}"\n${JSON.stringify(mobilizeLocation)}`
+            )
+        }
         return {
             status: 'unresolved',
             original_location,
