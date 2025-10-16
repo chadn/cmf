@@ -1,0 +1,54 @@
+---
+title: "1. CURRENT ARCHITECTURE: Complex Callback Chains & Circular Dependencies"
+---
+flowchart TD
+    subgraph Current["❌ CURRENT ARCHITECTURE (PROBLEMS)"]
+        direction TB
+
+        subgraph PageTsx["page.tsx (Parent)"]
+            AppController["useAppController<br/>• Owns all state<br/>• 550 lines"]
+
+            AppController -->|"creates 5+ callbacks"| Callbacks
+
+            Callbacks["Callback Props:<br/>• onViewportChange<br/>• onBoundsChange<br/>• onWidthHeightChange<br/>• onMarkerSelect<br/>• onEventSelect"]
+        end
+
+        subgraph MapContainerComp["MapContainer (Child)"]
+            MapEvents["Map Events:<br/>• onMove → handleViewportChange<br/>• onLoad → handleMapLoad"]
+
+            MapEvents -->|"calls 3 props"| CallbacksFromMap["Calls back to parent:<br/>1. onViewportChange<br/>2. onWidthHeightChange<br/>3. onBoundsChange (debounced)"]
+        end
+
+        subgraph UseMapHook["useMap Hook"]
+            MapState["mapState:<br/>• viewport<br/>• bounds<br/>• markers<br/>• selectedMarkerId"]
+
+            SetViewport["setViewport()<br/>from parent"]
+
+            SetViewport -->|"updates"| MapState
+            MapState -->|"passed down"| MapContainerComp
+        end
+
+        Callbacks -->|"props"| MapContainerComp
+        CallbacksFromMap -->|"triggers"| AppController
+        AppController -->|"calls setViewport"| SetViewport
+
+        %% Show circular dependency
+        AppController -.->|"⚠️ CIRCULAR"| MapState
+        MapState -.->|"⚠️ CIRCULAR"| AppController
+
+        Problem1["PROBLEM 1: Callback Hell<br/>3-4 level deep callback chains<br/>Hard to trace data flow"]
+        Problem2["PROBLEM 2: Debounce Complexity<br/>500ms delay → race conditions<br/>viewport ≠ bounds temporarily"]
+        Problem3["PROBLEM 3: Circular Dependencies<br/>useMap depends on parent callbacks<br/>parent depends on useMap state"]
+        Problem4["PROBLEM 4: Multiple Responsibilities<br/>MapContainer does: events, dimensions,<br/>viewport, bounds management"]
+
+        MapContainerComp -.->|"causes"| Problem1
+        CallbacksFromMap -.->|"causes"| Problem2
+        UseMapHook -.->|"causes"| Problem3
+        MapEvents -.->|"causes"| Problem4
+    end
+
+    classDef problem fill:#ffcccc,stroke:#cc0000,stroke-width:2px
+    classDef current fill:#fff3cd,stroke:#856404,stroke-width:2px
+
+    class Problem1,Problem2,Problem3,Problem4 problem
+    class Current current

@@ -1,0 +1,56 @@
+---
+title: "4. KEY ARCHITECTURAL CHANGES"
+---
+flowchart LR
+    subgraph Changes["CHANGES TO IMPLEMENT"]
+        direction TB
+
+        Change1["1. CREATE: useMapState Hook<br/>Owns: viewport, bounds, markers, selectedMarkerId<br/>Replaces: mapState in useMap"]
+
+        Change2["2. CREATE: useMapSync Hook<br/>Derives bounds from viewport (sync)<br/>Syncs viewport when event selected<br/>Replaces: debouncedUpdateBounds, handleEventSelect viewport logic"]
+
+        Change3["3. SIMPLIFY: MapContainer<br/>Remove: all callbacks to parent<br/>Remove: updateMapWidthHeight, getMapBounds<br/>Keep: only rendering logic"]
+
+        Change4["4. SIMPLIFY: useMap → useMapMarkers<br/>Focus: marker generation only<br/>Remove: viewport, bounds management"]
+
+        Change5["5. SIMPLIFY: useAppController<br/>Remove: map-specific callbacks<br/>Keep: business logic, event fetching, filters"]
+
+        Change1 --> Change2
+        Change2 --> Change3
+        Change3 --> Change4
+        Change4 --> Change5
+
+        subgraph Benefits["BENEFITS"]
+            B1["✓ Eliminate callback hell<br/>(5+ callbacks → 0 callbacks)"]
+            B2["✓ Remove debounce complexity<br/>(sync bounds calculation)"]
+            B3["✓ Break circular dependencies<br/>(unidirectional data flow)"]
+            B4["✓ Single responsibility<br/>(each hook/component = 1 job)"]
+            B5["✓ Easier testing<br/>(hooks testable independently)"]
+        end
+
+        Change5 --> Benefits
+    end
+
+    subgraph Migration["MIGRATION STRATEGY"]
+        direction TB
+
+        M1["Phase 1: Create useMapState<br/>Extract viewport/bounds from useMap<br/>NO behavior change yet"]
+
+        M2["Phase 2: Create useMapSync<br/>Implement sync bounds calculation<br/>Test alongside debounced version"]
+
+        M3["Phase 3: Update MapContainer<br/>Remove callbacks one at a time<br/>Verify each step"]
+
+        M4["Phase 4: Simplify useAppController<br/>Remove map callbacks<br/>Update event selection logic"]
+
+        M5["Phase 5: Cleanup<br/>Remove old code paths<br/>Update tests"]
+
+        M1 --> M2 --> M3 --> M4 --> M5
+
+        M5 -.->|"RESULT"| Result["RESULT:<br/>• ~100 lines removed<br/>• 0 callbacks<br/>• Simpler mental model<br/>• Easier debugging"]
+    end
+
+    classDef change fill:#fff3cd,stroke:#856404,stroke-width:2px
+    classDef benefit fill:#ccffcc,stroke:#00cc00,stroke-width:2px
+
+    class Change1,Change2,Change3,Change4,Change5,M1,M2,M3,M4,M5 change
+    class B1,B2,B3,B4,B5,Result benefit

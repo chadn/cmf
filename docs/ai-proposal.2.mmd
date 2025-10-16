@@ -1,0 +1,51 @@
+---
+title: "2. PROPOSED ARCHITECTURE: Single Responsibility, Clear Data Flow"
+---
+flowchart TD
+    subgraph Proposed["✅ PROPOSED ARCHITECTURE (SIMPLIFIED)"]
+        direction TB
+
+        subgraph PageTsxNew["page.tsx (Orchestrator)"]
+            AppControllerNew["useAppController<br/>• Business logic only<br/>• No map state"]
+
+            MapHook["useMapState Hook<br/>• viewport, bounds, markers<br/>• selectedMarkerId<br/>• All derived from events"]
+
+            AppControllerNew -->|"events + filters"| MapHook
+        end
+
+        subgraph MapContainerNew["MapContainer (Pure View)"]
+            MapGL["react-map-gl/MapLibre<br/>ONLY renders map"]
+
+            MapGL -->|"onMove"| ViewportOnly["Update viewport ONLY<br/>(no callbacks to parent)"]
+        end
+
+        subgraph SyncLayer["Sync Layer (New)"]
+            MapSync["useMapSync Hook<br/>Derives bounds from viewport<br/>Syncs viewport ↔ events<br/>NO debounce needed"]
+
+            MapSync -->|"reads"| MapHook
+            MapSync -->|"updates"| MapHook
+        end
+
+        MapHook -->|"viewport, markers"| MapContainerNew
+        ViewportOnly -->|"viewport change"| MapHook
+        MapHook -.->|"auto-derives bounds"| MapSync
+        MapSync -->|"bounds"| AppControllerNew
+
+        Benefit1["✓ Single Responsibility<br/>Each component does ONE thing"]
+        Benefit2["✓ No Callbacks<br/>Child → Parent via hook state only"]
+        Benefit3["✓ No Debounce<br/>Bounds derived synchronously"]
+        Benefit4["✓ Clear Data Flow<br/>events → useMapState → view<br/>viewport → useMapSync → bounds"]
+        Benefit5["✓ Testable<br/>Each hook independently testable"]
+
+        MapContainerNew -.->|"achieves"| Benefit1
+        MapHook -.->|"achieves"| Benefit2
+        SyncLayer -.->|"achieves"| Benefit3
+        MapSync -.->|"achieves"| Benefit4
+        PageTsxNew -.->|"achieves"| Benefit5
+    end
+
+    classDef benefit fill:#ccffcc,stroke:#00cc00,stroke-width:2px
+    classDef proposed fill:#e7f3ff,stroke:#0066cc,stroke-width:2px
+
+    class Benefit1,Benefit2,Benefit3,Benefit4,Benefit5 benefit
+    class Proposed proposed

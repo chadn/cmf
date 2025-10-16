@@ -5,6 +5,10 @@ All notable changes to Calendar Map Filter (CMF) will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+- Updated ARCHITECTURE.md with more on updating maps
+
+- Updated ARCHITECTURE.md with more on updating maps
+
 ## [0.4.6] - 2025-10-15
 
 - Changed caching on `/api/events` when timeMin and timeMax params are blank - Before used current time for both, now matches system defaults, which enables easier cache warming from simple curl.
@@ -43,16 +47,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.4.1] - 2025-10-9
 
 - Updated Documentation - added ARCHITECTURE.md and function-call-graph files, updated others.
-- Fixed counts in Event Sources popover 
+- Fixed counts in Event Sources popover
 
 ## [0.4.0] - 2025-10-8
 
 ### Changed
 
 - **Major Framework Upgrade** - Upgraded to Next.js 15 and React 19
-  - All dependencies updated for React 19 compatibility
-  - See [ADR: Upgrade to Next.js 15 and React 19](docs/adr/2025-10-08-upgrade-nextjs-15-react-19.md) for details
-- **Unit Tests** - coverage improved 
+    - All dependencies updated for React 19 compatibility
+    - See [ADR: Upgrade to Next.js 15 and React 19](docs/adr/2025-10-08-upgrade-nextjs-15-react-19.md) for details
+- **Unit Tests** - coverage improved
 
 ### Technical
 

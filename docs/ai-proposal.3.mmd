@@ -1,0 +1,115 @@
+
+---
+title: "3. DETAILED COMPARISON: Current vs Proposed Function Calls"
+---
+flowchart LR
+    subgraph CurrentFlow["❌ CURRENT: User Pans Map"]
+        direction TB
+
+        C1["User pans map"]
+        C2["MapLibre onMove"]
+        C3["handleViewportChange"]
+        C4a["updateMapWidthHeight()<br/>(check dimensions)"]
+        C4b["onViewportChange(vp)<br/>(callback to parent)"]
+        C4c["debouncedUpdateBounds()<br/>(500ms delay)"]
+        C5["setViewport()<br/>(in useMap)"]
+        C6["getMapBounds()<br/>(after 500ms)"]
+        C7["onBoundsChange()<br/>(callback to parent)"]
+        C8["handleBoundsChangeForFilters<br/>(in useAppController)"]
+        C9["filtrEvtMgr.filterByBounds()"]
+        C10["Re-render map + list"]
+
+        C1 --> C2 --> C3
+        C3 --> C4a
+        C3 --> C4b
+        C3 --> C4c
+        C4b --> C5
+        C5 --> C10
+        C4c -.->|"ASYNC DELAY"| C6
+        C6 --> C7
+        C7 --> C8
+        C8 --> C9
+        C9 --> C10
+
+        CProblems["PROBLEMS:<br/>• 10 function calls<br/>• 3 callbacks to parent<br/>• Race condition (viewport updates before bounds)<br/>• Hard to debug timing issues"]
+
+        C10 -.-> CProblems
+    end
+
+    subgraph ProposedFlow["✅ PROPOSED: User Pans Map"]
+        direction TB
+
+        P1["User pans map"]
+        P2["MapLibre onMove"]
+        P3["setViewport()<br/>(update local state)"]
+        P4["useMapSync detects<br/>viewport change"]
+        P5["calculateBounds()<br/>(synchronous derive)"]
+        P6["setBounds()<br/>(update local state)"]
+        P7["useEffect triggers<br/>filter update"]
+        P8["Re-render map + list"]
+
+        P1 --> P2 --> P3
+        P3 --> P4
+        P4 --> P5
+        P5 --> P6
+        P6 --> P7
+        P7 --> P8
+
+        PBenefits["BENEFITS:<br/>• 7 function calls (30% fewer)<br/>• 0 callbacks to parent<br/>• Synchronous (no race conditions)<br/>• Easy to debug (linear flow)"]
+
+        P8 -.-> PBenefits
+    end
+
+    subgraph EventClickCurrent["❌ CURRENT: Event Click"]
+        direction TB
+
+        E1["Click event in list"]
+        E2["onEventSelect(id)<br/>(callback prop)"]
+        E3["handleEventSelect()<br/>(in useAppController)"]
+        E4["setSelectedEventIdUrl"]
+        E5["Find event"]
+        E6["genMarkerId()"]
+        E7["setSelectedMarkerId()<br/>(callback to useMap)"]
+        E8["setViewport()<br/>(callback to useMap)"]
+        E9["Re-render"]
+
+        E1 --> E2 --> E3
+        E3 --> E4
+        E3 --> E5
+        E5 --> E6
+        E6 --> E7
+        E6 --> E8
+        E7 --> E9
+        E8 --> E9
+
+        ECProblems["PROBLEMS:<br/>• 2 separate callbacks<br/>• Duplicated in handleMarkerClick<br/>• Logic split across files"]
+
+        E9 -.-> ECProblems
+    end
+
+    subgraph EventClickProposed["✅ PROPOSED: Event Click"]
+        direction TB
+
+        EP1["Click event in list"]
+        EP2["setSelectedEventId(id)<br/>(hook state only)"]
+        EP3["useMapSync detects<br/>selection change"]
+        EP4["Auto-calculates:<br/>• markerId<br/>• viewport for event"]
+        EP5["Updates map state"]
+        EP6["Re-render"]
+
+        EP1 --> EP2
+        EP2 --> EP3
+        EP3 --> EP4
+        EP4 --> EP5
+        EP5 --> EP6
+
+        EPBenefits["BENEFITS:<br/>• 0 callbacks<br/>• Single location for logic<br/>• Auto-syncs map to selection"]
+
+        EP6 -.-> EPBenefits
+    end
+
+    classDef problem fill:#ffcccc,stroke:#cc0000,stroke-width:2px
+    classDef benefit fill:#ccffcc,stroke:#00cc00,stroke-width:2px
+
+    class CProblems,ECProblems problem
+    class PBenefits,EPBenefits benefit
