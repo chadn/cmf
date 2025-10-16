@@ -21,6 +21,7 @@ This document covers the technical implementation details for Calendar Map Filte
     - [Environment Variables Required](#environment-variables-required)
     - [Deployment Steps](#deployment-steps)
     - [Build Configuration](#build-configuration)
+- [Cache Warming](#cache-warming)
 
 ## Quick Reference
 
@@ -277,6 +278,8 @@ The code implements event tracking 2 ways, either by calling `umamiTrack()` or b
 ```javascript
 // In browser console - access event data
 window.cmfEvents = CmfEvents type
+window.cmfEventSources: Array<EventsSource> 
+window.cmfEventSelected: CmfEvent | {} // empty when no event is selected
 ```
 
 **Server-side logging:**
@@ -332,6 +335,17 @@ Vercel automatically detects Next.js and uses optimal build settings. Custom con
         }
     }
 }
+```
+
+## Cache Warming
+
+If you want to ensure an event source is always cached, you can call `/api/events` with specific parameters.
+For example, the following will warm the cache for `es=mobilize:nokings`, which I run every 4 hrs.
+
+```
+# skipCache=1 forces fetch of latest from event source, and will cache response
+# statsOnly=1 will keep response size very small, cache still contains full response.
+curl 'https://cmf.chadnorwood.com/api/events?id=mobilize%3Anokings&skipCache=1&statsOnly=1' >/dev/null
 ```
 
 ---

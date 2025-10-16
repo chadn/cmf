@@ -310,7 +310,8 @@ async function getKeysWithInfo(
     // Also include value as one-line string
     for (const key of allKeys.slice(0, 10)) {
         const value = await getValue(key)
-        vals.push(JSON.stringify(value))
+        const valStr = typeof value === 'string' ? value : JSON.stringify(value)
+        vals.push(valStr.length > 1000 ? valStr.substring(0, 1000) + '...' : valStr)
     }
     return { keys: allKeys, info, vals }
 }

@@ -5,9 +5,19 @@ All notable changes to Calendar Map Filter (CMF) will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.6] - 2025-10-15
+
+- Changed caching on `/api/events` when timeMin and timeMax params are blank - Before used current time for both, now matches system defaults, which enables easier cache warming from simple curl.
+- Updated docs, added [animated gif for popups in usage.md](docs/usage.md#event-sources-and-cmf-about-popups)
+- Changed License from MIT to Apache 2.0 for legal safety (in case company adoption)
+- Added `umamiServer` to track `/api/events` calls on server
+- Improved debugging 
+  - now `es=test:file` returns `src/lib/api/eventSources/testSource.events.json` if file exists.
+  - now when you select event, you can inspect in console `window.cmfEventSelected`
+
 ## [0.4.5] - 2025-10-14
 
-- added example animated gif to usage.md for weekend filter
+- Added example animated gif to usage.md for weekend filter
 - Improved code around timezones and event sources for easier maintenance and to reduce future bugs
 - Fixes around updating map after 5-digit zip code search query.
 

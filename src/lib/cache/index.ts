@@ -297,11 +297,12 @@ export const setEventsCache = async (
     timeMax?: string
 ): Promise<void> => {
     const fetchKey = createEventsCacheKey(eventSourceId, timeMin, timeMax)
+    const responseCopy = { ...response }
 
     // Save to cache in the background using waitUntil (don't await), log success or error.
     // 2024 https://vercel.com/changelog/waituntil-is-now-available-for-vercel-functions
     waitUntil(
-        setCache<EventsSourceResponse>(fetchKey, response, EVENTS_CACHE_PREFIX, cacheTtlEventSource)
+        setCache<EventsSourceResponse>(fetchKey, responseCopy, EVENTS_CACHE_PREFIX, cacheTtlEventSource)
             .then(() => logr.info('api-events', `setEventsCache Done TTL=${cacheTtlEventSource}s for ${fetchKey}\n`))
             .catch((error) => logr.warn('api-events', `setEventsCache FAIL for ${fetchKey}\n`, error))
     )

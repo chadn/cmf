@@ -11,20 +11,20 @@
 1. [TL;DR](#1-tldr)
 2. [Components Overview](#2-components-overview)
 3. [Typical Flow](#3-typical-flow)
-  - [Happy Path: User Loads Events](#happy-path-user-loads-events)
-  - [User Interaction: Filtering Events By Date](#user-interaction-filtering-events-by-date)
-  - [Error Handling](#error-handling)
-  - [Idempotency](#idempotency)
+    - [Happy Path: User Loads Events](#happy-path-user-loads-events)
+    - [User Interaction: Filtering Events By Date](#user-interaction-filtering-events-by-date)
+    - [Error Handling](#error-handling)
+    - [Idempotency](#idempotency)
 4. [Design Principles](#4-design-principles)
 5. [Decisions & Rationale](#5-decisions--rationale)
-  - [Key Architectural Decisions](#key-architectural-decisions)
-  - [Technology Choices](#technology-choices)
+    - [Key Architectural Decisions](#key-architectural-decisions)
+    - [Technology Choices](#technology-choices)
 6. [Data Flow & State Management](#6-data-flow--state-management)
-  - [Application State Machine (8 States)](#application-state-machine-8-states)
-  - [Core Data Structures](#core-data-structures)
-  - [Data Flow Through System](#data-flow-through-system)
-  - [Filtering Architecture: Two-Stage Model](#filtering-architecture-two-stage-model)
-  - [Function Call Graph](#function-call-graph)
+    - [Application State Machine (8 States)](#application-state-machine-8-states)
+    - [Core Data Structures](#core-data-structures)
+    - [Data Flow Through System](#data-flow-through-system)
+    - [Filtering Architecture: Two-Stage Model](#filtering-architecture-two-stage-model)
+    - [Function Call Graph](#function-call-graph)
 7. [Security & Data](#7-security--data)
 8. [Sizing & Limits](#8-sizing--limits)
 9. [Risks / TODOs / Open Questions](#9-risks--todos--open-questions)
@@ -285,14 +285,14 @@ useAppController (smart hook)
 
 ### Function Call Graph
 
-The following png may help you understand all the core functions.  
-You can also view [force-directed graph layout with D3.js](https://chadn.github.io/cmf/function-call-graph.html) 
+The following png may help you understand all the core functions.
+You can also view [force-directed graph layout with D3.js](https://chadn.github.io/cmf/function-call-graph.html)
 which is currently focused on identifying problematic names, more at [Code Review: Naming Analysis](code-review-naming.md)
 
 <div style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
-  <img 
-  src="images/function-call-graph.png" 
-  alt="Function Call Graph" 
+  <img
+  src="images/function-call-graph.png"
+  alt="Function Call Graph"
   style="height:300px; width:auto; max-width:none !important; display:block;">
 </div>
 
@@ -320,7 +320,7 @@ which is currently focused on identifying problematic names, more at [Code Revie
 - No PII stored on server (events fetched on-demand)
 - Geocoding cache stores address → coordinates mapping
 - No user accounts or authentication
-- All data public (from public calendar sources)
+- All data public (from public calendar or event sources)
 
 **Retention:**
 
@@ -346,7 +346,7 @@ which is currently focused on identifying problematic names, more at [Code Revie
 **Browser Constraints:**
 
 - Map markers: Tested with 100+ markers (multiple events at same marker)
-- Event list:  Scrolling and jumping (clicking marker) tested with 3,000+ events
+- Event list: Scrolling and jumping (clicking marker) tested with 3,000+ events
 - Memory: Events stored in memory (allEvents + visibleEvents arrays)
 
 ---
@@ -418,4 +418,4 @@ which is currently focused on identifying problematic names, more at [Code Revie
 - New event sources (unless changes event source pattern)
 - Performance optimizations (unless architectural approach changes)
 
-That's all.  You can also [view other docs](../docs/)
+That's all. You can also [view other docs](../docs/)

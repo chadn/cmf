@@ -1,9 +1,10 @@
 import { logr } from '@/lib/utils/logr'
+import { axiosCmf } from '@/lib/utils/utils-server'
 
 // Code can use data-umami-event in HTML elements to track events without importing this file
 
 /**
- * Wrapper for umami.track to track analytics events
+ * Wrapper for umami.track to track analytics events (client-side)
  * @see https://umami.is/docs/track-events
  * @see https://www.npmjs.com/package/@types/umami
  * @param eventName - Name of the event to track
@@ -19,6 +20,48 @@ export const umamiTrack = (
         }
         logr.info('umami', `umamiTrack(${eventName})`, event_data)
     } catch {} // ignore errors
+}
+
+/**
+ * Server-side Umami tracking function
+ * @see https://umami.is/docs/api/sending-stats
+ * @param eventName - Name of the event to track
+ * @param event_data - Optional event data properties
+ * @param url - Optional URL path (defaults to '/api')
+ */
+export const umamiServer = async (
+    eventName: string,
+    event_data?: { [key: string]: string | number | boolean | undefined },
+    url?: string
+) => {
+    try {
+        const websiteId = getUmamiWebsiteId()
+        const hostname = process.env.VERCEL_URL || 'localhost'
+
+        const payload = {
+            payload: {
+                hostname,
+                website: websiteId,
+                name: eventName,
+                url: url || '/api',
+                data: event_data,
+            },
+            type: 'event',
+        }
+
+        // Use self-hosted Umami instance
+        const umamiEndpoint = 'https://umami-cmf.vercel.app/api/send'
+
+        await axiosCmf(umamiEndpoint, {
+            method: 'POST',
+            data: payload,
+            headers: { 'Content-Type': 'application/json' },
+        })
+
+        logr.info('umami', `umamiServer(${eventName})`, event_data)
+    } catch (error) {
+        logr.warn('umami', `umamiServer error: ${error}`, { eventName, event_data })
+    }
 }
 
 /**
@@ -55,6 +98,9 @@ export const getUmamiWebsiteId = () => {
             domain = 'cmf-dev.vercel.app'
         } else if (process.env.VERCEL_BRANCH_URL == 'cmf-git-main-all-chads.vercel.app') {
             domain = 'cmf-chad.vercel.app'
+        } else if (process.env.NODE_ENV === 'development') {
+            // for umamiServer calls during local development
+            domain = 'cmf-dev.vercel.app'
         }
     }
 

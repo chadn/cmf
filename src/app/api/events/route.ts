@@ -7,6 +7,7 @@ import { logr } from '@/lib/utils/logr'
 import { HttpError } from '@/types/error'
 import { getTimezoneFromLatLng, validateTzUpdateEventTimes } from '@/lib/utils/timezones'
 import { stringify } from '@/lib/utils/utils-shared'
+import { umamiServer } from '@/lib/utils/umami'
 
 // Import event source handlers to register their factories (alphabetical order)
 import '@/lib/api/eventSources/19hz'
@@ -19,6 +20,7 @@ import '@/lib/api/eventSources/nokings'
 import '@/lib/api/eventSources/plura/index'
 import '@/lib/api/eventSources/protests'
 import '@/lib/api/eventSources/testSource'
+import { addMonths, subMonths } from 'date-fns'
 
 // Initialize all event sources (creates handler instances from factories)
 initializeEventSources()
@@ -26,16 +28,66 @@ initializeEventSources()
 // Export config to make this a dynamic API route
 export const dynamic = 'force-dynamic'
 
+const cacheOrFetchAndGeocode = async (
+    eventSourceId: string,
+    timeMin: string,
+    timeMax: string,
+    useCache: boolean
+): Promise<EventsSourceResponse> => {
+    // Check if we have a handler for this event source
+    const { handler } = getEventSourceHandler(eventSourceId)
+    if (!handler) {
+        logr.info('api-events', `No handler found for event source: ${eventSourceId}`)
+        throw new HttpError(400, `Unsupported event source type`)
+    }
+
+    // if timeMin or timeMax parameters not supplied, use system defaults to make it easy to cache.
+    if (!(timeMin && timeMax)) {
+        const now = new Date()
+        let msg = ''
+        if (!timeMin) {
+            timeMin = subMonths(now, 1).toISOString()
+            msg += ` timeMin:${timeMin}`
+        }
+        if (!timeMax) {
+            timeMax = addMonths(now, 3).toISOString()
+            msg += ` timeMax:${timeMax}`
+        }
+        logr.info('api-events', `using defaults for${msg}`)
+    }
+
+    if (useCache) {
+        // Fetch events from the cache if available
+        const startTime = performance.now()
+        const cachedResponse = await getEventsCache(eventSourceId, handler.getCacheTtl(), timeMin, timeMax)
+        const fetchTime = Math.round(performance.now() - startTime)
+        if (cachedResponse) {
+            logr.info(
+                'api-events',
+                `Cache hit in ${fetchTime}ms, returning ${cachedResponse.events.length} events for ${eventSourceId}`
+            )
+            cachedResponse.fromCache = true
+            return cachedResponse
+        }
+        logr.info('api-events', `Cache miss, ${fetchTime}ms. Calling fetchAndGeocode for ${eventSourceId}`)
+    } else {
+        logr.info('api-events', `skipCache true, not using cache. Calling fetchAndGeocode for ${eventSourceId}`)
+    }
+    // Fetch and process events
+    const response = await fetchAndGeocode(eventSourceId, timeMin, timeMax)
+    setEventsCache(response, eventSourceId, handler.getCacheTtl(), timeMin, timeMax)
+    response.fromCache = false
+    return response
+}
+
 const fetchAndGeocode = async (
     eventSourceId: string,
-    timeMin?: string,
-    timeMax?: string
+    timeMin: string,
+    timeMax: string
 ): Promise<EventsSourceResponse> => {
+    // FETCH EVENTS
     const startTime = performance.now()
-    const { events, source } = await fetchEvents(eventSourceId, {
-        timeMin,
-        timeMax,
-    })
+    const { events, source } = await fetchEvents(eventSourceId, { timeMin, timeMax })
     let ms = Math.round(performance.now() - startTime)
     const sz = JSON.stringify({ events, source }).length
     logr.info('api-events', `/api/events fetched ${events.length} events in ${ms}ms ${sz} bytes ${eventSourceId}`)
@@ -57,6 +109,8 @@ const fetchAndGeocode = async (
         `Geocoded/unique/total: ${geocodedLocations.length}/${uniqueLocations.length}/${events.length}`
     )
 
+    // FINALIZE EVENTS - locations, timezones, times
+
     // Create a map for quick lookup, and add location_tz
     const locationMap = new Map()
     geocodedLocations.forEach((location) => {
@@ -68,6 +122,10 @@ const fetchAndGeocode = async (
 
     // Add resolved locations to events
     const eventsWithLocationResolved = events.map((event) => {
+        if (event.resolved_location?.status === 'resolved') {
+            // already resolved
+            return event
+        }
         const resolved_location = event.location ? locationMap.get(event.location) : undefined
         if (!resolved_location) {
             logr.warn('api-events', `Location not resolved: ${event.id} :${event.location}`)
@@ -116,6 +174,12 @@ const fetchAndGeocode = async (
  * API route handler for events from various sources
  */
 export async function GET(request: NextRequest) {
+    const startTime = performance.now()
+
+    const umamiProps: { [key: string]: string | number | boolean | undefined } = {
+        path: request.nextUrl.pathname + request.nextUrl.search,
+    }
+
     try {
         // Get event source from query parameters
         const eventSourceId = request.nextUrl.searchParams.get('id')
@@ -124,42 +188,29 @@ export async function GET(request: NextRequest) {
             logr.info('api-events', 'Missing event source ID in request')
             return NextResponse.json({ error: 'Event source ID is required' }, { status: 400 })
         }
-
-        // Check if we have a handler for this event source
-        const { handler } = getEventSourceHandler(eventSourceId)
-        if (!handler) {
-            logr.info('api-events', `No handler found for event source: ${eventSourceId}`)
-            return NextResponse.json({ error: 'Unsupported event source type' }, { status: 400 })
-        }
-
         // Get optional date range parameters
         const timeMin = request.nextUrl.searchParams.get('timeMin') || ''
         const timeMax = request.nextUrl.searchParams.get('timeMax') || ''
         const useCache = !(request.nextUrl.searchParams.get('skipCache') == '1')
+        const statsOnly = request.nextUrl.searchParams.get('statsOnly') == '1' // for cache warming
 
-        if (useCache) {
-            // Fetch events from the cache if available
-            const startTime = performance.now()
-            const cachedResponse = await getEventsCache(eventSourceId, handler.getCacheTtl(), timeMin, timeMax)
-            const fetchTime = Math.round(performance.now() - startTime)
-            if (cachedResponse) {
-                logr.info(
-                    'api-events',
-                    `Cache hit in ${fetchTime}ms, returning ${cachedResponse.events.length} events for ${eventSourceId}`
-                )
-                cachedResponse.fromCache = true
-                return NextResponse.json(cachedResponse)
-            }
-            logr.info('api-events', `Cache miss, ${fetchTime}ms. Calling fetchAndGeocode for ${eventSourceId}`)
+        const response = await cacheOrFetchAndGeocode(eventSourceId, timeMin, timeMax, useCache)
+
+        if (statsOnly) {
+            logr.info('api-events', `statsOnly=1, returning object with empty events`)
+            response.statsOnly = true
+            response.events = []
         } else {
-            logr.info('api-events', `skipCache true, not using cache. Calling fetchAndGeocode for ${eventSourceId}`)
+            logr.info('api-events', `NO statsOnly=1, returning normal`)
         }
-        // Fetch and process events
-        const response = await fetchAndGeocode(eventSourceId, timeMin, timeMax)
-        setEventsCache(response, eventSourceId, handler.getCacheTtl(), timeMin, timeMax)
-        response.fromCache = false
-
-        // Anything besides HTTP 200 should be done like: throw new Error(`HTTP 404: No events found`)
+        umamiProps.httpStatus = 200
+        umamiProps.fromCache = response.fromCache ? '1' : '0'
+        umamiProps.statsOnly = response.statsOnly ? '1' : '0'
+        umamiProps.totalCount = response.source.totalCount // same as response.events.length unless statsOnly
+        umamiProps.eventSourceId = eventSourceId
+        const totalTime = Math.round(performance.now() - startTime)
+        logr.info('api-events', `/api/events: ${totalTime}ms, umamiProps: ${stringify(umamiProps)}`)
+        await umamiServer('api-events', umamiProps, umamiProps.path as string)
         return NextResponse.json(response)
     } catch (error) {
         logr.warn('api-events', 'Error fetching events', error)
@@ -167,6 +218,8 @@ export async function GET(request: NextRequest) {
         let statusCode = 500
         let errorMessage = 'Internal server error'
 
+        // Anything besides HTTP 200 should be done like:
+        // throw new HttpError(400, `Unsupported event source type`)
         if (error instanceof HttpError) {
             statusCode = error.statusCode
             errorMessage = error.message
@@ -180,7 +233,11 @@ export async function GET(request: NextRequest) {
                 errorMessage = error.message
             }
         }
-
+        umamiProps.httpStatus = statusCode
+        umamiProps.error = errorMessage
+        const totalTime = Math.round(performance.now() - startTime)
+        logr.info('api-events', `/api/events: ${totalTime}ms, umamiProps: ${stringify(umamiProps)}`)
+        await umamiServer('api-events', umamiProps, umamiProps.path as string)
         return NextResponse.json({ error: errorMessage }, { status: statusCode })
     }
 }
