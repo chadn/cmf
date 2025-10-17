@@ -203,12 +203,14 @@ export async function GET(request: NextRequest) {
         } else {
             logr.info('api-events', `NO statsOnly=1, returning normal`)
         }
+        const totalTime = Math.round(performance.now() - startTime)
+        umamiProps.sec = totalTime / 1000
         umamiProps.httpStatus = 200
+        umamiProps.clientIp = request.headers.get('x-forwarded-for') || ''
         umamiProps.fromCache = response.fromCache ? '1' : '0'
         umamiProps.statsOnly = response.statsOnly ? '1' : '0'
         umamiProps.totalCount = response.source.totalCount // same as response.events.length unless statsOnly
         umamiProps.eventSourceId = eventSourceId
-        const totalTime = Math.round(performance.now() - startTime)
         logr.info('api-events', `/api/events: ${totalTime}ms, umamiProps: ${stringify(umamiProps)}`)
         await umamiServer('api-events', umamiProps, umamiProps.path as string)
         return NextResponse.json(response)

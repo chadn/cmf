@@ -76,7 +76,7 @@ const MapPopup: React.FC<MapPopupProps> = ({ marker, selectedEventId, onEventSel
         const locationInfo = currentEvent.resolved_location
             ? ` ll=${currentEvent.resolved_location.lat},${currentEvent.resolved_location.lng}`
             : ''
-        umamiTrack('reportLocation', { badLocation: currentEvent.location + locationInfo })
+        umamiTrack('reportLocation', { eventId: currentEvent.id, badLocation: currentEvent.location + locationInfo })
         toast.success('Thank you for reporting an incorrect location. We will review and update it as needed.', {
             autoClose: 3000, // disappears after 3s
         })

@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+    // allowedDevOrigins
     reactStrictMode: true, // set to false to more closely imitate production
     images: {
         remotePatterns: [
