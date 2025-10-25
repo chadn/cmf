@@ -140,17 +140,13 @@ export async function setCache<T>(
         // In production, use Redis cache
         if (Array.isArray(key)) {
             const valueArray = value as T[]
-            if (ttl > 1) await upstashCache.redisMSet<T>(key, valueArray, prefix, ttl)
+            await upstashCache.redisMSet<T>(key, valueArray, prefix, ttl)
         } else {
-            if (ttl > 1) await upstashCache.redisSet<T>(key as string, value as T, prefix, ttl)
+            await upstashCache.redisSet<T>(key as string, value as T, prefix, ttl)
         }
     }
     const runtime = Math.round(performance.now() - start)
-    if (ttl > 1) {
-        logr.info('cache', `setCache ${runtime}ms ${getSizeOfAny(value)} ${keyForLogr}`)
-    } else {
-        logr.info('cache', `setCache SKIPPED, ${runtime}ms ${getSizeOfAny(value)} ${keyForLogr}`)
-    }
+    logr.info('cache', `setCache ${runtime}ms ${getSizeOfAny(value)} ${keyForLogr}`)
 }
 /**
  * Generic function to set a single value in cache

@@ -10,6 +10,7 @@ import { LOCATION_KEY_PREFIX } from '@/types/events'
 import { generateGoogleCalendarUrl, downloadIcsFile } from '@/lib/utils/calendar'
 import * as Popover from '@radix-ui/react-popover'
 import { umamiTrack } from '@/lib/utils/umami'
+import Link from 'next/link'
 
 interface MapPopupProps {
     marker: MapMarker
@@ -76,7 +77,7 @@ const MapPopup: React.FC<MapPopupProps> = ({ marker, selectedEventId, onEventSel
         const locationInfo = currentEvent.resolved_location
             ? ` ll=${currentEvent.resolved_location.lat},${currentEvent.resolved_location.lng}`
             : ''
-        umamiTrack('reportLocation', { badLocation: currentEvent.location + locationInfo })
+        umamiTrack('reportLocation', { eventId: currentEvent.id, badLocation: currentEvent.location + locationInfo })
         toast.success('Thank you for reporting an incorrect location. We will review and update it as needed.', {
             autoClose: 3000, // disappears after 3s
         })
@@ -192,7 +193,7 @@ const MapPopup: React.FC<MapPopupProps> = ({ marker, selectedEventId, onEventSel
                 {/* Add To Cal Popover */}
                 <Popover.Root>
                     <Popover.Trigger asChild>
-                        <button className="text-blue-600 hover:underline focus:outline-none">Add To Cal</button>
+                        <button className="text-blue-600 hover:underline focus:outline-none">More</button>
                     </Popover.Trigger>
                     <Popover.Portal>
                         <Popover.Content
@@ -200,14 +201,12 @@ const MapPopup: React.FC<MapPopupProps> = ({ marker, selectedEventId, onEventSel
                             sideOffset={5}
                         >
                             <div className="flex flex-col gap-2">
-                                <h4 className="font-medium text-sm text-gray-900 mb-2">Add to your Calendar</h4>
-
                                 <button
                                     onClick={handleGoogleCalendar}
                                     data-umami-event="MarkerGoogleCal"
                                     className="text-left text-sm text-blue-600 hover:underline focus:outline-none"
                                 >
-                                    • Google Calendar
+                                    Add to your Google Calendar
                                 </button>
 
                                 <button
@@ -215,14 +214,22 @@ const MapPopup: React.FC<MapPopupProps> = ({ marker, selectedEventId, onEventSel
                                     data-umami-event="MarkerAppleCal"
                                     className="text-left text-sm text-blue-600 hover:underline focus:outline-none"
                                 >
-                                    • Apple (iCal) Calendar
+                                    Add to your Apple Calendar (iCal ics)
                                 </button>
-                                <br />
+                                <Link
+                                    href={`https://www.google.com/maps/search/?api=1&query=${currentEvent.location}`}
+                                    className="mb-4 mt-4 text-left text-sm text-blue-600 hover:underline focus:outline-none"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    data-umami-event="MarkerOpenInMaps"
+                                >
+                                    Open in Google Maps
+                                </Link>
                                 <button
                                     onClick={handleReportLocation}
                                     className="text-left text-sm text-blue-600 hover:underline focus:outline-none"
                                 >
-                                    Report Incorrect Location:
+                                    Report as Incorrect Location
                                 </button>
                                 <span className="text-xs text-gray-500 mt-1">{currentEvent.location}</span>
                             </div>

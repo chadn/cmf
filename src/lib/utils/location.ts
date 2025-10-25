@@ -4,6 +4,7 @@ import { MapBounds, MapViewport, MapMarker } from '@/types/map'
 import { CmfEvent } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
 import { fetcherLogr } from '@/lib/utils/utils-client'
+import { stringify } from './utils-shared'
 
 /**
  * Check if an event has a resolved location
@@ -43,7 +44,13 @@ export function genMarkerId(event: CmfEvent): string {
     ) {
         return ''
     }
-    return `${event.resolved_location.lat.toFixed(6)},${event.resolved_location.lng.toFixed(6)}`
+    try {
+        // Use toFixed to ensure consistent precision for ID generation
+        return `${event.resolved_location.lat.toFixed(6)},${event.resolved_location.lng.toFixed(6)}`
+    } catch (error) {
+        logr.error('location', `genMarkerId error: ${error} ${event.id} ${stringify(event.resolved_location, 299)}`)
+        return ''
+    }
 }
 
 /**

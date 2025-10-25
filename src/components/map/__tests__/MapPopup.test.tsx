@@ -195,22 +195,21 @@ describe('MapPopup', () => {
         expect(screen.getByText('Test Event')).toBeInTheDocument()
     })
 
-    it('renders Add To Cal button', () => {
+    it('renders More button', () => {
         render(<MapPopup marker={mockMarker} />)
 
-        expect(screen.getByText('Add To Cal')).toBeInTheDocument()
+        expect(screen.getByText('More')).toBeInTheDocument()
     })
 
-    it('opens calendar popover when Add To Cal is clicked', async () => {
+    it('opens calendar popover when More is clicked', async () => {
         render(<MapPopup marker={mockMarker} />)
 
-        // Click the Add To Cal button
-        fireEvent.click(screen.getByText('Add To Cal'))
+        // Click the More button
+        fireEvent.click(screen.getByText('More'))
 
         // Should show the popover content
-        expect(screen.getByText('Add to your Calendar')).toBeInTheDocument()
-        expect(screen.getByText('• Google Calendar')).toBeInTheDocument()
-        expect(screen.getByText('• Apple (iCal) Calendar')).toBeInTheDocument()
+        expect(screen.getByText('Add to your Google Calendar')).toBeInTheDocument()
+        expect(screen.getByText('Add to your Apple Calendar (iCal ics)')).toBeInTheDocument()
     })
 
     it('opens Google Calendar when Google Calendar option is clicked', async () => {
@@ -223,11 +222,11 @@ describe('MapPopup', () => {
 
         render(<MapPopup marker={mockMarker} />)
 
-        // Click Add To Cal to open popover
-        fireEvent.click(screen.getByText('Add To Cal'))
+        // Click More to open popover
+        fireEvent.click(screen.getByText('More'))
 
         // Click Google Calendar option
-        fireEvent.click(screen.getByText('• Google Calendar'))
+        fireEvent.click(screen.getByText('Add to your Google Calendar'))
 
         // Should call generateGoogleCalendarUrl with the event and undefined eventSources
         const { generateGoogleCalendarUrl } = await import('@/lib/utils/calendar')
@@ -244,11 +243,11 @@ describe('MapPopup', () => {
     it('downloads ICS file when Apple Calendar option is clicked', async () => {
         render(<MapPopup marker={mockMarker} />)
 
-        // Click Add To Cal to open popover
-        fireEvent.click(screen.getByText('Add To Cal'))
+        // Click More to open popover
+        fireEvent.click(screen.getByText('More'))
 
         // Click Apple Calendar option
-        fireEvent.click(screen.getByText('• Apple (iCal) Calendar'))
+        fireEvent.click(screen.getByText('Add to your Apple Calendar (iCal ics)'))
 
         // Should call downloadIcsFile with the event and undefined eventSources
         const { downloadIcsFile } = await import('@/lib/utils/calendar')

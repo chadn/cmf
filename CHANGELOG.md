@@ -5,6 +5,16 @@ All notable changes to Calendar Map Filter (CMF) will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.8] - 2025-10-25
+
+- added `noExpire=1` option to `/api/events` to prevent cache from expiring. Use with `skipCache=1`
+- Fixed bug in nokings.ts eventsource, now lat and lng are always numbers, never a string.
+- Marker Popup for event now has `More` link (was `Add To Cal`) where you can now open address in gogole maps, still can `Add to calendar`
+
+## [0.4.7] - 2025-10-16
+
+- Minor improvements to umami tracking data
+
 ## [0.4.6] - 2025-10-15
 
 - Changed caching on `/api/events` when timeMin and timeMax params are blank - Before used current time for both, now matches system defaults, which enables easier cache warming from simple curl.
@@ -71,7 +81,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Technical
 
 - Improved events caching.
-    - `skipCache=1` in app URL will force not to use cache. Already supported in API `/api/events`
+    - `skipCache=1` in app URL will force not to fetch from cache (will save to cache). Already supported in API `/api/events`
     - `/api/events` return json now includes `fromCache` boolean
     - enable cache TTL setting per event source via `getCacheTtl` (mobilize and nokings 6 hrs, plura 48 hrs)
 
@@ -183,7 +193,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **foopee** - New Event Source for music in SF Bay area
-- support for `skipCache=1` parameter to `/api/events` to bypass redis cache
+- support for `skipCache=1` parameter to `/api/events` to bypass redis cache for get (will still save to redis)
 
 ## [0.3.1] - 2025-09-25
 

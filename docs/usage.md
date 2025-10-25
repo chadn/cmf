@@ -238,7 +238,7 @@ All unresolved locations share a special marker. You can see them with special s
 
 **Incorrect locations** are when an event has a location but it appears to be incorrect on the map. It probably got incorrectly geocoded, maybe due to lack of location details. These can be often be fixed on the app side, by updating the geolocation cache.
 
-**Report-location** To report incorrect locations, click on event or marker. In the Marker Popup, click on "Add To Cal", which will create another little popup. In that one, click "Report Incorrect Location"
+**Report-location** To report incorrect locations, click on event or marker. In the Marker Popup, click on "More", which will create another little popup. In that one, click "Report as Incorrect Location"
 
 **Fix-location** To fix incorrect locations - This is for admins only
 

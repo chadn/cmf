@@ -1,7 +1,7 @@
 'use client'
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { MapViewport, MapBounds, MapMarker, MapState } from '@/types/map'
-import { CmfEvent, CmfEvents } from '@/types/events'
+import { CmfEvents } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
 import { calculateMapBoundsAndViewport, calculateViewportFromBounds, generateMapMarkers } from '@/lib/utils/location'
 import { AppState } from '@/lib/state/appStateReducer'
@@ -16,17 +16,6 @@ interface UseMapReturn {
     selectedMarkerId: string | null
     setSelectedMarkerId: (id: string | null) => void
     resetMapToVisibleEvents: (options?: { useBounds?: boolean; mapBounds?: MapBounds }) => void
-}
-
-export const genMarkerId = (event: CmfEvent): string => {
-    if (
-        event.resolved_location?.status !== 'resolved' ||
-        !event.resolved_location?.lat ||
-        !event.resolved_location?.lng
-    ) {
-        return ''
-    }
-    return `${event.resolved_location.lat.toFixed(6)},${event.resolved_location.lng.toFixed(6)}`
 }
 
 /**

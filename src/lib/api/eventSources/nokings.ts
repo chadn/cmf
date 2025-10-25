@@ -150,8 +150,8 @@ export class NoKingsEventsSource extends BaseEventSourceHandler {
             return {
                 status: 'resolved',
                 original_location,
-                lat: mobilizeLocation.location?.latitude,
-                lng: mobilizeLocation.location?.longitude,
+                lat: Number(mobilizeLocation.location?.latitude),
+                lng: Number(mobilizeLocation.location?.longitude),
             }
         }
         logr.info('api-es-nokings', `No location.latitude:"${original_location}"\n${JSON.stringify(mobilizeLocation)}`)
