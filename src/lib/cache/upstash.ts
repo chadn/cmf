@@ -26,6 +26,7 @@ function getRedisClient(): Redis {
  * @returns Promise with the cached value or null if not found
  */
 export async function redisGet<T>(key: string, prefix: string = ''): Promise<T | null> {
+    const cacheKey = prefix ? `${prefix}${key}` : key
     try {
         // Skip if Upstash is not configured
         if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) {
@@ -37,12 +38,11 @@ export async function redisGet<T>(key: string, prefix: string = ''): Promise<T |
         }
 
         const client = getRedisClient()
-        const cacheKey = prefix ? `${prefix}${key}` : key
         const cachedData = await client.get(cacheKey)
 
         return (cachedData as T) || null
     } catch (error) {
-        logr.warn('cache', 'redisGet error', error)
+        logr.warn('cache', `redisGet error ${cacheKey}:`, error)
         return null
     }
 }
@@ -70,7 +70,7 @@ export async function redisMGet<T>(keys: string[], prefix: string = ''): Promise
 
         return (cachedData as T[]) || null
     } catch (error) {
-        logr.warn('cache', 'redisMGet error', error)
+        logr.warn('cache', 'redisMGet error:', error)
         return null
     }
 }
@@ -82,6 +82,7 @@ export async function redisMGet<T>(keys: string[], prefix: string = ''): Promise
  * @returns Promise with the array of strings, each is redis key
  */
 export async function redisScan<T>(wildCardKey: string, prefix: string = ''): Promise<T | null> {
+    const cacheKey = prefix ? `${prefix}${wildCardKey}` : wildCardKey
     try {
         // Skip if Upstash is not configured
         if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) {
@@ -93,13 +94,12 @@ export async function redisScan<T>(wildCardKey: string, prefix: string = ''): Pr
         }
 
         const client = getRedisClient()
-        const cacheKey = prefix ? `${prefix}${wildCardKey}` : wildCardKey
         const [, keys] = await client.scan('0', { match: cacheKey, count: 100 })
         // First element is cursor used for pagination ('0' means scan complete) - unused for now
         // keys is the array of matching keys
         return keys && keys.length > 0 ? (keys as T) : null
     } catch (error) {
-        logr.warn('cache', 'redisScan error', error)
+        logr.warn('cache', `redisScan error ${cacheKey}:`, error)
         return null
     }
 }
@@ -109,14 +109,14 @@ export async function redisScan<T>(wildCardKey: string, prefix: string = ''): Pr
  * @param key - The key to store
  * @param value - The value to store
  * @param prefix - Optional prefix to prepend to the key
- * @param ttl - Optional time-to-live in seconds (default: 30 days)
+ * @param ttl - Optional time-to-live in seconds (default: 30 days). Use null or -1 for no expiration
  * @returns Promise that resolves when the operation is complete
  */
 export async function redisSet<T>(
     key: string,
     value: T,
     prefix: string = '',
-    ttl: number = 60 * 60 * 24 * 30
+    ttl: number | null = 60 * 60 * 24 * 30
 ): Promise<void> {
     try {
         // Skip if Upstash is not configured
@@ -130,10 +130,14 @@ export async function redisSet<T>(
 
         const client = getRedisClient()
 
-        // Cache with the specified expiration time
-        await client.set(`${prefix}${key}`, value, { ex: ttl })
+        // Cache with the specified expiration time, or no expiration if ttl is null
+        if (ttl === null || ttl < 0) {
+            await client.set(`${prefix}${key}`, value)
+        } else {
+            await client.set(`${prefix}${key}`, value, { ex: ttl })
+        }
     } catch (error) {
-        logr.warn('cache', 'redisSet error', error)
+        logr.warn('cache', `redisSet error ${prefix}${key} (ttl=${ttl}):`, error)
     }
 }
 
@@ -143,14 +147,14 @@ export async function redisSet<T>(
  * @param keys - The keys to store
  * @param values - The values to store
  * @param prefix - Optional prefix to prepend to the key
- * @param ttl - Optional time-to-live in seconds (default: 30 days)
+ * @param ttl - Optional time-to-live in seconds (default: 30 days). Use null or -1 for no expiration
  * @returns Promise that resolves when the operation is complete.
  */
 export async function redisMSet<T>(
     keys: string[],
     values: T[],
     prefix: string = '',
-    ttl: number = 60 * 60 * 24 * 30
+    ttl: number | null = 60 * 60 * 24 * 30
 ): Promise<void> {
     try {
         // Skip if Upstash is not configured
@@ -172,10 +176,14 @@ export async function redisMSet<T>(
         const client = getRedisClient()
         const pipeline = client.pipeline()
         for (let i = 0; i < keys.length; i++) {
-            pipeline.set(`${prefix}${keys[i]}`, values[i], { ex: ttl })
+            if (ttl === null || ttl < 0) {
+                pipeline.set(`${prefix}${keys[i]}`, values[i])
+            } else {
+                pipeline.set(`${prefix}${keys[i]}`, values[i], { ex: ttl })
+            }
         }
         await pipeline.exec()
     } catch (error) {
-        logr.warn('cache', 'redisSet error', error)
+        logr.warn('cache', 'redisMSet error:', error)
     }
 }

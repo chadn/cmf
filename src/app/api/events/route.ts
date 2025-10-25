@@ -32,7 +32,8 @@ const cacheOrFetchAndGeocode = async (
     eventSourceId: string,
     timeMin: string,
     timeMax: string,
-    useCache: boolean
+    useCache: boolean,
+    noExpire: boolean
 ): Promise<EventsSourceResponse> => {
     // Check if we have a handler for this event source
     const { handler } = getEventSourceHandler(eventSourceId)
@@ -75,7 +76,8 @@ const cacheOrFetchAndGeocode = async (
     }
     // Fetch and process events
     const response = await fetchAndGeocode(eventSourceId, timeMin, timeMax)
-    setEventsCache(response, eventSourceId, handler.getCacheTtl(), timeMin, timeMax)
+    const ttl = noExpire ? -1 : handler.getCacheTtl()
+    setEventsCache(response, eventSourceId, ttl, timeMin, timeMax)
     response.fromCache = false
     return response
 }
@@ -193,8 +195,9 @@ export async function GET(request: NextRequest) {
         const timeMax = request.nextUrl.searchParams.get('timeMax') || ''
         const useCache = !(request.nextUrl.searchParams.get('skipCache') == '1')
         const statsOnly = request.nextUrl.searchParams.get('statsOnly') == '1' // for cache warming
+        const noExpire = request.nextUrl.searchParams.get('noExpire') == '1' // set TTL to not expire
 
-        const response = await cacheOrFetchAndGeocode(eventSourceId, timeMin, timeMax, useCache)
+        const response = await cacheOrFetchAndGeocode(eventSourceId, timeMin, timeMax, useCache, noExpire)
 
         if (statsOnly) {
             logr.info('api-events', `statsOnly=1, returning object with empty events`)
@@ -206,11 +209,13 @@ export async function GET(request: NextRequest) {
         const totalTime = Math.round(performance.now() - startTime)
         umamiProps.sec = totalTime / 1000
         umamiProps.httpStatus = 200
-        umamiProps.clientIp = request.headers.get('x-forwarded-for') || ''
         umamiProps.fromCache = response.fromCache ? '1' : '0'
         umamiProps.statsOnly = response.statsOnly ? '1' : '0'
         umamiProps.totalCount = response.source.totalCount // same as response.events.length unless statsOnly
         umamiProps.eventSourceId = eventSourceId
+        // https://vercel.com/docs/headers/request-headers#x-forwarded-for Vercel makes this blank, try any way.
+        umamiProps.clientIp =
+            request.headers.get('x-forwarded-for') || request.headers.get('x-vercel-forwarded-for') || ''
         logr.info('api-events', `/api/events: ${totalTime}ms, umamiProps: ${stringify(umamiProps)}`)
         await umamiServer('api-events', umamiProps, umamiProps.path as string)
         return NextResponse.json(response)

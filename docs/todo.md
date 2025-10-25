@@ -45,6 +45,8 @@ Done items in [CHANGELOG](../CHANGELOG.md)
 1. support `skipCache=1` in react url to force server to pull fresh data from event source.
 1. foopee - if no times, currently defaults to 8:01pm, in general if parsing date/time and only date, should pick reasonable start end time (6am-10pm) - do this when implementing CmfEvent.timeKnown
 1. Change homepage on desktop to not look like mobile 
+1. New Event Source - eventbrite - https://www.eventbrite.com/platform/api#/reference/event/list
+1. New Event Source - luma -  https://luma.com/genai-sf?referrer=luma  https://luma.com/genai-ny
 
 (thanks https://euangoddard.github.io/clipboard2markdown/)
 
