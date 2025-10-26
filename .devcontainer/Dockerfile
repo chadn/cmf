@@ -1,19 +1,17 @@
-FROM ubuntu:22.04
+FROM node:22-bullseye
+# node v22.21.0
+# npm 10.9.4
 
-# Prevent interactive tzdata prompts
-ENV DEBIAN_FRONTEND=noninteractive
-
-# Disable apt cleanup hooks that can fail under BuildKit
-RUN rm -f /etc/apt/apt.conf.d/docker-clean || true && \
-    echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache
-
-# Safe, robust install
-RUN apt-get update || true && \
-    apt-get install -y --no-install-recommends \
-      git \
-      curl \
-      libatomic1 \
-      ca-certificates \
-      locales && \
+# Optional locale setup
+RUN apt-get update && \
+    apt-get install -y locales && \
     locale-gen en_US.UTF-8 && \
     rm -rf /var/lib/apt/lists/*
+
+ENV LANG=en_US.UTF-8
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Optionally install and run claude 
+# docker exec -it $(docker ps | grep vsc-cmf | awk '{print $1}') bash
+# npm install -g @anthropic-ai/claude-code
+# IS_SANDBOX=1 claude --dangerously-skip-permissions

@@ -5,6 +5,15 @@ The goal is guidance, recommending a solution when more than one common solution
 Everything here is a recommendation, should only deviate when good reason and user approves.
 Also follow the user level guidelines in ~/.config/AGENT.md
 
+## Git Usage
+
+Since agents run in a sandboxed Docker container:
+- **ALLOWED**: `git add`, `git rm`, `git restore`, `git diff`, `git commit`, and other read/stage operations on the current branch
+- **NEVER**: Change branches (`git checkout`, `git switch`, etc.)
+- **NEVER**: Push to remote (`git push`) - this affects the repository outside the sandbox
+
+When committing, use clear, descriptive commit messages following Conventional Commits format.
+
 # Do the following if user asks
 
 @prompt VerifyCommit Plan:
@@ -47,7 +56,7 @@ Review the latest git commit. Ensure the following are true — fix if not - and
     - If related to this commit, update as needed
     - If unrelated but clearly improvable, suggest improvements with reasoning (do not modify yet)
 
-Do not commit or push until all items are verified by user.
+You may commit changes to the current branch after verification, but NEVER push or change branches.
 
 # General Project Preferences
 
