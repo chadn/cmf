@@ -1,0 +1,12 @@
+{
+  "name": "cmf-ubuntu22",
+  "build": { "dockerfile": "Dockerfile" },
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}"
+  "remoteUser": "root",
+  "runArgs": [
+    "--shm-size=2gb",
+    "--ipc=host",
+    "--cap-add=SYS_PTRACE",
+    "--security-opt=seccomp=unconfined"
+  ]
+}
