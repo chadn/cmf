@@ -57,9 +57,18 @@
 
 ### Task 0.1: Expand testSource.ts
 
+**⚠️ ASSUMPTIONS:**
+- testSource.ts currently generates random events via `createTestEvent()` (VERIFIED)
+- We need to ADD a stable event set that returns predictable events
+- Event structure matches `CmfEvent` type from types/events.ts
+- **If assumptions are incorrect but close, adjust as needed**
+- **If assumptions are way off, pause and ask for direction**
+
 **File:** `src/lib/api/eventSources/testSource.ts`
 
-**Add dynamic event data for stable tests:**
+**Current state:** testSource.ts has `generateEvents()` which creates random events. We need to ADD a `getStableEvents()` method.
+
+**Add stable event data for E2E tests:**
 
 ```typescript
 import { addDays, startOfDay, setHours, nextSaturday } from 'date-fns'
@@ -182,8 +191,26 @@ export const TEST_EVENTS = {
   ]
 }
 
-// Existing testSource.ts handler should use TEST_EVENTS.stable
+// Update TestEventsSource.fetchEvents() to support stable events:
+// Modify the fetchEvents method:
+async fetchEvents(params: EventsSourceParams): Promise<EventsSourceResponse> {
+  let events: CmfEvent[]
+
+  if (params.id === 'stable') {
+    events = TEST_EVENTS.stable  // Use stable events for E2E tests
+  } else if (params.id === 'timezone') {
+    events = TEST_EVENTS.timezone  // Use timezone edge case events
+  } else if (params.id === 'file') {
+    events = this.getEventsFromFile() || []
+  } else {
+    events = this.generateEvents()  // Random events (existing behavior)
+  }
+
+  return { httpStatus: 200, events, source: { ... } }
+}
 ```
+
+**IMPORTANT:** The actual `resolved_location` structure in code might use `status: 'resolved'` or different field names. Verify against `types/events.ts` and adjust field names as needed.
 
 **Effort:** 2-3 hours
 **Value:** High - Foundation for all tests
@@ -191,14 +218,20 @@ export const TEST_EVENTS = {
 
 ---
 
-### Task 0.2: Add Minimal data-testid
+### Task 0.2: Verify existing data-testid attributes
 
-**Only add ONE data-testid attribute for app state:**
+**⚠️ VERIFIED:** Filter chips already have data-testid attributes!
+- `date-filter-chip`, `map-filter-chip`, `search-filter-chip` (see ActiveFilters.tsx:61)
+- **This is good** - only 3 elements, no performance impact
+- **Use these existing data-testid selectors in tests**
+
+**Optional: Add app state indicator if needed for state validation**
 
 **File:** `src/app/page.tsx` or `src/components/map/MapContainer.tsx`
 
 ```typescript
-// Add hidden state indicator (ONE element, critical for state validation)
+// Optional: Add hidden state indicator for state validation in tests
+// (Only if you need to verify app state transitions via DOM)
 <div
   data-app-state={appState}
   style={{ display: 'none' }}
@@ -207,11 +240,13 @@ export const TEST_EVENTS = {
 ```
 
 **DO NOT add data-testid to:**
-- ❌ Event list items (use getByRole)
-- ❌ Filter chips (use getByRole)
-- ❌ Any repeated elements
+- ❌ Event list items (use getByRole('row') - semantic selector)
+- ❌ Any repeated elements (performance impact with 1,000-3,000 events)
 
-**Effort:** 5 minutes
+**Already exists:**
+- ✅ Filter chips (date-filter-chip, map-filter-chip, search-filter-chip)
+
+**Effort:** 5 minutes (verify only, no changes needed)
 **Value:** Medium - Enables state validation
 **Confidence:** 100%
 
@@ -319,23 +354,31 @@ export default defineConfig({
 
 ### Task 0.5: Update package.json Scripts
 
+**⚠️ VERIFIED:** Existing conventions use `test:e2e:[descriptor]` pattern, some with `--headed` flag
+
 **File:** `package.json`
+
+**Add these new scripts (keep existing ones):**
 
 ```json
 {
   "scripts": {
+    // Existing scripts (keep these):
     "test:e2e": "playwright test",
-    "test:e2e:smoke": "playwright test tests/e2e/smoke.spec.ts --project=desktop-chrome",
-    "test:e2e:full": "playwright test",
+    "test:e2e:console": "TEST_URL=${TEST_URL:-/} playwright test tests/e2e/console-logs.spec.ts --headed",
+    "test:e2e:pageload": "playwright test tests/e2e/page-load.spec.ts --headed",
+    "test:e2e:interactive": "playwright test tests/e2e/interactive.spec.ts --headed",
+
+    // NEW scripts to add:
+    "test:e2e:smoke": "playwright test tests/e2e/smoke.spec.ts",
     "test:e2e:mobile": "playwright test --project=mobile-iphone16",
-    "test:e2e:console": "playwright test tests/e2e/console-logs.spec.ts --headed",
-    "test:e2e:pageload": "playwright test tests/e2e/page-load.spec.ts",
-    "test:e2e:interactive": "playwright test tests/e2e/interactive.spec.ts",
     "test:e2e:ui": "playwright test --ui",
     "test:report": "playwright show-report"
   }
 }
 ```
+
+**Naming convention:** Follows existing pattern `test:e2e:[descriptor]`, where descriptor matches test file or purpose (smoke, mobile, pageload, etc.)
 
 **Effort:** 5 minutes
 **Value:** Medium - Easier test execution

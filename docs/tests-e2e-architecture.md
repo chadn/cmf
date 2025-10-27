@@ -287,10 +287,20 @@ page.locator('.event-list-table')  // Example from EventList.tsx:243
 
 ### Priority 3: data-testid (Last Resort - Use Sparingly!)
 
-**ONLY add to critical elements lacking semantic selectors:**
+**⚠️ IMPORTANT:** Filter chips **already have data-testid** (see ActiveFilters.tsx:61)
+- `date-filter-chip`, `map-filter-chip`, `search-filter-chip` ✅
+- Only 3 elements, no performance impact
+- **Use these existing data-testid attributes in tests**
+
+**ONLY add data-testid to critical elements lacking semantic selectors:**
 
 ```typescript
-// ✅ Hidden state indicator (1 element, critical)
+// ✅ Existing: Filter chips (already have data-testid)
+page.locator('[data-testid="date-filter-chip"]')
+page.locator('[data-testid="map-filter-chip"]')
+page.locator('[data-testid="search-filter-chip"]')
+
+// ✅ Optional: Hidden state indicator (1 element, for state validation)
 <div data-app-state={appState} style={{ display: 'none' }} />
 
 // Test usage:
@@ -324,7 +334,12 @@ const eventTable = page.locator('.event-list-table')  // Stable class
 
 **Filter Chips:**
 ```typescript
-// ✅ Get by role and name
+// ✅ Option 1: Use existing data-testid (most specific, recommended)
+const dateChip = page.locator('[data-testid="date-filter-chip"]')
+const mapChip = page.locator('[data-testid="map-filter-chip"]')
+const searchChip = page.locator('[data-testid="search-filter-chip"]')
+
+// ✅ Option 2: Use semantic selector (also works)
 const dateChip = page.getByRole('button', { name: /filtered by date/i })
 const searchChip = page.getByRole('button', { name: /filtered by search/i })
 const mapChip = page.getByRole('button', { name: /filtered by map/i })

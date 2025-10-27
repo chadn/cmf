@@ -218,6 +218,24 @@ test('Selected event freezes event list and filters', async ({ page }) => {
 
 Based on **usage.md section 10**: Three filter types (map, date, search) with chips.
 
+**⚠️ IMPORTANT: Filter Chip Selectors**
+
+Filter chips **already have data-testid attributes** (see ActiveFilters.tsx:61):
+- `date-filter-chip`
+- `map-filter-chip`
+- `search-filter-chip`
+
+**Both approaches work:**
+```typescript
+// Option 1: Use existing data-testid (more specific, recommended)
+const dateChip = page.locator('[data-testid="date-filter-chip"]')
+
+// Option 2: Use semantic selector (still works)
+const dateChip = page.getByRole('button', { name: /filtered by date/i })
+```
+
+**Examples below use Option 2 (semantic) for readability, but Option 1 is equally valid and may be more reliable.**
+
 ### Map Filter Chip
 
 ```typescript
