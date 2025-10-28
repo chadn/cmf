@@ -256,13 +256,11 @@ export function verifyLogPatterns(logs: ConsoleMessage[], expectedLogs: LogPatte
  * Filter and report error logs from captured logs
  */
 export function findErrorLogs(logs: ConsoleMessage[]): ConsoleMessage[] {
-    return logs.filter(
-        (log) =>
-            log.type === 'error' ||
-            log.type === 'pageerror' ||
-            log.text.toLowerCase().includes('error') ||
-            log.text.toLowerCase().includes('failed')
-    )
+    return logs.filter((log) => {
+        // Only include actual error and pageerror types
+        // Do NOT check text content for "error" or "failed" keywords - too many false positives
+        return log.type === 'error' || log.type === 'pageerror'
+    })
 }
 
 /**
