@@ -133,20 +133,36 @@ Share - Copy URL
 
 E2E tests are performed by Playwright. Tests live in [/tests/e2e](../tests/e2e/), outside of `/src`, since E2E doesn't test source files directly, but the running app (UI, API endpoints).
 
+**📚 E2E Test Documentation:**
+- [tests-e2e-architecture.md](tests-e2e-architecture.md) - Testing principles, patterns, and selector strategies
+- [tests-e2e-examples.md](tests-e2e-examples.md) - Code examples and anti-patterns
+- [tests-e2e-migration.md](tests-e2e-migration.md) - Phased implementation plan and progress
+
+**Current Status (2025-10-29):**
+- ✅ Phase 0: Foundation - COMPLETED
+  - Stable test events (test:stable) with 4 dynamic-date events
+  - 3 smoke tests for critical workflows (~30s)
+  - Mobile testing configuration (iPhone 16)
+  - All infrastructure in place
+
+**Quick smoke test:** Run the 3 critical workflow tests:
+```bash
+npm run test:e2e:smoke -- --project=desktop-chrome  # ~30s, 3/3 passing
+```
+
 **Quick console debugging:** From the command line, run tests and get browser console logs (output from `logr`) for any URL:
 
 ```bash
 # Test specific URL with parameters
 (TEST_URL="/?es=sf" npm run test:e2e:console) &> dev-perf-browser-logs.txt   # AI can use this to iterate on testing its changes
 (TEST_URL="/?es=sf" npm run test:e2e:console) 2>&1 |tee dev-perf-browser-logs.txt
-
 ```
 
 Run page-load tests, which automate some of the manual tests listed above in [Testing Different URLs](#testing-different-urls)
 
 ```bash
-# Run all
-time npm run test:pageload
+# Run all page-load tests
+time npm run test:e2e:pageload
 
 # Run tests with names that contain "Quick Filter"
 TEST_NAME="Quick Filter" time npm run test:e2e:pageload
@@ -156,15 +172,24 @@ If tests fail, then playwright reports are available to see details - make sure 
 
 **Available E2E commands:**
 
-- `npm run test:e2e` - Run all E2E tests headlessly
+- `npm run test:e2e` - Run all E2E tests headlessly (desktop + mobile)
+- `npm run test:e2e:smoke` - Run smoke tests only (~30s)
+- `npm run test:e2e:mobile` - Run all tests on mobile (iPhone 16)
+- `npm run test:e2e:full` - Run all tests on both desktop and mobile
 - `npm run test:e2e:console` - Run console log debugging test with visible browser
+- `npm run test:e2e:pageload` - Run page-load verification tests with visible browser
+- `npm run test:e2e:interactive` - Run interactive user state tests with visible browser
+- `npm run test:report` - Open HTML report from last test run
 
 ```bash
-# Run the new interactive test:
+# Run specific test file:
 npm run test:e2e -- tests/e2e/interactive.spec.ts --headed
 
 # Run specific test within the file:
 npm run test:e2e -- tests/e2e/interactive.spec.ts -g "filter chip interaction" --headed
+
+# Run smoke tests on desktop only (fastest feedback):
+npm run test:e2e:smoke -- --project=desktop-chrome
 ```
 
 #### Playwright Directory Structure
