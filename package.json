@@ -13,7 +13,7 @@
         "format:diff": "npx prettier $FN | git --no-pager diff --no-index $FN -",
         "test": "jest --coverage && node src/scripts/show-total-loc.mjs && date && echo",
         "test:e2e": "playwright test",
-        "test:e2e:smoke": "playwright test tests/e2e/smoke.spec.ts",
+        "test:e2e:smoke": "playwright test tests/e2e/smoke.spec.ts --project=desktop-chrome",
         "test:e2e:mobile": "playwright test --project=mobile-iphone16",
         "test:e2e:full": "playwright test --project=desktop-chrome --project=mobile-iphone16",
         "test:e2e:console": "TEST_URL=${TEST_URL:-/} playwright test tests/e2e/console-logs.spec.ts --headed",

@@ -17,14 +17,10 @@ export default defineConfig({
     workers: process.env.CI ? 1 : NUM_PARALLEL_WORKERS,
     /* Reporter to use. See https://playwright.dev/docs/test-reporters */
     reporter: [
-        ['list'], // Show progress during test run
         ['./tests/e2e/summary-reporter.ts'], // Show detailed summary at end
-        [
-            'html',
-            {
-                open: 'never', // don't open browser automatically since this is used by AI.
-            },
-        ],
+        ['html',{
+            open: 'never', // don't open browser automatically since this is used by AI.
+        }],
     ],
     /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
     use: {
@@ -58,6 +54,6 @@ export default defineConfig({
         command: 'npm run dev',
         url: 'http://localhost:3000',
         reuseExistingServer: !process.env.CI,
-        timeout: 60 * 1000, // 60s - Next.js needs time to compile
+        timeout: 30 * 1000, // 30s - Next.js needs time to compile (2-15s usually)
     },
 })
