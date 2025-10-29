@@ -49,9 +49,10 @@ In addition to [CMF Definitions](usage.md#definitions), manual testers should un
 Note:
 
 - South / North → Latitude in degrees (−90 to +90), usually up to 6 decimal places
-- West / East → Longitude in degrees (−180 to +180), usually up to 6 decimal places.
-- Remember Longitudes can go to 180, _longer_ than latitudes that only go up to 90.
-  Another way is longitudes cover full 360 around earth (-180 to +180), latitudes only go from
+- West / East → Longitude in degrees (−180 to +180), usually up to 6 decimal places
+- Latitude vs longitude:
+    - Longitudes can go to 180, So longitudes are **_longer_** than latitudes, which only go up to 90. Nice mnemonic.
+    - Longitudes cover full 360 around earth (-180 to +180), latitudes only go from the South pole (-90) to the north pole (+90).
 
 ### Testing Date Changes
 
@@ -136,18 +137,12 @@ E2E tests are performed by Playwright. Tests live in [/tests/e2e](../tests/e2e/)
 **📚 E2E Test Documentation:**
 - [tests-e2e-architecture.md](tests-e2e-architecture.md) - Testing principles, patterns, and selector strategies
 - [tests-e2e-examples.md](tests-e2e-examples.md) - Code examples and anti-patterns
-- [tests-e2e-migration.md](tests-e2e-migration.md) - Phased implementation plan and progress
+- [tests-e2e-migration.md](tests-e2e-migration.md) - Phased implementation plan and progress, temporary.
 
-**Current Status (2025-10-29):**
-- ✅ Phase 0: Foundation - COMPLETED
-  - Stable test events (test:stable) with 4 dynamic-date events
-  - 3 smoke tests for critical workflows (~30s)
-  - Mobile testing configuration (iPhone 16)
-  - All infrastructure in place
-
-**Quick smoke test:** Run the 3 critical workflow tests:
+**Examples:** 
 ```bash
-npm run test:e2e:smoke -- --project=desktop-chrome  # ~30s, 3/3 passing
+npm run test:e2e:smoke  # ~8s, smoke test runs 3 critical workflow tests
+npm run test:e2e        # ~60s, runs all 42 workflow tests
 ```
 
 **Quick console debugging:** From the command line, run tests and get browser console logs (output from `logr`) for any URL:
@@ -212,9 +207,17 @@ npm run test:e2e:smoke -- --project=desktop-chrome
 ```bash
 time npm run test:e2e
 
-> calendar-map-filter@0.3.6 test:e2e
+> calendar-map-filter@0.4.9 test:e2e
 > playwright test
 ...
+
+
+
+
+
+
+
+
   10 passed (29.7s)
 
 To open last HTML report run:

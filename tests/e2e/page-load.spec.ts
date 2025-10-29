@@ -40,7 +40,7 @@ const pageLoadTests: PageLoadTestCase[] = [
                         /FLTR_EVTS_MGR\] setFilter: dateRange: (\d{4}-\d{2}-\d{2}T11:01:00.000Z) to (\d{4}-\d{2}-\d{2}T\d{2}:59:59.999Z)/
                     )
                     expect(matches).toHaveLength(3)
-                    if (matches.length > 2) {
+                    if (matches && matches.length > 2) {
                         const startIso = matches[1]
                         const endIso = matches[2]
                         const startEpoch = new Date(startIso).getTime()
