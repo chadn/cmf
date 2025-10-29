@@ -17,6 +17,8 @@ export default defineConfig({
     workers: process.env.CI ? 1 : NUM_PARALLEL_WORKERS,
     /* Reporter to use. See https://playwright.dev/docs/test-reporters */
     reporter: [
+        ['list'], // Show progress during test run
+        ['./tests/e2e/summary-reporter.ts'], // Show detailed summary at end
         [
             'html',
             {
