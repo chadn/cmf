@@ -132,7 +132,8 @@ Share - Copy URL
 
 ### End-to-End Testing
 
-E2E tests are performed by Playwright. Tests live in [/tests/e2e](../tests/e2e/), outside of `/src`, since E2E doesn't test source files directly, but the running app (UI, API endpoints).
+E2E tests are performed by Playwright, which emulates users by loading web page, clicking on app, reading console logs, etc. 
+Tests live in [/tests/e2e](../tests/e2e/), outside of `/src`, since E2E doesn't test source files directly, but the running app (UI, API endpoints).
 
 **📚 E2E Test Documentation:**
 - [tests-e2e-architecture.md](tests-e2e-architecture.md) - Testing principles, patterns, and selector strategies
@@ -167,7 +168,7 @@ If tests fail, then playwright reports are available to see details - make sure 
 
 **Available E2E commands:**
 
-- `npm run test:e2e` - Run all E2E tests headlessly (desktop + mobile)
+- `npm run test:e2e` - Run all E2E tests headlessly (desktop + mobile) (2-5 mins)
 - `npm run test:e2e:smoke` - Run smoke tests only (~30s)
 - `npm run test:e2e:mobile` - Run all tests on mobile (iPhone 16)
 - `npm run test:e2e:full` - Run all tests on both desktop and mobile

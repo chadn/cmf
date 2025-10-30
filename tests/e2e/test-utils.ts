@@ -10,12 +10,51 @@ export interface ConsoleMessage {
     location?: string
 }
 
+/**
+ * Defines a log pattern to search for and verify in captured console logs.
+ *
+ * Use this interface to specify what log messages to look for and how to validate them.
+ */
 export interface LogPattern {
-    pattern: string | RegExp
+    /** The exact string pattern to search for in console log messages */
+    logPattern: string
+
+    /** Human-readable description of what this pattern verifies (for test output) */
     description: string
-    required?: boolean // normally true, but can be false to temporarily skip a test
-    requiredInState?: string // Expected application state when this pattern should occur
-    cb?: (logs: string[]) => void // Callback function to run when pattern matches
+
+    /** Optional: Only match logs that occur in this specific application state */
+    requiredInState?: string
+
+    /**
+     * Optional callback for data extraction - called ONLY when matches are found.
+     *
+     * Use this when you need to:
+     * - Extract and validate specific data from matching logs
+     * - Perform complex assertions on log content
+     * - Parse structured data from log messages
+     *
+     * @param matchingLogs - Array of matching log strings (guaranteed non-empty)
+     * @example
+     * cb: (logs) => {
+     *     const counts = extractCounts(logs[logs.length - 1])
+     *     expect(counts.visibleEvents).toBeGreaterThan(0)
+     * }
+     */
+    cb?: (matchingLogs: string[]) => void
+
+    /**
+     * Optional callback for assertions - ALWAYS called, even with zero matches.
+     *
+     * Use this when you need to:
+     * - Assert that a log pattern exists (or doesn't exist)
+     * - Verify the presence/absence of specific log messages
+     * - Make test failures point to the exact test file line (not test-utils.ts)
+     *
+     * @param matchingLogs - Array of matching log strings (may be empty)
+     * @example
+     * assertMatch: (logs) => expect(logs.length).toBeGreaterThan(0)
+     */
+    assertMatch?: (matchingLogs: string[]) => void
 }
 
 export interface EventCountExpectations {
@@ -198,7 +237,7 @@ export function verifyLogPatterns(logs: ConsoleMessage[], expectedLogs: LogPatte
     console.log(`\nVerifying log patterns for: ${testName}`)
 
     for (const expected of expectedLogs) {
-        const { pattern, description, required = true, requiredInState, cb } = expected
+        const { logPattern, description, requiredInState, cb, assertMatch } = expected
 
         let curState: string | null = null
         const matchingLogs: string[] = []
@@ -215,37 +254,43 @@ export function verifyLogPatterns(logs: ConsoleMessage[], expectedLogs: LogPatte
 
             // Check if pattern matches (only if in required state or no state requirement)
             if (!requiredInState || (requiredInState && curState === requiredInState)) {
-                let patternMatches = false
-                if (typeof pattern === 'string') {
-                    patternMatches = logText.includes(pattern)
-                } else {
-                    patternMatches = pattern.test(logText)
-                }
-
-                if (patternMatches) {
+                if (logText.includes(logPattern)) {
                     matchingLogs.push(logText)
                 }
             }
         }
 
         // Handle results
-        const stateLog = requiredInState ? `in appState ${requiredInState}` : 'in any appState'
+        const stateLog = requiredInState ? `appState ${requiredInState}` : 'any appState'
         if (cb && matchingLogs.length > 0) {
             try {
-                console.log(`\n🔧 Running callback for: ${description}`)
+                console.log(`\n🔧 Running cb() callback for: ${description}`)
                 cb(matchingLogs)
                 console.log(`✅ Callback successful: ${description}`)
             } catch (error) {
                 console.log(`❌ Callback failed: ${error}`)
                 throw error
             }
-        } else if (matchingLogs.length > 0) {
-            console.log(`[PASS ✅] ${description}: FOUND ${stateLog}`)
-        } else {
-            console.log(`[FAIL ❌] ${description}: PATTERN NOT FOUND ${stateLog}: ${pattern}`)
-            if (required) {
-                expect(matchingLogs.length).toBeGreaterThan(0)
+        }
+        if (assertMatch) {
+            try {
+                console.log(`\n🔧 Running assertMatch() callback for: ${description}`)
+                assertMatch(matchingLogs)
+                console.log(`✅ Callback successful: ${description}`)
+            } catch (error) {
+                console.log(`❌ Callback assertMatch() failed/error: ${error}`)
+                console.log(`ALL ${logs.length} LOGS:\n` + logs.map((log) => log.text).join('\n'))
+                throw error
             }
+        }
+        if (!cb && !assertMatch && matchingLogs.length > 0) {
+            console.log(`[PASS ✅] ${description}: FOUND in ${stateLog}`)
+        } else if (!cb && !assertMatch) {
+            console.log(`[FAIL ❌] description="${description}". Pattern NOT FOUND in ${stateLog}. Pattern="${logPattern}"`)
+            expect(matchingLogs.length).toBeGreaterThan(0) // should not happen, transition test to use assertMatch
+        }
+        if (matchingLogs.length == 0) {
+            console.log(`ALL ${logs.length} LOGS:\n` + logs.map((log) => log.text).join('\n'))
         }
     }
 }

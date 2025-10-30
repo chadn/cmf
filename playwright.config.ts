@@ -18,6 +18,7 @@ export default defineConfig({
     workers: process.env.CI ? 1 : NUM_PARALLEL_WORKERS,
     /* Reporter to use. See https://playwright.dev/docs/test-reporters */
     reporter: [
+        ['list'], // Show progress during test run, like: Test timeout of 30000ms exceeded.
         ['./tests/e2e/summary-reporter.ts'], // Show detailed summary at end
         ['html',{
             open: 'never', // don't open browser automatically since this is used by AI.

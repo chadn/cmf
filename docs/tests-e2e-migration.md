@@ -71,6 +71,29 @@
 
 **Platform Coverage:** Desktop Chrome + Mobile iPhone 16 (all tests run on both)
 
+### Dual Testing Strategy
+
+**Fast Tests (`test:stable`)** - Run frequently:
+- All existing tests now use `test:stable` (stable, predictable test data)
+- Fast execution (<2 min for full suite)
+- Reliable, no external dependencies
+- Perfect for: commit-time checks, CI, development
+
+**Integration Tests (`es=sf`)** - Run before releases:
+- NEW: `tests/e2e/integration-sf.spec.ts` with 4 tests
+- Uses real San Francisco API (slower, may be flaky)
+- Tests real API integration, geocoding, performance
+- Run with: `npm run test:e2e:integration`
+- Use for: nightly builds, pre-release validation
+
+**Test Scripts:**
+```bash
+npm run test:e2e              # All tests (fast + integration)
+npm run test:e2e:fast         # Fast tests only (excludes @slow)
+npm run test:e2e:integration  # SF API tests only (@integration)
+npm run test:e2e:smoke        # Smoke tests only (<20s)
+```
+
 ---
 
 ## Overview

@@ -206,7 +206,7 @@ test.describe('Filter Chip Workflows', () => {
      * Expected: Moving map creates "X Filtered By Map" chip
      * Note: Skipping for now - test events are too close together, hard to reliably filter
      */
-    test.skip('Map filter: Pan map creates map filter chip', async ({ page }) => {
+    test('Map filter: Pan map creates map filter chip', async ({ page }) => {
         console.log('\n🧪 Testing: Pan map creates map filter chip')
 
         await page.goto('/?es=test:stable')
@@ -233,7 +233,7 @@ test.describe('Filter Chip Workflows', () => {
         }
 
         // Wait for filter to apply
-        await page.waitForTimeout(2000)
+        await page.waitForTimeout(1000)
 
         // Verify map filter chip appears
         await expect(mapChip).toBeVisible({ timeout: 3000 })
@@ -252,12 +252,15 @@ test.describe('Filter Chip Workflows', () => {
      * Expected: Clicking chip zooms to show all events
      * Note: Skipping for now - test events are too close together, hard to reliably filter
      */
-    test.skip('Map filter: Click chip removes map filter', async ({ page }) => {
+    test('Map filter: Click chip removes map filter', async ({ page }) => {
         console.log('\n🧪 Testing: Click map chip removes filter')
 
         await page.goto('/?es=test:stable')
         await page.waitForLoadState('networkidle')
         await page.waitForTimeout(1000)
+
+        const countBeforeFilter = await page.getByRole('row').count()
+        console.log(`   📊 Events before map filter: ${countBeforeFilter}`)
 
         // Create map filter by panning aggressively
         const canvas = page.locator('canvas.maplibregl-canvas')
@@ -274,7 +277,7 @@ test.describe('Filter Chip Workflows', () => {
         const mapChip = page.locator('[data-testid="map-filter-chip"]')
         await expect(mapChip).toBeVisible({ timeout: 3000 })
         const countWithFilter = await page.getByRole('row').count()
-        console.log(`   📊 Events with filter: ${countWithFilter}`)
+        console.log(`   📊 Events after map filter: ${countWithFilter}`)
 
         // Click chip to remove filter
         await mapChip.click()

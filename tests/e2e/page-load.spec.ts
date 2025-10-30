@@ -19,23 +19,24 @@ const pageLoadTests: PageLoadTestCase[] = [
         expectedLogs: [
             {
                 description: 'URL service processes weekend quick filter',
-                pattern: 'URL_SERVICE] Processing quick date filter: weekend',
+                logPattern: 'URL_SERVICE] Processing quick date filter: weekend',
+                assertMatch: (matchingLogs) => expect(matchingLogs.length).toBeGreaterThan(0),
                 requiredInState: 'applying-url-filters',
             },
             {
                 description: 'Date range filter set in user-interactive for LA Timezone',
-                // Ex: FLTR_EVTS_MGR] setFilter: dateRange: 2025-09-26T11:01:00.000Z to 2025-09-29T06:59:59.999Z
-                // Note: End hour changes with DST (T06 during PDT, T07 during PST)
-                pattern:
-                    /FLTR_EVTS_MGR\] setFilter: dateRange: \d{4}-\d{2}-\d{2}T11:01:00.000Z to \d{4}-\d{2}-\d{2}T\d{2}:59:59.999Z/,
+                logPattern: '[FLTR_EVTS_MGR] setFilter: dateRange: ',
+                assertMatch: (matchingLogs) => expect(matchingLogs.length).toBeGreaterThan(0),
                 requiredInState: 'applying-url-filters',
             },
             {
                 description: 'Test weekend is >2 but <3 days',
-                pattern: '[FLTR_EVTS_MGR] setFilter: dateRange: ',
+                logPattern: '[FLTR_EVTS_MGR] setFilter: dateRange: ',
                 cb: (logs) => {
                     console.log('********** chad logs **********\n' + JSON.stringify(logs))
                     // Accept any hour for end time due to DST transitions
+                    // Ex: FLTR_EVTS_MGR] setFilter: dateRange: 2025-09-26T11:01:00.000Z to 2025-09-29T06:59:59.999Z
+                    // Note: End hour changes with DST (T06 during PDT, T07 during PST)
                     const matches = logs[logs.length - 1].match(
                         /FLTR_EVTS_MGR\] setFilter: dateRange: (\d{4}-\d{2}-\d{2}T11:01:00.000Z) to (\d{4}-\d{2}-\d{2}T\d{2}:59:59.999Z)/
                     )
@@ -54,7 +55,7 @@ const pageLoadTests: PageLoadTestCase[] = [
             },
             {
                 description: 'Filter only by date (qf) so there are some visible events in user-interactive',
-                pattern: 'State: user-interactive, Events: allEvents',
+                logPattern: 'State: user-interactive, Events: allEvents',
                 cb: (logs) => {
                     //console.log('********** chad logs **********\n' + JSON.stringify(logs))
                     const counts = extractCounts(logs[logs.length - 1])
@@ -75,15 +76,17 @@ const pageLoadTests: PageLoadTestCase[] = [
         expectedLogs: [
             {
                 description: 'URL service processes explicit date filter',
-                pattern: 'URL_SERVICE] Processing explicit date filter: {"fsd":"2025-10-30","fed":"2025-11-2"}',
+                logPattern: 'URL_SERVICE] Processing explicit date filter: {"fsd":"2025-10-30","fed":"2025-11-2"}',
+                assertMatch: (matchingLogs) => expect(matchingLogs.length).toBeGreaterThan(0),
             },
             {
                 description: 'Filter events manager sets date range with NYC timezone conversion',
-                pattern: '[FLTR_EVTS_MGR] setFilter: dateRange: 2025-10-30T08:01:00.000Z to 2025-11-03T04:59:59.999Z',
+                logPattern: '[FLTR_EVTS_MGR] setFilter: dateRange: 2025-10-30T08:01:00.000Z to 2025-11-03T04:59:59.999Z',
+                assertMatch: (matchingLogs) => expect(matchingLogs.length).toBeGreaterThan(0),
             },
             {
                 description: 'Filter only by date (fsd) so there are some visible events in user-interactive',
-                pattern: 'State: user-interactive, Events: allEvents',
+                logPattern: 'State: user-interactive, Events: allEvents',
                 cb: (logs) => {
                     const counts = extractCounts(logs[logs.length - 1])
                     expect(counts.visibleEvents).toBeGreaterThan(0)
@@ -101,12 +104,13 @@ const pageLoadTests: PageLoadTestCase[] = [
         expectedLogs: [
             {
                 description: 'URL filters applied search term',
-                pattern: '[URL_FILTERS] Applied search filter: "berkeley"',
+                logPattern: '[URL_FILTERS] Applied search filter: "berkeley"',
+                assertMatch: (matchingLogs) => expect(matchingLogs.length).toBeGreaterThan(0),
                 requiredInState: 'applying-url-filters',
             },
             {
                 description: 'Search filtering shows reduced visible events, all events count is 3 digits',
-                pattern: 'State: user-interactive, Events: allEvents',
+                logPattern: 'State: user-interactive, Events: allEvents',
                 // logs should only be logs that match the pattern.  Should only be one in user-interactive, but if > 1, use the last one.
                 cb: (logs) => {
                     const counts = extractCounts(logs[logs.length - 1])
@@ -127,11 +131,12 @@ const pageLoadTests: PageLoadTestCase[] = [
         //skip: true,
         expectedLogs: [
             {
-                pattern: 'URL parsing step 5: Setting viewport from llz coordinates',
+                logPattern: 'URL parsing step 5: Setting viewport from llz coordinates',
                 description: 'URL service processes LLZ coordinates',
+                assertMatch: (matchingLogs) => expect(matchingLogs.length).toBeGreaterThan(0),
             },
             {
-                pattern: 'State: user-interactive, Events: allEvents',
+                logPattern: 'State: user-interactive, Events: allEvents',
                 description: 'llz set map bounds so that there are some visible events in user-interactive',
                 cb: (logs) => {
                     const counts = extractCounts(logs[logs.length - 1])
@@ -147,11 +152,12 @@ const pageLoadTests: PageLoadTestCase[] = [
         //skip: true,
         expectedLogs: [
             {
-                pattern: 'URL parsing step 5: Setting viewport from llz coordinates',
+                logPattern: 'URL parsing step 5: Setting viewport from llz coordinates',
                 description: 'URL service processes LLZ coordinates',
+                assertMatch: (matchingLogs) => expect(matchingLogs.length).toBeGreaterThan(0),
             },
             {
-                pattern: /State: user-interactive, Events: allEvents/,
+                logPattern: 'State: user-interactive, Events: allEvents',
                 description: 'llz set map bounds so that there are no visible events in user-interactive',
                 requiredInState: 'user-interactive',
                 cb: (logs) => {
@@ -168,12 +174,14 @@ const pageLoadTests: PageLoadTestCase[] = [
         expectedLogs: [
             {
                 description: 'URL service processes selected event ID',
-                pattern: 'URL parsing: selectedEventIdUrl is set, checking if valid',
+                logPattern: 'URL parsing: selectedEventIdUrl is set, checking if valid',
+                assertMatch: (matchingLogs) => expect(matchingLogs.length).toBeGreaterThan(0),
                 requiredInState: 'parsing-remaining-url',
             },
             {
                 description: 'URL service processes selected event ID with stable event coordinates',
-                pattern: 'uE: selectedMarkerId now 37.774900,-122.419400',
+                logPattern: 'uE: selectedMarkerId now 37.774900,-122.419400',
+                assertMatch: (matchingLogs) => expect(matchingLogs.length).toBeGreaterThan(0),
                 requiredInState: 'finalizing-setup',
             },
         ],
@@ -184,7 +192,7 @@ const pageLoadTests: PageLoadTestCase[] = [
         skip: true, // unresolved events not currently supported
         expectedLogs: [
             {
-                pattern: 'ssssss',
+                logPattern: 'ssssss',
                 description: 'ssssssss',
                 requiredInState: 'ssssssss',
             },

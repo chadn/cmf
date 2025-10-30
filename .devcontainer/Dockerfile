@@ -8,6 +8,10 @@ RUN apt-get update && \
     locale-gen en_US.UTF-8 && \
     rm -rf /var/lib/apt/lists/*
 
+# Install additional OS packages. lsof to see which process is using a port
+# lsof -iTCP:9323 -sTCP:LISTEN 
+RUN apt-get install -y less vim lsof
+
 ENV LANG=en_US.UTF-8
 ENV DEBIAN_FRONTEND=noninteractive
 

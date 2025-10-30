@@ -42,11 +42,12 @@ test.describe('Smoke Tests - Critical User Workflows', () => {
         const expectedLogs: LogPattern[] = [
             {
                 description: 'App reaches user-interactive state',
-                pattern: 'State: user-interactive',
+                logPattern: 'State: user-interactive',
+                assertMatch: (matchingLogs) => expect(matchingLogs.length).toBeGreaterThan(0),
             },
             {
                 description: 'Events loaded and visible',
-                pattern: 'State: user-interactive, Events: allEvents',
+                logPattern: 'State: user-interactive, Events: allEvents',
                 cb: (logs) => {
                     const counts = extractCounts(logs[logs.length - 1])
                     expect(counts.allEvents).toBeGreaterThan(0)
@@ -79,17 +80,19 @@ test.describe('Smoke Tests - Critical User Workflows', () => {
         const expectedLogs: LogPattern[] = [
             {
                 description: 'Today quick filter processed',
-                pattern: 'Processing quick date filter: today',
+                logPattern: 'Processing quick date filter: today',
+                assertMatch: (matchingLogs) => expect(matchingLogs.length).toBeGreaterThan(0),
                 requiredInState: 'applying-url-filters',
             },
             {
                 description: 'Date range filter applied',
-                pattern: '[FLTR_EVTS_MGR] setFilter: dateRange:',
+                logPattern: '[FLTR_EVTS_MGR] setFilter: dateRange:',
+                assertMatch: (matchingLogs) => expect(matchingLogs.length).toBeGreaterThan(0),
                 requiredInState: 'applying-url-filters',
             },
             {
                 description: 'App reaches user-interactive with filtered events',
-                pattern: 'State: user-interactive, Events: allEvents',
+                logPattern: 'State: user-interactive, Events: allEvents',
                 cb: (logs) => {
                     const counts = extractCounts(logs[logs.length - 1])
                     // Should have events filtered by date (event-today-sf, event-unresolved)
@@ -123,12 +126,14 @@ test.describe('Smoke Tests - Critical User Workflows', () => {
         const expectedLogs: LogPattern[] = [
             {
                 description: 'Selected event ID processed from URL',
-                pattern: 'URL parsing: selectedEventIdUrl is set, checking if valid',
+                logPattern: 'URL parsing: selectedEventIdUrl is set, checking if valid',
+                assertMatch: (matchingLogs) => expect(matchingLogs.length).toBeGreaterThan(0),
                 requiredInState: 'parsing-remaining-url',
             },
             {
                 description: 'App reaches user-interactive state',
-                pattern: 'State: user-interactive',
+                logPattern: 'State: user-interactive',
+                assertMatch: (matchingLogs) => expect(matchingLogs.length).toBeGreaterThan(0),
             },
         ]
 
