@@ -1,7 +1,8 @@
 import { defineConfig, devices } from '@playwright/test'
 
 // if number of tests is close to NUM_PARALLEL_WORKERS, update NUM_PARALLEL_WORKERS to be same.
-const NUM_PARALLEL_WORKERS = 6
+// Reduced from 6 to 2 to prevent overwhelming the dev server with parallel requests
+const NUM_PARALLEL_WORKERS = 2
 /**
  * @see https://playwright.dev/docs/test-configuration
  */
