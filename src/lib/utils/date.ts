@@ -323,7 +323,8 @@ export function parseMonthDayRange(range: string): { startDate: Date; endDate: D
 }
 
 /**
- * Extract start/end times from a description string, originally for foopee
+ * Extract start/end times from a description string, originally for foopee.
+ * Assume UTC timezone for input (description) and output (return), will adjust later.
  * - Supports "7pm til 11:30pm" or "8pm" or "7pm/8pm" (which should be 7pm)
  * - Ignores extra text before/after times
  * - "7pm til 11:30pm" → start=7pm, end=11:30pm
@@ -333,38 +334,60 @@ export function parseMonthDayRange(range: string): { startDate: Date; endDate: D
  *
  * @param description - The event description containing time information
  * @param eventDate - The date of the event (used for parsing times)
- * @returns An object containing start and end time strings in ISO format
+ * @returns An object containing start and end time strings in UTC ISO format 
  */
 export function extractEventTimes(description: string, eventDate: Date) {
-    const timeRegex = /(\d{1,2}(?::\d{2})?\s*(?:am|pm))/gi
-    const matches = [...description.matchAll(timeRegex)].map((m) => m[1])
+    const timeRegex = /(\d{1,2}(?::\d{2})?\s*(?:am|pm))/gi;
+    const matches = [...description.matchAll(timeRegex)].map((m) => m[1].toLowerCase());
 
-    let start: Date
-    let end: Date
+    function parseTimeToUTC(timeStr: string, baseDate: Date): Date {
+        const [, hStr, mStr, ampm] =
+            timeStr.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)/i) || [];
+
+        let hour = parseInt(hStr, 10);
+        const minute = mStr ? parseInt(mStr, 10) : 0;
+
+        if (ampm === "pm" && hour !== 12) hour += 12;
+        if (ampm === "am" && hour === 12) hour = 0;
+
+        return new Date(Date.UTC(
+            baseDate.getUTCFullYear(),
+            baseDate.getUTCMonth(),
+            baseDate.getUTCDate(),
+            hour,
+            minute,
+            0
+        ));
+    }
+
+    let start: Date;
+    let end: Date;
 
     if (/til/i.test(description) && matches.length >= 2) {
-        // Case: explicit range "X til Y"
-        const [startMatch, endMatch] = matches
-        start = parse(startMatch, startMatch.includes(':') ? 'h:mmaaa' : 'haaa', eventDate)
-        end = parse(endMatch, endMatch.includes(':') ? 'h:mmaaa' : 'haaa', eventDate)
+        // "7pm til 11pm"
+        const [startMatch, endMatch] = matches;
+        start = parseTimeToUTC(startMatch, eventDate);
+        end = parseTimeToUTC(endMatch, eventDate);
         if (start > end) {
-            end = addDays(end, 1)
+            end = addDays(end, 1);
         }
     } else if (matches.length >= 1) {
-        // Case: single time OR slash-separated (e.g. "7pm/8pm")
-        const startMatch = matches[0]
-        start = parse(startMatch, startMatch.includes(':') ? 'h:mmaaa' : 'haaa', eventDate)
-        end = addHours(start, 4) // fallback
+        // Single time or "7pm/8pm" → first time wins
+        const startMatch = matches[0];
+        start = parseTimeToUTC(startMatch, eventDate);
+        end = addHours(start, 4);
     } else {
-        // Default fallback
-        start = parse('8:01pm', 'h:mmaaa', eventDate)
-        end = addHours(start, 4)
+        // Default 8:01pm → +4h
+        start = parseTimeToUTC("8:01pm", eventDate);
+        end = addHours(start, 4);
     }
+
     return {
-        startStr: DateTime.fromJSDate(start).setZone('America/Los_Angeles').toISO() || '',
-        endStr: DateTime.fromJSDate(end).setZone('America/Los_Angeles').toISO() || '',
-    }
+        startStr: start.toISOString(),
+        endStr: end.toISOString(),
+    };
 }
+
 
 /**
  * Summary of start and end time Logic

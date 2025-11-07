@@ -27,7 +27,7 @@ export interface CmfEvent {
     original_event_url: string
     description: string // always exists, may be empty
     description_urls: string[] // always exists, may be empty. NOT USED: Consider removing.
-    start: string // ISO string
+    start: string // ISO string. ex: 2025-11-13T21:00:00.000Z or 2025-11-13T13:00:00-08:00
     end: string // ISO string. Hack: if same as start, exact start time is not known. If 1 minute after start, end time is not known.
     startSecs?: number // start time in seconds since epoch
     endSecs?: number //     end time in seconds since epoch

@@ -251,13 +251,13 @@ src/components/events/__tests__/EventList.test.tsx  # Component tests with RTL
 
 ```bash
 npm test
-> calendar-map-filter@0.4.8 test
+> calendar-map-filter@0.4.9 test
 > jest --coverage && node src/scripts/show-total-loc.mjs && date && echo
 ...
 ----------------------------|---------|----------|---------|---------|-----------------------------------------------------------
 File                        | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
 ----------------------------|---------|----------|---------|---------|-----------------------------------------------------------
-All files                   |   70.94 |    64.91 |   73.42 |   71.15 |
+All files                   |   70.35 |    64.08 |   73.14 |   70.56 |
  components/common          |     100 |      100 |     100 |     100 |
   ErrorMessage.tsx          |     100 |      100 |     100 |     100 |
   LoadingSpinner.tsx        |     100 |      100 |     100 |     100 |
@@ -303,17 +303,17 @@ All files                   |   70.94 |    64.91 |   73.42 |   71.15 |
   urlProcessingService.ts   |    6.74 |        0 |       0 |    6.81 | 25-237
  lib/state                  |   97.14 |     82.6 |   91.66 |   96.55 |
   appStateReducer.ts        |   97.14 |     82.6 |   91.66 |   96.55 | 102
- lib/utils                  |   83.07 |    76.91 |   88.02 |   83.42 |
+ lib/utils                  |    81.5 |    74.89 |   86.89 |   81.84 |
   calendar.ts               |   85.71 |     72.5 |     100 |   85.71 | 28-29,46,56,76,82,128-129,134-135,151
-  date-19hz-parsing.ts      |    90.9 |    83.07 |   83.33 |   90.76 | 96-97,104-105,359-378
+  date-19hz-parsing.ts      |   86.36 |       80 |   83.33 |   86.15 | 101-115,359-378
   date-constants.ts         |     100 |      100 |     100 |     100 |
-  date.ts                   |   94.54 |    90.54 |     100 |   94.19 | 67-68,97,140-141,236,454,501-502
+  date.ts                   |   85.78 |    74.72 |   90.47 |   85.87 | 67-68,97,140-141,236,339-364,511,558-559
   headerNames.ts            |     100 |      100 |     100 |     100 |
   icsParser.ts              |     100 |      100 |     100 |     100 |
   location.ts               |   74.64 |    66.66 |   86.95 |   76.15 | 51-52,211,228,256-262,315,390-391,406-442
   logr.ts                   |   71.66 |    67.44 |   91.66 |   70.68 | 39,68-93,113,160
   quickFilters.ts           |   97.72 |      100 |     100 |   97.43 | 149
-  timezones.ts              |   87.75 |     86.2 |   84.61 |    88.5 | 55,76-84,87,95-100,136
+  timezones.ts              |      88 |     86.2 |   84.61 |   88.76 | 55,76-84,87,95-100,136
   umami.ts                  |   18.42 |        0 |       0 |   20.58 | 17-21,37-63,75-77,93-109
   url-utils.ts              |   94.87 |    84.29 |   96.15 |   97.57 | 76-77,317,325
   utils-client.ts           |      54 |    68.75 |      60 |   54.16 | 14-43,61,65,96,115-116
@@ -328,11 +328,10 @@ All files                   |   70.94 |    64.91 |   73.42 |   71.15 |
 Test Suites: 1 skipped, 33 passed, 33 of 34 total
 Tests:       10 skipped, 618 passed, 628 total
 Snapshots:   0 total
-Time:        2.969 s, estimated 3 s
+Time:        2.584 s, estimated 3 s
 Ran all test suites.
-Total Lines of Code: 2524
-Sat Oct 25 12:05:52 PDT 2025
-
+Total Lines of Code: 2532
+Thu Nov  6 18:07:34 PST 2025
 ```
 
 ## Next Steps for Testing

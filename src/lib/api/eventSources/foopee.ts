@@ -109,7 +109,7 @@ export class FoopeeEventsSource extends BaseEventSourceHandler {
                     currentDate = addYears(currentDate, 1)
                 }
 
-                logr.info('api-es-foopee', `Found date: ${currentDate.toISOString()}`)
+                //logr.info('api-es-foopee', `Found date: ${currentDate.toISOString()}`)
                 return // Continue to next <li>
             }
 
@@ -178,7 +178,7 @@ export class FoopeeEventsSource extends BaseEventSourceHandler {
                 description_urls: this.extractUrls(description),
                 start: startStr,
                 end: endStr,
-                tz: 'America/Los_Angeles',
+                tz: `REINTERPRET_UTC_TO_LOCAL`, // foopee times are local to the venue
                 location: fullLocation,
                 original_event_url: this.type.url,
             }

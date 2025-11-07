@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { waitUntil } from '@vercel/functions'
 import { fetchEvents, getEventSourceHandler, initializeEventSources } from '@/lib/api/eventSources'
 import { batchGeocodeLocations } from '@/lib/api/geocoding'
 import { getEventsCache, setEventsCache } from '@/lib/cache'
@@ -217,8 +218,9 @@ export async function GET(request: NextRequest) {
         umamiProps.clientIp =
             request.headers.get('x-forwarded-for') || request.headers.get('x-vercel-forwarded-for') || ''
         logr.info('api-events', `/api/events: ${totalTime}ms, umamiProps: ${stringify(umamiProps)}`)
-        await umamiServer('api-events', umamiProps, umamiProps.path as string)
+        waitUntil(umamiServer('api-events', umamiProps, umamiProps.path as string))
         return NextResponse.json(response)
+
     } catch (error) {
         logr.warn('api-events', 'Error fetching events', error)
 
@@ -244,7 +246,7 @@ export async function GET(request: NextRequest) {
         umamiProps.error = errorMessage
         const totalTime = Math.round(performance.now() - startTime)
         logr.info('api-events', `/api/events: ${totalTime}ms, umamiProps: ${stringify(umamiProps)}`)
-        await umamiServer('api-events', umamiProps, umamiProps.path as string)
+        waitUntil(umamiServer('api-events', umamiProps, umamiProps.path as string)) // waitUntil sends after response is sent        return NextResponse.json({ error: errorMessage }, { status: statusCode })
         return NextResponse.json({ error: errorMessage }, { status: statusCode })
     }
 }
