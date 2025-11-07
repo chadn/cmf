@@ -1,4 +1,3 @@
-import axios from 'axios'
 import * as cheerio from 'cheerio'
 import { CmfEvent, EventsSourceParams, EventsSourceResponse, EventsSource, DateRangeIso } from '@/types/events'
 import { logr } from '@/lib/utils/logr'
@@ -6,6 +5,7 @@ import { BaseEventSourceHandler, registerEventSourceFactory } from './index'
 import { parse19hzDateRange, getCityInfo } from '@/lib/utils/date-19hz-parsing'
 import { extractVenueAndCity } from '@/lib/utils/venue-parsing'
 import { applyDateFilter } from '@/lib/events/filters'
+import { axiosGet } from '@/lib/utils/utils-server'
 
 interface ParsedEventRow {
     dateTime: string
@@ -46,7 +46,7 @@ export class NineteenHzEventsSource extends BaseEventSourceHandler {
 
             logr.info('api-es-19hz', `Fetching events from ${cityInfo.name} (${url})`)
 
-            const response = await axios.get(url)
+            const response = await axiosGet(url) // chad
 
             const $ = cheerio.load(response.data)
             const events: CmfEvent[] = []

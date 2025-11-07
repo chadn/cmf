@@ -260,7 +260,7 @@ export function validateTzUpdateEventTimes(event: CmfEvent): CmfEvent {
             event.start = reinterpretUtcTz(event.start, event.tz)
             event.end = reinterpretUtcTz(event.end, event.tz)
             // debugEventTzState('AFTER_REINTERPRET', event)
-            logr.info('timezones', `Event with REINTERPRET_UTC_TO_LOCAL set tz correctly: ${event.id}`)
+            //logr.info('timezones', `Event with REINTERPRET_UTC_TO_LOCAL set tz correctly: ${event.id}`)
         } else {
             // State: Missing required fields → BUG
             throw new Error(`Event with REINTERPRET_UTC_TO_LOCAL is buggy: ${stringify(event)}`)

@@ -1138,10 +1138,10 @@ describe('Date Utilities', () => {
             expect(result.endStr).toContain('21:00')
         })
 
-        it('returns ISO strings with America/Los_Angeles timezone', () => {
+        it('returns ISO strings with UTC timezone', () => {
             const result = extractEventTimes('7pm til 9pm', testDate)
-            expect(result.startStr).toMatch(/-07:00|-08:00/) // PDT or PST
-            expect(result.endStr).toMatch(/-07:00|-08:00/)
+            expect(result.startStr).toMatch('2023-07-15T19:00:00.000Z')
+            expect(result.endStr).toMatch('2023-07-15T21:00:00.000Z')
         })
     })
 
