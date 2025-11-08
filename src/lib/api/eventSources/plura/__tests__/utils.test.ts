@@ -7,6 +7,7 @@ import {
     parsePluraDateString,
 } from '@/lib/api/eventSources/plura/utils'
 import { PluraDomain } from '@/lib/api/eventSources/plura/types'
+import { DateTime } from 'luxon'
 
 // Mock the logr module
 jest.mock('@/lib/utils/logr', () => ({
@@ -136,11 +137,12 @@ describe('Plura Utils', () => {
 
             expect(startDate).not.toBeNull()
             if (startDate) {
-                // Verify the date components are correct
-                expect(startDate.getMonth()).toBe(4) // May is month 4 (0-indexed)
-                expect(startDate.getDate()).toBe(14)
-                expect(startDate.getHours()).toBe(13) // 1:30pm = 13:30
-                expect(startDate.getMinutes()).toBe(30)
+                // Parse in LA timezone to check local time
+                const dt = DateTime.fromJSDate(startDate, { zone: 'America/Los_Angeles' })
+                expect(dt.month).toBe(5) // May (Luxon uses 1-12)
+                expect(dt.day).toBe(14)
+                expect(dt.hour).toBe(13) // 1:30pm
+                expect(dt.minute).toBe(30)
             }
 
             // Verify end date is 1 hour after start date
@@ -167,11 +169,13 @@ describe('Plura Utils', () => {
 
             expect(startDate).not.toBeNull()
             if (startDate) {
-                expect(startDate.getFullYear()).toBe(2023)
-                expect(startDate.getMonth()).toBe(4) // May
-                expect(startDate.getDate()).toBe(14)
-                expect(startDate.getHours()).toBe(13) // 1:30pm
-                expect(startDate.getMinutes()).toBe(30)
+                // Parse in LA timezone to check local time
+                const dt = DateTime.fromJSDate(startDate, { zone: 'America/Los_Angeles' })
+                expect(dt.year).toBe(2023)
+                expect(dt.month).toBe(5) // May (Luxon uses 1-12)
+                expect(dt.day).toBe(14)
+                expect(dt.hour).toBe(13) // 1:30pm
+                expect(dt.minute).toBe(30)
             }
         })
 
@@ -181,11 +185,13 @@ describe('Plura Utils', () => {
 
             expect(startDate).not.toBeNull()
             if (startDate) {
-                expect(startDate.getFullYear()).toBe(currentYear)
-                expect(startDate.getMonth()).toBe(4) // May
-                expect(startDate.getDate()).toBe(14)
-                expect(startDate.getHours()).toBe(13)
-                expect(startDate.getMinutes()).toBe(30)
+                // Parse in LA timezone to check local time
+                const dt = DateTime.fromJSDate(startDate, { zone: 'America/Los_Angeles' })
+                expect(dt.year).toBe(currentYear)
+                expect(dt.month).toBe(5) // May (Luxon uses 1-12)
+                expect(dt.day).toBe(14)
+                expect(dt.hour).toBe(13)
+                expect(dt.minute).toBe(30)
             }
         })
 
