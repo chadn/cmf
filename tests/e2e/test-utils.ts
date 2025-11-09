@@ -1,4 +1,4 @@
-import { Page, expect } from '@playwright/test'
+import { Page, expect, TestInfo } from '@playwright/test'
 
 // ===== SHARED INTERFACES AND TYPES =====
 
@@ -113,6 +113,47 @@ export function extractCounts(logEntry: ConsoleMessage | string): {
         byDate: parseInt(matches[6]),
         byLocationFilter: parseInt(matches[7]),
     }
+}
+
+/**
+ * Captures console logs and automatically attaches them to test results for failure debugging.
+ *
+ * Use this instead of captureConsoleLogs() when you want logs to automatically appear
+ * in test output if the test fails.
+ *
+ * @param page - The Playwright page instance
+ * @param testInfo - The TestInfo object from Playwright (available in test context)
+ * @param url - The URL to navigate to
+ * @param options - Optional capture configuration
+ * @returns Promise<ConsoleMessage[]> - Captured console logs
+ *
+ * @example
+ * test('my test', async ({ page }, testInfo) => {
+ *     const logs = await captureAndReportLogsOnFailure(page, testInfo, '/?es=test:stable')
+ *     // ... test assertions ...
+ * })
+ */
+export async function captureAndReportLogsOnFailure(
+    page: Page,
+    testInfo: TestInfo,
+    url: string,
+    options?: CaptureLogsOptions
+): Promise<ConsoleMessage[]> {
+    const logs = await captureConsoleLogs(page, url, options)
+
+    // Attach logs to test results - will appear in HTML report and can be accessed in afterEach
+    testInfo.attach('console-logs', {
+        body: JSON.stringify(logs.map(log => ({
+            type: log.type,
+            text: log.text,
+            timestamp: log.timestamp.toISOString(),
+            url: log.url,
+            location: log.location
+        })), null, 2),
+        contentType: 'application/json'
+    })
+
+    return logs
 }
 
 /**
@@ -322,6 +363,47 @@ export function reportErrors(logs: ConsoleMessage[], testName: string): number {
     }
 
     return errorLogs.length
+}
+
+/**
+ * Outputs all console logs to the terminal when a test fails.
+ *
+ * Call this in an afterEach hook to automatically print logs for failed tests.
+ *
+ * @param testInfo - The TestInfo object from Playwright
+ *
+ * @example
+ * test.afterEach(async ({ }, testInfo) => {
+ *     await outputLogsOnFailure(testInfo)
+ * })
+ */
+export async function outputLogsOnFailure(testInfo: TestInfo) {
+    // Only output logs if test failed
+    if (testInfo.status !== 'passed' && testInfo.status !== 'skipped') {
+        const logsAttachment = testInfo.attachments.find(a => a.name === 'console-logs')
+
+        if (logsAttachment && logsAttachment.body) {
+            try {
+                const logs: ConsoleMessage[] = JSON.parse(logsAttachment.body.toString())
+                console.log('\n' + '='.repeat(80))
+                console.log(`❌ TEST FAILED: ${testInfo.title}`)
+                console.log('='.repeat(80))
+                console.log(`\n📋 CONSOLE LOGS (${logs.length} messages):\n`)
+
+                logs.forEach((log, index) => {
+                    const timestamp = new Date(log.timestamp).toISOString().split('T')[1].split('.')[0]
+                    const location = log.location ? ` [${log.location}]` : ''
+                    console.log(
+                        `${String(index + 1).padStart(3)}. [${timestamp}] ${log.type.toUpperCase()}: ${log.text}${location}`
+                    )
+                })
+
+                console.log('\n' + '='.repeat(80) + '\n')
+            } catch (error) {
+                console.error('Failed to parse console logs:', error)
+            }
+        }
+    }
 }
 
 // ===== TEST CONFIGURATION AND CONSTANTS =====

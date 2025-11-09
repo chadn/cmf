@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test'
 import {
     captureConsoleLogs,
+    captureAndReportLogsOnFailure,
+    outputLogsOnFailure,
     verifyLogPatterns,
     reportErrors,
     extractCounts,
@@ -32,11 +34,16 @@ const SMOKE_CAPTURE_OPTIONS: CaptureLogsOptions = {
 }
 
 test.describe('Smoke Tests - Critical User Workflows', () => {
-    test('Workflow 1: Load app with events', async ({ page }) => {
+    // Automatically output console logs when tests fail
+    test.afterEach(async ({ }, testInfo) => {
+        await outputLogsOnFailure(testInfo)
+    })
+
+    test('Workflow 1: Load app with events', async ({ page }, testInfo) => {
         console.log('\n🧪 SMOKE TEST 1: Load app with events')
         console.log('📍 URL: /?es=test:stable')
 
-        const logs = await captureConsoleLogs(page, '/?es=test:stable', SMOKE_CAPTURE_OPTIONS)
+        const logs = await captureAndReportLogsOnFailure(page, testInfo, '/?es=test:stable', SMOKE_CAPTURE_OPTIONS)
 
         // Verify critical log patterns
         const expectedLogs: LogPattern[] = [
@@ -70,11 +77,11 @@ test.describe('Smoke Tests - Critical User Workflows', () => {
         console.log('✅ SMOKE TEST 1 PASSED: App loads successfully with events\n')
     })
 
-    test('Workflow 2: View today\'s events (qf=today)', async ({ page }) => {
+    test('Workflow 2: View today\'s events (qf=today)', async ({ page }, testInfo) => {
         console.log('\n🧪 SMOKE TEST 2: View today\'s events')
         console.log('📍 URL: /?es=test:stable&qf=today')
 
-        const logs = await captureConsoleLogs(page, '/?es=test:stable&qf=today', SMOKE_CAPTURE_OPTIONS)
+        const logs = await captureAndReportLogsOnFailure(page, testInfo, '/?es=test:stable&qf=today', SMOKE_CAPTURE_OPTIONS)
 
         // Verify critical log patterns
         const expectedLogs: LogPattern[] = [
@@ -116,11 +123,11 @@ test.describe('Smoke Tests - Critical User Workflows', () => {
         console.log('✅ SMOKE TEST 2 PASSED: Today filter works correctly\n')
     })
 
-    test('Workflow 3: View selected event from shared URL (se=)', async ({ page }) => {
+    test('Workflow 3: View selected event from shared URL (se=)', async ({ page }, testInfo) => {
         console.log('\n🧪 SMOKE TEST 3: View selected event from shared URL')
         console.log('📍 URL: /?es=test:stable&se=event-today-sf')
 
-        const logs = await captureConsoleLogs(page, '/?es=test:stable&se=event-today-sf', SMOKE_CAPTURE_OPTIONS)
+        const logs = await captureAndReportLogsOnFailure(page, testInfo, '/?es=test:stable&se=event-today-sf', SMOKE_CAPTURE_OPTIONS)
 
         // Verify critical log patterns
         const expectedLogs: LogPattern[] = [

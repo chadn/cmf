@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test'
 import {
     captureConsoleLogs,
+    captureAndReportLogsOnFailure,
+    outputLogsOnFailure,
     printConsoleLogs,
     verifyLogPatterns,
     reportErrors,
@@ -201,6 +203,11 @@ const pageLoadTests: PageLoadTestCase[] = [
 ]
 
 test.describe('Page Load Tests - URL Processing Verification', () => {
+    // Automatically output console logs when tests fail
+    test.afterEach(async ({ }, testInfo) => {
+        await outputLogsOnFailure(testInfo)
+    })
+
     // Support for TEST_URL environment variable (maintains existing functionality)
     const testUrl = process.env.TEST_URL
     const testName = process.env.TEST_NAME
@@ -252,7 +259,7 @@ test.describe('Page Load Tests - URL Processing Verification', () => {
                 continue
             }
             //console.log(`Preparing to run test: "${testCase.name}"`)
-            test(testCase.name, async ({ page, browser }) => {
+            test(testCase.name, async ({ page, browser }, testInfo) => {
                 console.log(`\n🧪 Running: ${testCase.name}`)
                 console.log(`📍 URL: ${testCase.url}`)
 
@@ -269,7 +276,7 @@ test.describe('Page Load Tests - URL Processing Verification', () => {
                 }
 
                 try {
-                    const logs = await captureConsoleLogs(testPage, testCase.url, DEFAULT_CAPTURE_OPTIONS)
+                    const logs = await captureAndReportLogsOnFailure(testPage, testInfo, testCase.url, DEFAULT_CAPTURE_OPTIONS)
                     printConsoleLogs(logs, testCase.name)
 
                     // Verify expected log patterns

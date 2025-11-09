@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test'
 import {
     captureConsoleLogs,
+    captureAndReportLogsOnFailure,
+    outputLogsOnFailure,
     verifyLogPatterns,
     reportErrors,
     extractCounts,
@@ -45,12 +47,17 @@ const SF_API_CAPTURE_OPTIONS: CaptureLogsOptions = {
 }
 
 test.describe('SF API Integration Tests @integration @slow', () => {
-    test('Load real SF events and verify API integration', async ({ page }) => {
+    // Automatically output console logs when tests fail
+    test.afterEach(async ({ }, testInfo) => {
+        await outputLogsOnFailure(testInfo)
+    })
+
+    test('Load real SF events and verify API integration', async ({ page }, testInfo) => {
         console.log('\n🌐 INTEGRATION TEST: Real SF API')
         console.log('📍 URL: /?es=sf')
         console.log('⚠️  This test uses real API calls and may be slower/flaky')
 
-        const logs = await captureConsoleLogs(page, '/?es=sf', SF_API_CAPTURE_OPTIONS)
+        const logs = await captureAndReportLogsOnFailure(page, testInfo, '/?es=sf', SF_API_CAPTURE_OPTIONS)
 
         // Verify critical log patterns
         const expectedLogs: LogPattern[] = [
@@ -95,11 +102,11 @@ test.describe('SF API Integration Tests @integration @slow', () => {
         console.log('✅ SF API Integration test passed\n')
     })
 
-    test('Real geocoding works with SF search', async ({ page }) => {
+    test('Real geocoding works with SF search', async ({ page }, testInfo) => {
         console.log('\n🌐 INTEGRATION TEST: Real geocoding with search')
         console.log('📍 URL: /?es=sf&sq=mission')
 
-        const logs = await captureConsoleLogs(page, '/?es=sf&sq=mission', SF_API_CAPTURE_OPTIONS)
+        const logs = await captureAndReportLogsOnFailure(page, testInfo, '/?es=sf&sq=mission', SF_API_CAPTURE_OPTIONS)
 
         // Verify search filter applied
         const expectedLogs: LogPattern[] = [
@@ -138,13 +145,13 @@ test.describe('SF API Integration Tests @integration @slow', () => {
         console.log('✅ Real geocoding test passed\n')
     })
 
-    test('Performance with real SF event volume', async ({ page }) => {
+    test('Performance with real SF event volume', async ({ page }, testInfo) => {
         console.log('\n🌐 INTEGRATION TEST: Performance with real data')
         console.log('📍 URL: /?es=sf&qf=weekend')
 
         const startTime = Date.now()
 
-        const logs = await captureConsoleLogs(page, '/?es=sf&qf=weekend', SF_API_CAPTURE_OPTIONS)
+        const logs = await captureAndReportLogsOnFailure(page, testInfo, '/?es=sf&qf=weekend', SF_API_CAPTURE_OPTIONS)
 
         const loadTime = Date.now() - startTime
         console.log(`   ⏱️  Total load time: ${loadTime}ms`)
@@ -182,7 +189,7 @@ test.describe('SF API Integration Tests @integration @slow', () => {
         console.log('✅ Performance test passed\n')
     })
 
-    test('Real selected event from SF API', async ({ page }) => {
+    test('Real selected event from SF API', async ({ page }, testInfo) => {
         console.log('\n🌐 INTEGRATION TEST: Selected event with real SF data')
         console.log('📍 URL: /?es=sf (will select first event)')
 

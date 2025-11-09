@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test'
 import {
     captureConsoleLogs,
+    captureAndReportLogsOnFailure,
+    outputLogsOnFailure,
     printConsoleLogs,
     verifyLogPatterns,
     reportErrors,
@@ -10,7 +12,12 @@ import {
 import { getDayAt, getTodayAt, getTomorrowAt } from '@/lib/utils/date'
 
 test.describe('User Interactive State Tests', () => {
-    test('Date filter clearing - qf=weekend filter chip interaction', async ({ browser }) => {
+    // Automatically output console logs when tests fail
+    test.afterEach(async ({ }, testInfo) => {
+        await outputLogsOnFailure(testInfo)
+    })
+
+    test('Date filter clearing - qf=weekend filter chip interaction', async ({ browser }, testInfo) => {
         // Create context with LA timezone for consistent weekend calculation
         const context = await browser.newContext({
             timezoneId: 'America/Los_Angeles',
@@ -23,7 +30,7 @@ test.describe('User Interactive State Tests', () => {
         const testUrl = '/?es=test:stable&qf=weekend'
         console.log(`📍 Loading ${testUrl}`)
 
-        const logs = await captureConsoleLogs(page, testUrl, {
+        const logs = await captureAndReportLogsOnFailure(page, testInfo, testUrl, {
             ...DEFAULT_CAPTURE_OPTIONS,
             waitForSpecificLog: 'State: user-interactive',
             additionalWaitTime: 2000,
@@ -106,7 +113,7 @@ test.describe('User Interactive State Tests', () => {
         console.log('🎉 Date filter clearing test completed successfully!')
     })
 
-    test('Date filter clearing - verify event list updates', async ({ browser }) => {
+    test('Date filter clearing - verify event list updates', async ({ browser }, testInfo) => {
         // Skip - test:stable has dynamic dates, weekend filter may match 0-4 events unpredictably
         // Filter clearing is already tested by "Date filter clearing - qf=weekend filter chip interaction"
         const context = await browser.newContext({
@@ -118,7 +125,7 @@ test.describe('User Interactive State Tests', () => {
 
         // Load page with weekend filter
         const testUrl = '/?es=test:stable&qf=weekend'
-        const logs = await captureConsoleLogs(page, testUrl, {
+        const logs = await captureAndReportLogsOnFailure(page, testInfo, testUrl, {
             ...DEFAULT_CAPTURE_OPTIONS,
             waitForSpecificLog: 'State: user-interactive',
             additionalWaitTime: 2000,
