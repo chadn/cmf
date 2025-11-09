@@ -389,16 +389,7 @@ export async function outputLogsOnFailure(testInfo: TestInfo) {
                 console.log(`❌ TEST FAILED: ${testInfo.title}`)
                 console.log('='.repeat(80))
                 console.log(`\n📋 CONSOLE LOGS (${logs.length} messages):\n`)
-
-                logs.forEach((log, index) => {
-                    const timestamp = new Date(log.timestamp).toISOString().split('T')[1].split('.')[0]
-                    const location = log.location ? ` [${log.location}]` : ''
-                    console.log(
-                        `${String(index + 1).padStart(3)}. [${timestamp}] ${log.type.toUpperCase()}: ${log.text}${location}`
-                    )
-                })
-
-                console.log('\n' + '='.repeat(80) + '\n')
+                console.log(logs.map(log => log.text).join('\n'))      
             } catch (error) {
                 console.error('Failed to parse console logs:', error)
             }
