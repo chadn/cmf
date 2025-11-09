@@ -12,9 +12,10 @@ This document covers manual and automated tests.
     - [End-to-End Testing](#end-to-end-testing)
         - [Playwright Directory Structure](#playwright-directory-structure)
         - [E2E Example](#e2e-example)
+        - [E2E Coverage](#e2e-coverage)
     - [Integration Tests](#integration-tests)
     - [Unit and Component Tests](#unit-and-component-tests)
-    - [Jest Coverage](#jest-coverage)
+        - [Jest Coverage](#jest-coverage)
 - [Next Steps for Testing](#next-steps-for-testing)
     - [Priority 1: Improve Map Component Testing](#priority-1-improve-map-component-testing)
     - [Priority 2: Complete Hook Testing](#priority-2-complete-hook-testing)
@@ -136,8 +137,11 @@ E2E tests are performed by Playwright, which emulates users by loading web page,
 Tests live in [/tests/e2e](../tests/e2e/), outside of `/src`, since E2E doesn't test source files directly, but the running app (UI, API endpoints).
 
 **📚 E2E Test Documentation:**
+
 - [tests-e2e-architecture.md](tests-e2e-architecture.md) - Testing principles, patterns, and selector strategies
 - [tests-e2e-examples.md](tests-e2e-examples.md) - Code examples and anti-patterns
+
+TEMPORARY DOC:
 - [tests-e2e-migration.md](tests-e2e-migration.md) - Phased implementation plan and progress, temporary.
 
 **Examples:** 
@@ -296,6 +300,30 @@ To open last HTML report run:
 real 19.169	user 23.509	sys 9.991	pcpu 100.00
 ```
 
+#### E2E Coverage
+
+The following should be the list of what is important in e2e tests.  
+For each coverage item, list test items by stating filename and test name.
+If there are no tests that can consistently pass for an item, note why and suggest ways to solve.
+
+**Critical workflows (must be tested):**
+1. [x] Load app with events
+1. [x] View today's events (qf=today)
+1. [x] View selected event from shared URL
+1. [x] Click map marker to select
+1. [x] Click event row to select
+1. [x] Selected Events Exception behavior
+1. [x] Create and remove map filter chip
+1. [x] Create and remove date filter chip
+    1. `interactive.spec.ts`: 'Date filter clearing - qf=weekend filter chip interaction'
+1. [x] Create and remove search filter chip
+
+**Important workflows (should be tested):**
+1. [ ] Date selector interactions
+1. [ ] Search real-time filtering
+1. [ ] Visible button click
+1. [ ] Multiple filters together
+
 ### Integration Tests
 
 **Convention:** Keep tests next to feature code.
@@ -327,7 +355,7 @@ src/components/events/EventList.tsx          # React component
 src/components/events/__tests__/EventList.test.tsx  # Component tests with RTL
 ```
 
-### Jest Coverage
+#### Jest Coverage
 
 **Test Coverage:** The following output from `npm test` makes it easy to see test coverage and compare against the [Directory Structure in implementation.md](implementation.md#directory-structure)
 
