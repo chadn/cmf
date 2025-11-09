@@ -11,6 +11,8 @@ import {
     differenceInMinutes,
     differenceInHours,
     differenceInDays,
+    setHours,
+    startOfDay,
 } from 'date-fns'
 import { DateTime } from 'luxon'
 import { CmfEvent, DateRangeIso } from '@/types/events'
@@ -524,4 +526,35 @@ export function parseDateString(dateStr: string): Date | null {
         logr.warn('date', `parseDateString(${dateStr}) error:`, error)
         return null
     }
+}
+
+// ===== HELPER FUNCTIONS FOR STABLE E2E TEST EVENTS =====
+export function getDaysFromNowAt(daysFromNow: number, hour: number, minute: number): string {
+    const day = addDays(new Date(), daysFromNow)
+    const date = setHours(startOfDay(day), hour)
+    date.setMinutes(minute)
+    return date.toISOString()
+}
+/**
+ * Returns ISO string for the next occurrence of the specified day of the week.
+ * If today is the specified day, returns the date for next week.
+ * @param dayOfWeek 0 for sunday, 6 for saturday
+ * @param hour 
+ * @param minute 
+ * @returns ISO string
+ */
+export function getDayAt(dayOfWeek: number, hour: number, minute: number): string {
+    const now = new Date()
+    const currentDayOfWeek = now.getDay()
+    let daysFromNow = dayOfWeek - currentDayOfWeek
+    if (daysFromNow < 1) {
+        daysFromNow += 7
+    }
+    return getDaysFromNowAt(daysFromNow, hour, minute)
+}
+export function getTodayAt(hour: number, minute: number): string {
+    return getDaysFromNowAt(0, hour, minute)
+}
+export  function getTomorrowAt(hour: number, minute: number): string {
+    return getDaysFromNowAt(1, hour, minute)
 }

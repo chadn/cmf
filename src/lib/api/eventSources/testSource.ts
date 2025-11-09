@@ -4,42 +4,11 @@ import { CmfEvent, EventsSourceParams, EventsSourceResponse, EventsSource } from
 import { logr } from '@/lib/utils/logr'
 import { BaseEventSourceHandler, registerEventSourceFactory } from './index'
 import { createTestEvent } from '@/tests/locations'
-import { addDays, startOfDay, setHours } from 'date-fns'
+import { getDayAt, getTodayAt, getTomorrowAt } from '@/lib/utils/date'
 
-// ===== HELPER FUNCTIONS FOR STABLE E2E TEST EVENTS =====
-
-function getTodayAt(hour: number, minute: number): string {
-    const now = new Date()
-    const date = setHours(startOfDay(now), hour)
-    date.setMinutes(minute)
-    return date.toISOString()
-}
-
-function getTomorrowAt(hour: number, minute: number): string {
-    const tomorrow = addDays(new Date(), 1)
-    const date = setHours(startOfDay(tomorrow), hour)
-    date.setMinutes(minute)
-    return date.toISOString()
-}
-
-function getNextWeekendFriday(hour: number, minute: number): string {
-    const now = new Date()
-    const dayOfWeek = now.getDay()
-    let daysToFriday = 0
-
-    if (dayOfWeek === 0) daysToFriday = 5 // Sunday
-    else if (dayOfWeek < 5) daysToFriday = 5 - dayOfWeek // Mon-Thu
-    else if (dayOfWeek === 5) daysToFriday = 7 // Friday (next week)
-    else daysToFriday = 6 // Saturday
-
-    const friday = addDays(now, daysToFriday)
-    const date = setHours(startOfDay(friday), hour)
-    date.setMinutes(minute)
-    return date.toISOString()
-}
 
 // ===== STABLE TEST EVENT SETS FOR E2E TESTS =====
-
+// es=test:stable
 const STABLE_EVENTS: CmfEvent[] = [
     {
         id: 'event-today-sf',
@@ -64,8 +33,8 @@ const STABLE_EVENTS: CmfEvent[] = [
         name: 'Weekend Event Oakland',
         description: 'Weekend event in Oakland',
         description_urls: [],
-        start: getNextWeekendFriday(18, 0),
-        end: getNextWeekendFriday(22, 0),
+        start: getDayAt(5, 18, 0), // 5 = Friday
+        end: getDayAt(5, 22, 0),
         location: 'Oakland, CA',
         original_event_url: 'https://example.com/weekend-oakland',
         resolved_location: {
@@ -92,6 +61,42 @@ const STABLE_EVENTS: CmfEvent[] = [
             lat: 37.8715,
             lng: -122.273,
             formatted_address: 'Berkeley, CA, USA',
+        },
+        tz: 'America/Los_Angeles',
+    },
+    {
+        id: 'event-next-Tuesday-SF',
+        name: 'Tuesday Event SF',
+        description: 'Event next Tuesday in San Francisco',
+        description_urls: [],
+        start: getDayAt(2, 10, 0), // 2 = Tuesday
+        end: getDayAt(2, 12, 0),
+        location: 'Berkeley, CA',
+        original_event_url: 'https://example.com/tomorrow-berkeley',
+        resolved_location: {
+            status: 'resolved',
+            original_location: 'Berkeley, CA',
+            lat: 37.8715,
+            lng: -122.273,
+            formatted_address: 'Berkeley, CA, USA',
+        },
+        tz: 'America/Los_Angeles',
+    },
+    {
+        id: 'event-Friday-Oakland',
+        name: 'Friday Lake Merritt Oakland',
+        description: 'Dancing at the Lake Merritt Pergola',
+        description_urls: [],
+        start: getDayAt(5, 18, 0), // 5 = Friday
+        end: getDayAt(5, 22, 0),
+        location: 'The Pergola at Lake Merritt, 599 El Embarcadero, Oakland, CA 94610, USA',
+        original_event_url: 'https://example.com/friday-oakland',
+        resolved_location: {
+            status: 'resolved',
+            original_location: 'The Pergola at Lake Merritt, 599 El Embarcadero, Oakland, CA 94610, USA',
+            lat: 37.808552,
+            lng: -122.249744,
+            formatted_address: '599 El Embarcadero, Oakland, CA 94610, USA',
         },
         tz: 'America/Los_Angeles',
     },

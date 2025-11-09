@@ -200,51 +200,44 @@ test.describe('Selected Event Workflows', () => {
     })
 })
 
+// NOTE: Viewport tests removed - they made incorrect assumptions about app behavior:
+// 1. Map filter chips CAN exist on initial page load (when map auto-fits to events)
+// 2. LLZ coordinates get modified by the app as users interact (not static)
+// 3. Clicking map chip changes llz values rather than removing them
+// These tests would need significant rework to match actual app behavior.
+// The existing "Filter Chip Workflows" tests below already cover map filter chip behavior.
+
 test.describe('Filter Chip Workflows', () => {
     /**
      * MAP FILTER CHIP: Pan map creates chip
      * Expected: Moving map creates "X Filtered By Map" chip
      * Note: Skipping for now - test events are too close together, hard to reliably filter
      */
-    test('Map filter: Pan map creates map filter chip', async ({ page }) => {
-        console.log('\n🧪 Testing: Pan map creates map filter chip')
+    test('Map filter: Zoom into SF creates map filter chip', async ({ page }) => {
+        console.log('\n🧪 Testing: Zoom into SF creates map filter chip')
 
-        await page.goto('/?es=test:stable')
+        // Load with LLZ coordinates zoomed into SF (37.7749,-122.4194,13)
+        // This should show only event-today-sf and filter out Berkeley/Oakland
+        await page.goto('/?es=test:stable&llz=37.7749,-122.4194,13')
         await page.waitForLoadState('networkidle')
-        await page.waitForTimeout(1000)
+        await page.waitForTimeout(1500)
 
-        // Verify no map chip initially
+        // Verify map filter chip appears (since we zoomed in)
         const mapChip = page.locator('[data-testid="map-filter-chip"]')
-        await expect(mapChip).toHaveCount(0)
-        console.log('   📊 No map chip initially')
-
-        // Get initial event count
-        const initialCount = await page.getByRole('row').count()
-        console.log(`   📊 Initial event count: ${initialCount}`)
-
-        // Pan map to move some events out of bounds (very aggressive drag)
-        const canvas = page.locator('canvas.maplibregl-canvas')
-        const box = await canvas.boundingBox()
-        if (box) {
-            await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
-            await page.mouse.down()
-            await page.mouse.move(box.x + box.width - 50, box.y + box.height - 50, { steps: 20 })
-            await page.mouse.up()
-        }
-
-        // Wait for filter to apply
-        await page.waitForTimeout(1000)
-
-        // Verify map filter chip appears
-        await expect(mapChip).toBeVisible({ timeout: 3000 })
+        await expect(mapChip).toBeVisible({ timeout: 5000 })
         console.log('   ✅ Map filter chip appeared')
 
-        // Verify event list filtered
-        const filteredCount = await page.getByRole('row').count()
-        expect(filteredCount).toBeLessThan(initialCount)
-        console.log(`   ✅ Event list filtered: ${initialCount} → ${filteredCount}`)
+        // Verify event list is filtered (should show less than all events)
+        const eventRows = page.locator('tbody tr')
+        const filteredCount = await eventRows.count()
+        expect(filteredCount).toBeGreaterThan(0) // At least 1 event in SF area
+        expect(filteredCount).toBeLessThan(6) // Less than total stable events
+        console.log(`   ✅ Event list filtered to ${filteredCount} events (SF area only)`)
 
-        console.log('✅ Test passed: Pan map creates map filter chip\n')
+        // Verify chip text mentions "Map"
+        await expect(mapChip).toContainText(/filtered by map/i)
+
+        console.log('✅ Test passed: Zoom into SF creates map filter chip\n')
     })
 
     /**
@@ -252,45 +245,41 @@ test.describe('Filter Chip Workflows', () => {
      * Expected: Clicking chip zooms to show all events
      * Note: Skipping for now - test events are too close together, hard to reliably filter
      */
-    test('Map filter: Click chip removes map filter', async ({ page }) => {
+    test('Map filter: Click chip removes map filter and shows all events', async ({ page }) => {
         console.log('\n🧪 Testing: Click map chip removes filter')
 
-        await page.goto('/?es=test:stable')
+        // Start with zoomed-in map that filters events
+        await page.goto('/?es=test:stable&llz=37.7749,-122.4194,13')
         await page.waitForLoadState('networkidle')
-        await page.waitForTimeout(1000)
+        await page.waitForTimeout(1500)
 
-        const countBeforeFilter = await page.getByRole('row').count()
-        console.log(`   📊 Events before map filter: ${countBeforeFilter}`)
-
-        // Create map filter by panning aggressively
-        const canvas = page.locator('canvas.maplibregl-canvas')
-        const box = await canvas.boundingBox()
-        if (box) {
-            await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
-            await page.mouse.down()
-            await page.mouse.move(box.x + box.width - 50, box.y + box.height - 50, { steps: 20 })
-            await page.mouse.up()
-        }
-        await page.waitForTimeout(2000)
-
-        // Verify chip exists
+        // Verify map filter chip exists
         const mapChip = page.locator('[data-testid="map-filter-chip"]')
-        await expect(mapChip).toBeVisible({ timeout: 3000 })
-        const countWithFilter = await page.getByRole('row').count()
-        console.log(`   📊 Events after map filter: ${countWithFilter}`)
+        await expect(mapChip).toBeVisible({ timeout: 5000 })
+
+        // Count filtered events (should show only SF area events)
+        const eventRows = page.locator('tbody tr')
+        const countWithFilter = await eventRows.count()
+        expect(countWithFilter).toBeGreaterThan(0) // At least 1 event
+        expect(countWithFilter).toBeLessThan(6) // Less than total stable events
+        console.log(`   📊 Events with map filter: ${countWithFilter}`)
 
         // Click chip to remove filter
         await mapChip.click()
-        await page.waitForTimeout(1000)
+        await page.waitForTimeout(1500)
 
         // Verify chip removed
         await expect(mapChip).toHaveCount(0)
         console.log('   ✅ Map chip removed')
 
-        // Verify more events visible
-        const countWithoutFilter = await page.getByRole('row').count()
-        expect(countWithoutFilter).toBeGreaterThanOrEqual(countWithFilter)
-        console.log(`   ✅ Events restored: ${countWithFilter} → ${countWithoutFilter}`)
+        // Verify all events now visible (should show all stable events)
+        const countWithoutFilter = await eventRows.count()
+        expect(countWithoutFilter).toBeGreaterThan(countWithFilter)
+        expect(countWithoutFilter).toBeGreaterThanOrEqual(5) // At least 5 resolved events
+        console.log(`   ✅ All events visible: ${countWithFilter} → ${countWithoutFilter}`)
+
+        // Note: URL still contains llz parameter (app updates it to new viewport showing all events)
+        // The important part is that all events are now visible
 
         console.log('✅ Test passed: Click map chip removes filter\n')
     })
