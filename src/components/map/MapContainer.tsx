@@ -45,7 +45,7 @@ const MapContainer: React.FC<MapContainerProps> = ({
 }) => {
     const mapRef = useRef<MapRef>(null)
     const [popupMarker, setPopupMarker] = useState<MapMarker | null>(null)
-    const mapWidthHeightRef = useRef({ w: 1001, h: 1001 }) // set to 999 x 999 elsewhere
+    const mapWidthHeightRef = useRef({ w: 1001, h: 1001 }) // local copy of mapHookWidthHeight (set to 999 x 999), should be actual pixels of map
     const renderCountRef = useRef(0)
     const lastRenderTime = useRef(performance.now())
 
@@ -61,9 +61,16 @@ const MapContainer: React.FC<MapContainerProps> = ({
             )
         }
         lastRenderTime.current = currentRenderTime
+    } else {
+        renderCountRef.current++
     }
 
-    // Get map dimensions and update parent component if dimensions have changed
+    // Get map width and height in pixels, store in local mapWidthHeightRef,
+    // and if changed then update parents mapHookWidthHeight via onWidthHeightChange.
+    // This is needed to accurately calcuate bounds from viewport 
+    // and update parent component if dimensions have changed.
+    // Only changes when user resizes window or map container (dragging separator)
+    // vs bounds and viewport which change more frequently.
     const updateMapWidthHeight = useCallback(() => {
         let newDimensions = { w: 1000, h: 1000 }
         if (mapRef.current) {
@@ -102,8 +109,7 @@ const MapContainer: React.FC<MapContainerProps> = ({
             west: 0,
         }
         if (mapRef.current) {
-            const map = mapRef.current.getMap()
-            const bounds = map.getBounds()
+            const bounds = mapRef.current.getMap().getBounds()
             if (bounds) {
                 ret = roundMapBounds({
                     north: bounds.getNorth(),
@@ -134,24 +140,33 @@ const MapContainer: React.FC<MapContainerProps> = ({
                 stringify(vp)
             )
             // TODO: this function should debounce
-            updateMapWidthHeight() // Update dimensions and notify parent if changed
+            updateMapWidthHeight() // Check for change in WxH pixels, which is rare but possible
             onViewportChange(vp) // calls setViewport()
             debouncedUpdateBounds()
         },
         [onViewportChange, debouncedUpdateBounds, updateMapWidthHeight]
     )
 
-    // Handle Map onLoad
-    // TODO: do we need this ? need to say why it exists
+    // At some point very early in initialization need to:
+    // - get actual size (width, height) in pixels of map, done by updateMapWidthHeight()
+    // - use that size to get accurate N, S, E, W, bounds (needed for visible events and markers) 
+    //
+    // handleMapLoad ends up not being called till way later, so using the following solution:
+    if (renderCountRef.current < 6) {
+        logr.info('mapc', `renderCountRef(${renderCountRef.current}) calling updateMapWidthHeight()`)
+        updateMapWidthHeight()
+    }
+
     const handleMapLoad = useCallback(() => {
         logr.info('mapc', 'uC: Map onLoad: handleMapLoad')
         setTimeout(() => {
             updateMapWidthHeight() // Update dimensions and notify parent if changed
             const initialBounds = getMapBounds()
-            logr.info('mapc', 'timeout=10ms, setting initial bounds', initialBounds)
+            logr.info('mapc', 'timeout=10ms, handleMapLoad setting initial bounds', initialBounds)
             onBoundsChange(initialBounds, false) // false = not from user interaction
         }, 10)
     }, [updateMapWidthHeight, getMapBounds, onBoundsChange])
+
 
     // Log when markers length changes
     useEffect(() => {
@@ -160,8 +175,9 @@ const MapContainer: React.FC<MapContainerProps> = ({
 
     // Log when viewport changes
     useEffect(() => {
-        logr.info('mapc', `uE: MapContainer updated viewport, now ${stringify(viewport)}`)
-    }, [viewport, viewport.latitude, viewport.longitude, viewport.zoom])
+        const bounds = getMapBounds()
+        logr.info('mapc', `uE: MapContainer updated viewport, now ${stringify(viewport)} ${stringify(bounds)} `)
+    }, [viewport, viewport.latitude, viewport.longitude, viewport.zoom, getMapBounds])
 
     // Close popup when selected marker changes to null
     useEffect(() => {
@@ -272,7 +288,7 @@ const MapContainer: React.FC<MapContainerProps> = ({
                 bearing={viewport.bearing}
                 pitch={viewport.pitch}
                 onMove={(evt) => handleViewportChange(evt.viewState)}
-                onLoad={handleMapLoad}
+                onLoad={handleMapLoad} // Note this is not called till user-interactive, so we also load earlier.
                 style={{ width: '100%', height: '100%', position: 'absolute' }}
                 interactive={true}
                 dragRotate={false} // Disable rotation for simplicity

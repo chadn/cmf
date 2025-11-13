@@ -291,9 +291,11 @@ export function calculateBoundsFromMarkers(markers: MapMarker[]): MapBounds {
 
     // Add padding to ensure markers on exact boundaries are included after rounding
     // Plus it looks better to not have markers touching the edges.
-    const SMALL_PADDING = 0.00001 // Slightly larger than toFixed(6) precision to handle rounding
-    const LARGE_PADDING = 0.003 // And if just one marker, give it a bit more breathing room.
-    const PADDING = markers.length === 1 ? LARGE_PADDING : SMALL_PADDING
+    // Increased padding to 0.03 to prevent race condition where map adjustments during load
+    // cause events to fall outside bounds (especially for tightly clustered events)
+    const PADDING_SINGLE = 0.02 // 0.03 is about ~2km buffer  
+    const PADDING_MULTIPLE = 0.001 
+    const PADDING = markers.length === 1 ? PADDING_SINGLE : PADDING_MULTIPLE
     ret.north += PADDING
     ret.south -= PADDING
     ret.east += PADDING

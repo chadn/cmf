@@ -36,11 +36,11 @@ const pageLoadTests: PageLoadTestCase[] = [
                 logPattern: '[FLTR_EVTS_MGR] setFilter: dateRange: ',
                 cb: (logs) => {
                     console.log('********** chad logs **********\n' + JSON.stringify(logs))
-                    // Accept any hour for end time due to DST transitions
+                    // Accept any hour for start and end time due to DST transitions
                     // Ex: FLTR_EVTS_MGR] setFilter: dateRange: 2025-09-26T11:01:00.000Z to 2025-09-29T06:59:59.999Z
-                    // Note: End hour changes with DST (T06 during PDT, T07 during PST)
+                    // Note: Start/end hours can vary with DST (T11 or T12 for start, T06 or T07 for end)
                     const matches = logs[logs.length - 1].match(
-                        /FLTR_EVTS_MGR\] setFilter: dateRange: (\d{4}-\d{2}-\d{2}T11:01:00.000Z) to (\d{4}-\d{2}-\d{2}T\d{2}:59:59.999Z)/
+                        /FLTR_EVTS_MGR\] setFilter: dateRange: (\d{4}-\d{2}-\d{2}T\d{2}:01:00.000Z) to (\d{4}-\d{2}-\d{2}T\d{2}:59:59.999Z)/
                     )
                     expect(matches).toHaveLength(3)
                     if (matches && matches.length > 2) {

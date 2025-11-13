@@ -116,10 +116,10 @@ describe('Location and Map Utilities', () => {
             const result = calculateMapBoundsAndViewport([], 800, 600)
 
             expect(result.bounds).toEqual({
-                north: 72.00001,
-                south: -8.00001,
-                east: -79.99999,
-                west: -156.00001,
+                north: 72.001,
+                south: -8.001,
+                east: -79.999,
+                west: -156.001,
             })
             expect(result.viewport).toEqual({
                 latitude: 32.0,
@@ -140,12 +140,12 @@ describe('Location and Map Utilities', () => {
 
             const result = calculateMapBoundsAndViewport([marker], 800, 600)
 
-            // Should add padding to single marker and round to 6 decimal places
+            // Should add padding to single marker (0.02) and round to 6 decimal places
             expect(result.bounds).toEqual({
-                north: 37.7779,
-                south: 37.7719,
-                east: -122.4164,
-                west: -122.4224,
+                north: 37.7949,
+                south: 37.7549,
+                east: -122.3994,
+                west: -122.4394,
             })
             expect(result.viewport).toEqual({
                 latitude: 37.7749,
@@ -182,13 +182,13 @@ describe('Location and Map Utilities', () => {
 
             const result = calculateMapBoundsAndViewport(markers, 800, 600)
 
-            // Check that bounds include all markers with small padding and rounding
+            // Check that bounds include all markers with small padding (0.001) and rounding
             expect(result.bounds).toBeDefined()
             if (result.bounds) {
-                expect(result.bounds.north).toBe(37.79351) // Max latitude + small padding
-                expect(result.bounds.south).toBe(37.77489) // Min latitude - small padding
-                expect(result.bounds.east).toBe(-122.41669) // Max longitude + small padding
-                expect(result.bounds.west).toBe(-122.43991) // Min longitude - small padding
+                expect(result.bounds.north).toBe(37.7945) // Max latitude (37.7935) + 0.001
+                expect(result.bounds.south).toBe(37.7739) // Min latitude (37.7749) - 0.001
+                expect(result.bounds.east).toBe(-122.4157) // Max longitude (-122.4167) + 0.001
+                expect(result.bounds.west).toBe(-122.4409) // Min longitude (-122.4399) - 0.001
             }
 
             // Check viewport center is between min and max coordinates
@@ -225,10 +225,10 @@ describe('Location and Map Utilities', () => {
             const result = calculateMapBoundsAndViewport(markers, 800, 600)
 
             expect(result.bounds).toEqual({
-                north: 37.77491,
-                south: 37.77489,
-                east: -122.41939,
-                west: -122.41941,
+                north: 37.7759,
+                south: 37.7739,
+                east: -122.4184,
+                west: -122.4204,
             })
             expect(result.viewport).toEqual({
                 latitude: 37.7749,
@@ -247,10 +247,10 @@ describe('Location and Map Utilities', () => {
             const result = calculateBoundsFromMarkers([])
 
             expect(result).toEqual({
-                north: 72.00001,
-                south: -8.00001,
-                east: -79.99999,
-                west: -156.00001,
+                north: 72.001,
+                south: -8.001,
+                east: -79.999,
+                west: -156.001,
             })
         })
 
@@ -265,10 +265,10 @@ describe('Location and Map Utilities', () => {
             const result = calculateBoundsFromMarkers([marker])
 
             expect(result).toEqual({
-                north: 37.7779,
-                south: 37.7719,
-                east: -122.4164,
-                west: -122.4224,
+                north: 37.7949,
+                south: 37.7549,
+                east: -122.3994,
+                west: -122.4394,
             })
         })
 
@@ -296,11 +296,11 @@ describe('Location and Map Utilities', () => {
 
             const result = calculateBoundsFromMarkers(markers)
 
-            // Check bounds with small padding and rounding
-            expect(result.north).toBe(37.79351) // Max latitude + small padding
-            expect(result.south).toBe(37.77489) // Min latitude - small padding
-            expect(result.east).toBe(-122.41669) // Max longitude + small padding
-            expect(result.west).toBe(-122.43991) // Min longitude - small padding
+            // Check bounds with small padding (0.001) and rounding
+            expect(result.north).toBe(37.7945) // Max latitude (37.7935) + 0.001
+            expect(result.south).toBe(37.7739) // Min latitude (37.7749) - 0.001
+            expect(result.east).toBe(-122.4157) // Max longitude (-122.4167) + 0.001
+            expect(result.west).toBe(-122.4409) // Min longitude (-122.4399) - 0.001
         })
 
         it('should handle markers with extreme values', () => {
@@ -327,10 +327,10 @@ describe('Location and Map Utilities', () => {
 
             const result = calculateBoundsFromMarkers(markers)
 
-            expect(result.north).toBe(90.00001)
-            expect(result.south).toBe(-90.00001)
-            expect(result.east).toBe(180.00001)
-            expect(result.west).toBe(-180.00001)
+            expect(result.north).toBe(90.001)
+            expect(result.south).toBe(-90.001)
+            expect(result.east).toBe(180.001)
+            expect(result.west).toBe(-180.001)
         })
     })
 
