@@ -34,6 +34,9 @@ export default function DateAndSearchFilters({
     const { sq: searchQuery } = urlState
     const [showDateSliders, setShowDateSliders] = useState(false)
 
+    // Client-only rendering to prevent hydration errors from timezone differences
+    const [isMounted, setIsMounted] = useState(false)
+
     // Extract from simplified dateConfig - single source of truth
     const { minDate, maxDate, totalDays, activeRange } = dateConfig
     const now = useMemo(() => new Date(), [])
@@ -50,6 +53,10 @@ export default function DateAndSearchFilters({
         isFiltered: dateConfig.isFiltered
     })}`)
     */
+    useEffect(() => {
+        setIsMounted(true)
+    }, [])
+
     useEffect(() => {
         if (showDateSliders) {
             umamiTrack('showDateSliders')
@@ -124,8 +131,14 @@ export default function DateAndSearchFilters({
                                     className="w-full text-left text-sm md:text-md p-1 transition-colors bg-blue-100 text-blue-800 rounded cursor-pointer hover:bg-blue-200  duration-150"
                                     data-testid="date-range-dropdown"
                                 >
-                                    {formattedDates.startButton} - {formattedDates.endButton}{' '}
-                                    {showDateSliders ? '↑' : '↓'}
+                                    {isMounted ? (
+                                        <>
+                                            {formattedDates.startButton} - {formattedDates.endButton}{' '}
+                                            {showDateSliders ? '↑' : '↓'}
+                                        </>
+                                    ) : (
+                                        'Select dates... ↓'
+                                    )}
                                 </button>
                             </div>
                         </div>
