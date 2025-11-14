@@ -4,7 +4,7 @@ import { CmfEvent, EventsSourceParams, EventsSourceResponse, EventsSource } from
 import { logr } from '@/lib/utils/logr'
 import { BaseEventSourceHandler, registerEventSourceFactory } from './index'
 import { createTestEvent } from '@/tests/locations'
-import { getDayAt, getTodayAt, getTomorrowAt } from '@/lib/utils/date'
+import { getDayAt, getDaysFromNowAt } from '@/lib/utils/date'
 
 
 // ===== STABLE TEST EVENT SETS FOR E2E TESTS =====
@@ -15,8 +15,8 @@ const STABLE_EVENTS: CmfEvent[] = [
         name: 'Today Event SF',
         description: 'Event happening today in San Francisco',
         description_urls: [],
-        start: getTodayAt(14, 0),
-        end: getTodayAt(16, 0),
+        start: getDayAt(0, 14, 0), // today == 0 days from now
+        end: getDayAt(0, 16, 0),
         location: 'San Francisco, CA',
         original_event_url: 'https://example.com/today-sf',
         resolved_location: {
@@ -69,8 +69,8 @@ const STABLE_EVENTS: CmfEvent[] = [
         name: 'Tomorrow Event Berkeley',
         description: 'Event tomorrow in Berkeley',
         description_urls: [],
-        start: getTomorrowAt(10, 0),
-        end: getTomorrowAt(12, 0),
+        start: getDayAt(1, 10, 0), // Tomorrow == 1 day from now
+        end: getDayAt(1, 12, 0),
         location: 'Berkeley, CA',
         original_event_url: 'https://example.com/tomorrow-berkeley',
         resolved_location: {
@@ -105,8 +105,8 @@ const STABLE_EVENTS: CmfEvent[] = [
         name: 'Friday Lake Merritt Oakland',
         description: 'Dancing at the Lake Merritt Pergola',
         description_urls: [],
-        start: getDayAt(5, 18, 0), // 5 = Friday
-        end: getDayAt(5, 22, 0),
+        start: getDayAt(12, 18, 0), // 12 = Friday
+        end: getDayAt(12, 22, 0),
         location: 'The Pergola at Lake Merritt, 599 El Embarcadero, Oakland, CA 94610, USA',
         original_event_url: 'https://example.com/friday-oakland',
         resolved_location: {
@@ -123,8 +123,8 @@ const STABLE_EVENTS: CmfEvent[] = [
         name: 'Unresolved Location Event',
         description: 'Event with unresolved location',
         description_urls: [],
-        start: getTodayAt(20, 0),
-        end: getTodayAt(22, 0),
+        start: getDaysFromNowAt(1, 20, 0),
+        end: getDaysFromNowAt(1, 22, 0),
         location: 'gibberish123',
         original_event_url: 'https://example.com/unresolved',
         resolved_location: {

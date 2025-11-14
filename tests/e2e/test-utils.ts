@@ -320,7 +320,7 @@ export function verifyLogPatterns(logs: ConsoleMessage[], expectedLogs: LogPatte
                 console.log(`✅ Callback successful: ${description}`)
             } catch (error) {
                 console.log(`❌ Callback assertMatch() failed/error: ${error}`)
-                console.log(`ALL ${logs.length} LOGS:\n` + logs.map((log) => log.text).join('\n'))
+                console.log(`ALL ${logs.length} LOGS, since none matched logPattern="${logPattern}"\n` + logs.map((log) => log.text).join('\n'))
                 throw error
             }
         }
@@ -331,7 +331,7 @@ export function verifyLogPatterns(logs: ConsoleMessage[], expectedLogs: LogPatte
             expect(matchingLogs.length).toBeGreaterThan(0) // should not happen, transition test to use assertMatch
         }
         if (matchingLogs.length == 0) {
-            console.log(`ALL ${logs.length} LOGS:\n` + logs.map((log) => log.text).join('\n'))
+            console.log(`ALL ${logs.length} LOGS, since none matched logPattern="${logPattern}"\n` + logs.map((log) => log.text).join('\n'))
         }
     }
 }

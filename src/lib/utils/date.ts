@@ -538,7 +538,7 @@ export function getDaysFromNowAt(daysFromNow: number, hour: number, minute: numb
 /**
  * Returns ISO string for the next occurrence of the specified day of the week.
  * If today is the specified day, returns the date for next week.
- * @param dayOfWeek 0 for sunday, 6 for saturday
+ * @param dayOfWeek 0 for sunday, 6 for saturday, 7 for sunday after.
  * @param hour 
  * @param minute 
  * @returns ISO string
@@ -557,4 +557,17 @@ export function getTodayAt(hour: number, minute: number): string {
 }
 export  function getTomorrowAt(hour: number, minute: number): string {
     return getDaysFromNowAt(1, hour, minute)
+}
+
+/**
+ * getYYYYMMDDFromIso(getDayAt(5, 12, 0))
+ * @param isoString could be output from getDayAt(5, 12, 0) // 5=Friday
+ * @returns date string like "2023-10-27"
+ */
+export function getYYYYMMDDFromIso(isoString: string): string {
+    const date = new Date(isoString)
+    const year = date.getFullYear()
+    const month = (date.getMonth() + 1).toString().padStart(2, '0')
+    const day = date.getDate().toString().padStart(2, '0')
+    return `${year}-${month}-${day}`
 }

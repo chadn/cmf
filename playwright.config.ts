@@ -2,6 +2,7 @@ import { defineConfig, devices } from '@playwright/test'
 
 // if number of tests is close to NUM_PARALLEL_WORKERS, update NUM_PARALLEL_WORKERS to be same.
 // Reduced from 6 to 2 to prevent overwhelming the dev server with parallel requests
+// Note using 1 still did not prevent flaky tests from failing when run as test suite.
 const NUM_PARALLEL_WORKERS = 2
 /**
  * @see https://playwright.dev/docs/test-configuration
@@ -12,8 +13,8 @@ export default defineConfig({
     fullyParallel: true,
     /* Fail the build on CI if you accidentally left test.only in the source code. */
     forbidOnly: !!process.env.CI,
-    /* Retry on CI only */
-    retries: process.env.CI ? 2 : 0,
+    // can also retry: npx playwright test --last-failed
+    retries: process.env.CI ? 2 : 1, 
     /* Opt out of parallel tests on CI. */
     workers: process.env.CI ? 1 : NUM_PARALLEL_WORKERS,
     /* Reporter to use. See https://playwright.dev/docs/test-reporters */

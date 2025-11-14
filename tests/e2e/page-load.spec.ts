@@ -10,6 +10,11 @@ import {
     DEFAULT_CAPTURE_OPTIONS,
     extractCounts,
 } from './test-utils'
+import { getDayAt, getYYYYMMDDFromIso } from '@/lib/utils/date'
+
+const dateFriday = getYYYYMMDDFromIso(getDayAt(12, 12, 0))
+const dateSunday = getYYYYMMDDFromIso(getDayAt(14, 12, 0))
+const dateMonday = getYYYYMMDDFromIso(getDayAt(15, 12, 0))
 
 // Define your page load test cases
 const pageLoadTests: PageLoadTestCase[] = [
@@ -35,7 +40,6 @@ const pageLoadTests: PageLoadTestCase[] = [
                 description: 'Test weekend is >2 but <3 days',
                 logPattern: '[FLTR_EVTS_MGR] setFilter: dateRange: ',
                 cb: (logs) => {
-                    console.log('********** chad logs **********\n' + JSON.stringify(logs))
                     // Accept any hour for start and end time due to DST transitions
                     // Ex: FLTR_EVTS_MGR] setFilter: dateRange: 2025-09-26T11:01:00.000Z to 2025-09-29T06:59:59.999Z
                     // Note: Start/end hours can vary with DST (T11 or T12 for start, T06 or T07 for end)
@@ -72,18 +76,18 @@ const pageLoadTests: PageLoadTestCase[] = [
     },
     {
         name: 'Custom fsd Date Range Test',
-        url: '/?es=test:stable&fsd=2025-10-30&fed=2025-11-2',
+        url: `/?es=test:stable&fsd=${dateFriday}&fed=${dateSunday}`,
         timezoneId: 'America/New_York', // 5 hrs from UTC at this date
-        skip: true, // Skip - test:stable has dynamic dates, fixed date range may include all/no events
+        //skip: true, // Skip - test:stable has dynamic dates, fixed date range may include all/no events
         expectedLogs: [
             {
                 description: 'URL service processes explicit date filter',
-                logPattern: 'URL_SERVICE] Processing explicit date filter: {"fsd":"2025-10-30","fed":"2025-11-2"}',
+                logPattern: `URL_SERVICE] Processing explicit date filter: {"fsd":"${dateFriday}","fed":"${dateSunday}"}`,
                 assertMatch: (matchingLogs) => expect(matchingLogs.length).toBeGreaterThan(0),
             },
             {
                 description: 'Filter events manager sets date range with NYC timezone conversion',
-                logPattern: '[FLTR_EVTS_MGR] setFilter: dateRange: 2025-10-30T08:01:00.000Z to 2025-11-03T04:59:59.999Z',
+                logPattern: `[FLTR_EVTS_MGR] setFilter: dateRange: ${dateFriday}T09:01:00.000Z to ${dateMonday}T04:59:59.999Z`,
                 assertMatch: (matchingLogs) => expect(matchingLogs.length).toBeGreaterThan(0),
             },
             {
@@ -260,11 +264,6 @@ test.describe('Page Load Tests - URL Processing Verification', () => {
             }
             //console.log(`Preparing to run test: "${testCase.name}"`)
             test(testCase.name, async ({ page, browser }, testInfo) => {
-                // Skip weekend test on mobile - known flaky issue (initialShown = 0 when expected > 0)
-                if (testCase.name === 'Quick Filter qf=weekend Test' && testInfo.project.name === 'mobile-iphone16') {
-                    test.skip(true, 'Known issue: mobile weekend filter test is flaky')
-                }
-
                 console.log(`\n🧪 Running: ${testCase.name}`)
                 console.log(`📍 URL: ${testCase.url}`)
 

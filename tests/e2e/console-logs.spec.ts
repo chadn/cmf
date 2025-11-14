@@ -44,7 +44,10 @@ test.describe('Console Log Debugging', () => {
         reportErrors(logs, 'Home Page')
     })
 
-    test('capture console logs from custom URL', async ({ page }, testInfo) => {
+    test('Capture console logs from custom URL', async ({ page }, testInfo) => {
+        // Skip if TEST_URL is not set
+        test.skip(!process.env.TEST_URL, 'skipping custom URL test')
+
         // You can easily change this URL to test different pages/states
         const testUrl = process.env.TEST_URL || '/'
 
