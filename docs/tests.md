@@ -321,7 +321,7 @@ real 19.169	user 23.509	sys 9.991	pcpu 100.00
 
 #### E2E Example Fails
 
-The following notes from AI are about trying to fix these 2 failing tess
+The following notes from AI are about trying to fix these 2 failing tests.
 
 ```
 ❌ FAILED (2):
@@ -372,9 +372,9 @@ The following should be the list of what is important in e2e tests.
 For each coverage item, list test items by stating filename and test name.
 If there are no tests that can consistently pass for an item, note why and suggest ways to solve.
 
-**Status:** Ready for map refactor - all critical workflows tested ✅
+**Status:** Near ready for map refactor - 3 tests currently failing that need investigation ⚠️
 
-**Current Results:** 50 tests passing (desktop + mobile), 6 skipped
+**Current Results:** 47 passing, 3 failing, 6 skipped (out of 56 total tests)
 
 For detailed E2E test documentation, see [tests-e2e.md](tests-e2e.md)
 
@@ -397,16 +397,26 @@ For detailed E2E test documentation, see [tests-e2e.md](tests-e2e.md)
 - ⏭️ **Custom date range fsd/fed** - `page-load.spec.ts`: Skipped (incompatible with dynamic test data)
 
 **Platform Coverage:**
-- ✅ Desktop (Chrome) - All tests passing
-- ✅ Mobile (iPhone 16) - All tests passing except 2 weekend filter tests (known flaky issue)
+- ⚠️ Desktop (Chrome) - 1 failing test (smoke test for selected event)
+- ⚠️ Mobile (iPhone 16) - 2 failing tests + 2 skipped tests (weekend filter flaky issue)
 
 **Known Issues:**
-- **Mobile weekend filter tests** - 2 tests skipped on mobile due to flaky behavior (initialShown = 0 when expected > 0):
-  - `interactive.spec.ts:20` - "Date filter clearing - qf=weekend filter chip interaction"
-  - `page-load.spec.ts:17` - "Quick Filter qf=weekend Test"
-  - Root cause: Mobile viewport initialization timing or browser state pollution
-  - Mitigation: Skipped for mobile, passing on desktop
-  - Follow-up: Re-evaluate after map refactor
+
+**Currently Failing (3 tests):**
+1. ❌ `interactive.spec.ts:119` - "Date filter clearing - verify event list updates" (desktop + mobile)
+   - Test expects event list count to increase after clearing date filter
+   - May be related to dynamic test data (test:stable events change based on current date)
+   - Note: This test has a skip comment in code (line 117) but isn't actually skipped
+2. ❌ `smoke.spec.ts:126` - "Workflow 3: View selected event from shared URL (se=)" (desktop only)
+   - Critical workflow test - should be investigated as high priority
+   - Was passing before, may be flaky or data-dependent
+
+**Skipped on Mobile (2 tests):**
+- ⏭️ `interactive.spec.ts:20` - "Date filter clearing - qf=weekend filter chip interaction"
+- ⏭️ `page-load.spec.ts:17` - "Quick Filter qf=weekend Test"
+- Root cause: Mobile viewport initialization timing or browser state pollution (initialShown = 0 when expected > 0)
+- Mitigation: Skipped for mobile, passing on desktop
+- Follow-up: Re-evaluate after map refactor
 
 **Important workflows (not yet tested - post-refactor):**
 1. ⏭️ Date selector interactions (slider, calendar)
