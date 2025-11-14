@@ -212,71 +212,90 @@ npm run test:e2e:smoke -- --project=desktop-chrome
 ```bash
 time npm run test:e2e
 
-> calendar-map-filter@0.4.9 test:e2e
+> calendar-map-filter@0.4.10 test:e2e
 > playwright test
 
 🚫 Skipping, skip=true in code for test: "Custom fsd Date Range Test"
 
 🚫 Skipping, skip=true in code for test: "Unresolved Events Marker Popup"
 
+Running 56 tests using 2 workers
+
+  -   1 [desktop-chrome] › tests/e2e/console-logs.spec.ts:35:10 › Console Log Debugging › capture console logs from home page
+Navigating to: /
+  ✓   3 [desktop-chrome] › tests/e2e/console-logs.spec.ts:13:5 › test with custom (LA) timezone (1.3s)
+  -   4 [desktop-chrome] › tests/e2e/console-logs.spec.ts:77:10 › Console Log Debugging › check for specific log patterns
+
+...
+
 ================================================================================
 TEST SUMMARY
 ================================================================================
 
-✅ PASSED (38):
-  console-logs.spec.ts 11:5  › desktop-chrome › console-logs.spec.ts › test with custom (LA) timezone
-  console-logs.spec.ts 40:9  › desktop-chrome › console-logs.spec.ts › Console Log Debugging › capture console logs from custom URL
-  interactive.spec.ts 12:9  › desktop-chrome › interactive.spec.ts › User Interactive State Tests › Date filter clearing - qf=weekend filter chip interaction
-  page-load.spec.ts 247:17  › desktop-chrome › page-load.spec.ts › Page Load Tests - URL Processing Verification › Quick Filter qf=weekend Test
-  page-load.spec.ts 247:17  › desktop-chrome › page-load.spec.ts › Page Load Tests - URL Processing Verification › Search Filter sq=berkeley Test
-  page-load.spec.ts 247:17  › desktop-chrome › page-load.spec.ts › Page Load Tests - URL Processing Verification › LLZ Coordinates Test With Visible Events
-  page-load.spec.ts 247:17  › desktop-chrome › page-load.spec.ts › Page Load Tests - URL Processing Verification › LLZ Coordinates Test With No Visible Events
-  page-load.spec.ts 247:17  › desktop-chrome › page-load.spec.ts › Page Load Tests - URL Processing Verification › Selected Event se= Marker Popup
-  smoke.spec.ts 35:9  › desktop-chrome › smoke.spec.ts › Smoke Tests - Critical User Workflows › Workflow 1: Load app with events
-  smoke.spec.ts 72:9  › desktop-chrome › smoke.spec.ts › Smoke Tests - Critical User Workflows › Workflow 2: View today's events (qf=today)
-  smoke.spec.ts 116:9  › desktop-chrome › smoke.spec.ts › Smoke Tests - Critical User Workflows › Workflow 3: View selected event from shared URL (se=)
+✅ PASSED (50):
+  console-logs.spec.ts 13:5  › desktop-chrome › console-logs.spec.ts › test with custom (LA) timezone
+  console-logs.spec.ts 47:9  › desktop-chrome › console-logs.spec.ts › Console Log Debugging › capture console logs from custom URL
+  integration-sf.spec.ts 55:9  › desktop-chrome › integration-sf.spec.ts › SF API Integration Tests @integration @slow › Load real SF events and verify API integration
+  integration-sf.spec.ts 105:9  › desktop-chrome › integration-sf.spec.ts › SF API Integration Tests @integration @slow › Real geocoding works with SF search
+  integration-sf.spec.ts 148:9  › desktop-chrome › integration-sf.spec.ts › SF API Integration Tests @integration @slow › Performance with real SF event volume
+  integration-sf.spec.ts 192:9  › desktop-chrome › integration-sf.spec.ts › SF API Integration Tests @integration @slow › Real selected event from SF API
+  interactive.spec.ts 20:9  › desktop-chrome › interactive.spec.ts › User Interactive State Tests › Date filter clearing - qf=weekend filter chip interaction
+  interactive.spec.ts 116:9  › desktop-chrome › interactive.spec.ts › User Interactive State Tests › Date filter clearing - verify event list updates
+  page-load.spec.ts 262:17  › desktop-chrome › page-load.spec.ts › Page Load Tests - URL Processing Verification › Quick Filter qf=weekend Test
+  page-load.spec.ts 262:17  › desktop-chrome › page-load.spec.ts › Page Load Tests - URL Processing Verification › Search Filter sq=berkeley Test
+  page-load.spec.ts 262:17  › desktop-chrome › page-load.spec.ts › Page Load Tests - URL Processing Verification › LLZ Coordinates Test With Visible Events
+  page-load.spec.ts 262:17  › desktop-chrome › page-load.spec.ts › Page Load Tests - URL Processing Verification › LLZ Coordinates Test With No Visible Events
+  page-load.spec.ts 262:17  › desktop-chrome › page-load.spec.ts › Page Load Tests - URL Processing Verification › Selected Event se= Marker Popup
+  smoke.spec.ts 42:9  › desktop-chrome › smoke.spec.ts › Smoke Tests - Critical User Workflows › Workflow 1: Load app with events
+  smoke.spec.ts 80:9  › desktop-chrome › smoke.spec.ts › Smoke Tests - Critical User Workflows › Workflow 2: View today's events (qf=today)
+  smoke.spec.ts 126:9  › desktop-chrome › smoke.spec.ts › Smoke Tests - Critical User Workflows › Workflow 3: View selected event from shared URL (se=)
   user-workflows.spec.ts 20:9  › desktop-chrome › user-workflows.spec.ts › Selected Event Workflows › Trigger 1: Click map marker selects event
   user-workflows.spec.ts 60:9  › desktop-chrome › user-workflows.spec.ts › Selected Event Workflows › Trigger 2: Click event row selects event
   user-workflows.spec.ts 112:9  › desktop-chrome › user-workflows.spec.ts › Selected Event Workflows › Trigger 3: Load with se parameter selects event
   user-workflows.spec.ts 143:9  › desktop-chrome › user-workflows.spec.ts › Selected Event Workflows › Exception: Close popup deselects and unfreezes event list
-  user-workflows.spec.ts 299:9  › desktop-chrome › user-workflows.spec.ts › Filter Chip Workflows › Date filter: Weekend quick filter creates date chip
-  user-workflows.spec.ts 328:9  › desktop-chrome › user-workflows.spec.ts › Filter Chip Workflows › Date filter: Click chip removes date filter
-  user-workflows.spec.ts 359:9  › desktop-chrome › user-workflows.spec.ts › Filter Chip Workflows › Search filter: Type search creates search chip
-  user-workflows.spec.ts 397:9  › desktop-chrome › user-workflows.spec.ts › Filter Chip Workflows › Search filter: Click chip clears search
-  console-logs.spec.ts 11:5  › mobile-iphone16 › console-logs.spec.ts › test with custom (LA) timezone
-  interactive.spec.ts 12:9  › mobile-iphone16 › interactive.spec.ts › User Interactive State Tests › Date filter clearing - qf=weekend filter chip interaction
-  console-logs.spec.ts 40:9  › mobile-iphone16 › console-logs.spec.ts › Console Log Debugging › capture console logs from custom URL
-  page-load.spec.ts 247:17  › mobile-iphone16 › page-load.spec.ts › Page Load Tests - URL Processing Verification › Quick Filter qf=weekend Test
-  page-load.spec.ts 247:17  › mobile-iphone16 › page-load.spec.ts › Page Load Tests - URL Processing Verification › Search Filter sq=berkeley Test
-  page-load.spec.ts 247:17  › mobile-iphone16 › page-load.spec.ts › Page Load Tests - URL Processing Verification › LLZ Coordinates Test With Visible Events
-  page-load.spec.ts 247:17  › mobile-iphone16 › page-load.spec.ts › Page Load Tests - URL Processing Verification › LLZ Coordinates Test With No Visible Events
-  smoke.spec.ts 35:9  › mobile-iphone16 › smoke.spec.ts › Smoke Tests - Critical User Workflows › Workflow 1: Load app with events
-  page-load.spec.ts 247:17  › mobile-iphone16 › page-load.spec.ts › Page Load Tests - URL Processing Verification › Selected Event se= Marker Popup
-  smoke.spec.ts 72:9  › mobile-iphone16 › smoke.spec.ts › Smoke Tests - Critical User Workflows › Workflow 2: View today's events (qf=today)
-  smoke.spec.ts 116:9  › mobile-iphone16 › smoke.spec.ts › Smoke Tests - Critical User Workflows › Workflow 3: View selected event from shared URL (se=)
+  user-workflows.spec.ts 216:9  › desktop-chrome › user-workflows.spec.ts › Filter Chip Workflows › Map filter: Zoom into SF creates map filter chip
+  user-workflows.spec.ts 291:9  › desktop-chrome › user-workflows.spec.ts › Filter Chip Workflows › Date filter: Weekend quick filter creates date chip
+  user-workflows.spec.ts 248:9  › desktop-chrome › user-workflows.spec.ts › Filter Chip Workflows › Map filter: Click chip removes map filter and shows all events
+  user-workflows.spec.ts 320:9  › desktop-chrome › user-workflows.spec.ts › Filter Chip Workflows › Date filter: Click chip removes date filter
+  user-workflows.spec.ts 351:9  › desktop-chrome › user-workflows.spec.ts › Filter Chip Workflows › Search filter: Type search creates search chip
+  user-workflows.spec.ts 389:9  › desktop-chrome › user-workflows.spec.ts › Filter Chip Workflows › Search filter: Click chip clears search
+  console-logs.spec.ts 13:5  › mobile-iphone16 › console-logs.spec.ts › test with custom (LA) timezone
+  console-logs.spec.ts 47:9  › mobile-iphone16 › console-logs.spec.ts › Console Log Debugging › capture console logs from custom URL
+  integration-sf.spec.ts 55:9  › mobile-iphone16 › integration-sf.spec.ts › SF API Integration Tests @integration @slow › Load real SF events and verify API integration
+  integration-sf.spec.ts 105:9  › mobile-iphone16 › integration-sf.spec.ts › SF API Integration Tests @integration @slow › Real geocoding works with SF search
+  integration-sf.spec.ts 148:9  › mobile-iphone16 › integration-sf.spec.ts › SF API Integration Tests @integration @slow › Performance with real SF event volume
+  integration-sf.spec.ts 192:9  › mobile-iphone16 › integration-sf.spec.ts › SF API Integration Tests @integration @slow › Real selected event from SF API
+  interactive.spec.ts 116:9  › mobile-iphone16 › interactive.spec.ts › User Interactive State Tests › Date filter clearing - verify event list updates
+  page-load.spec.ts 262:17  › mobile-iphone16 › page-load.spec.ts › Page Load Tests - URL Processing Verification › Search Filter sq=berkeley Test
+  page-load.spec.ts 262:17  › mobile-iphone16 › page-load.spec.ts › Page Load Tests - URL Processing Verification › LLZ Coordinates Test With Visible Events
+  page-load.spec.ts 262:17  › mobile-iphone16 › page-load.spec.ts › Page Load Tests - URL Processing Verification › LLZ Coordinates Test With No Visible Events
+  page-load.spec.ts 262:17  › mobile-iphone16 › page-load.spec.ts › Page Load Tests - URL Processing Verification › Selected Event se= Marker Popup
+  smoke.spec.ts 42:9  › mobile-iphone16 › smoke.spec.ts › Smoke Tests - Critical User Workflows › Workflow 1: Load app with events
+  smoke.spec.ts 80:9  › mobile-iphone16 › smoke.spec.ts › Smoke Tests - Critical User Workflows › Workflow 2: View today's events (qf=today)
+  smoke.spec.ts 126:9  › mobile-iphone16 › smoke.spec.ts › Smoke Tests - Critical User Workflows › Workflow 3: View selected event from shared URL (se=)
   user-workflows.spec.ts 20:9  › mobile-iphone16 › user-workflows.spec.ts › Selected Event Workflows › Trigger 1: Click map marker selects event
   user-workflows.spec.ts 60:9  › mobile-iphone16 › user-workflows.spec.ts › Selected Event Workflows › Trigger 2: Click event row selects event
   user-workflows.spec.ts 112:9  › mobile-iphone16 › user-workflows.spec.ts › Selected Event Workflows › Trigger 3: Load with se parameter selects event
-  user-workflows.spec.ts 299:9  › mobile-iphone16 › user-workflows.spec.ts › Filter Chip Workflows › Date filter: Weekend quick filter creates date chip
   user-workflows.spec.ts 143:9  › mobile-iphone16 › user-workflows.spec.ts › Selected Event Workflows › Exception: Close popup deselects and unfreezes event list
-  user-workflows.spec.ts 359:9  › mobile-iphone16 › user-workflows.spec.ts › Filter Chip Workflows › Search filter: Type search creates search chip
-  user-workflows.spec.ts 328:9  › mobile-iphone16 › user-workflows.spec.ts › Filter Chip Workflows › Date filter: Click chip removes date filter
-  user-workflows.spec.ts 397:9  › mobile-iphone16 › user-workflows.spec.ts › Filter Chip Workflows › Search filter: Click chip clears search
+  user-workflows.spec.ts 216:9  › mobile-iphone16 › user-workflows.spec.ts › Filter Chip Workflows › Map filter: Zoom into SF creates map filter chip
+  user-workflows.spec.ts 291:9  › mobile-iphone16 › user-workflows.spec.ts › Filter Chip Workflows › Date filter: Weekend quick filter creates date chip
+  user-workflows.spec.ts 248:9  › mobile-iphone16 › user-workflows.spec.ts › Filter Chip Workflows › Map filter: Click chip removes map filter and shows all events
+  user-workflows.spec.ts 320:9  › mobile-iphone16 › user-workflows.spec.ts › Filter Chip Workflows › Date filter: Click chip removes date filter
+  user-workflows.spec.ts 351:9  › mobile-iphone16 › user-workflows.spec.ts › Filter Chip Workflows › Search filter: Type search creates search chip
+  user-workflows.spec.ts 389:9  › mobile-iphone16 › user-workflows.spec.ts › Filter Chip Workflows › Search filter: Click chip clears search
 
-⏭️  SKIPPED (10):
-  console-logs.spec.ts 28:10  › desktop-chrome › console-logs.spec.ts › Console Log Debugging › capture console logs from home page
-  console-logs.spec.ts 70:10  › desktop-chrome › console-logs.spec.ts › Console Log Debugging › check for specific log patterns
-  interactive.spec.ts 108:10  › desktop-chrome › interactive.spec.ts › User Interactive State Tests › Date filter clearing - verify event list updates
-  user-workflows.spec.ts 209:10  › desktop-chrome › user-workflows.spec.ts › Filter Chip Workflows › Map filter: Pan map creates map filter chip
-  user-workflows.spec.ts 255:10  › desktop-chrome › user-workflows.spec.ts › Filter Chip Workflows › Map filter: Click chip removes map filter
-  console-logs.spec.ts 28:10  › mobile-iphone16 › console-logs.spec.ts › Console Log Debugging › capture console logs from home page
-  console-logs.spec.ts 70:10  › mobile-iphone16 › console-logs.spec.ts › Console Log Debugging › check for specific log patterns
-  interactive.spec.ts 108:10  › mobile-iphone16 › interactive.spec.ts › User Interactive State Tests › Date filter clearing - verify event list updates
-  user-workflows.spec.ts 209:10  › mobile-iphone16 › user-workflows.spec.ts › Filter Chip Workflows › Map filter: Pan map creates map filter chip
-  user-workflows.spec.ts 255:10  › mobile-iphone16 › user-workflows.spec.ts › Filter Chip Workflows › Map filter: Click chip removes map filter
+❌ FAILED (2):
+  interactive.spec.ts 20:9  › mobile-iphone16 › interactive.spec.ts › User Interactive State Tests › Date filter clearing - qf=weekend filter chip interaction
+  page-load.spec.ts 262:17  › mobile-iphone16 › page-load.spec.ts › Page Load Tests - URL Processing Verification › Quick Filter qf=weekend Test
+
+⏭️  SKIPPED (4):
+  console-logs.spec.ts 35:10  › desktop-chrome › console-logs.spec.ts › Console Log Debugging › capture console logs from home page
+  console-logs.spec.ts 77:10  › desktop-chrome › console-logs.spec.ts › Console Log Debugging › check for specific log patterns
+  console-logs.spec.ts 35:10  › mobile-iphone16 › console-logs.spec.ts › Console Log Debugging › capture console logs from home page
+  console-logs.spec.ts 77:10  › mobile-iphone16 › console-logs.spec.ts › Console Log Debugging › check for specific log patterns
 
 ================================================================================
-TOTAL: 48 tests (38 passed, 0 failed, 10 skipped)
+TOTAL: 56 tests (50 passed, 2 failed, 4 skipped)
 ================================================================================
 
 To open last HTML report run:

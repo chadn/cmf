@@ -149,13 +149,17 @@ const MapContainer: React.FC<MapContainerProps> = ({
 
     // At some point very early in initialization need to:
     // - get actual size (width, height) in pixels of map, done by updateMapWidthHeight()
-    // - use that size to get accurate N, S, E, W, bounds (needed for visible events and markers) 
+    // - use that size to get accurate N, S, E, W, bounds (needed for visible events and markers)
     //
-    // handleMapLoad ends up not being called till way later, so using the following solution:
-    if (renderCountRef.current < 6) {
-        logr.info('mapc', `renderCountRef(${renderCountRef.current}) calling updateMapWidthHeight()`)
-        updateMapWidthHeight()
-    }
+    // handleMapLoad ends up not being called till way later, so call updateMapWidthHeight()
+    // early during first few renders (but in useEffect to avoid React render-phase violations)
+    // This must be in useEffect (not render phase) to avoid React violations
+    useEffect(() => {
+        if (renderCountRef.current < 6) {
+            logr.info('mapc', `uE: calling updateMapWidthHeight render#${renderCountRef.current}`)
+            updateMapWidthHeight()
+        }
+    }) // No dependencies - runs on every render when count < 6
 
     const handleMapLoad = useCallback(() => {
         logr.info('mapc', 'uC: Map onLoad: handleMapLoad')

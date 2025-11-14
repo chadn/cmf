@@ -47,6 +47,24 @@ const STABLE_EVENTS: CmfEvent[] = [
         tz: 'America/Los_Angeles',
     },
     {
+        id: 'event-weekend-sf',
+        name: 'Weekend Event San Francisco',
+        description: 'Weekend event in San Francisco',
+        description_urls: [],
+        start: getDayAt(5, 18, 0), // 5 = Friday
+        end: getDayAt(5, 22, 0),
+        location: 'San Francisco, CA',
+        original_event_url: 'https://example.com/weekend-sf',
+        resolved_location: {
+            status: 'resolved',
+            original_location: 'San Francisco, CA',
+            lat: 37.7749,
+            lng: -122.4194,
+            formatted_address: 'San Francisco, CA, USA',
+        },
+        tz: 'America/Los_Angeles',
+    },
+    {
         id: 'event-tomorrow-berkeley',
         name: 'Tomorrow Event Berkeley',
         description: 'Event tomorrow in Berkeley',
