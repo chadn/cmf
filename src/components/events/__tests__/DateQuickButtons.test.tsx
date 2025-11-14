@@ -40,6 +40,22 @@ describe('DateQuickButtons', () => {
         const date = new Date(minDate.getTime() + value * 24 * 60 * 60 * 1000)
         return date.toISOString()
     }
+    
+    // Store original Date methods
+    const RealDate = Date
+    const realSetHours = Date.prototype.setHours
+
+    beforeAll(() => {
+        // Mock Date.prototype.setHours to use UTC instead of local timezone
+        Date.prototype.setHours = function (hour: number, min?: number, sec?: number, ms?: number) {
+            return this.setUTCHours(hour, min ?? 0, sec ?? 0, ms ?? 0)
+        }
+    })
+
+    afterAll(() => {
+        // Restore original Date methods
+        Date.prototype.setHours = realSetHours
+    })
 
     beforeEach(() => {
         jest.clearAllMocks()
