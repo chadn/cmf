@@ -6,7 +6,7 @@ import { logr } from '@/lib/utils/logr'
 import { calculateMapBoundsAndViewport, calculateViewportFromBounds, generateMapMarkers } from '@/lib/utils/location'
 import { AppState } from '@/lib/state/appStateReducer'
 import { FilterEventsManager } from '@/lib/events/FilterEventsManager'
-import { stringify } from '@/lib/utils/utils-shared'
+import { JSONArray, stringify, unorderedEquals } from '@/lib/utils/utils-shared'
 import { env } from '@/lib/config/env'
 
 interface UseMapReturn {
@@ -135,42 +135,35 @@ export function useMap(
 
     // Update markers when filtered markers change
     useEffect(() => {
+        
         // save time by first checking if markers array length changed
         let markersChanged = filteredMarkers.length !== mapState.markers.length
+        const currentMarkers = mapState.markers.map((m) => ({ 
+            id: m.id, 
+            eventIds: m.events.map((e) => ({ id: e.id })) 
+        }))
+        const newMarkers = filteredMarkers.map((m) => ({ 
+            id: m.id, 
+            eventIds: m.events.map((e) => ({ id: e.id })) 
+        }))
         if (!markersChanged) {
-            // If same length, check if any ID in one set isn't in the other
-            const currentIds = new Set(mapState.markers.map((m) => m.id))
-            const newIds = new Set(filteredMarkers.map((m) => m.id))
-            markersChanged = Array.from(currentIds).some((id) => !newIds.has(id))
-        }
+            // If same length, do full check of marker and event ids, ignoring order of array elements.
+            markersChanged = !unorderedEquals(
+                currentMarkers as unknown as JSONArray,
+                newMarkers as unknown as JSONArray
+            );
 
+        }
         if (markersChanged) {
             const el = cmfEvents.visibleEvents.length
             const ol = mapState.markers.length
-            logr.info('umap', `uE: markersChanged, ${filteredMarkers.length} markers, was ${ol}, from ${el} events`, {
-                oldMarkers: mapState.markers.map((m) => ({ id: m.id, count: m.events.length })),
-                newMarkers: filteredMarkers.map((m) => ({ id: m.id, count: m.events.length })),
-            })
+            logr.info('umap', 
+                `uE: markersChanged, ${filteredMarkers.length} markers, was ${ol}, from ${el} events.`, { newMarkers, currentMarkers }
+            )
             setMapState((prev) => ({
                 ...prev,
                 markers: filteredMarkers,
             }))
-        } else {
-            // Log when markers haven't changed but we should check event counts
-            const currentMarkerCounts = mapState.markers.map((m) => ({ id: m.id, count: m.events.length }))
-            const newMarkerCounts = filteredMarkers.map((m) => ({ id: m.id, count: m.events.length }))
-            const countsChanged = JSON.stringify(currentMarkerCounts) !== JSON.stringify(newMarkerCounts)
-
-            if (countsChanged) {
-                logr.info('umap', 'Marker counts changed without marker array change', {
-                    currentCounts: currentMarkerCounts,
-                    newCounts: newMarkerCounts,
-                })
-                setMapState((prev) => ({
-                    ...prev,
-                    markers: filteredMarkers,
-                }))
-            }
         }
     }, [filteredMarkers, mapState.markers, cmfEvents.visibleEvents, setMapState])
 

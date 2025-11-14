@@ -78,7 +78,6 @@ describe('parse19hzDateRange', () => {
             expectValidDates(result)
 
             const start = DateTime.fromISO(result.start, { zone: 'America/Los_Angeles' })
-            const end = DateTime.fromISO(result.end, { zone: 'America/Los_Angeles' })
 
             expect(start.month).toBe(9) // September (Luxon uses 1-12)
             expect(start.day).toBe(12)
@@ -194,7 +193,6 @@ describe('parse19hzDateRange', () => {
             expectValidDates(result)
 
             const start = DateTime.fromISO(result.start, { zone: 'America/Los_Angeles' })
-            const end = DateTime.fromISO(result.end, { zone: 'America/Los_Angeles' })
 
             expect(start.weekday).toBe(2) // Tuesday (Luxon uses 1-7)
             expect(start.hour).toBe(22) // 10pm

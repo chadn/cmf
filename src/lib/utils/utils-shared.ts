@@ -1,5 +1,6 @@
 // utils-shared.ts for both client and server
 //import { logr } from '@/lib/utils/logr'
+import equal from "fast-deep-equal";
 
 /**
  * get the size of any data
@@ -153,4 +154,74 @@ export function getMyCallers(params?: { nonSrcToo?: boolean; keepOldest?: boolea
     }
     console.trace('Tracing call stack, clickable in Chrome DevTools')
     return lines
+}
+
+// The following functions are fast way to test if 2 structures are equal ignoring order of keys in objects and order of elements in arrays 
+// TODO: need tests for these functions
+
+export type NormalizedMarker = {
+  id: string;
+  eventIds: string[];
+};
+
+export type JSONValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JSONObject
+  | JSONArray;
+
+export interface JSONObject {
+  [key: string]: JSONValue;
+}
+
+export type JSONArray = Array<JSONValue>
+
+// ---- Canonicalization ----
+
+function canonicalize<T extends JSONValue>(value: T): JSONValue {
+  // Arrays: canonicalize children + sort canonically
+  if (Array.isArray(value)) {
+    const arr = value.map(canonicalize);
+    arr.sort(compareCanonical);
+    return arr as JSONArray;
+  }
+
+  // Objects: canonicalize values + sort keys
+  if (value !== null && typeof value === "object") {
+    const entries = Object.entries(value as JSONObject).map(
+      ([k, v]) => [k, canonicalize(v)] as [string, JSONValue]
+    );
+
+    entries.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+
+    const obj: JSONObject = {};
+    for (const [k, v] of entries) obj[k] = v;
+    return obj;
+  }
+
+  // Primitives
+  return value;
+}
+
+// ---- Sorting support ----
+
+function compareCanonical(a: JSONValue, b: JSONValue): number {
+  const sa = stableHash(a);
+  const sb = stableHash(b);
+  return sa < sb ? -1 : sa > sb ? 1 : 0;
+}
+
+function stableHash(v: JSONValue): string {
+  return JSON.stringify(v);
+}
+
+// ---- Public equality function ----
+
+export function unorderedEquals<A extends JSONValue, B extends JSONValue>(
+  a: A,
+  b: B
+): boolean {
+  return equal(canonicalize(a), canonicalize(b));
 }
