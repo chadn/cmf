@@ -262,7 +262,8 @@ export function printConsoleLogs(logs: ConsoleMessage[], title = 'Console Logs')
         const timestamp = log.timestamp.toISOString().split('T')[1].split('.')[0]
         const location = log.location ? ` [${log.location}]` : ''
         console.log(
-            `${String(index + 1).padStart(3)}. [${timestamp}] ${log.type.toUpperCase()}: ${log.text}${location}`
+            //`${String(index + 1).padStart(3)}. [${timestamp}] ${log.type.toUpperCase()}: ${log.text}${location}`
+            `${String(index + 1).padStart(3)}. ${log.type.toUpperCase()}: ${log.text}${location}`
         )
     })
 

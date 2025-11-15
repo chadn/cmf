@@ -77,7 +77,7 @@ test.describe('Smoke Tests - Critical User Workflows', () => {
         console.log('✅ SMOKE TEST 1 PASSED: App loads successfully with events\n')
     })
 
-    test('Workflow 2: View today\'s events (qf=today)', async ({ page }, testInfo) => {
+    test('Workflow 2: View todays events (qf=today)', async ({ page }, testInfo) => {
         console.log('\n🧪 SMOKE TEST 2: View today\'s events')
         console.log('📍 URL: /?es=test:stable&qf=today')
 

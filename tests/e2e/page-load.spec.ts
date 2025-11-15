@@ -195,12 +195,20 @@ const pageLoadTests: PageLoadTestCase[] = [
     {
         name: 'Unresolved Events Marker Popup',
         url: '/?es=test:stable&sq=unresolved',
-        skip: true, // unresolved events not currently supported
         expectedLogs: [
             {
-                logPattern: 'ssssss',
-                description: 'ssssssss',
-                requiredInState: 'ssssssss',
+                logPattern: '[URL_FILTERS] applying search filter "unresolved"',
+                description: 'applying search filter "unresolved"',
+                requiredInState: 'applying-url-filters',
+            },
+            {
+                logPattern: 'State: user-interactive, Events: allEvents',
+                description: 'Should only show 1 visible event that is unresolved from test:stable',
+                requiredInState: 'user-interactive',
+                cb: (logs) => {
+                    const counts = extractCounts(logs[logs.length - 1])
+                    expect(counts.visibleEvents).toBe(1)
+                },
             },
         ],
     },
