@@ -13,10 +13,10 @@ const STABLE_EVENTS: CmfEvent[] = [
     {
         id: 'event-today-sf',
         name: 'Today Event SF',
-        description: 'Event happening today in San Francisco',
+        description: 'Event happening today 2pm in San Francisco',
         description_urls: [],
-        start: getDayAt(0, 14, 0), // today == 0 days from now
-        end: getDayAt(0, 16, 0),
+        start: getDaysFromNowAt(0, 14, 0), // today == 0 days from now
+        end: getDaysFromNowAt(0, 16, 0),
         location: 'San Francisco, CA',
         original_event_url: 'https://example.com/today-sf',
         resolved_location: {
@@ -51,8 +51,8 @@ const STABLE_EVENTS: CmfEvent[] = [
         name: 'Weekend Event San Francisco',
         description: 'Weekend event in San Francisco',
         description_urls: [],
-        start: getDayAt(5, 18, 0), // 5 = Friday
-        end: getDayAt(5, 22, 0),
+        start: getDayAt(6, 12, 0), // 6 = Saturday
+        end: getDayAt(6, 20, 0),
         location: 'San Francisco, CA',
         original_event_url: 'https://example.com/weekend-sf',
         resolved_location: {
@@ -69,8 +69,8 @@ const STABLE_EVENTS: CmfEvent[] = [
         name: 'Tomorrow Event Berkeley',
         description: 'Event tomorrow in Berkeley',
         description_urls: [],
-        start: getDayAt(1, 10, 0), // Tomorrow == 1 day from now
-        end: getDayAt(1, 12, 0),
+        start: getDaysFromNowAt(1, 10, 0), // Tomorrow == 1 day from now
+        end: getDaysFromNowAt(1, 12, 0),
         location: 'Berkeley, CA',
         original_event_url: 'https://example.com/tomorrow-berkeley',
         resolved_location: {
