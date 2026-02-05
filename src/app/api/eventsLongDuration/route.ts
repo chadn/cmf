@@ -3,7 +3,8 @@ import { apiEvents, dynamic } from '../events/route'
 
 export { dynamic }
 
-export const maxDuration = 300 // 5 minutes
+// Serverless Functions must have a maxDuration between 1 and 60 for plan hobby. : https://vercel.com/docs/concepts/limits/overview#serverless-function-execution-timeout
+export const maxDuration = 60 // 60 seconds max for Hobby Plan
 
 export async function GET(request: NextRequest) {
     return apiEvents(request)

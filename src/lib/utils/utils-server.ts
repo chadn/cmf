@@ -1,12 +1,18 @@
 import axios from 'axios'
-import curlirize from 'axios-curlirize'
 import { logr } from '@/lib/utils/logr'
 import { getSizeOfAny } from '@/lib/utils/utils-shared'
 import { HttpError } from '@/types/error'
 import { stringify } from '@/lib/utils/utils-shared'
 
 if (process.env.NODE_ENV === 'development') {
-    curlirize(axios)
+    try {
+        // Avoid bundling optional dependency in production builds.
+        // eslint-disable-next-line @typescript-eslint/no-implied-eval
+        const curlirize = (eval('require') as NodeRequire)('axios-curlirize')
+        curlirize(axios)
+    } catch {
+        logr.warn('utils-server', 'axios-curlirize not available; skipping curl logging')
+    }
 }
 
 /**
