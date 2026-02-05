@@ -5,6 +5,10 @@ All notable changes to Calendar Map Filter (CMF) will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.10] - 2025-12-3
+
+- Fixed critical vulnerability CVE-2025-55182
+
 ## [0.4.9] - 2025-11-3
 
 - Fixed timezone bug in foopee.ts eventsource.
@@ -58,16 +62,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.4.1] - 2025-10-9
 
 - Updated Documentation - added ARCHITECTURE.md and function-call-graph files, updated others.
-- Fixed counts in Event Sources popover 
+- Fixed counts in Event Sources popover
 
 ## [0.4.0] - 2025-10-8
 
 ### Changed
 
 - **Major Framework Upgrade** - Upgraded to Next.js 15 and React 19
-  - All dependencies updated for React 19 compatibility
-  - See [ADR: Upgrade to Next.js 15 and React 19](docs/adr/2025-10-08-upgrade-nextjs-15-react-19.md) for details
-- **Unit Tests** - coverage improved 
+    - All dependencies updated for React 19 compatibility
+    - See [ADR: Upgrade to Next.js 15 and React 19](docs/adr/2025-10-08-upgrade-nextjs-15-react-19.md) for details
+- **Unit Tests** - coverage improved
 
 ### Technical
 
