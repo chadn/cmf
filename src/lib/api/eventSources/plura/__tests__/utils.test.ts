@@ -155,12 +155,19 @@ describe('Plura Utils', () => {
 
         it('should handle different timezones correctly', () => {
             const { startDate } = parsePluraDateString('Aug 2nd at 8pm Europe/Lisbon')
+            const currentYear = new Date().getFullYear()
+            const expectedIso = DateTime.fromFormat(`Aug 2 ${currentYear} 8:00 pm`, 'LLL d yyyy h:mm a', {
+                zone: 'Europe/Lisbon',
+            })
+                .toUTC()
+                .toJSDate()
+                .toISOString()
 
             expect(startDate).not.toBeNull()
             if (startDate) {
                 // Verify the date components are correct
                 expect(startDate.getMonth()).toBe(7) // August is month 7 (0-indexed)
-                expect(startDate.toISOString()).toBe('2025-08-02T19:00:00.000Z')
+                expect(startDate.toISOString()).toBe(expectedIso)
             }
         })
 
@@ -197,11 +204,18 @@ describe('Plura Utils', () => {
 
         it('should use UTC if no timezone specified', () => {
             const { startDate } = parsePluraDateString('May 14th at 1:30pm')
+            const currentYear = new Date().getFullYear()
+            const expectedIso = DateTime.fromFormat(`May 14 ${currentYear} 1:30 pm`, 'LLL d yyyy h:mm a', {
+                zone: 'UTC',
+            })
+                .toUTC()
+                .toJSDate()
+                .toISOString()
 
             expect(startDate).not.toBeNull()
             if (startDate) {
                 expect(startDate.getMonth()).toBe(4) // May
-                expect(startDate.toISOString()).toBe('2025-05-14T13:30:00.000Z')
+                expect(startDate.toISOString()).toBe(expectedIso)
             }
         })
 

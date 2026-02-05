@@ -5,10 +5,18 @@ All notable changes to Calendar Map Filter (CMF) will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.11] - 2026-2-5
+
+- Added new api endpoint for functions that need longer duration to run, `/api/eventsLongDuration`, basically a wrapper for `/api/events`
+
+## [0.4.10] - 2025-12-3
+
+- Fixed critical vulnerability CVE-2025-55182
+
 ## [0.4.9] - 2025-11-3
 
 - Fixed timezone bug in foopee.ts eventsource.
-- use waitUntil() for umamiServer() to not block response 
+- use waitUntil() for umamiServer() to not block response
 
 ## [0.4.8] - 2025-10-25
 
@@ -26,9 +34,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated docs, added [animated gif for popups in usage.md](docs/usage.md#event-sources-and-cmf-about-popups)
 - Changed License from MIT to Apache 2.0 for legal safety (in case company adoption)
 - Added `umamiServer` to track `/api/events` calls on server
-- Improved debugging 
-  - now `es=test:file` returns `src/lib/api/eventSources/testSource.events.json` if file exists.
-  - now when you select event, you can inspect in console `window.cmfEventSelected`
+- Improved debugging
+    - now `es=test:file` returns `src/lib/api/eventSources/testSource.events.json` if file exists.
+    - now when you select event, you can inspect in console `window.cmfEventSelected`
 
 ## [0.4.5] - 2025-10-14
 

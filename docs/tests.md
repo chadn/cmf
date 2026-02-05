@@ -133,18 +133,19 @@ Share - Copy URL
 
 ### End-to-End Testing
 
-E2E tests are performed by Playwright, which emulates users by loading web page, clicking on app, reading console logs, etc. 
+E2E tests are performed by Playwright, which emulates users by loading web page, clicking on app, reading console logs, etc.
 Tests live in [/tests/e2e](../tests/e2e/), outside of `/src`, since E2E doesn't test source files directly, but the running app (UI, API endpoints).
 
 **📚 E2E Test Documentation:**
 
 Note once e2e tests stabilize, the following docs may go away. For now, they help AI and not maintained by humans.
+
 - [tests-e2e.md](tests-e2e.md)
 - [tests-e2e-architecture.md](tests-e2e-architecture.md) - Testing principles, patterns, and selector strategies
 - [tests-e2e-examples.md](tests-e2e-examples.md) - Code examples and anti-patterns
 - [tests-e2e-migration.md](tests-e2e-migration.md) - Phased implementation plan and progress, temporary.
 
-**Examples of all available commands:** 
+**Examples of all available commands:**
 
 ```bash
 npm run test:e2e:smoke   # ~8s, smoke test runs 3 critical workflow tests
@@ -159,12 +160,12 @@ npm run test:report          # Open HTML report from last test run
 
 Note pageload tests automate some of the manual tests listed above in [Testing Different URLs](#testing-different-urls)
 
-**Quick console debugging:** 
+**Quick console debugging:**
 
 From the command line
 
 ```bash
-# Get browser console logs (output from `logr`) for any URL using TEST_URL. 
+# Get browser console logs (output from `logr`) for any URL using TEST_URL.
 # AI can use this to iterate on testing its changes
 (TEST_URL="/?es=sf" npm run test:e2e -- -g "Capture console logs from custom URL") 2>&1 |tee e2e-custom-url.log
 
@@ -332,7 +333,7 @@ real 19.169	user 23.509	sys 9.991	pcpu 100.00
 
 The following notes from AI are about trying to fix these 2 failing tests.
 
-```  
+```
 ❌ FAILED (2):
   interactive.spec.ts 20:9  › mobile-iphone16 › interactive.spec.ts › User Interactive State Tests › Date filter clearing - qf=weekend filter chip interaction
   page-load.spec.ts 262:17  › mobile-iphone16 › page-load.spec.ts › Page Load Tests - URL Processing Verification › Quick Filter qf=weekend Test
@@ -343,16 +344,20 @@ I've implemented test-only solutions to address the failing weekend mobile e2e t
 Changes Made:
 
 1. Increased wait time (additionalWaitTime from 2000ms → 8000ms) in:
+
 - /Users/chad/src/cmf/tests/e2e/page-load.spec.ts:20 - "Quick Filter qf=weekend Test"
 - /Users/chad/src/cmf/tests/e2e/interactive.spec.ts:36 - "Date filter clearing - qf=weekend filter chip interaction"
 - /Users/chad/src/cmf/tests/e2e/interactive.spec.ts:131 - "Date filter clearing - verify event list updates"
+
 2. Configured serial execution for mobile tests to avoid state contamination:
+
 - /Users/chad/src/cmf/tests/e2e/interactive.spec.ts:16 - Added test.describe.configure({ mode: 'serial' })
 - /Users/chad/src/cmf/tests/e2e/page-load.spec.ts:208 - Added test.describe.configure({ mode: 'serial' })
 
 Results:
 
 Unfortunately, both tests still fail even with these changes:
+
 - interactive.spec.ts:23 - "Date filter clearing - qf=weekend filter chip interaction" (mobile)
 - page-load.spec.ts:266 - "Quick Filter qf=weekend Test" (mobile)
 
@@ -361,30 +366,33 @@ The failure is consistent: initialShown is 0 when it should be > 0, meaning the 
 Analysis:
 
 The problem appears to be deeper than timing or parallel execution. The tests pass individually but fail in the suite even with:
+
 - 8 second additional wait time (up from 2s)
 - Serial execution mode (no parallel contamination)
 - No production code changes
 
 This suggests there may be:
+
 1. Browser state pollution from earlier tests that serial mode doesn't prevent
 2. A race condition in how the mobile viewport initializes map dimensions
 3. Some resource/cache issue specific to mobile that accumulates across the test suite
 
 The next steps would require either:
+
 - Further investigation into browser context isolation between tests
 - Adding explicit browser context resets before these specific tests
 - Or potentially accepting these as known flaky tests and marking them to retry
 
 #### E2E Coverage
 
-The following should be the list of what is important in e2e tests.  
+The following should be the list of what is important in e2e tests.
 For each coverage item, list test items by stating filename and test name.
 If there are no tests that can consistently pass for an item, note why and suggest ways to solve.
 
-**Status:** Ready for map refactor.  Some tests fail, but always pass when run individually.
-
+**Status:** Ready for map refactor. Some tests fail, but always pass when run individually.
 
 **Critical workflows (tested and passing):**
+
 1. ✅ **Load app with events** - `smoke.spec.ts`: "Workflow 1: Load app with events"
 2. ✅ **View today's events (qf=today)** - `smoke.spec.ts`: "Workflow 2: View today's events (qf=today)"
 3. ✅ **View selected event from shared URL** - `smoke.spec.ts`: "Workflow 3: View selected event from shared URL (se=)"
@@ -396,6 +404,7 @@ If there are no tests that can consistently pass for an item, note why and sugge
 9. ⚠️ **Create and remove map filter chip** - `user-workflows.spec.ts`: 2 mobile tests skipped (unreliable with current test data), but corresponding desktop passes, so ok.
 
 **URL Parameter Processing (tested and passing):**
+
 - ✅ **Quick filter qf=weekend** - `page-load.spec.ts`: "Quick Filter qf=weekend Test" (desktop only - mobile skipped due to known flaky issue)
 - ✅ **Search filter sq=** - `page-load.spec.ts`: "Search Filter sq=berkeley Test"
 - ✅ **LLZ coordinates** - `page-load.spec.ts`: "LLZ Coordinates Test With Visible Events" + "LLZ Coordinates Test With No Visible Events"
@@ -403,21 +412,24 @@ If there are no tests that can consistently pass for an item, note why and sugge
 - ⏭️ **Custom date range fsd/fed** - `page-load.spec.ts`: Skipped (incompatible with dynamic test data)
 
 **Platform Coverage:**
+
 - ⚠️ Desktop (Chrome) - 1 failing test (smoke test for selected event)
 - ⚠️ Mobile (iPhone 16) - 2 failing tests + 2 skipped tests (weekend filter flaky issue)
 
 **Known Issues:**
 
 **Currently Failing (3 tests):**
+
 1. ❌ `interactive.spec.ts:119` - "Date filter clearing - verify event list updates" (desktop + mobile)
-   - Test expects event list count to increase after clearing date filter
-   - May be related to dynamic test data (test:stable events change based on current date)
-   - Note: This test has a skip comment in code (line 117) but isn't actually skipped
+    - Test expects event list count to increase after clearing date filter
+    - May be related to dynamic test data (test:stable events change based on current date)
+    - Note: This test has a skip comment in code (line 117) but isn't actually skipped
 2. ❌ `smoke.spec.ts:126` - "Workflow 3: View selected event from shared URL (se=)" (desktop only)
-   - Critical workflow test - should be investigated as high priority
-   - Was passing before, may be flaky or data-dependent
+    - Critical workflow test - should be investigated as high priority
+    - Was passing before, may be flaky or data-dependent
 
 **Skipped on Mobile (2 tests):**
+
 - ⏭️ `interactive.spec.ts:20` - "Date filter clearing - qf=weekend filter chip interaction"
 - ⏭️ `page-load.spec.ts:17` - "Quick Filter qf=weekend Test"
 - Root cause: Mobile viewport initialization timing or browser state pollution (initialShown = 0 when expected > 0)
@@ -425,6 +437,7 @@ If there are no tests that can consistently pass for an item, note why and sugge
 - Follow-up: Re-evaluate after map refactor
 
 **Important workflows (not yet tested - post-refactor):**
+
 1. ⏭️ Date selector interactions (slider, calendar)
 2. ⏭️ Search real-time filtering (typing updates results)
 3. ⏭️ Visible button click (zooms to visible events)
@@ -470,84 +483,84 @@ npm test
 > calendar-map-filter@0.4.10 test
 > jest --coverage && node src/scripts/show-total-loc.mjs && date && echo
 ...
-----------------------------|---------|----------|---------|---------|---------------------------------------------
-File                        | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s                           
-----------------------------|---------|----------|---------|---------|---------------------------------------------
-All files                   |   70.87 |    64.93 |   73.28 |   71.08 |                                             
- components/common          |     100 |      100 |     100 |     100 |                                             
-  ErrorMessage.tsx          |     100 |      100 |     100 |     100 |                                             
-  LoadingSpinner.tsx        |     100 |      100 |     100 |     100 |                                             
- components/events          |   77.92 |    67.46 |      75 |   78.76 |                                             
-  DateAndSearchFilters.tsx  |   66.66 |       45 |      60 |   68.75 | 71,101-235                                  
-  DateQuickButtons.tsx      |    90.9 |       75 |     100 |    90.9 | 43-44                                       
-  EventList.tsx             |   82.05 |    78.04 |   80.95 |   81.57 | 38-39,134-136,161-163,188-190,217-219       
- components/home            |   80.55 |    66.66 |     100 |      80 |                                             
-  EventsSourceSelector.tsx  |   80.55 |    66.66 |     100 |      80 | 35-39,46-47                                 
- components/layout          |     100 |      100 |     100 |     100 |                                             
-  Footer.tsx                |     100 |      100 |     100 |     100 |                                             
-  Header.tsx                |     100 |      100 |     100 |     100 |                                             
- components/map             |   85.27 |    73.91 |   88.88 |   87.15 |                                             
-  MapContainer.tsx          |   82.88 |    72.72 |   86.36 |   83.17 | 54-63,86,95,128-130,190,216-218,254,324-326 
-  MapMarker.tsx             |   94.44 |    81.81 |     100 |     100 | 15,35                                       
-  MapPopup.tsx              |   86.76 |    72.97 |    90.9 |   91.66 | 75-81,92                                    
- components/ui              |   91.17 |    66.66 |      80 |   96.77 |                                             
-  button.tsx                |     100 |    66.66 |     100 |     100 | 41                                          
-  calendar.tsx              |   81.25 |       75 |   71.42 |   92.85 | 35                                          
-  slider.tsx                |     100 |    33.33 |     100 |     100 | 13                                          
- lib                        |     100 |      100 |     100 |     100 |                                             
-  utils.ts                  |     100 |      100 |     100 |     100 |                                             
- lib/api                    |   91.76 |    83.33 |   94.73 |   92.94 |                                             
-  geocoding.ts              |   91.76 |    83.33 |   94.73 |   92.94 | 56,87,125,159,290,318-320,364,389,431       
- lib/api/eventSources/plura |   75.64 |    76.92 |      60 |   75.34 |                                             
-  types.ts                  |     100 |      100 |     100 |     100 |                                             
-  utils.ts                  |      75 |    76.92 |      60 |      75 | 71,91-92,100,148,157-191                    
- lib/cache                  |   73.23 |    77.19 |   85.71 |   72.46 |                                             
-  upstash.ts                |   73.23 |    77.19 |   85.71 |   72.46 | 11,45-46,73-103,140,187                     
- lib/config                 |     100 |      100 |     100 |     100 |                                             
-  env.ts                    |     100 |      100 |     100 |     100 |                                             
- lib/events                 |   69.23 |    69.09 |      50 |   69.07 |                                             
-  FilterEventsManager.ts    |   69.44 |    77.14 |   46.66 |      70 | 37-39,53-69,112,135-136,152-160,199-217     
-  examples.ts               |     100 |      100 |     100 |     100 |                                             
-  filters.ts                |   66.66 |       55 |   57.14 |   65.38 | 32,43,67-71,83-114                          
- lib/hooks                  |   32.66 |    22.38 |   47.31 |   32.46 |                                             
-  useAppController.ts       |   11.11 |        0 |       0 |   11.68 | 118-575                                     
-  useBreakpoint.ts          |    7.69 |        0 |       0 |      10 | 11-22                                       
-  useEventsManager.ts       |   57.52 |    54.23 |   61.76 |      58 | 109-126,136-180,193-213                     
-  useMap.ts                 |    69.6 |    35.71 |   88.46 |   70.78 | ...-132,158-163,184-187,191,224-225,258-269 
-  useUrlProcessor.ts        |    8.03 |        0 |       0 |    8.49 | 73-357                                      
- lib/services               |    6.74 |        0 |       0 |    6.81 |                                             
-  urlProcessingService.ts   |    6.74 |        0 |       0 |    6.81 | 25-237                                      
- lib/state                  |   97.14 |     82.6 |   91.66 |   96.55 |                                             
-  appStateReducer.ts        |   97.14 |     82.6 |   91.66 |   96.55 | 102                                         
- lib/utils                  |   82.15 |    76.47 |   84.96 |   82.44 |                                             
-  calendar.ts               |   85.71 |     72.5 |     100 |   85.71 | 28-29,46,56,76,82,128-129,134-135,151       
-  date-19hz-parsing.ts      |   92.42 |    84.61 |   83.33 |    92.3 | 96-97,359-378                               
-  date-constants.ts         |     100 |      100 |     100 |     100 |                                             
-  date.ts                   |   86.24 |    90.66 |    82.6 |   85.87 | 69-70,99,142-143,238,479,526-559            
-  headerNames.ts            |     100 |      100 |     100 |     100 |                                             
-  icsParser.ts              |     100 |      100 |     100 |     100 |                                             
-  location.ts               |   74.64 |    66.66 |   86.95 |   76.15 | 51-52,211,228,256-262,317,392-393,408-444   
-  logr.ts                   |   71.66 |    67.44 |   91.66 |   70.68 | 39,68-93,113,160                            
-  quickFilters.ts           |   97.72 |      100 |     100 |   97.43 | 149                                         
-  timezones.ts              |   87.62 |     86.2 |   84.61 |   88.37 | 55,76-84,87,95-100,136                      
-  umami.ts                  |   18.42 |        0 |       0 |   20.58 | 17-21,37-63,75-77,93-109                    
-  url-utils.ts              |   94.87 |    84.29 |   96.15 |   97.57 | 76-77,317,325                               
-  utils-client.ts           |      54 |    68.75 |      60 |   54.16 | 14-43,61,65,96,115-116                      
-  utils-server.ts           |      25 |        0 |       0 |      20 | 9,33-100,107                                
-  utils-shared.ts           |   89.77 |    78.12 |   86.66 |   90.12 | 27,46,48,50,211-217                         
-  venue-parsing.ts          |   96.87 |     82.6 |     100 |   96.82 | 151-152                                     
- types                      |   33.33 |      100 |       0 |   28.57 |                                             
-  error.ts                  |       0 |      100 |       0 |       0 | 1-8                                         
-  events.ts                 |      75 |      100 |     100 |     100 |                                             
-----------------------------|---------|----------|---------|---------|---------------------------------------------
+----------------------------|---------|----------|---------|---------|-----------------------------------------------------------
+File                        | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
+----------------------------|---------|----------|---------|---------|-----------------------------------------------------------
+All files                   |   70.87 |    64.82 |   73.73 |    71.1 |
+ components/common          |     100 |      100 |     100 |     100 |
+  ErrorMessage.tsx          |     100 |      100 |     100 |     100 |
+  LoadingSpinner.tsx        |     100 |      100 |     100 |     100 |
+ components/events          |   77.48 |    66.93 |   74.35 |   78.32 |
+  DateAndSearchFilters.tsx  |    64.7 |     42.1 |   57.14 |   66.66 | 64,94-222
+  DateQuickButtons.tsx      |    90.9 |       75 |     100 |    90.9 | 43-44
+  EventList.tsx             |   82.05 |    78.04 |   80.95 |   81.57 | 38-39,134-136,161-163,188-190,217-219
+ components/home            |   80.55 |    66.66 |     100 |      80 |
+  EventsSourceSelector.tsx  |   80.55 |    66.66 |     100 |      80 | 35-39,46-47
+ components/layout          |     100 |      100 |     100 |     100 |
+  Footer.tsx                |     100 |      100 |     100 |     100 |
+  Header.tsx                |     100 |      100 |     100 |     100 |
+ components/map             |   85.02 |    73.33 |   88.57 |   86.98 |
+  MapContainer.tsx          |   82.17 |    71.42 |   85.71 |   82.47 | 54-63,79,88,122-123,170,196-198,234,304-306
+  MapMarker.tsx             |   94.44 |    81.81 |     100 |     100 | 15,35
+  MapPopup.tsx              |   86.76 |    72.97 |    90.9 |   91.66 | 75-81,92
+ components/ui              |   94.11 |    66.66 |      90 |     100 |
+  button.tsx                |     100 |    66.66 |     100 |     100 | 41
+  calendar.tsx              |    87.5 |       75 |   85.71 |     100 | 71,138-148
+  slider.tsx                |     100 |    33.33 |     100 |     100 | 13
+ lib                        |     100 |      100 |     100 |     100 |
+  utils.ts                  |     100 |      100 |     100 |     100 |
+ lib/api                    |   91.76 |    83.33 |   94.73 |   92.94 |
+  geocoding.ts              |   91.76 |    83.33 |   94.73 |   92.94 | 56,87,125,159,290,318-320,364,389,431
+ lib/api/eventSources/plura |   75.64 |    76.92 |      60 |   75.34 |
+  types.ts                  |     100 |      100 |     100 |     100 |
+  utils.ts                  |      75 |    76.92 |      60 |      75 | 71,91-92,100,148,157-191
+ lib/cache                  |   73.23 |    77.19 |   85.71 |   72.46 |
+  upstash.ts                |   73.23 |    77.19 |   85.71 |   72.46 | 11,45-46,73-103,140,187
+ lib/config                 |     100 |      100 |     100 |     100 |
+  env.ts                    |     100 |      100 |     100 |     100 |
+ lib/events                 |   69.23 |    69.09 |      50 |   69.07 |
+  FilterEventsManager.ts    |   69.44 |    77.14 |   46.66 |      70 | 37-39,53-69,112,135-136,152-160,199-217
+  examples.ts               |     100 |      100 |     100 |     100 |
+  filters.ts                |   66.66 |       55 |   57.14 |   65.38 | 32,43,67-71,83-114
+ lib/hooks                  |   33.39 |    22.89 |   46.39 |    32.9 |
+  useAppController.ts       |   11.25 |        0 |       0 |   11.84 | 118-575
+  useBreakpoint.ts          |    7.69 |        0 |       0 |      10 | 11-22
+  useEventsManager.ts       |   57.89 |    54.09 |   61.76 |   58.41 | 111-128,138-182,195-215
+  useMap.ts                 |   68.46 |    36.36 |      80 |   69.14 | 43-49,120-131,148-154,165-169,191-194,198,231-232,265-276
+  useUrlProcessor.ts        |     8.1 |        0 |       0 |    8.57 | 73-357
+ lib/services               |    6.81 |        0 |       0 |    6.89 |
+  urlProcessingService.ts   |    6.81 |        0 |       0 |    6.89 | 25-237
+ lib/state                  |   97.14 |     82.6 |   91.66 |   96.55 |
+  appStateReducer.ts        |   97.14 |     82.6 |   91.66 |   96.55 | 102
+ lib/utils                  |   82.53 |    76.76 |   88.11 |    82.9 |
+  calendar.ts               |   85.71 |     72.5 |     100 |   85.71 | 28-29,46,56,76,82,128-129,134-135,151
+  date-19hz-parsing.ts      |   86.25 |       80 |   83.33 |   86.04 | 101-115,359-378
+  date-constants.ts         |     100 |      100 |     100 |     100 |
+  date.ts                   |   94.21 |    91.89 |     100 |    94.4 | 67-68,97,140-141,236,477,524-525
+  headerNames.ts            |     100 |      100 |     100 |     100 |
+  icsParser.ts              |     100 |      100 |     100 |     100 |
+  location.ts               |   74.64 |    66.66 |   86.95 |   76.15 | 51-52,211,228,256-262,315,390-391,406-442
+  logr.ts                   |   71.18 |    67.44 |   91.66 |   70.17 | 39,68-93,113,160
+  quickFilters.ts           |   97.72 |      100 |     100 |   97.43 | 149
+  timezones.ts              |    87.5 |     86.2 |   84.61 |   88.23 | 55,76-84,87,95-100,136
+  umami.ts                  |   18.42 |        0 |       0 |   20.58 | 17-21,37-63,75-77,93-109
+  url-utils.ts              |   94.87 |    84.29 |   96.15 |   97.57 | 76-77,317,325
+  utils-client.ts           |      54 |    68.75 |      60 |   54.16 | 14-43,61,65,96,115-116
+  utils-server.ts           |      25 |        0 |       0 |      20 | 9,33-100,107
+  utils-shared.ts           |   92.42 |    86.53 |     100 |   93.44 | 26,45,47,49
+  venue-parsing.ts          |   96.87 |     82.6 |     100 |   96.82 | 151-152
+ types                      |   33.33 |      100 |       0 |   28.57 |
+  error.ts                  |       0 |      100 |       0 |       0 | 1-8
+  events.ts                 |      75 |      100 |     100 |     100 |
+----------------------------|---------|----------|---------|---------|-----------------------------------------------------------
 
 Test Suites: 1 skipped, 33 passed, 33 of 34 total
 Tests:       10 skipped, 618 passed, 628 total
 Snapshots:   0 total
-Time:        5.125 s
+Time:        2.685 s
 Ran all test suites.
-Total Lines of Code: 2566
-Fri Nov 14 02:23:34 UTC 2025
+Total Lines of Code: 2516
+Thu Feb  5 12:43:40 PST 2026
 ```
 
 ## Next Steps for Testing

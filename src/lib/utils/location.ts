@@ -402,7 +402,7 @@ export const llzObjectToViewport = (llz: { lat: number; lon: number; zoom: numbe
  */
 export const checkForZipCode = async (
     query: string,
-    zipLatLonRef: React.RefObject<Record<string, string> | null>
+    zipLatLonRef: React.MutableRefObject<Record<string, string> | null>
 ): Promise<{ lat: number; lon: number } | null> => {
     // --- Helper: Lazy load ZIP → lat/lon map ---
     const loadZipLatLon = async (): Promise<void> => {

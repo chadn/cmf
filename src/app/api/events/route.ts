@@ -177,6 +177,15 @@ const fetchAndGeocode = async (
  * API route handler for events from various sources
  */
 export async function GET(request: NextRequest) {
+    return apiEvents(request)
+}
+
+/**
+ * /api/events endpoing handler
+ * @param request
+ * @returns
+ */
+export async function apiEvents(request: NextRequest) {
     const startTime = performance.now()
 
     const umamiProps: { [key: string]: string | number | boolean | undefined } = {
@@ -220,7 +229,6 @@ export async function GET(request: NextRequest) {
         logr.info('api-events', `/api/events: ${totalTime}ms, umamiProps: ${stringify(umamiProps)}`)
         waitUntil(umamiServer('api-events', umamiProps, umamiProps.path as string))
         return NextResponse.json(response)
-
     } catch (error) {
         logr.warn('api-events', 'Error fetching events', error)
 
