@@ -88,13 +88,15 @@ export function useEventsManager({
         if (typeof window !== 'undefined') {
             shouldSkip = /[?&]skipcache=1/i.test(window.location.search)
         }
-        return sourceIds.map(
-            (sourceId) =>
-                `/api/events?id=${encodeURIComponent(sourceId)}` +
+        return sourceIds.map((sourceId) => {
+            const basePath = sourceId === 'plura:all' ? '/api/eventsLongDuration' : '/api/events'
+            return (
+                `${basePath}?id=${encodeURIComponent(sourceId)}` +
                 `&timeMin=${encodeURIComponent(timeMin || '')}` +
                 `&timeMax=${encodeURIComponent(timeMax || '')}` +
                 `&skipCache=${shouldSkip ? '1' : '0'}`
-        )
+            )
+        })
     }, [sourceIds, timeMin, timeMax])
 
     // Log the API URLs being used
