@@ -1,6 +1,13 @@
 # E2E Tests for CMF
 
-This directory contains end-to-end tests for the Calendar Map Filter (CMF) application.
+This directory contains end-to-end (e2e) tests for the Calendar Map Filter (CMF) application.
+
+For more, view [End-to-End Testing in docs/tests.md](../../docs/tests.md#end-to-end-testing)
+
+# **TODO**: REMOVE ALL CONTENT BELOW. Any info that is unique (not duplicated in docs/tests.md) should be moved to appropriate document
+
+
+
 
 ## Test Files
 

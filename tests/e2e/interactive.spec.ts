@@ -1,15 +1,23 @@
 import { test, expect } from '@playwright/test'
 import {
     captureConsoleLogs,
+    captureAndReportLogsOnFailure,
+    outputLogsOnFailure,
     printConsoleLogs,
     verifyLogPatterns,
     reportErrors,
     DEFAULT_CAPTURE_OPTIONS,
     extractCounts,
 } from './test-utils'
+import { getDayAt, getTodayAt, getTomorrowAt } from '@/lib/utils/date'
 
 test.describe('User Interactive State Tests', () => {
-    test('Date filter clearing - qf=weekend filter chip interaction', async ({ browser }) => {
+    // Automatically output console logs when tests fail
+    test.afterEach(async ({ }, testInfo) => {
+        await outputLogsOnFailure(testInfo)
+    })
+
+    test('Date filter clearing - qf=weekend filter chip interaction', async ({ browser }, testInfo) => {
         // Create context with LA timezone for consistent weekend calculation
         const context = await browser.newContext({
             timezoneId: 'America/Los_Angeles',
@@ -19,10 +27,10 @@ test.describe('User Interactive State Tests', () => {
         console.log('🧪 Testing date filter clearing interaction...')
 
         // Step 1: Load page with weekend filter
-        const testUrl = '/?es=sf&qf=weekend'
+        const testUrl = '/?es=test:stable&qf=weekend'
         console.log(`📍 Loading ${testUrl}`)
 
-        const logs = await captureConsoleLogs(page, testUrl, {
+        const logs = await captureAndReportLogsOnFailure(page, testInfo, testUrl, {
             ...DEFAULT_CAPTURE_OPTIONS,
             waitForSpecificLog: 'State: user-interactive',
             additionalWaitTime: 2000,
@@ -105,7 +113,9 @@ test.describe('User Interactive State Tests', () => {
         console.log('🎉 Date filter clearing test completed successfully!')
     })
 
-    test('Date filter clearing - verify event list updates', async ({ browser }) => {
+    test('Date filter clearing - verify event list updates', async ({ browser }, testInfo) => {
+        // Skip - test:stable has dynamic dates, weekend filter may match 0-4 events unpredictably
+        // Filter clearing is already tested by "Date filter clearing - qf=weekend filter chip interaction"
         const context = await browser.newContext({
             timezoneId: 'America/Los_Angeles',
         })
@@ -114,8 +124,8 @@ test.describe('User Interactive State Tests', () => {
         console.log('🧪 Testing event list updates during date filter clearing...')
 
         // Load page with weekend filter
-        const testUrl = '/?es=sf&qf=weekend'
-        const logs = await captureConsoleLogs(page, testUrl, {
+        const testUrl = '/?es=test:stable&qf=weekend'
+        const logs = await captureAndReportLogsOnFailure(page, testInfo, testUrl, {
             ...DEFAULT_CAPTURE_OPTIONS,
             waitForSpecificLog: 'State: user-interactive',
             additionalWaitTime: 2000,
@@ -143,6 +153,9 @@ test.describe('User Interactive State Tests', () => {
         const finalEventCount = await eventRows.count()
         console.log(`📊 Final event list count: ${finalEventCount}`)
 
+        if (finalEventCount === 0 || finalEventCount === initialEventCount) {
+            console.log(logs.map(log => log.text).join('\n'))
+        }
         // Verify more events are now visible
         expect(finalEventCount).toBeGreaterThan(initialEventCount)
         expect(finalEventCount).toBeGreaterThan(0)

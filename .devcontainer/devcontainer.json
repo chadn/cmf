@@ -1,0 +1,17 @@
+{
+  "name": "cmf-node22-debian",
+  "build": { "dockerfile": "Dockerfile" },
+  "forwardPorts": [],
+  "portsAttributes": {
+    "9323": { "label": "playwright show-report", "onAutoForward": "notify" },
+    "3000": { "label": "App", "onAutoForward": "notify" }
+  },
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "remoteUser": "root",
+  "runArgs": [
+    "--shm-size=2gb",
+    "--ipc=host",
+    "--cap-add=SYS_PTRACE",
+    "--security-opt=seccomp=unconfined"
+  ]
+}

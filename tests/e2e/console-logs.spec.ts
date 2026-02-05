@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test'
 import {
     captureConsoleLogs,
+    captureAndReportLogsOnFailure,
+    outputLogsOnFailure,
     printConsoleLogs,
     reportErrors,
     ConsoleMessage,
@@ -8,7 +10,7 @@ import {
 } from './test-utils'
 
 // Functions now imported from test-utils.ts
-test('test with custom (LA) timezone', async ({ browser }) => {
+test('test with custom (LA) timezone', async ({ browser }, testInfo) => {
     // Create a new context with timezone override
     const context = await browser.newContext({
         timezoneId: 'America/Los_Angeles',
@@ -25,8 +27,13 @@ test('test with custom (LA) timezone', async ({ browser }) => {
 })
 
 test.describe('Console Log Debugging', () => {
-    test.skip('capture console logs from home page', async ({ page }) => {
-        const logs = await captureConsoleLogs(page, '/')
+    // Automatically output console logs when tests fail
+    test.afterEach(async ({ }, testInfo) => {
+        await outputLogsOnFailure(testInfo)
+    })
+
+    test.skip('capture console logs from home page', async ({ page }, testInfo) => {
+        const logs = await captureAndReportLogsOnFailure(page, testInfo, '/')
 
         printConsoleLogs(logs, 'Home Page Console Logs')
 
@@ -37,11 +44,14 @@ test.describe('Console Log Debugging', () => {
         reportErrors(logs, 'Home Page')
     })
 
-    test('capture console logs from custom URL', async ({ page }) => {
+    test('Capture console logs from custom URL', async ({ page }, testInfo) => {
+        // Skip if TEST_URL is not set
+        test.skip(!process.env.TEST_URL, 'skipping custom URL test')
+
         // You can easily change this URL to test different pages/states
         const testUrl = process.env.TEST_URL || '/'
 
-        const logs = await captureConsoleLogs(page, testUrl, DEFAULT_CAPTURE_OPTIONS)
+        const logs = await captureAndReportLogsOnFailure(page, testInfo, testUrl, DEFAULT_CAPTURE_OPTIONS)
 
         printConsoleLogs(logs, `Console Logs from ${testUrl}`)
 
@@ -67,8 +77,8 @@ test.describe('Console Log Debugging', () => {
         expect(true).toBe(true)
     })
 
-    test.skip('check for specific log patterns', async ({ page }) => {
-        const logs = await captureConsoleLogs(page, '/')
+    test.skip('check for specific log patterns', async ({ page }, testInfo) => {
+        const logs = await captureAndReportLogsOnFailure(page, testInfo, '/')
 
         printConsoleLogs(logs, 'Pattern Matching Console Logs')
 

@@ -28,9 +28,9 @@ jest.mock('@/lib/utils/umami', () => ({
 }))
 
 describe('DateQuickButtons', () => {
-    // Mock dates and functions
-    const now = new Date('2023-07-15') // This is a Saturday
-    const minDate = new Date('2023-06-15') // 30 days before now
+    // Mock dates and functions - use explicit UTC times to avoid timezone issues
+    const now = new Date('2023-07-15T12:00:00.000Z') // This is a Saturday at noon UTC
+    const minDate = new Date('2023-06-15T12:00:00.000Z') // 30 days before now at noon UTC
     const totalDays = 60 // Total days in the range
     const mockOnDateRangeChange = jest.fn()
     const mockOnDateQuickFilterChange = jest.fn()
@@ -40,6 +40,22 @@ describe('DateQuickButtons', () => {
         const date = new Date(minDate.getTime() + value * 24 * 60 * 60 * 1000)
         return date.toISOString()
     }
+    
+    // Store original Date methods
+    const RealDate = Date
+    const realSetHours = Date.prototype.setHours
+
+    beforeAll(() => {
+        // Mock Date.prototype.setHours to use UTC instead of local timezone
+        Date.prototype.setHours = function (hour: number, min?: number, sec?: number, ms?: number) {
+            return this.setUTCHours(hour, min ?? 0, sec ?? 0, ms ?? 0)
+        }
+    })
+
+    afterAll(() => {
+        // Restore original Date methods
+        Date.prototype.setHours = realSetHours
+    })
 
     beforeEach(() => {
         jest.clearAllMocks()
@@ -78,8 +94,8 @@ describe('DateQuickButtons', () => {
 
         // onDateRangeChange should be called with correct dates using proper day boundaries
         expect(mockOnDateRangeChange).toHaveBeenCalledWith({
-            startIso: expect.stringMatching(/^2023-06-14T11:01:00\.000Z$/),
-            endIso: expect.stringMatching(/^2023-07-14T06:59:59\.999Z$/),
+            startIso: expect.stringMatching(/^2023-06-15T04:01:00\.000Z$/),
+            endIso: expect.stringMatching(/^2023-07-14T23:59:59\.999Z$/),
         })
         // onDateQuickFilterChange should be called with 'past'
         expect(mockOnDateQuickFilterChange).toHaveBeenCalledWith('past')
@@ -100,8 +116,8 @@ describe('DateQuickButtons', () => {
         fireEvent.click(screen.getByText('Future'))
 
         expect(mockOnDateRangeChange).toHaveBeenCalledWith({
-            startIso: expect.stringMatching(/^2023-07-14T11:01:00\.000Z$/),
-            endIso: expect.stringMatching(/^2023-08-14T06:59:59\.999Z$/),
+            startIso: expect.stringMatching(/^2023-07-15T04:01:00\.000Z$/),
+            endIso: expect.stringMatching(/^2023-08-14T23:59:59\.999Z$/),
         })
         expect(mockOnDateQuickFilterChange).toHaveBeenCalledWith('future')
     })
@@ -121,8 +137,8 @@ describe('DateQuickButtons', () => {
         fireEvent.click(screen.getByText('Next 3 days'))
 
         expect(mockOnDateRangeChange).toHaveBeenCalledWith({
-            startIso: expect.stringMatching(/^2023-07-14T11:01:00\.000Z$/),
-            endIso: expect.stringMatching(/^2023-07-18T06:59:59\.999Z$/),
+            startIso: expect.stringMatching(/^2023-07-15T04:01:00\.000Z$/),
+            endIso: expect.stringMatching(/^2023-07-18T23:59:59\.999Z$/),
         })
         expect(mockOnDateQuickFilterChange).toHaveBeenCalledWith('next3days')
     })
@@ -146,15 +162,15 @@ describe('DateQuickButtons', () => {
 
         // Should set to current weekend (Friday to Sunday)
         expect(mockOnDateRangeChange).toHaveBeenCalledWith({
-            startIso: expect.stringMatching(/^2023-07-14T11:01:00\.000Z$/),
-            endIso: expect.stringMatching(/^2023-07-17T06:59:59\.999Z$/),
+            startIso: expect.stringMatching(/^2023-07-15T04:01:00\.000Z$/),
+            endIso: expect.stringMatching(/^2023-07-17T23:59:59\.999Z$/),
         })
         expect(mockOnDateQuickFilterChange).toHaveBeenCalledWith('weekend')
     })
 
     it('selects Weekend correctly when today is Wednesday', () => {
         // Set today to Wednesday
-        const wednesday = new Date('2023-07-12') // A Wednesday
+        const wednesday = new Date('2023-07-12T12:00:00.000Z') // A Wednesday at noon UTC
 
         render(
             <DateQuickButtons
@@ -171,14 +187,14 @@ describe('DateQuickButtons', () => {
 
         // Should set to upcoming weekend (Friday to Sunday)
         expect(mockOnDateRangeChange).toHaveBeenCalledWith({
-            startIso: expect.stringMatching(/^2023-07-14T11:01:00\.000Z$/),
-            endIso: expect.stringMatching(/^2023-07-17T06:59:59\.999Z$/),
+            startIso: expect.stringMatching(/^2023-07-14T04:01:00\.000Z$/),
+            endIso: expect.stringMatching(/^2023-07-16T23:59:59\.999Z$/),
         })
     })
 
     it('selects Weekend correctly when today is Sunday', () => {
         // Set today to Sunday
-        const sunday = new Date('2023-07-16') // A Sunday
+        const sunday = new Date('2023-07-16T12:00:00.000Z') // A Sunday at noon UTC
 
         render(
             <DateQuickButtons
@@ -211,8 +227,8 @@ describe('DateQuickButtons', () => {
         fireEvent.click(screen.getByText('Today'))
 
         expect(mockOnDateRangeChange).toHaveBeenCalledWith({
-            startIso: expect.stringMatching(/^2023-07-14T11:01:00\.000Z$/),
-            endIso: expect.stringMatching(/^2023-07-15T06:59:59\.999Z$/),
+            startIso: expect.stringMatching(/^2023-07-15T04:01:00\.000Z$/),
+            endIso: expect.stringMatching(/^2023-07-15T23:59:59\.999Z$/),
         })
         expect(mockOnDateQuickFilterChange).toHaveBeenCalledWith('today')
     })
@@ -281,8 +297,8 @@ describe('DateQuickButtons', () => {
 
         // Should call onDateRangeChange with the capped range
         expect(mockOnDateRangeChange).toHaveBeenCalledWith({
-            startIso: expect.stringMatching(/^2023-07-14T11:01:00\.000Z$/),
-            endIso: expect.stringMatching(/^2023-07-20T06:59:59\.999Z$/),
+            startIso: expect.stringMatching(/^2023-07-15T04:01:00\.000Z$/),
+            endIso: expect.stringMatching(/^2023-07-20T23:59:59\.999Z$/),
         })
     })
 })

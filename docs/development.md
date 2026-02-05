@@ -141,6 +141,28 @@ Open [https://localhost:3000](https://localhost:3000) in your browser.
   2. Generate certificates for that IP (`mkcert -key-file .cert/localhost-key.pem -cert-file .cert/localhost-cert.pem localhost 192.168.x.x`)
   3. Install the mkcert root CA on your mobile device
 
+## Running VS Code Remote Containers
+
+You may want to develop in a remote container if you use AI to help you and you don't want that AI to run wild on your local computer.
+
+To run this source code inside a docker container on a remote computer,
+and still use VS Code to edit source files and run terminal commands inside container, 
+do the following
+
+Setup
+1. ssh to remote computer, clone this repo to a project folder.
+1. On your local computer running VS Code, make sure you have these extentions (⇧⌘X) installed
+    - Remote - SSH (ms-vscode-remote.remote-ssh)
+    - Dev Containers (ms-vscode-remote.remote-containers)
+    - Docker (ms-azuretools.vscode-docker) (optional but useful)
+
+Connect
+
+1. In VS Code → Command Palette (⇧⌘P), run: Remote-SSH: Connect to Host...   
+(shows options from your local ~/.ssh/config)
+Then pick the project folder to open on the remote computer
+1. In VS Code → Command Palette (⇧⌘P), run: Dev Containers: Rebuild and Reopen in Container
+
 ## Deployment
 
 ### Vercel (Recommended)

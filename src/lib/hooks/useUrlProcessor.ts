@@ -292,7 +292,7 @@ export function useUrlProcessor(config: UrlProcessorConfig): UrlProcessorResult 
         const showOnlyUnresolved = urlParams.sq === 'unresolved'
         logr.info(
             'app',
-            `URL parsing step 6 & 7 Auto-resizing map to show visible events (useBounds: ${!showOnlyUnresolved})`
+            `URL parsing step 6 & 7 Auto-resizing map to show visible events (useBounds != showOnlyUnresolved=${showOnlyUnresolved})`
         )
         handlers.resetMapToVisibleEvents({ useBounds: !showOnlyUnresolved })
         dispatch(appActions.remainingUrlParsed())

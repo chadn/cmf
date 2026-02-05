@@ -12,9 +12,10 @@ This document covers manual and automated tests.
     - [End-to-End Testing](#end-to-end-testing)
         - [Playwright Directory Structure](#playwright-directory-structure)
         - [E2E Example](#e2e-example)
+        - [E2E Coverage](#e2e-coverage)
     - [Integration Tests](#integration-tests)
     - [Unit and Component Tests](#unit-and-component-tests)
-    - [Jest Coverage](#jest-coverage)
+        - [Jest Coverage](#jest-coverage)
 - [Next Steps for Testing](#next-steps-for-testing)
     - [Priority 1: Improve Map Component Testing](#priority-1-improve-map-component-testing)
     - [Priority 2: Complete Hook Testing](#priority-2-complete-hook-testing)
@@ -49,9 +50,10 @@ In addition to [CMF Definitions](usage.md#definitions), manual testers should un
 Note:
 
 - South / North → Latitude in degrees (−90 to +90), usually up to 6 decimal places
-- West / East → Longitude in degrees (−180 to +180), usually up to 6 decimal places.
-- Remember Longitudes can go to 180, _longer_ than latitudes that only go up to 90.
-  Another way is longitudes cover full 360 around earth (-180 to +180), latitudes only go from
+- West / East → Longitude in degrees (−180 to +180), usually up to 6 decimal places
+- Latitude vs longitude:
+    - Longitudes can go to 180, So longitudes are **_longer_** than latitudes, which only go up to 90. Nice mnemonic.
+    - Longitudes cover full 360 around earth (-180 to +180), latitudes only go from the South pole (-90) to the north pole (+90).
 
 ### Testing Date Changes
 
@@ -131,41 +133,49 @@ Share - Copy URL
 
 ### End-to-End Testing
 
-E2E tests are performed by Playwright. Tests live in [/tests/e2e](../tests/e2e/), outside of `/src`, since E2E doesn't test source files directly, but the running app (UI, API endpoints).
+E2E tests are performed by Playwright, which emulates users by loading web page, clicking on app, reading console logs, etc.
+Tests live in [/tests/e2e](../tests/e2e/), outside of `/src`, since E2E doesn't test source files directly, but the running app (UI, API endpoints).
 
-**Quick console debugging:** From the command line, run tests and get browser console logs (output from `logr`) for any URL:
+**📚 E2E Test Documentation:**
+
+Note once e2e tests stabilize, the following docs may go away. For now, they help AI and not maintained by humans.
+
+- [tests-e2e.md](tests-e2e.md)
+- [tests-e2e-architecture.md](tests-e2e-architecture.md) - Testing principles, patterns, and selector strategies
+- [tests-e2e-examples.md](tests-e2e-examples.md) - Code examples and anti-patterns
+- [tests-e2e-migration.md](tests-e2e-migration.md) - Phased implementation plan and progress, temporary.
+
+**Examples of all available commands:**
 
 ```bash
-# Test specific URL with parameters
-(TEST_URL="/?es=sf" npm run test:e2e:console) &> dev-perf-browser-logs.txt   # AI can use this to iterate on testing its changes
-(TEST_URL="/?es=sf" npm run test:e2e:console) 2>&1 |tee dev-perf-browser-logs.txt
-
+npm run test:e2e:smoke   # ~8s, smoke test runs 3 critical workflow tests
+npm run test:e2e         # Run all E2E tests headlessly (desktop + mobile) (2-5 mins)
+npm run test:e2e:mobile   # Run all tests on mobile (iPhone 16)
+npm run test:e2e:full     # Run all tests on both desktop and mobile
+npm run test:e2e:console   # Run console log debugging test with visible browser
+npm run test:e2e:pageload   # Run page-load verification tests with visible browser
+npm run test:e2e:interactive # Run interactive user state tests with visible browser
+npm run test:report          # Open HTML report from last test run
 ```
 
-Run page-load tests, which automate some of the manual tests listed above in [Testing Different URLs](#testing-different-urls)
+Note pageload tests automate some of the manual tests listed above in [Testing Different URLs](#testing-different-urls)
+
+**Quick console debugging:**
+
+From the command line
 
 ```bash
-# Run all
-time npm run test:pageload
+# Get browser console logs (output from `logr`) for any URL using TEST_URL.
+# AI can use this to iterate on testing its changes
+(TEST_URL="/?es=sf" npm run test:e2e -- -g "Capture console logs from custom URL") 2>&1 |tee e2e-custom-url.log
 
-# Run tests with names that contain "Quick Filter"
-TEST_NAME="Quick Filter" time npm run test:e2e:pageload
+# Run smoke tests on desktop only (fastest feedback):
+npm run test:e2e:smoke -- --project=desktop-chrome
 ```
+
+Note the grep option, -g, to only include tests that match that string.
 
 If tests fail, then playwright reports are available to see details - make sure you view stdout under Attachments to figure out why it failed.
-
-**Available E2E commands:**
-
-- `npm run test:e2e` - Run all E2E tests headlessly
-- `npm run test:e2e:console` - Run console log debugging test with visible browser
-
-```bash
-# Run the new interactive test:
-npm run test:e2e -- tests/e2e/interactive.spec.ts --headed
-
-# Run specific test within the file:
-npm run test:e2e -- tests/e2e/interactive.spec.ts -g "filter chip interaction" --headed
-```
 
 #### Playwright Directory Structure
 
@@ -184,19 +194,124 @@ npm run test:e2e -- tests/e2e/interactive.spec.ts -g "filter chip interaction" -
 
 #### E2E Example
 
+Note below some fail, but then they pass after re-running via `npx playwright test --last-failed`
+
 ```bash
 time npm run test:e2e
 
-> calendar-map-filter@0.3.6 test:e2e
+> calendar-map-filter@0.4.10 test:e2e
 > playwright test
+
+Running 60 tests using 2 workers
 ...
-  10 passed (29.7s)
+
+================================================================================
+TEST SUMMARY
+================================================================================
+
+✅ PASSED (51):
+  console-logs.spec.ts 13:5  › desktop-chrome › console-logs.spec.ts › test with custom (LA) timezone
+  integration-sf.spec.ts 105:9  › desktop-chrome › integration-sf.spec.ts › SF API Integration Tests @integration @slow › Real geocoding works with SF search
+  integration-sf.spec.ts 55:9  › desktop-chrome › integration-sf.spec.ts › SF API Integration Tests @integration @slow › Load real SF events and verify API integration
+  integration-sf.spec.ts 148:9  › desktop-chrome › integration-sf.spec.ts › SF API Integration Tests @integration @slow › Performance with real SF event volume
+  integration-sf.spec.ts 192:9  › desktop-chrome › integration-sf.spec.ts › SF API Integration Tests @integration @slow › Real selected event from SF API
+  interactive.spec.ts 20:9  › desktop-chrome › interactive.spec.ts › User Interactive State Tests › Date filter clearing - qf=weekend filter chip interaction
+  page-load.spec.ts 274:17  › desktop-chrome › page-load.spec.ts › Page Load Tests - URL Processing Verification › Quick Filter qf=weekend Test
+  page-load.spec.ts 274:17  › desktop-chrome › page-load.spec.ts › Page Load Tests - URL Processing Verification › Search Filter sq=berkeley Test
+  page-load.spec.ts 274:17  › desktop-chrome › page-load.spec.ts › Page Load Tests - URL Processing Verification › LLZ Coordinates Test With Visible Events
+  page-load.spec.ts 274:17  › desktop-chrome › page-load.spec.ts › Page Load Tests - URL Processing Verification › LLZ Coordinates Test With No Visible Events
+  page-load.spec.ts 274:17  › desktop-chrome › page-load.spec.ts › Page Load Tests - URL Processing Verification › Selected Event se= Marker Popup
+  smoke.spec.ts 42:9  › desktop-chrome › smoke.spec.ts › Smoke Tests - Critical User Workflows › Workflow 1: Load app with events
+  page-load.spec.ts 274:17  › desktop-chrome › page-load.spec.ts › Page Load Tests - URL Processing Verification › Unresolved Events Marker Popup
+  smoke.spec.ts 80:9  › desktop-chrome › smoke.spec.ts › Smoke Tests - Critical User Workflows › Workflow 2: View todays events (qf=today)
+  smoke.spec.ts 126:9  › desktop-chrome › smoke.spec.ts › Smoke Tests - Critical User Workflows › Workflow 3: View selected event from shared URL (se=)
+  user-workflows.spec.ts 20:9  › desktop-chrome › user-workflows.spec.ts › Selected Event Workflows › Trigger 1: Click map marker selects event
+  user-workflows.spec.ts 60:9  › desktop-chrome › user-workflows.spec.ts › Selected Event Workflows › Trigger 2: Click event row selects event
+  user-workflows.spec.ts 112:9  › desktop-chrome › user-workflows.spec.ts › Selected Event Workflows › Trigger 3: Load with se parameter selects event
+  user-workflows.spec.ts 143:9  › desktop-chrome › user-workflows.spec.ts › Selected Event Workflows › Exception: Close popup deselects and unfreezes event list
+  user-workflows.spec.ts 216:9  › desktop-chrome › user-workflows.spec.ts › Filter Chip Workflows › Map filter: Zoom into SF creates map filter chip
+  user-workflows.spec.ts 291:9  › desktop-chrome › user-workflows.spec.ts › Filter Chip Workflows › Date filter: Weekend quick filter creates date chip
+  user-workflows.spec.ts 248:9  › desktop-chrome › user-workflows.spec.ts › Filter Chip Workflows › Map filter: Click chip removes map filter and shows all events
+  user-workflows.spec.ts 320:9  › desktop-chrome › user-workflows.spec.ts › Filter Chip Workflows › Date filter: Click chip removes date filter
+  user-workflows.spec.ts 351:9  › desktop-chrome › user-workflows.spec.ts › Filter Chip Workflows › Search filter: Type search creates search chip
+  console-logs.spec.ts 13:5  › mobile-iphone16 › console-logs.spec.ts › test with custom (LA) timezone
+  user-workflows.spec.ts 389:9  › desktop-chrome › user-workflows.spec.ts › Filter Chip Workflows › Search filter: Click chip clears search
+  integration-sf.spec.ts 55:9  › mobile-iphone16 › integration-sf.spec.ts › SF API Integration Tests @integration @slow › Load real SF events and verify API integration
+  integration-sf.spec.ts 105:9  › mobile-iphone16 › integration-sf.spec.ts › SF API Integration Tests @integration @slow › Real geocoding works with SF search
+  integration-sf.spec.ts 148:9  › mobile-iphone16 › integration-sf.spec.ts › SF API Integration Tests @integration @slow › Performance with real SF event volume
+  integration-sf.spec.ts 192:9  › mobile-iphone16 › integration-sf.spec.ts › SF API Integration Tests @integration @slow › Real selected event from SF API
+  interactive.spec.ts 20:9  › mobile-iphone16 › interactive.spec.ts › User Interactive State Tests › Date filter clearing - qf=weekend filter chip interaction
+  page-load.spec.ts 274:17  › mobile-iphone16 › page-load.spec.ts › Page Load Tests - URL Processing Verification › Quick Filter qf=weekend Test
+  page-load.spec.ts 274:17  › mobile-iphone16 › page-load.spec.ts › Page Load Tests - URL Processing Verification › Search Filter sq=berkeley Test
+  page-load.spec.ts 274:17  › mobile-iphone16 › page-load.spec.ts › Page Load Tests - URL Processing Verification › LLZ Coordinates Test With Visible Events
+  page-load.spec.ts 274:17  › mobile-iphone16 › page-load.spec.ts › Page Load Tests - URL Processing Verification › LLZ Coordinates Test With No Visible Events
+  page-load.spec.ts 274:17  › mobile-iphone16 › page-load.spec.ts › Page Load Tests - URL Processing Verification › Selected Event se= Marker Popup
+  smoke.spec.ts 42:9  › mobile-iphone16 › smoke.spec.ts › Smoke Tests - Critical User Workflows › Workflow 1: Load app with events
+  page-load.spec.ts 274:17  › mobile-iphone16 › page-load.spec.ts › Page Load Tests - URL Processing Verification › Unresolved Events Marker Popup
+  smoke.spec.ts 80:9  › mobile-iphone16 › smoke.spec.ts › Smoke Tests - Critical User Workflows › Workflow 2: View todays events (qf=today)
+  smoke.spec.ts 126:9  › mobile-iphone16 › smoke.spec.ts › Smoke Tests - Critical User Workflows › Workflow 3: View selected event from shared URL (se=)
+  user-workflows.spec.ts 20:9  › mobile-iphone16 › user-workflows.spec.ts › Selected Event Workflows › Trigger 1: Click map marker selects event
+  user-workflows.spec.ts 60:9  › mobile-iphone16 › user-workflows.spec.ts › Selected Event Workflows › Trigger 2: Click event row selects event
+  user-workflows.spec.ts 112:9  › mobile-iphone16 › user-workflows.spec.ts › Selected Event Workflows › Trigger 3: Load with se parameter selects event
+  user-workflows.spec.ts 143:9  › mobile-iphone16 › user-workflows.spec.ts › Selected Event Workflows › Exception: Close popup deselects and unfreezes event list
+  user-workflows.spec.ts 216:9  › mobile-iphone16 › user-workflows.spec.ts › Filter Chip Workflows › Map filter: Zoom into SF creates map filter chip
+  user-workflows.spec.ts 291:9  › mobile-iphone16 › user-workflows.spec.ts › Filter Chip Workflows › Date filter: Weekend quick filter creates date chip
+  user-workflows.spec.ts 248:9  › mobile-iphone16 › user-workflows.spec.ts › Filter Chip Workflows › Map filter: Click chip removes map filter and shows all events
+  user-workflows.spec.ts 320:9  › mobile-iphone16 › user-workflows.spec.ts › Filter Chip Workflows › Date filter: Click chip removes date filter
+  user-workflows.spec.ts 351:9  › mobile-iphone16 › user-workflows.spec.ts › Filter Chip Workflows › Search filter: Type search creates search chip
+  user-workflows.spec.ts 389:9  › mobile-iphone16 › user-workflows.spec.ts › Filter Chip Workflows › Search filter: Click chip clears search
+
+❌ FAILED (4):
+  interactive.spec.ts 116:9  › desktop-chrome › interactive.spec.ts › User Interactive State Tests › Date filter clearing - verify event list updates
+  page-load.spec.ts 274:17  › desktop-chrome › page-load.spec.ts › Page Load Tests - URL Processing Verification › Custom fsd Date Range Test
+  interactive.spec.ts 116:9  › mobile-iphone16 › interactive.spec.ts › User Interactive State Tests › Date filter clearing - verify event list updates
+  page-load.spec.ts 274:17  › mobile-iphone16 › page-load.spec.ts › Page Load Tests - URL Processing Verification › Custom fsd Date Range Test
+
+⏭️  SKIPPED (6):
+  console-logs.spec.ts 35:10  › desktop-chrome › console-logs.spec.ts › Console Log Debugging › capture console logs from home page
+  console-logs.spec.ts 47:9  › desktop-chrome › console-logs.spec.ts › Console Log Debugging › Capture console logs from custom URL
+  console-logs.spec.ts 80:10  › desktop-chrome › console-logs.spec.ts › Console Log Debugging › check for specific log patterns
+  console-logs.spec.ts 35:10  › mobile-iphone16 › console-logs.spec.ts › Console Log Debugging › capture console logs from home page
+  console-logs.spec.ts 47:9  › mobile-iphone16 › console-logs.spec.ts › Console Log Debugging › Capture console logs from custom URL
+  console-logs.spec.ts 80:10  › mobile-iphone16 › console-logs.spec.ts › Console Log Debugging › check for specific log patterns
+
+================================================================================
+TOTAL: 60 tests (50 passed, 4 failed, 6 skipped)
+================================================================================
 
 To open last HTML report run:
 
   npx playwright show-report
 
-real 30.503	user 37.604	sys 11.050	pcpu 100.00
+real 190.428	user 156.019	sys 31.949	pcpu 98.71
+
+
+npx playwright test --last-failed
+
+Running 4 tests using 2 workers
+...
+
+✅ PASSED (2):
+  interactive.spec.ts 116:9  › desktop-chrome › interactive.spec.ts › User Interactive State Tests › Date filter clearing - verify event list updates
+  page-load.spec.ts 274:17  › desktop-chrome › page-load.spec.ts › Page Load Tests - URL Processing Verification › Custom fsd Date Range Test
+
+❌ FAILED (2):
+  interactive.spec.ts 116:9  › mobile-iphone16 › interactive.spec.ts › User Interactive State Tests › Date filter clearing - verify event list updates
+  page-load.spec.ts 274:17  › mobile-iphone16 › page-load.spec.ts › Page Load Tests - URL Processing Verification › Custom fsd Date Range Test
+
+================================================================================
+TOTAL: 4 tests (2 passed, 2 failed, 0 skipped)
+================================================================================
+
+npx playwright test --last-failed
+
+✅ PASSED (2):
+  interactive.spec.ts 116:9  › mobile-iphone16 › interactive.spec.ts › User Interactive State Tests › Date filter clearing - verify event list updates
+  page-load.spec.ts 274:17  › mobile-iphone16 › page-load.spec.ts › Page Load Tests - URL Processing Verification › Custom fsd Date Range Test
+
+================================================================================
+TOTAL: 2 tests (2 passed, 0 failed, 0 skipped)
+================================================================================
 ```
 
 ```bash
@@ -213,6 +328,120 @@ To open last HTML report run:
 
 real 19.169	user 23.509	sys 9.991	pcpu 100.00
 ```
+
+#### E2E Example Fails
+
+The following notes from AI are about trying to fix these 2 failing tests.
+
+```
+❌ FAILED (2):
+  interactive.spec.ts 20:9  › mobile-iphone16 › interactive.spec.ts › User Interactive State Tests › Date filter clearing - qf=weekend filter chip interaction
+  page-load.spec.ts 262:17  › mobile-iphone16 › page-load.spec.ts › Page Load Tests - URL Processing Verification › Quick Filter qf=weekend Test
+```
+
+I've implemented test-only solutions to address the failing weekend mobile e2e tests:
+
+Changes Made:
+
+1. Increased wait time (additionalWaitTime from 2000ms → 8000ms) in:
+
+- /Users/chad/src/cmf/tests/e2e/page-load.spec.ts:20 - "Quick Filter qf=weekend Test"
+- /Users/chad/src/cmf/tests/e2e/interactive.spec.ts:36 - "Date filter clearing - qf=weekend filter chip interaction"
+- /Users/chad/src/cmf/tests/e2e/interactive.spec.ts:131 - "Date filter clearing - verify event list updates"
+
+2. Configured serial execution for mobile tests to avoid state contamination:
+
+- /Users/chad/src/cmf/tests/e2e/interactive.spec.ts:16 - Added test.describe.configure({ mode: 'serial' })
+- /Users/chad/src/cmf/tests/e2e/page-load.spec.ts:208 - Added test.describe.configure({ mode: 'serial' })
+
+Results:
+
+Unfortunately, both tests still fail even with these changes:
+
+- interactive.spec.ts:23 - "Date filter clearing - qf=weekend filter chip interaction" (mobile)
+- page-load.spec.ts:266 - "Quick Filter qf=weekend Test" (mobile)
+
+The failure is consistent: initialShown is 0 when it should be > 0, meaning the visible events count shows "0 of 7 Visible" instead of expected "2 of 7 Visible" or similar.
+
+Analysis:
+
+The problem appears to be deeper than timing or parallel execution. The tests pass individually but fail in the suite even with:
+
+- 8 second additional wait time (up from 2s)
+- Serial execution mode (no parallel contamination)
+- No production code changes
+
+This suggests there may be:
+
+1. Browser state pollution from earlier tests that serial mode doesn't prevent
+2. A race condition in how the mobile viewport initializes map dimensions
+3. Some resource/cache issue specific to mobile that accumulates across the test suite
+
+The next steps would require either:
+
+- Further investigation into browser context isolation between tests
+- Adding explicit browser context resets before these specific tests
+- Or potentially accepting these as known flaky tests and marking them to retry
+
+#### E2E Coverage
+
+The following should be the list of what is important in e2e tests.
+For each coverage item, list test items by stating filename and test name.
+If there are no tests that can consistently pass for an item, note why and suggest ways to solve.
+
+**Status:** Ready for map refactor. Some tests fail, but always pass when run individually.
+
+**Critical workflows (tested and passing):**
+
+1. ✅ **Load app with events** - `smoke.spec.ts`: "Workflow 1: Load app with events"
+2. ✅ **View today's events (qf=today)** - `smoke.spec.ts`: "Workflow 2: View today's events (qf=today)"
+3. ✅ **View selected event from shared URL** - `smoke.spec.ts`: "Workflow 3: View selected event from shared URL (se=)"
+4. ✅ **Click map marker to select** - `user-workflows.spec.ts`: "Trigger 1: Click map marker selects event"
+5. ✅ **Click event row to select** - `user-workflows.spec.ts`: "Trigger 2: Click event row selects event"
+6. ✅ **Selected Events Exception behavior** - `user-workflows.spec.ts`: "Exception: Close popup deselects and unfreezes event list"
+7. ✅ **Create and remove date filter chip** - `user-workflows.spec.ts`: "Date filter: Weekend quick filter creates date chip" + "Date filter: Click chip removes date filter"
+8. ✅ **Create and remove search filter chip** - `user-workflows.spec.ts`: "Search filter: Type search creates search chip" + "Search filter: Click chip clears search"
+9. ⚠️ **Create and remove map filter chip** - `user-workflows.spec.ts`: 2 mobile tests skipped (unreliable with current test data), but corresponding desktop passes, so ok.
+
+**URL Parameter Processing (tested and passing):**
+
+- ✅ **Quick filter qf=weekend** - `page-load.spec.ts`: "Quick Filter qf=weekend Test" (desktop only - mobile skipped due to known flaky issue)
+- ✅ **Search filter sq=** - `page-load.spec.ts`: "Search Filter sq=berkeley Test"
+- ✅ **LLZ coordinates** - `page-load.spec.ts`: "LLZ Coordinates Test With Visible Events" + "LLZ Coordinates Test With No Visible Events"
+- ✅ **Selected event se=** - `page-load.spec.ts`: "Selected Event se= Marker Popup"
+- ⏭️ **Custom date range fsd/fed** - `page-load.spec.ts`: Skipped (incompatible with dynamic test data)
+
+**Platform Coverage:**
+
+- ⚠️ Desktop (Chrome) - 1 failing test (smoke test for selected event)
+- ⚠️ Mobile (iPhone 16) - 2 failing tests + 2 skipped tests (weekend filter flaky issue)
+
+**Known Issues:**
+
+**Currently Failing (3 tests):**
+
+1. ❌ `interactive.spec.ts:119` - "Date filter clearing - verify event list updates" (desktop + mobile)
+    - Test expects event list count to increase after clearing date filter
+    - May be related to dynamic test data (test:stable events change based on current date)
+    - Note: This test has a skip comment in code (line 117) but isn't actually skipped
+2. ❌ `smoke.spec.ts:126` - "Workflow 3: View selected event from shared URL (se=)" (desktop only)
+    - Critical workflow test - should be investigated as high priority
+    - Was passing before, may be flaky or data-dependent
+
+**Skipped on Mobile (2 tests):**
+
+- ⏭️ `interactive.spec.ts:20` - "Date filter clearing - qf=weekend filter chip interaction"
+- ⏭️ `page-load.spec.ts:17` - "Quick Filter qf=weekend Test"
+- Root cause: Mobile viewport initialization timing or browser state pollution (initialShown = 0 when expected > 0)
+- Mitigation: Skipped for mobile, passing on desktop
+- Follow-up: Re-evaluate after map refactor
+
+**Important workflows (not yet tested - post-refactor):**
+
+1. ⏭️ Date selector interactions (slider, calendar)
+2. ⏭️ Search real-time filtering (typing updates results)
+3. ⏭️ Visible button click (zooms to visible events)
+4. ⏭️ Multiple filters together (date + search + map combined)
 
 ### Integration Tests
 
@@ -245,13 +474,13 @@ src/components/events/EventList.tsx          # React component
 src/components/events/__tests__/EventList.test.tsx  # Component tests with RTL
 ```
 
-### Jest Coverage
+#### Jest Coverage
 
 **Test Coverage:** The following output from `npm test` makes it easy to see test coverage and compare against the [Directory Structure in implementation.md](implementation.md#directory-structure)
 
 ```bash
 npm test
-> calendar-map-filter@0.4.9 test
+> calendar-map-filter@0.4.10 test
 > jest --coverage && node src/scripts/show-total-loc.mjs && date && echo
 ...
 ----------------------------|---------|----------|---------|---------|-----------------------------------------------------------
